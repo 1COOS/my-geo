@@ -7,6 +7,7 @@ import { Color, MeshStandardMaterial, Vector2, Vector3 } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
 import { countries, countryBoundaries, getCountry } from '../data/countries'
+import type { CameraTarget, GeoPosition } from '../shared/types/geo'
 import {
   getBoundaryCode,
   getCameraFlightDuration,
@@ -17,13 +18,15 @@ import {
 
 type GlobeSceneProps = {
   autoRotate: boolean
+  cameraTarget: CameraTarget
   quality: 'balanced' | 'low'
-  resetToken: number
   reducedMotion: boolean
   selectedCountryCode: string | null
   hoveredCountryCode: string | null
   onSelectCountry: (countryCode: string) => void
   onHoverCountry: (countryCode: string | null) => void
+  onViewCenterChange: (position: GeoPosition) => void
+  onViewCenterCommit: (position: GeoPosition) => void
 }
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [0, 18, 285]
@@ -37,19 +40,22 @@ type CameraFlight = {
 
 function World({
   autoRotate,
+  cameraTarget,
   quality,
-  resetToken,
   reducedMotion,
   selectedCountryCode,
   hoveredCountryCode,
   onSelectCountry,
   onHoverCountry,
+  onViewCenterChange,
+  onViewCenterCommit,
 }: GlobeSceneProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const controlsRef = useRef<OrbitControlsImpl>(null)
   const globeReadyRef = useRef(false)
-  const selectedCountryCodeRef = useRef(selectedCountryCode)
+  const cameraTargetRef = useRef(cameraTarget)
   const cameraFlightRef = useRef<CameraFlight | null>(null)
+  const viewCenterFrameRef = useRef<number | null>(null)
   const { camera, gl, size } = useThree()
   const rendererSize = useMemo(
     () => new Vector2(size.width, size.height),
@@ -85,15 +91,37 @@ function World({
     globeRef.current?.setPointOfView(camera)
   }, [camera])
 
-  const flyToCountry = useCallback(
-    (countryCode: string | null) => {
-      if (!countryCode || !globeReadyRef.current || !globeRef.current) return
-      const country = getCountry(countryCode)
-      if (!country) return
+  const getViewCenter = useCallback((): GeoPosition | null => {
+    const coordinate = globeRef.current?.toGeoCoords(camera.position)
+    if (!coordinate) return null
+    return {
+      latitude: coordinate.lat,
+      longitude: coordinate.lng,
+    }
+  }, [camera])
 
+  const scheduleViewCenterChange = useCallback(() => {
+    if (viewCenterFrameRef.current !== null) return
+    viewCenterFrameRef.current = window.requestAnimationFrame(() => {
+      viewCenterFrameRef.current = null
+      const position = getViewCenter()
+      if (position) onViewCenterChange(position)
+    })
+  }, [getViewCenter, onViewCenterChange])
+
+  const commitViewCenter = useCallback(() => {
+    const position = getViewCenter()
+    if (!position) return
+    onViewCenterChange(position)
+    onViewCenterCommit(position)
+  }, [getViewCenter, onViewCenterChange, onViewCenterCommit])
+
+  const flyToPosition = useCallback(
+    (position: GeoPosition) => {
+      if (!globeReadyRef.current || !globeRef.current) return
       const destination = globeRef.current.getCoords(
-        country.center.latitude,
-        country.center.longitude,
+        position.latitude,
+        position.longitude,
         1.42,
       )
       const targetPosition = new Vector3(
@@ -109,6 +137,7 @@ function World({
         controlsRef.current?.target.set(0, 0, 0)
         controlsRef.current?.update()
         syncPointOfView()
+        commitViewCenter()
         return
       }
 
@@ -120,7 +149,7 @@ function World({
       }
       if (controlsRef.current) controlsRef.current.enabled = false
     },
-    [camera, reducedMotion, syncPointOfView],
+    [camera, commitViewCenter, reducedMotion, syncPointOfView],
   )
 
   useFrame((_state, delta) => {
@@ -134,6 +163,7 @@ function World({
     camera.lookAt(0, 0, 0)
     controlsRef.current?.target.set(0, 0, 0)
     syncPointOfView()
+    scheduleViewCenterChange()
 
     if (progress >= 1) {
       cameraFlightRef.current = null
@@ -141,19 +171,16 @@ function World({
         controlsRef.current.enabled = true
         controlsRef.current.update()
       }
+      commitViewCenter()
     }
   })
 
   useEffect(() => {
+    cameraTargetRef.current = cameraTarget
     cameraFlightRef.current = null
     if (controlsRef.current) controlsRef.current.enabled = true
-    flyToCountry('CN')
-  }, [flyToCountry, resetToken])
-
-  useEffect(() => {
-    selectedCountryCodeRef.current = selectedCountryCode
-    flyToCountry(selectedCountryCode)
-  }, [flyToCountry, selectedCountryCode])
+    flyToPosition(cameraTarget.position)
+  }, [cameraTarget, flyToPosition])
 
   useEffect(() => {
     gl.setPixelRatio(
@@ -162,6 +189,15 @@ function World({
   }, [gl, quality])
 
   useEffect(() => () => globeMaterial.dispose(), [globeMaterial])
+
+  useEffect(
+    () => () => {
+      if (viewCenterFrameRef.current !== null) {
+        window.cancelAnimationFrame(viewCenterFrameRef.current)
+      }
+    },
+    [],
+  )
 
   return (
     <>
@@ -245,7 +281,7 @@ function World({
         onGlobeReady={() => {
           globeReadyRef.current = true
           syncPointOfView()
-          flyToCountry(selectedCountryCodeRef.current)
+          flyToPosition(cameraTargetRef.current.position)
         }}
         onHover={(layer, value) => {
           onHoverCountry(getCountryCodeForLayer(layer, value))
@@ -271,7 +307,11 @@ function World({
         zoomSpeed={0.72}
         autoRotate={autoRotate}
         autoRotateSpeed={0.42}
-        onChange={syncPointOfView}
+        onChange={() => {
+          syncPointOfView()
+          scheduleViewCenterChange()
+        }}
+        onEnd={commitViewCenter}
       />
 
       {quality === 'balanced' ? (

@@ -29,6 +29,158 @@ body {
   overflow: hidden;
 }
 
+.landscape-runtime,
+.landscape-app {
+  width: 100%;
+  min-height: 100dvh;
+}
+
+.landscape-app[aria-hidden='true'] {
+  pointer-events: none;
+  user-select: none;
+}
+
+.landscape-prompt {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  min-width: 320px;
+  min-height: 100dvh;
+  padding: calc(1.5rem + env(safe-area-inset-top))
+    calc(1.5rem + env(safe-area-inset-right))
+    calc(1.5rem + env(safe-area-inset-bottom))
+    calc(1.5rem + env(safe-area-inset-left));
+  overflow: hidden;
+  color: #f7fbff;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 32%, rgb(39 164 224 / 24%), transparent 32%),
+    linear-gradient(155deg, #071426 0%, #030812 68%, #06111f 100%);
+  outline: none;
+  place-items: center;
+}
+
+.landscape-prompt::before,
+.landscape-prompt::after {
+  position: absolute;
+  width: 18rem;
+  height: 18rem;
+  content: '';
+  background: #38bcff;
+  border-radius: 50%;
+  filter: blur(88px);
+  opacity: 0.12;
+}
+
+.landscape-prompt::before {
+  top: -10rem;
+  left: -8rem;
+}
+
+.landscape-prompt::after {
+  right: -9rem;
+  bottom: -11rem;
+}
+
+.landscape-prompt-card {
+  position: relative;
+  z-index: 1;
+  width: min(31rem, 100%);
+}
+
+.landscape-prompt-visual {
+  position: relative;
+  width: 8.5rem;
+  height: 8.5rem;
+  margin: 0 auto 1.25rem;
+}
+
+.landscape-prompt-device,
+.landscape-prompt-arrow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.landscape-prompt-device {
+  stroke: #dff8ff;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 18px rgb(86 208 255 / 32%));
+  animation: landscape-device-turn 2.4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.landscape-prompt-arrow {
+  stroke: #69dcff;
+  stroke-width: 3;
+  animation: landscape-arrow-pulse 2.4s ease-in-out infinite;
+}
+
+.landscape-prompt-eyebrow {
+  margin: 0 0 0.7rem;
+  color: #69dcff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+}
+
+.landscape-prompt h1 {
+  margin: 0;
+  font-size: clamp(1.9rem, 8vw, 3rem);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+
+.landscape-prompt-card > p:not(.landscape-prompt-eyebrow) {
+  max-width: 28rem;
+  margin: 1rem auto 0;
+  color: #bcd3e1;
+  font-size: clamp(0.88rem, 3.6vw, 1rem);
+  line-height: 1.7;
+}
+
+.landscape-prompt-card > .landscape-prompt-hint {
+  margin-top: 0.8rem;
+  color: #7898aa;
+  font-size: clamp(0.72rem, 3vw, 0.82rem);
+}
+
+@keyframes landscape-device-turn {
+  0%,
+  20% {
+    transform: rotate(0deg) scale(0.94);
+  }
+
+  55%,
+  82% {
+    transform: rotate(90deg) scale(1);
+  }
+
+  100% {
+    transform: rotate(90deg) scale(0.94);
+  }
+}
+
+@keyframes landscape-arrow-pulse {
+  0%,
+  20%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.94);
+  }
+
+  48%,
+  76% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 button,
 a {
   font: inherit;
@@ -397,6 +549,158 @@ a:focus-visible,
   color: #89a4b6;
   font-size: 0.8rem;
   text-align: center;
+}
+
+.world-mini-map {
+  position: absolute;
+  z-index: 5;
+  bottom: clamp(4.9rem, 8vw, 6rem);
+  left: clamp(1.25rem, 6.4vw, 6.5rem);
+  width: 252px;
+}
+
+.world-mini-map-toggle {
+  display: none;
+}
+
+.world-mini-map-card {
+  overflow: hidden;
+  background: linear-gradient(150deg, rgb(12 40 63 / 91%), rgb(4 17 31 / 94%));
+  border: 1px solid rgb(126 214 255 / 18%);
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 36%);
+  backdrop-filter: blur(18px);
+}
+
+.world-mini-map-header {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.72rem 0.5rem;
+}
+
+.world-mini-map-header > div {
+  display: grid;
+  min-width: 0;
+}
+
+.world-mini-map-header span {
+  color: #67d8ff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.48rem;
+  font-weight: 760;
+  letter-spacing: 0.14em;
+}
+
+.world-mini-map-header output {
+  flex: none;
+  color: #9bc7db;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.54rem;
+  font-weight: 650;
+}
+
+.world-mini-map-close {
+  display: none;
+}
+
+.world-mini-map-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: manipulation;
+  border-block: 1px solid rgb(130 211 247 / 11%);
+}
+
+.world-mini-map-canvas:focus-visible {
+  outline: 3px solid #f7d672;
+  outline-offset: -4px;
+}
+
+.world-mini-map-ocean {
+  fill: #071d31;
+}
+
+.world-mini-map-grid line {
+  stroke: rgb(109 192 228 / 8%);
+  stroke-width: 0.65;
+  vector-effect: non-scaling-stroke;
+}
+
+.world-mini-map-countries path {
+  fill: #174e6d;
+  stroke: rgb(111 192 225 / 48%);
+  stroke-width: 0.52;
+  cursor: pointer;
+  vector-effect: non-scaling-stroke;
+  transition:
+    fill 140ms ease,
+    stroke 140ms ease;
+}
+
+.world-mini-map-countries path:hover {
+  fill: #287ba0;
+  stroke: #a3e9ff;
+}
+
+.world-mini-map-countries path.is-selected {
+  fill: #bb8e32;
+  stroke: #fff0a3;
+  stroke-width: 1.15;
+}
+
+.world-mini-map-microstates circle {
+  fill: rgb(113 215 255 / 1%);
+  stroke: none;
+  cursor: pointer;
+}
+
+.world-mini-map-microstates circle:hover {
+  fill: rgb(113 215 255 / 38%);
+  stroke: #b9efff;
+  stroke-width: 0.8;
+}
+
+.world-mini-map-microstates circle.is-selected {
+  fill: #e7b84c;
+  stroke: #fff1a8;
+  stroke-width: 1.2;
+}
+
+.world-mini-map-view-marker {
+  pointer-events: none;
+  will-change: transform;
+}
+
+.world-mini-map-view-marker circle {
+  fill: #8cf2ff;
+  stroke: #063f5f;
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+}
+
+.world-mini-map-view-marker path {
+  fill: none;
+  stroke: #bdf8ff;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.world-mini-map-keyboard-cursor {
+  fill: rgb(247 214 114 / 16%);
+  stroke: #f7d672;
+  stroke-width: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.world-mini-map-canvas:focus .world-mini-map-keyboard-cursor {
+  opacity: 1;
 }
 
 .hero-copy {
@@ -1064,6 +1368,82 @@ a:focus-visible,
     justify-content: stretch;
   }
 
+  .world-mini-map {
+    position: absolute;
+    z-index: 8;
+    right: 1rem;
+    bottom: 5.5rem;
+    left: 1rem;
+    width: auto;
+    pointer-events: none;
+  }
+
+  .world-mini-map-toggle {
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+    width: fit-content;
+    min-height: 2.65rem;
+    padding: 0.58rem 0.75rem;
+    color: #dff6ff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    pointer-events: auto;
+    background: rgb(6 22 39 / 84%);
+    border: 1px solid rgb(127 211 255 / 18%);
+    border-radius: 0.8rem;
+    box-shadow: 0 14px 38px rgb(0 0 0 / 34%);
+    backdrop-filter: blur(16px);
+  }
+
+  .world-mini-map-toggle svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .world-mini-map-card {
+    display: none;
+    pointer-events: auto;
+  }
+
+  .world-mini-map.is-expanded .world-mini-map-toggle {
+    display: none;
+  }
+
+  .world-mini-map.is-expanded .world-mini-map-card {
+    display: block;
+  }
+
+  .world-mini-map-header {
+    padding: 0.62rem 0.72rem 0.5rem;
+  }
+
+  .world-mini-map-header output {
+    margin-left: auto;
+  }
+
+  .world-mini-map-close {
+    display: grid;
+    flex: none;
+    width: 1.8rem;
+    height: 1.8rem;
+    padding: 0;
+    color: #c5e1ed;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    background: rgb(142 216 246 / 8%);
+    border: 1px solid rgb(142 216 246 / 12%);
+    border-radius: 50%;
+    place-items: center;
+  }
+
   .control-button {
     flex: 1;
     justify-content: center;
@@ -1138,6 +1518,189 @@ a:focus-visible,
   }
 }
 
+@media (orientation: landscape) and (max-height: 600px) {
+  .landscape-runtime.is-touch-device .topbar {
+    padding: calc(0.65rem + env(safe-area-inset-top))
+      calc(0.75rem + env(safe-area-inset-right)) 0.65rem
+      calc(0.75rem + env(safe-area-inset-left));
+  }
+
+  .landscape-runtime.is-touch-device .brand {
+    gap: 0.55rem;
+    font-size: 0.9rem;
+  }
+
+  .landscape-runtime.is-touch-device .brand img {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.62rem;
+  }
+
+  .landscape-runtime.is-touch-device .status-pill,
+  .landscape-runtime.is-touch-device .footer-note {
+    display: none;
+  }
+
+  .landscape-runtime.is-touch-device .search-slot {
+    top: calc(0.58rem + env(safe-area-inset-top));
+    right: auto;
+    left: max(calc(8.2rem + env(safe-area-inset-left)), 21vw);
+    width: min(19rem, 39vw);
+  }
+
+  .landscape-runtime.is-touch-device .country-search-field {
+    height: 2.75rem;
+  }
+
+  .landscape-runtime.is-touch-device .country-search-popover {
+    max-height: calc(100dvh - 4.2rem - env(safe-area-inset-bottom));
+  }
+
+  .landscape-runtime.is-touch-device .world-mini-map {
+    z-index: 8;
+    right: auto;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    left: calc(0.75rem + env(safe-area-inset-left));
+    width: min(21rem, calc(100vw - 1.5rem));
+    pointer-events: none;
+  }
+
+  .landscape-runtime.is-touch-device .world-mini-map-toggle {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    width: fit-content;
+    min-height: 2.7rem;
+    padding: 0.58rem 0.72rem;
+    color: #dff6ff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    pointer-events: auto;
+    background: rgb(6 22 39 / 86%);
+    border: 1px solid rgb(127 211 255 / 18%);
+    border-radius: 0.8rem;
+    box-shadow: 0 14px 38px rgb(0 0 0 / 34%);
+    backdrop-filter: blur(16px);
+  }
+
+  .landscape-runtime.is-touch-device .world-mini-map-toggle svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .landscape-runtime.is-touch-device .world-mini-map-card {
+    display: none;
+    pointer-events: auto;
+  }
+
+  .landscape-runtime.is-touch-device
+    .world-mini-map.is-expanded
+    .world-mini-map-toggle {
+    display: none;
+  }
+
+  .landscape-runtime.is-touch-device
+    .world-mini-map.is-expanded
+    .world-mini-map-card {
+    display: block;
+  }
+
+  .landscape-runtime.is-touch-device .world-mini-map-close {
+    display: grid;
+    flex: none;
+    width: 1.8rem;
+    height: 1.8rem;
+    padding: 0;
+    color: #c5e1ed;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    background: rgb(142 216 246 / 8%);
+    border: 1px solid rgb(142 216 246 / 12%);
+    border-radius: 50%;
+    place-items: center;
+  }
+
+  .landscape-runtime.is-touch-device .control-dock {
+    right: calc(0.75rem + env(safe-area-inset-right));
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    left: auto;
+    gap: 0.3rem;
+    padding: 0.32rem;
+    border-radius: 0.9rem;
+  }
+
+  .landscape-runtime.is-touch-device .control-button {
+    flex: none;
+    width: 2.7rem;
+    min-width: 2.7rem;
+    min-height: 2.7rem;
+    padding: 0;
+  }
+
+  .landscape-runtime.is-touch-device .control-button > span:last-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .landscape-runtime.is-touch-device .control-button svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail {
+    position: fixed;
+    z-index: 9;
+    top: calc(3.9rem + env(safe-area-inset-top));
+    right: calc(0.75rem + env(safe-area-inset-right));
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    left: auto;
+    width: min(21rem, calc(52vw - env(safe-area-inset-right)));
+    max-height: none;
+    padding: 0.9rem;
+    border: 1px solid rgb(140 221 255 / 20%);
+    border-radius: 1.2rem;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail-handle {
+    display: none;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail-heading {
+    grid-template-columns: 3.8rem minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail-flag {
+    width: 3.8rem;
+    height: 2.65rem;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail-heading h2 {
+    font-size: 1.45rem;
+  }
+
+  .landscape-runtime.is-touch-device
+    .explore-shell.has-country-detail
+    .search-slot {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1146,5 +1709,13 @@ a:focus-visible,
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  .landscape-prompt-device {
+    transform: rotate(90deg);
+  }
+
+  .landscape-prompt-arrow {
+    opacity: 1;
   }
 }

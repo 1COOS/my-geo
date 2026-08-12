@@ -1,14 +1,28 @@
 import { useReducedMotion } from 'motion/react'
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { getCountry } from '../../data/countries'
 import { ControlButton } from '../../shared/components/ControlButton'
 import { WebGLFallback } from '../../shared/components/WebGLFallback'
 import { supportsWebGL } from '../../shared/lib/webgl'
+import type {
+  CameraTarget,
+  GeoPosition,
+  WorldMiniMapNavigation,
+} from '../../shared/types/geo'
 import { CountryDetailPanel } from './CountryDetailPanel'
 import { CountrySearch } from './CountrySearch'
 import { useExperienceStore } from './useExperienceStore'
+import { WorldMiniMap, type WorldMiniMapHandle } from './WorldMiniMap'
 
 const GlobeScene = lazy(async () => {
   const sceneModule = await import('../../scene/GlobeScene')
@@ -45,7 +59,13 @@ function ResetIcon() {
 export function ExplorePage() {
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion() ?? false
-  const [resetToken, setResetToken] = useState(0)
+  const cameraRequestIdRef = useRef(0)
+  const miniMapRef = useRef<WorldMiniMapHandle>(null)
+  const [miniMapExpanded, setMiniMapExpanded] = useState(false)
+  const [cameraTarget, setCameraTarget] = useState<CameraTarget>(() => ({
+    requestId: 0,
+    position: getCountry('CN')!.center,
+  }))
   const webGLAvailable = useMemo(() => supportsWebGL(), [])
   const {
     autoRotate,
@@ -64,6 +84,39 @@ export function ExplorePage() {
   }, [hydrate])
 
   const selectedCountry = getCountry(selectedCountryCode)
+  const requestCameraTarget = useCallback((position: GeoPosition) => {
+    cameraRequestIdRef.current += 1
+    setCameraTarget({
+      requestId: cameraRequestIdRef.current,
+      position,
+    })
+  }, [])
+  const navigateToCountry = useCallback(
+    (countryCode: string) => {
+      const country = getCountry(countryCode)
+      if (!country) return
+      setMiniMapExpanded(false)
+      selectCountry(countryCode)
+      requestCameraTarget(country.center)
+    },
+    [requestCameraTarget, selectCountry],
+  )
+  const handleMiniMapNavigation = useCallback(
+    (navigation: WorldMiniMapNavigation) => {
+      if (navigation.kind === 'country') {
+        navigateToCountry(navigation.countryCode)
+        return
+      }
+
+      selectCountry(null)
+      requestCameraTarget(navigation.position)
+    },
+    [navigateToCountry, requestCameraTarget, selectCountry],
+  )
+  const handleViewCenterChange = useCallback((position: GeoPosition) => {
+    miniMapRef.current?.setViewCenter(position)
+  }, [])
+
   const effectiveAutoRotate =
     autoRotate &&
     !reducedMotion &&
@@ -71,7 +124,11 @@ export function ExplorePage() {
     hoveredCountryCode === null
 
   return (
-    <main className="explore-shell">
+    <main
+      className={
+        selectedCountry ? 'explore-shell has-country-detail' : 'explore-shell'
+      }
+    >
       <div className="space-glow space-glow-one" aria-hidden="true" />
       <div className="space-glow space-glow-two" aria-hidden="true" />
 
@@ -85,13 +142,15 @@ export function ExplorePage() {
         >
           <GlobeScene
             autoRotate={effectiveAutoRotate}
+            cameraTarget={cameraTarget}
             quality={quality}
-            resetToken={resetToken}
             reducedMotion={reducedMotion}
             selectedCountryCode={selectedCountryCode}
             hoveredCountryCode={hoveredCountryCode}
-            onSelectCountry={selectCountry}
+            onSelectCountry={navigateToCountry}
             onHoverCountry={hoverCountry}
+            onViewCenterChange={handleViewCenterChange}
+            onViewCenterCommit={handleViewCenterChange}
           />
         </Suspense>
       ) : (
@@ -115,10 +174,20 @@ export function ExplorePage() {
         <CountrySearch
           key={selectedCountry?.code ?? 'no-selection'}
           selectedCountry={selectedCountry}
-          onSelect={selectCountry}
+          onSelect={navigateToCountry}
           onClearSelection={() => selectCountry(null)}
         />
       </div>
+
+      {webGLAvailable ? (
+        <WorldMiniMap
+          ref={miniMapRef}
+          expanded={miniMapExpanded}
+          selectedCountryCode={selectedCountryCode}
+          onExpandedChange={setMiniMapExpanded}
+          onNavigate={handleMiniMapNavigation}
+        />
+      ) : null}
 
       {webGLAvailable ? (
         <nav className="control-dock" aria-label="地球显示控制">
@@ -139,8 +208,7 @@ export function ExplorePage() {
             icon={<ResetIcon />}
             label={t('reset')}
             onClick={() => {
-              selectCountry('CN')
-              setResetToken((current) => current + 1)
+              navigateToCountry('CN')
             }}
           />
         </nav>
@@ -151,7 +219,7 @@ export function ExplorePage() {
           key={selectedCountry.code}
           country={selectedCountry}
           onClose={() => selectCountry(null)}
-          onSelectCountry={selectCountry}
+          onSelectCountry={navigateToCountry}
         />
       ) : null}
 

@@ -13,6 +13,7 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
   await expect(scene.or(fallback)).toBeVisible()
 
   if (await scene.isVisible()) {
+    await expect(page.getByTestId('world-mini-map')).toBeVisible()
     await expect(
       page.getByRole('navigation', { name: '地球显示控制' }),
     ).toBeVisible()
@@ -31,12 +32,127 @@ test('exposes a valid PWA manifest', async ({ request }) => {
   const manifest = (await manifestResponse.json()) as {
     name: string
     display: string
+    orientation: string
     icons: Array<{ src: string }>
   }
 
   expect(manifest.name).toContain('My Geo')
   expect(manifest.display).toBe('standalone')
+  expect(manifest.orientation).toBe('landscape')
   expect(manifest.icons).toHaveLength(3)
+})
+
+test('asks touch phones and iPads to rotate before loading the app', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    })
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      value: 'MacIntel',
+    })
+  })
+
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 834, height: 1194 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+
+    const prompt = page.getByTestId('landscape-prompt')
+    await expect(prompt).toBeVisible()
+    await expect(
+      prompt.getByRole('heading', { name: '请将设备横过来' }),
+    ).toBeVisible()
+    await expect(page.getByTestId('globe-scene')).toHaveCount(0)
+    await expect(page.getByTestId('webgl-fallback')).toHaveCount(0)
+  }
+})
+
+test('enters landscape automatically and preserves the mounted experience', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    })
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      value: 'MacIntel',
+    })
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await expect(page.getByTestId('landscape-prompt')).toBeVisible()
+
+  await page.setViewportSize({ width: 844, height: 390 })
+  await expect(page.getByTestId('landscape-prompt')).toHaveCount(0)
+  const scene = page.getByTestId('globe-scene')
+  const fallback = page.getByTestId('webgl-fallback')
+  await expect(scene.or(fallback)).toBeVisible()
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(page.getByTestId('landscape-prompt')).toBeVisible()
+  await expect(scene.or(fallback)).toBeAttached()
+
+  await page.setViewportSize({ width: 844, height: 390 })
+  await expect(page.getByTestId('landscape-prompt')).toHaveCount(0)
+  await expect(scene.or(fallback)).toBeVisible()
+})
+
+test('keeps phone landscape controls separated and country details usable', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    })
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      value: 'MacIntel',
+    })
+  })
+  await page.setViewportSize({ width: 844, height: 390 })
+  await page.goto('/')
+
+  const scene = page.getByTestId('globe-scene')
+  const fallback = page.getByTestId('webgl-fallback')
+  await expect(scene.or(fallback)).toBeVisible()
+  if (await fallback.isVisible()) return
+
+  const search = page.getByRole('combobox', { name: '搜索国家' })
+  const mapToggle = page.getByRole('button', { name: '定位图' })
+  const controls = page.getByRole('navigation', { name: '地球显示控制' })
+  await expect(search).toBeVisible()
+  await expect(mapToggle).toBeVisible()
+  await expect(controls).toBeVisible()
+
+  const searchBox = await search.boundingBox()
+  const mapToggleBox = await mapToggle.boundingBox()
+  const controlsBox = await controls.boundingBox()
+  expect(searchBox).not.toBeNull()
+  expect(mapToggleBox).not.toBeNull()
+  expect(controlsBox).not.toBeNull()
+  expect(mapToggleBox!.y).toBeGreaterThan(searchBox!.y + searchBox!.height)
+  expect(mapToggleBox!.x + mapToggleBox!.width).toBeLessThan(controlsBox!.x)
+
+  await search.fill('中国')
+  await search.press('Enter')
+  const card = page.getByLabel('中国国家知识卡')
+  await expect(card).toBeVisible()
+  const cardBox = await card.boundingBox()
+  expect(cardBox).not.toBeNull()
+  expect(cardBox!.y).toBeGreaterThan(0)
+  expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(390)
+  await expect(
+    card.getByRole('button', { name: '关闭国家知识卡' }),
+  ).toBeVisible()
 })
 
 test('keeps controls reachable on a mobile viewport', async ({ page }) => {
@@ -50,7 +166,95 @@ test('keeps controls reachable on a mobile viewport', async ({ page }) => {
   const scene = page.getByTestId('globe-scene')
   if (await scene.isVisible()) {
     await expect(page.getByRole('button', { name: '重置视角' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '定位图' })).toBeVisible()
   }
+})
+
+test('keeps the 2D map synchronized with country and globe navigation', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const scene = page.getByTestId('globe-scene')
+  const fallback = page.getByTestId('webgl-fallback')
+  await expect(scene.or(fallback)).toBeVisible()
+  if (await fallback.isVisible()) return
+
+  const map = page.getByTestId('world-mini-map')
+  const marker = page.getByTestId('world-mini-map-view-marker')
+  const initialTransform = await marker.getAttribute('transform')
+  const initialMapBox = await map.boundingBox()
+  expect(initialMapBox).not.toBeNull()
+
+  await page.mouse.click(
+    initialMapBox!.x + initialMapBox!.width * ((2.3 + 180) / 360),
+    initialMapBox!.y + initialMapBox!.height * ((90 - 48.8) / 180),
+  )
+  await expect(page.getByLabel('法国国家知识卡')).toBeVisible()
+  await expect(map.locator('[data-country-code="FR"]')).toHaveClass(
+    /is-selected/,
+  )
+  await expect
+    .poll(() => marker.getAttribute('transform'))
+    .not.toBe(initialTransform)
+
+  const sceneBox = await scene.boundingBox()
+  expect(sceneBox).not.toBeNull()
+  const markerBeforeDrag = await marker.getAttribute('transform')
+  await page.mouse.move(
+    sceneBox!.x + sceneBox!.width * 0.56,
+    sceneBox!.y + sceneBox!.height * 0.48,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    sceneBox!.x + sceneBox!.width * 0.7,
+    sceneBox!.y + sceneBox!.height * 0.55,
+    { steps: 8 },
+  )
+  await page.mouse.up()
+  await expect
+    .poll(() => marker.getAttribute('transform'))
+    .not.toBe(markerBeforeDrag)
+
+  const mapBox = await map.boundingBox()
+  expect(mapBox).not.toBeNull()
+  await page.mouse.click(
+    mapBox!.x + mapBox!.width * (40 / 360),
+    mapBox!.y + mapBox!.height * 0.5,
+  )
+  await expect(page.getByLabel('法国国家知识卡')).toHaveCount(0)
+  await expect(map.locator('.is-selected')).toHaveCount(0)
+})
+
+test('expands and collapses the 2D map above mobile controls', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+
+  const scene = page.getByTestId('globe-scene')
+  const fallback = page.getByTestId('webgl-fallback')
+  await expect(scene.or(fallback)).toBeVisible()
+  if (await fallback.isVisible()) return
+
+  const toggle = page.getByRole('button', { name: '定位图' })
+  const map = page.getByTestId('world-mini-map')
+  await expect(toggle).toBeVisible()
+  await expect(map).toBeHidden()
+
+  await toggle.click()
+  await expect(map).toBeVisible()
+  const mapBox = await map.boundingBox()
+  const controlsBox = await page
+    .getByRole('navigation', { name: '地球显示控制' })
+    .boundingBox()
+  expect(mapBox).not.toBeNull()
+  expect(controlsBox).not.toBeNull()
+  expect(mapBox!.y + mapBox!.height).toBeLessThanOrEqual(controlsBox!.y)
+
+  await map.locator('[data-country-code="CN"]').click()
+  await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
+  await expect(map).toBeHidden()
 })
 
 test('shows the fallback instead of crashing without WebGL', async ({
@@ -70,6 +274,7 @@ test('shows the fallback instead of crashing without WebGL', async ({
 
   await expect(page.getByTestId('webgl-fallback')).toBeVisible()
   await expect(page.getByTestId('globe-scene')).toHaveCount(0)
+  await expect(page.getByTestId('world-mini-map')).toHaveCount(0)
 })
 
 test('respects the system reduced-motion preference', async ({ page }) => {
@@ -93,6 +298,10 @@ test('reloads the core experience while offline', async ({ page, context }) => {
   try {
     await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.getByText('My Geo', { exact: true })).toBeVisible()
+    const scene = page.getByTestId('globe-scene')
+    if (await scene.isVisible()) {
+      await expect(page.getByTestId('world-mini-map')).toBeVisible()
+    }
   } finally {
     await context.setOffline(false)
   }
