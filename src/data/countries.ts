@@ -1,5 +1,31 @@
-import { countryCatalogSchema } from './countrySchema'
+import boundariesJson from './generated/country-boundaries.json'
+import countrySourcesJson from './generated/country-sources.json'
+import countriesJson from './generated/countries.json'
+import {
+  countryBoundariesSchema,
+  countryCatalogSchema,
+  countrySourceRegistrySchema,
+  type Country,
+} from './countrySchema'
 
-// The first country content slice will be added after the 3D baseline.
-// Keeping parsing at module load makes invalid educational content fail fast.
-export const countries = countryCatalogSchema.parse([])
+export const countries = countryCatalogSchema.parse(countriesJson)
+export const countryBoundaries = countryBoundariesSchema.parse(boundariesJson)
+export const countrySources =
+  countrySourceRegistrySchema.parse(countrySourcesJson)
+
+export const countriesByCode = new Map(
+  countries.map((country) => [country.code, country]),
+)
+export const countrySourcesById = new Map(
+  countrySources.map((source) => [source.id, source]),
+)
+
+export function getCountry(
+  code: string | null | undefined,
+): Country | undefined {
+  return code ? countriesByCode.get(code) : undefined
+}
+
+export function getCountrySource(id: string) {
+  return countrySourcesById.get(id)
+}

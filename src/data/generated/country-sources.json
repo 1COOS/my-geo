@@ -1,0 +1,138 @@
+[
+  {
+    "id": "world-countries",
+    "name": "World Countries dataset",
+    "publisher": "mledoze/countries contributors",
+    "version": "5.1.0",
+    "url": "https://github.com/mledoze/countries",
+    "license": "Open Database License (ODbL) 1.0"
+  },
+  {
+    "id": "britannica-australia",
+    "name": "Australia overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/Australia",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-brazil",
+    "name": "Brazil overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/Brazil",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-china",
+    "name": "China overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/China",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-egypt",
+    "name": "Egypt overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/Egypt",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-france",
+    "name": "France overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/France",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-india",
+    "name": "India overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/India",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-indonesia",
+    "name": "Indonesia overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/Indonesia",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-japan",
+    "name": "Japan overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/Japan",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-mexico",
+    "name": "Mexico overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/Mexico",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-russia",
+    "name": "Russia overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/Russia",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-south-africa",
+    "name": "South Africa overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/South-Africa",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "britannica-united-states",
+    "name": "United States overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.britannica.com/place/United-States",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "wwf-giant-panda",
+    "name": "Giant Panda",
+    "publisher": "World Wildlife Fund",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.worldwildlife.org/species/giant-panda",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "nps-yellowstone",
+    "name": "History of Yellowstone National Park",
+    "publisher": "U.S. National Park Service",
+    "accessedAt": "2026-08-12",
+    "url": "https://www.nps.gov/yell/learn/historyculture/index.htm",
+    "license": "U.S. federal government reference material; linked, not copied"
+  },
+  {
+    "id": "unesco-giza",
+    "name": "Memphis and its Necropolis – the Pyramid Fields from Giza to Dahshur",
+    "publisher": "UNESCO World Heritage Centre",
+    "accessedAt": "2026-08-12",
+    "url": "https://whc.unesco.org/en/list/86/",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
+    "id": "unesco-great-barrier-reef",
+    "name": "Great Barrier Reef",
+    "publisher": "UNESCO World Heritage Centre",
+    "accessedAt": "2026-08-12",
+    "url": "https://whc.unesco.org/en/list/154/",
+    "license": "Copyrighted reference material; linked, not copied"
+  }
+]

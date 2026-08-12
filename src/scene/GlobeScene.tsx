@@ -1,22 +1,55 @@
 import { OrbitControls, Stars } from '@react-three/drei'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import R3fGlobe, { type GlobeMethods } from 'r3f-globe'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { Color, MeshStandardMaterial, Vector2 } from 'three'
+import { Color, MeshStandardMaterial, Vector2, Vector3 } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
+
+import { countries, countryBoundaries, getCountry } from '../data/countries'
+import {
+  getBoundaryCode,
+  getCameraFlightDuration,
+  getCapitalMarkerCode,
+  getCountryCodeForLayer,
+  type CapitalMarker,
+} from './countrySceneInteraction'
 
 type GlobeSceneProps = {
   autoRotate: boolean
   quality: 'balanced' | 'low'
   resetToken: number
+  reducedMotion: boolean
+  selectedCountryCode: string | null
+  hoveredCountryCode: string | null
+  onSelectCountry: (countryCode: string) => void
+  onHoverCountry: (countryCode: string | null) => void
 }
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [0, 18, 285]
 
-function World({ autoRotate, quality, resetToken }: GlobeSceneProps) {
+type CameraFlight = {
+  from: Vector3
+  to: Vector3
+  elapsed: number
+  duration: number
+}
+
+function World({
+  autoRotate,
+  quality,
+  resetToken,
+  reducedMotion,
+  selectedCountryCode,
+  hoveredCountryCode,
+  onSelectCountry,
+  onHoverCountry,
+}: GlobeSceneProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const controlsRef = useRef<OrbitControlsImpl>(null)
+  const globeReadyRef = useRef(false)
+  const selectedCountryCodeRef = useRef(selectedCountryCode)
+  const cameraFlightRef = useRef<CameraFlight | null>(null)
   const { camera, gl, size } = useThree()
   const rendererSize = useMemo(
     () => new Vector2(size.width, size.height),
@@ -33,19 +66,94 @@ function World({ autoRotate, quality, resetToken }: GlobeSceneProps) {
       }),
     [],
   )
+  const capitalMarkers = useMemo<CapitalMarker[]>(
+    () =>
+      countries.flatMap((country) =>
+        country.hasGeometry
+          ? []
+          : country.capitals.slice(0, 1).map((capital) => ({
+              countryCode: country.code,
+              lat: capital.latitude,
+              lng: capital.longitude,
+              name: capital.name.zh,
+            })),
+      ),
+    [],
+  )
 
   const syncPointOfView = useCallback(() => {
     globeRef.current?.setPointOfView(camera)
   }, [camera])
 
-  useEffect(() => {
-    camera.position.set(...INITIAL_CAMERA_POSITION)
+  const flyToCountry = useCallback(
+    (countryCode: string | null) => {
+      if (!countryCode || !globeReadyRef.current || !globeRef.current) return
+      const country = getCountry(countryCode)
+      if (!country) return
+
+      const destination = globeRef.current.getCoords(
+        country.center.latitude,
+        country.center.longitude,
+        1.42,
+      )
+      const targetPosition = new Vector3(
+        destination.x,
+        destination.y,
+        destination.z,
+      )
+
+      const flightDuration = getCameraFlightDuration(reducedMotion)
+      if (flightDuration === 0) {
+        camera.position.copy(targetPosition)
+        camera.lookAt(0, 0, 0)
+        controlsRef.current?.target.set(0, 0, 0)
+        controlsRef.current?.update()
+        syncPointOfView()
+        return
+      }
+
+      cameraFlightRef.current = {
+        from: camera.position.clone(),
+        to: targetPosition,
+        elapsed: 0,
+        duration: flightDuration,
+      }
+      if (controlsRef.current) controlsRef.current.enabled = false
+    },
+    [camera, reducedMotion, syncPointOfView],
+  )
+
+  useFrame((_state, delta) => {
+    const flight = cameraFlightRef.current
+    if (!flight) return
+
+    flight.elapsed = Math.min(flight.elapsed + delta, flight.duration)
+    const progress = flight.elapsed / flight.duration
+    const easedProgress = 1 - Math.pow(1 - progress, 3)
+    camera.position.lerpVectors(flight.from, flight.to, easedProgress)
     camera.lookAt(0, 0, 0)
-    camera.updateProjectionMatrix()
     controlsRef.current?.target.set(0, 0, 0)
-    controlsRef.current?.update()
     syncPointOfView()
-  }, [camera, resetToken, syncPointOfView])
+
+    if (progress >= 1) {
+      cameraFlightRef.current = null
+      if (controlsRef.current) {
+        controlsRef.current.enabled = true
+        controlsRef.current.update()
+      }
+    }
+  })
+
+  useEffect(() => {
+    cameraFlightRef.current = null
+    if (controlsRef.current) controlsRef.current.enabled = true
+    flyToCountry('CN')
+  }, [flyToCountry, resetToken])
+
+  useEffect(() => {
+    selectedCountryCodeRef.current = selectedCountryCode
+    flyToCountry(selectedCountryCode)
+  }, [flyToCountry, selectedCountryCode])
 
   useEffect(() => {
     gl.setPixelRatio(
@@ -94,7 +202,58 @@ function World({ autoRotate, quality, resetToken }: GlobeSceneProps) {
         atmosphereColor="#70dfff"
         atmosphereAltitude={0.18}
         globeCurvatureResolution={quality === 'balanced' ? 3 : 5}
-        onGlobeReady={syncPointOfView}
+        polygonsData={countryBoundaries.features}
+        polygonGeoJsonGeometry="geometry"
+        polygonCapColor={(value) => {
+          const countryCode = getBoundaryCode(value)
+          if (countryCode === selectedCountryCode) return '#f2c75c'
+          if (countryCode === hoveredCountryCode) return '#68d7ff'
+          return '#176593'
+        }}
+        polygonSideColor={(value) =>
+          getBoundaryCode(value) === selectedCountryCode ? '#b88927' : '#0a3552'
+        }
+        polygonStrokeColor={(value) => {
+          const countryCode = getBoundaryCode(value)
+          if (countryCode === selectedCountryCode) return '#fff1a8'
+          if (countryCode === hoveredCountryCode) return '#d8f7ff'
+          return '#6cb4d4'
+        }}
+        polygonAltitude={(value) => {
+          const countryCode = getBoundaryCode(value)
+          if (countryCode === selectedCountryCode) return 0.027
+          if (countryCode === hoveredCountryCode) return 0.017
+          return 0.006
+        }}
+        polygonCapCurvatureResolution={quality === 'balanced' ? 2 : 4}
+        polygonsTransitionDuration={reducedMotion ? 0 : 260}
+        pointsData={capitalMarkers}
+        pointLat="lat"
+        pointLng="lng"
+        pointAltitude={0.018}
+        pointRadius={(value) =>
+          getCapitalMarkerCode(value) === selectedCountryCode ? 0.48 : 0.34
+        }
+        pointColor={(value) => {
+          const countryCode = getCapitalMarkerCode(value)
+          if (countryCode === selectedCountryCode) return '#ffd85e'
+          if (countryCode === hoveredCountryCode) return '#9ff2ff'
+          return '#f5f0c7'
+        }}
+        pointResolution={quality === 'balanced' ? 16 : 8}
+        pointsTransitionDuration={reducedMotion ? 0 : 220}
+        onGlobeReady={() => {
+          globeReadyRef.current = true
+          syncPointOfView()
+          flyToCountry(selectedCountryCodeRef.current)
+        }}
+        onHover={(layer, value) => {
+          onHoverCountry(getCountryCodeForLayer(layer, value))
+        }}
+        onClick={(layer, value) => {
+          const countryCode = getCountryCodeForLayer(layer, value)
+          if (countryCode) onSelectCountry(countryCode)
+        }}
       />
 
       <OrbitControls
@@ -130,12 +289,21 @@ function World({ autoRotate, quality, resetToken }: GlobeSceneProps) {
 }
 
 export function GlobeScene(props: GlobeSceneProps) {
+  const tooltipRef = useRef<HTMLDivElement>(null)
+  const hoveredCountry = getCountry(props.hoveredCountryCode)
+
   return (
     <div
       className="globe-canvas"
       data-testid="globe-scene"
       role="application"
       aria-label="交互式 3D 地球。拖动旋转，滚轮缩放，方向键移动视角。"
+      tabIndex={0}
+      onPointerMove={(event) => {
+        if (!tooltipRef.current) return
+        tooltipRef.current.style.transform = `translate3d(${event.clientX + 14}px, ${event.clientY + 14}px, 0)`
+      }}
+      onPointerLeave={() => props.onHoverCountry(null)}
     >
       <Canvas
         camera={{
@@ -154,6 +322,13 @@ export function GlobeScene(props: GlobeSceneProps) {
       >
         <World {...props} />
       </Canvas>
+      {hoveredCountry ? (
+        <div ref={tooltipRef} className="country-hover-tooltip" role="tooltip">
+          <img src={hoveredCountry.flagAsset} alt="" />
+          <span>{hoveredCountry.name.zh}</span>
+          <small>{hoveredCountry.code}</small>
+        </div>
+      ) : null}
     </div>
   )
 }

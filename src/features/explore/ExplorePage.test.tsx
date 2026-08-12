@@ -20,7 +20,7 @@ describe('ExplorePage', () => {
     supportsWebGLMock.mockReturnValue(true)
   })
 
-  it('shows the product introduction and 3D controls', async () => {
+  it('shows the globe, search, and 3D controls without the intro copy', async () => {
     render(
       <Tooltip.Provider>
         <ExplorePage />
@@ -28,13 +28,16 @@ describe('ExplorePage', () => {
     )
 
     expect(
-      screen.getByRole('heading', {
+      screen.queryByRole('heading', {
         name: '转动地球，发现每一片土地',
       }),
-    ).toBeInTheDocument()
+    ).not.toBeInTheDocument()
     expect(await screen.findByTestId('mock-globe-scene')).toBeInTheDocument()
     expect(
       screen.getByRole('navigation', { name: '地球显示控制' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('combobox', { name: '搜索国家' }),
     ).toBeInTheDocument()
   })
 

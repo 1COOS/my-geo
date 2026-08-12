@@ -18,7 +18,7 @@ void i18n.use(initReactI18next).init({
         titleLineTwo: '发现每一片土地',
         description:
           '从国家、首都与国旗开始，在一颗可以触摸的星球上认识我们的世界。',
-        status: '3D 探索基线已就绪',
+        status: '195 个国家可探索',
         dragHint: '拖动旋转 · 滚轮缩放 · 方向键探索',
         rotateOn: '自动旋转：开',
         rotateOff: '自动旋转：关',

@@ -1,10 +1,13 @@
-import { motion, useReducedMotion } from 'motion/react'
+import { useReducedMotion } from 'motion/react'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { getCountry } from '../../data/countries'
 import { ControlButton } from '../../shared/components/ControlButton'
 import { WebGLFallback } from '../../shared/components/WebGLFallback'
 import { supportsWebGL } from '../../shared/lib/webgl'
+import { CountryDetailPanel } from './CountryDetailPanel'
+import { CountrySearch } from './CountrySearch'
 import { useExperienceStore } from './useExperienceStore'
 
 const GlobeScene = lazy(async () => {
@@ -44,14 +47,28 @@ export function ExplorePage() {
   const reducedMotion = useReducedMotion() ?? false
   const [resetToken, setResetToken] = useState(0)
   const webGLAvailable = useMemo(() => supportsWebGL(), [])
-  const { autoRotate, quality, hydrate, toggleAutoRotate, toggleQuality } =
-    useExperienceStore()
+  const {
+    autoRotate,
+    quality,
+    selectedCountryCode,
+    hoveredCountryCode,
+    hydrate,
+    toggleAutoRotate,
+    toggleQuality,
+    selectCountry,
+    hoverCountry,
+  } = useExperienceStore()
 
   useEffect(() => {
     void hydrate()
   }, [hydrate])
 
-  const effectiveAutoRotate = autoRotate && !reducedMotion
+  const selectedCountry = getCountry(selectedCountryCode)
+  const effectiveAutoRotate =
+    autoRotate &&
+    !reducedMotion &&
+    selectedCountryCode === null &&
+    hoveredCountryCode === null
 
   return (
     <main className="explore-shell">
@@ -70,6 +87,11 @@ export function ExplorePage() {
             autoRotate={effectiveAutoRotate}
             quality={quality}
             resetToken={resetToken}
+            reducedMotion={reducedMotion}
+            selectedCountryCode={selectedCountryCode}
+            hoveredCountryCode={hoveredCountryCode}
+            onSelectCountry={selectCountry}
+            onHoverCountry={hoverCountry}
           />
         </Suspense>
       ) : (
@@ -89,26 +111,14 @@ export function ExplorePage() {
         </div>
       </header>
 
-      <motion.section
-        className="hero-copy"
-        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <p className="eyebrow">{t('eyebrow')}</p>
-        <h1 aria-label={t('title')}>
-          <span aria-hidden="true">{t('titleLineOne')}</span>
-          <span aria-hidden="true">{t('titleLineTwo')}</span>
-        </h1>
-        <p className="hero-description">{t('description')}</p>
-        <p className="interaction-hint">
-          <span aria-hidden="true">✦</span>
-          {t('dragHint')}
-        </p>
-        {reducedMotion ? (
-          <p className="reduced-motion-note">{t('reducedMotion')}</p>
-        ) : null}
-      </motion.section>
+      <div className="search-slot">
+        <CountrySearch
+          key={selectedCountry?.code ?? 'no-selection'}
+          selectedCountry={selectedCountry}
+          onSelect={selectCountry}
+          onClearSelection={() => selectCountry(null)}
+        />
+      </div>
 
       {webGLAvailable ? (
         <nav className="control-dock" aria-label="地球显示控制">
@@ -128,9 +138,21 @@ export function ExplorePage() {
           <ControlButton
             icon={<ResetIcon />}
             label={t('reset')}
-            onClick={() => setResetToken((current) => current + 1)}
+            onClick={() => {
+              selectCountry('CN')
+              setResetToken((current) => current + 1)
+            }}
           />
         </nav>
+      ) : null}
+
+      {selectedCountry ? (
+        <CountryDetailPanel
+          key={selectedCountry.code}
+          country={selectedCountry}
+          onClose={() => selectCountry(null)}
+          onSelectCountry={selectCountry}
+        />
       ) : null}
 
       <footer className="footer-note">MY GEO · EARTH EXPLORATION LAB</footer>

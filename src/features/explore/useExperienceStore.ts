@@ -8,15 +8,21 @@ import {
 
 type ExperienceState = Pick<ExperiencePreferences, 'autoRotate' | 'quality'> & {
   hydrated: boolean
+  selectedCountryCode: string | null
+  hoveredCountryCode: string | null
   hydrate: () => Promise<void>
   toggleAutoRotate: () => void
   toggleQuality: () => void
+  selectCountry: (countryCode: string | null) => void
+  hoverCountry: (countryCode: string | null) => void
 }
 
 export const useExperienceStore = create<ExperienceState>((set, get) => ({
   autoRotate: true,
   quality: 'balanced',
   hydrated: false,
+  selectedCountryCode: null,
+  hoveredCountryCode: null,
   async hydrate() {
     try {
       const preferences = await loadExperiencePreferences()
@@ -44,5 +50,11 @@ export const useExperienceStore = create<ExperienceState>((set, get) => ({
       autoRotate: get().autoRotate,
       quality: next,
     })
+  },
+  selectCountry(countryCode) {
+    set({ selectedCountryCode: countryCode })
+  },
+  hoverCountry(countryCode) {
+    set({ hoveredCountryCode: countryCode })
   },
 }))
