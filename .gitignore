@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# builds and reports
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# local tools and caches
+.DS_Store
+.env
+.env.*
+!.env.example
+.vite/
+.codex-log/
+
+# package-manager lock files not used by this repository
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
