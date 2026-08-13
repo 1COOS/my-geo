@@ -41,6 +41,14 @@ These boundaries are for internal product prototyping. Public release, especiall
 - License: Creative Commons Attribution 4.0 International (CC BY 4.0)
 - Use: latitude and longitude for capital markers. Palestine uses an explicit local Ramallah coordinate override because the source does not include a matching capital record.
 
+## Oceans and named waterbodies
+
+- References: NOAA Ocean Service education materials, the GEBCO Gazetteer of Undersea Feature Names, International Hydrographic Organization standards, and Marine Regions geographic names.
+- Accessed: 2026-08-13.
+- Use: reviewed Chinese and English names, broad locations, classifications, adjacent land descriptions, and educational summaries for 50 oceans, seas, bays, gulfs, straits, and trenches.
+
+My Geo stores repository-owned summaries and deliberately simplified teaching geometries. Surface polygons and trench lines show an approximate location only. They are not hydrographic limits and do not represent territorial seas, exclusive economic zones, jurisdiction, sovereignty, or any legal boundary. Public release still requires a separate map-compliance and content review.
+
 ## Flags
 
 - Source: `flag-icons@7.5.0`

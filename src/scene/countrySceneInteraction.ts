@@ -1,8 +1,10 @@
 import type { CountryBoundary } from '../data/countrySchema'
 import type { City } from '../data/citySchema'
+import type { Waterbody } from '../data/waterbodySchema'
 
 export const OVERVIEW_CAMERA_DISTANCE = 425
 export const CITY_CAMERA_DISTANCE = 190
+export const WATERBODY_CAMERA_DISTANCE = 225
 export const GLOBE_VERTICAL_CENTER_RATIO = 0.45
 
 type CartesianPosition = {
@@ -37,6 +39,7 @@ export function getGlobeViewOffset(width: number, height: number) {
 }
 
 export type CityMarker = {
+  markerType: 'city'
   cityId: string
   countryCode: City['countryCode']
   lat: number
@@ -44,6 +47,18 @@ export type CityMarker = {
   name: string
   isCapital: boolean
 }
+
+export type WaterbodyMarker = {
+  markerType: 'waterbody'
+  waterbodyId: string
+  layer: Waterbody['layer']
+  kind: Waterbody['kind']
+  lat: number
+  lng: number
+  name: string
+}
+
+export type GlobePointMarker = CityMarker | WaterbodyMarker
 
 export type CityLayerVisibility = {
   showCapitals: boolean
@@ -69,8 +84,14 @@ export function getBoundaryCode(value: object | undefined) {
 }
 
 export function getCityMarker(value: object | undefined) {
-  return (value as CityMarker | undefined)?.cityId
+  return (value as CityMarker | undefined)?.markerType === 'city'
     ? (value as CityMarker)
+    : null
+}
+
+export function getWaterbodyMarker(value: object | undefined) {
+  return (value as WaterbodyMarker | undefined)?.markerType === 'waterbody'
+    ? (value as WaterbodyMarker)
     : null
 }
 
@@ -88,6 +109,44 @@ export function getCityIdForLayer(
   value: object | undefined,
 ) {
   return layer === 'point' ? (getCityMarker(value)?.cityId ?? null) : null
+}
+
+export function getWaterbodyIdForLayer(
+  layer: string | undefined,
+  value: object | undefined,
+) {
+  if (layer === 'point') return getWaterbodyMarker(value)?.waterbodyId ?? null
+  if (layer === 'polygon') {
+    return (
+      (value as { properties?: { waterbodyId?: string } } | undefined)
+        ?.properties?.waterbodyId ?? null
+    )
+  }
+  if (layer === 'path') {
+    return (value as { waterbodyId?: string } | undefined)?.waterbodyId ?? null
+  }
+  return null
+}
+
+export type WaterbodyLayerVisibility = {
+  showOceanLayer: boolean
+  showWaterwayLayer: boolean
+  selectedWaterbodyId: string | null
+  hoveredWaterbodyId: string | null
+}
+
+export function getVisibleLayerWaterbodies(
+  waterbodies: readonly Waterbody[],
+  visibility: WaterbodyLayerVisibility,
+) {
+  return waterbodies.filter(
+    (waterbody) =>
+      waterbody.id === visibility.selectedWaterbodyId ||
+      waterbody.id === visibility.hoveredWaterbodyId ||
+      (waterbody.layer === 'ocean'
+        ? visibility.showOceanLayer
+        : visibility.showWaterwayLayer),
+  )
 }
 
 export function getCityLabelBudget(

@@ -1,42 +1,53 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
-import { countries } from '../../data/countries'
-import type { Country } from '../../data/countrySchema'
-import { searchCountries } from './countrySearchUtils'
+import { cities, countries } from '../../data/countries'
+import { waterbodies, waterbodyKindLabels } from '../../data/waterbodies'
+import { searchPlaces, type PlaceSearchResult } from './countrySearchUtils'
 
 type CountrySearchProps = {
-  selectedCountry: Country | undefined
-  onSelect: (countryCode: string) => void
-  onClearSelection: () => void
+  selectedLabel?: string
+  onSelect: (result: PlaceSearchResult) => void
   autoFocus?: boolean
   onRequestClose?: () => void
 }
 
+function resultId(result: PlaceSearchResult) {
+  if (result.type === 'country') return `country-${result.country.code}`
+  if (result.type === 'city') return `city-${result.city.id}`
+  return `waterbody-${result.waterbody.id}`
+}
+
 export function CountrySearch({
-  selectedCountry,
+  selectedLabel,
   onSelect,
-  onClearSelection,
   autoFocus = false,
   onRequestClose,
 }: CountrySearchProps) {
   const listboxId = useId()
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [query, setQuery] = useState(selectedCountry?.name.zh ?? '')
+  const [query, setQuery] = useState(selectedLabel ?? '')
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
-
-  const results = useMemo(() => searchCountries(countries, query), [query])
-  const activeCountry = results[activeIndex]
+  const results = useMemo(
+    () => searchPlaces(countries, cities, waterbodies, query),
+    [query],
+  )
+  const activeResult = results[activeIndex]
 
   useEffect(() => {
-    if (!autoFocus) return
-    inputRef.current?.focus({ preventScroll: true })
+    if (autoFocus) inputRef.current?.focus({ preventScroll: true })
   }, [autoFocus])
 
-  function chooseCountry(country: Country) {
-    onSelect(country.code)
-    setQuery(country.name.zh)
+  function chooseResult(result: PlaceSearchResult) {
+    onSelect(result)
+    setQuery(
+      result.type === 'country'
+        ? result.country.name.zh
+        : result.type === 'city'
+          ? result.city.name.zh
+          : result.waterbody.name.zh,
+    )
     setOpen(false)
     setActiveIndex(0)
     onRequestClose?.()
@@ -51,7 +62,7 @@ export function CountrySearch({
       }}
     >
       <label className="sr-only" htmlFor={`${listboxId}-input`}>
-        搜索国家
+        搜索地点
       </label>
       <div className="country-search-field">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -64,13 +75,13 @@ export function CountrySearch({
           role="combobox"
           type="search"
           value={query}
-          placeholder="搜索国家、英文名或 ISO 代码"
+          placeholder="搜索国家、城市或水域"
           autoComplete="off"
           aria-expanded={open}
           aria-controls={listboxId}
           aria-activedescendant={
-            open && activeCountry
-              ? `${listboxId}-${activeCountry.code}`
+            open && activeResult
+              ? `${listboxId}-${resultId(activeResult)}`
               : undefined
           }
           onFocus={() => setOpen(true)}
@@ -90,22 +101,12 @@ export function CountrySearch({
               event.preventDefault()
               setOpen(true)
               setActiveIndex((current) => Math.max(current - 1, 0))
-            } else if (event.key === 'Enter' && activeCountry) {
+            } else if (event.key === 'Enter' && activeResult) {
               event.preventDefault()
-              chooseCountry(activeCountry)
+              chooseResult(activeResult)
             } else if (event.key === 'Escape') {
               event.preventDefault()
-              if (onRequestClose) {
-                onRequestClose()
-                return
-              }
-              if (open || query) {
-                setQuery('')
-                setOpen(false)
-                setActiveIndex(0)
-              } else if (selectedCountry) {
-                onClearSelection()
-              }
+              onRequestClose?.()
             }
           }}
         />
@@ -130,33 +131,62 @@ export function CountrySearch({
           <p className="country-search-caption">
             {query ? `找到 ${results.length} 个匹配项` : '精选国家'}
           </p>
-          <ul id={listboxId} role="listbox" aria-label="国家搜索结果">
-            {results.map((country, index) => (
-              <li
-                id={`${listboxId}-${country.code}`}
-                key={country.code}
-                role="option"
-                aria-selected={index === activeIndex}
-              >
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  className={index === activeIndex ? 'is-active' : ''}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => chooseCountry(country)}
+          <ul id={listboxId} role="listbox" aria-label="地点搜索结果">
+            {results.map((result, index) => {
+              const id = resultId(result)
+              const name =
+                result.type === 'country'
+                  ? result.country.name
+                  : result.type === 'city'
+                    ? result.city.name
+                    : result.waterbody.name
+              const badge =
+                result.type === 'country'
+                  ? result.country.code
+                  : result.type === 'city'
+                    ? result.city.isCapital
+                      ? '首都'
+                      : '城市'
+                    : waterbodyKindLabels[result.waterbody.kind]
+              return (
+                <li
+                  id={`${listboxId}-${id}`}
+                  key={id}
+                  role="option"
+                  aria-selected={index === activeIndex}
                 >
-                  <img src={country.flagAsset} alt="" />
-                  <span>
-                    <strong>{country.name.zh}</strong>
-                    <small>{country.name.en}</small>
-                  </span>
-                  <code>{country.code}</code>
-                </button>
-              </li>
-            ))}
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    className={index === activeIndex ? 'is-active' : ''}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => chooseResult(result)}
+                  >
+                    {result.type === 'country' ? (
+                      <img src={result.country.flagAsset} alt="" />
+                    ) : (
+                      <span
+                        className={`place-result-icon is-${result.type}`}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span>
+                      <strong>{name.zh}</strong>
+                      <small>
+                        {name.en}
+                        {result.type === 'city'
+                          ? ` · ${result.country.name.zh}`
+                          : ''}
+                      </small>
+                    </span>
+                    <code>{badge}</code>
+                  </button>
+                </li>
+              )
+            })}
             {results.length === 0 ? (
-              <li className="country-search-empty">没有找到这个国家</li>
+              <li className="country-search-empty">没有找到这个地点</li>
             ) : null}
           </ul>
         </div>

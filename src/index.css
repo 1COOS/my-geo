@@ -355,6 +355,36 @@ a:focus-visible,
   box-shadow: 0 0 0 0.16rem rgb(255 216 94 / 16%);
 }
 
+.waterbody-label {
+  color: #ccfaff;
+  background: rgb(4 35 53 / 84%);
+  border-color: rgb(61 226 255 / 38%);
+}
+
+.waterbody-label > span {
+  width: 0.52rem;
+  height: 0.52rem;
+  background: transparent;
+  border: 2px solid #31e4ff;
+  box-shadow: 0 0 0 0.15rem rgb(49 228 255 / 13%);
+}
+
+.waterbody-label.is-waterway {
+  color: #eadcff;
+  background: rgb(32 19 57 / 84%);
+  border-color: rgb(184 133 255 / 38%);
+}
+
+.waterbody-label.is-waterway > span {
+  width: 0.48rem;
+  height: 0.48rem;
+  background: #aa7cff;
+  border: 0;
+  border-radius: 0.08rem;
+  box-shadow: 0 0 0 0.15rem rgb(170 124 255 / 14%);
+  transform: rotate(45deg);
+}
+
 .city-label:hover,
 .city-label:focus-visible {
   color: #fff;
@@ -456,6 +486,18 @@ a:focus-visible,
   border-color: rgb(77 207 255 / 24%);
 }
 
+.layer-toggle[aria-pressed='true'].is-ocean {
+  color: #d6fbff;
+  background: rgb(49 228 255 / 10%);
+  border-color: rgb(49 228 255 / 24%);
+}
+
+.layer-toggle[aria-pressed='true'].is-waterway {
+  color: #eadcff;
+  background: rgb(170 124 255 / 10%);
+  border-color: rgb(170 124 255 / 24%);
+}
+
 .layer-toggle-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -472,6 +514,18 @@ a:focus-visible,
 .layer-toggle.is-city[aria-pressed='true'] .layer-toggle-dot {
   background: #4dcfff;
   box-shadow: 0 0 0 0.16rem rgb(77 207 255 / 16%);
+}
+
+.layer-toggle.is-ocean[aria-pressed='true'] .layer-toggle-dot {
+  background: #31e4ff;
+  box-shadow: 0 0 0 0.16rem rgb(49 228 255 / 16%);
+}
+
+.layer-toggle.is-waterway[aria-pressed='true'] .layer-toggle-dot {
+  background: #aa7cff;
+  border-radius: 0.08rem;
+  box-shadow: 0 0 0 0.16rem rgb(170 124 255 / 16%);
+  transform: rotate(45deg);
 }
 
 .layer-toggle-switch {
@@ -508,6 +562,25 @@ a:focus-visible,
 
 .layer-toggle.is-city[aria-pressed='true'] .layer-toggle-switch {
   background: #197da2;
+}
+
+.layer-toggle.is-ocean[aria-pressed='true'] .layer-toggle-switch {
+  background: #087e94;
+}
+
+.layer-toggle.is-waterway[aria-pressed='true'] .layer-toggle-switch {
+  background: #68439c;
+}
+
+.layer-control-description {
+  margin: 0.38rem 0.28rem 0;
+  color: #718f9f;
+  font-size: 0.54rem;
+  line-height: 1.35;
+}
+
+.layer-control-description + .layer-control-description {
+  margin-top: 0.08rem;
 }
 
 .country-hover-tooltip {
@@ -677,6 +750,21 @@ a:focus-visible,
   object-fit: cover;
   border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 0.28rem;
+}
+
+.place-result-icon {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.5rem;
+  background: #4dcfff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.3rem rgb(77 207 255 / 12%);
+}
+
+.place-result-icon.is-waterbody {
+  background: transparent;
+  border: 2px solid #31e4ff;
 }
 
 .country-search-popover button > span {
@@ -1083,6 +1171,89 @@ a:focus-visible,
   gap: 1rem;
   align-items: center;
   padding-right: 2.2rem;
+}
+
+.waterbody-detail-heading {
+  display: grid;
+  grid-template-columns: 4.4rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  padding-right: 2.2rem;
+}
+
+.waterbody-detail-heading p,
+.waterbody-detail-heading h2,
+.waterbody-detail-heading span {
+  margin: 0;
+}
+
+.waterbody-detail-heading p {
+  color: #62dff8;
+  font-size: 0.67rem;
+  font-weight: 780;
+  letter-spacing: 0.12em;
+}
+
+.waterbody-detail-heading h2 {
+  margin-top: 0.2rem;
+  font-size: 1.9rem;
+}
+
+.waterbody-detail-heading span {
+  display: block;
+  margin-top: 0.18rem;
+  color: #8caabd;
+  font-size: 0.72rem;
+}
+
+.waterbody-detail-symbol {
+  display: grid;
+  width: 4.2rem;
+  height: 4.2rem;
+  border: 0.3rem solid #31e4ff;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 0.55rem rgb(49 228 255 / 10%),
+    0 0 2rem rgb(49 228 255 / 24%);
+}
+
+.waterbody-detail-symbol.is-waterway {
+  width: 3.3rem;
+  height: 3.3rem;
+  margin-left: 0.45rem;
+  background: #aa7cff;
+  border: 0;
+  border-radius: 0.4rem;
+  box-shadow:
+    0 0 0 0.55rem rgb(170 124 255 / 11%),
+    0 0 2rem rgb(170 124 255 / 25%);
+  transform: rotate(45deg);
+}
+
+.waterbody-summary {
+  margin: 0;
+  color: #c6dce8;
+  font-size: 0.8rem;
+  line-height: 1.75;
+}
+
+.waterbody-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+}
+
+.waterbody-tag-list span {
+  padding: 0.38rem 0.58rem;
+  color: #bfeeff;
+  font-size: 0.68rem;
+  background: rgb(66 181 226 / 9%);
+  border: 1px solid rgb(91 207 251 / 14%);
+  border-radius: 999px;
+}
+
+.waterbody-country-list {
+  margin-top: 0.75rem;
 }
 
 .country-detail-flag {

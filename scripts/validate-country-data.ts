@@ -7,6 +7,7 @@ import {
   countrySourceRegistrySchema,
 } from '../src/data/countrySchema'
 import { cityCatalogSchema } from '../src/data/citySchema'
+import { waterbodies, waterbodyGeometries } from '../src/data/waterbodies'
 import { priorityCityCounts } from './city-content'
 import {
   adjacentRegionNames,
@@ -57,6 +58,47 @@ const allowedAdjacentRegionCodes = new Set(Object.keys(adjacentRegionNames))
 const countryCodes = new Set(countries.map((country) => country.code))
 const citiesByCountry = Map.groupBy(cities, (city) => city.countryCode)
 const priorityCountryCodes = Object.keys(priorityCityCounts).sort()
+
+const expectedWaterbodyKinds = {
+  ocean: 5,
+  sea: 25,
+  gulf: 4,
+  bay: 2,
+  strait: 10,
+  trench: 4,
+} as const
+
+for (const [kind, expectedCount] of Object.entries(expectedWaterbodyKinds)) {
+  const count = waterbodies.filter(
+    (waterbody) => waterbody.kind === kind,
+  ).length
+  if (count !== expectedCount) {
+    throw new Error(
+      `Expected ${expectedCount} ${kind} entries, received ${count}`,
+    )
+  }
+}
+
+const waterbodyGeometryIds = new Set(
+  waterbodyGeometries.map((geometry) => geometry.id),
+)
+for (const waterbody of waterbodies) {
+  if (!waterbodyGeometryIds.has(waterbody.id)) {
+    throw new Error(`Missing geometry for waterbody ${waterbody.id}`)
+  }
+  for (const countryCode of waterbody.adjacentCountryCodes) {
+    if (!countryCodes.has(countryCode)) {
+      throw new Error(
+        `Unknown adjacent country ${countryCode} on ${waterbody.id}`,
+      )
+    }
+  }
+  for (const sourceId of waterbody.sourceIds) {
+    if (!sourceIds.has(sourceId)) {
+      throw new Error(`Unknown source ${sourceId} on waterbody ${waterbody.id}`)
+    }
+  }
+}
 
 if (priorityCountryCodes.length !== 50) {
   throw new Error(
@@ -165,5 +207,5 @@ for (const country of countries) {
 }
 
 console.log(
-  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
+  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
 )

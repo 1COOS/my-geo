@@ -2,69 +2,63 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { getCountry } from '../../data/countries'
 import { CountrySearch } from './CountrySearch'
+import type { PlaceSearchResult } from './countrySearchUtils'
 
 describe('CountrySearch', () => {
   it('supports Chinese search and Enter selection', async () => {
     const user = userEvent.setup()
-    const onSelect = vi.fn<(countryCode: string) => void>()
+    const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
 
-    render(
-      <CountrySearch
-        selectedCountry={undefined}
-        onSelect={onSelect}
-        onClearSelection={vi.fn()}
-      />,
-    )
+    render(<CountrySearch onSelect={onSelect} />)
 
-    const search = screen.getByRole('combobox', { name: '搜索国家' })
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, '中国')
     await user.keyboard('{Enter}')
 
-    expect(onSelect).toHaveBeenCalledWith('CN')
+    expect(onSelect.mock.calls[0]?.[0]).toMatchObject({
+      type: 'country',
+      country: { code: 'CN' },
+    })
   })
 
   it('supports English and ISO search plus keyboard navigation', async () => {
     const user = userEvent.setup()
-    const onSelect = vi.fn<(countryCode: string) => void>()
+    const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
 
-    render(
-      <CountrySearch
-        selectedCountry={undefined}
-        onSelect={onSelect}
-        onClearSelection={vi.fn()}
-      />,
-    )
+    render(<CountrySearch onSelect={onSelect} />)
 
-    const search = screen.getByRole('combobox', { name: '搜索国家' })
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, 'Vatican')
-    expect(screen.getByRole('option', { name: /梵蒂冈/ })).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('option', { name: /梵蒂冈/ }).length,
+    ).toBeGreaterThan(0)
     await user.clear(search)
     await user.type(search, 'va')
     await user.keyboard('{Enter}')
 
-    expect(onSelect).toHaveBeenCalledWith('VA')
+    expect(onSelect.mock.calls.at(-1)?.[0]).toMatchObject({
+      type: 'country',
+      country: { code: 'VA' },
+    })
   })
 
-  it('uses Escape to clear an existing selection', async () => {
+  it('requests close on Escape', async () => {
     const user = userEvent.setup()
-    const onClearSelection = vi.fn()
+    const onRequestClose = vi.fn()
 
     render(
       <CountrySearch
-        selectedCountry={getCountry('CN')}
+        selectedLabel="中国"
         onSelect={vi.fn()}
-        onClearSelection={onClearSelection}
+        onRequestClose={onRequestClose}
       />,
     )
 
-    const search = screen.getByRole('combobox', { name: '搜索国家' })
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.click(search)
     await user.keyboard('{Escape}')
-    await user.keyboard('{Escape}')
-
-    expect(onClearSelection).toHaveBeenCalledTimes(1)
+    expect(onRequestClose).toHaveBeenCalledTimes(1)
   })
 
   it('requests the parent popover to close after selection or Escape', async () => {
@@ -73,15 +67,13 @@ describe('CountrySearch', () => {
 
     render(
       <CountrySearch
-        selectedCountry={undefined}
         onSelect={vi.fn()}
-        onClearSelection={vi.fn()}
         autoFocus
         onRequestClose={onRequestClose}
       />,
     )
 
-    const search = screen.getByRole('combobox', { name: '搜索国家' })
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
     expect(search).toHaveFocus()
     await user.type(search, '中国{Enter}')
     expect(onRequestClose).toHaveBeenCalledTimes(1)

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { cities, countryBoundaries } from '../data/countries'
+import { waterbodies } from '../data/waterbodies'
 import {
   CITY_CAMERA_DISTANCE,
   getCameraFlightDuration,
@@ -9,6 +10,8 @@ import {
   getGlobeViewOffset,
   getOverviewCameraPosition,
   getVisibleLayerCities,
+  getVisibleLayerWaterbodies,
+  getWaterbodyIdForLayer,
   GLOBE_VERTICAL_CENTER_RATIO,
   OVERVIEW_CAMERA_DISTANCE,
   shouldApplyCameraTargetRequest,
@@ -21,6 +24,7 @@ describe('country scene interaction', () => {
       (boundary) => boundary.properties.code === 'CN',
     )
     const vaticanMarker: CityMarker = {
+      markerType: 'city',
       cityId: 'va-vatican-city',
       countryCode: 'VA',
       lat: 41.904,
@@ -114,6 +118,31 @@ describe('country scene interaction', () => {
         hoveredCityId: beijing.id,
       }),
     ).toEqual(sample)
+  })
+
+  it('filters ocean and waterway layers with selection exceptions', () => {
+    const pacific = waterbodies.find((item) => item.id === 'pacific-ocean')!
+    const mariana = waterbodies.find((item) => item.id === 'mariana-trench')!
+    const sample = [pacific, mariana]
+    expect(
+      getVisibleLayerWaterbodies(sample, {
+        showOceanLayer: true,
+        showWaterwayLayer: false,
+        selectedWaterbodyId: null,
+        hoveredWaterbodyId: null,
+      }),
+    ).toEqual([pacific])
+    expect(
+      getVisibleLayerWaterbodies(sample, {
+        showOceanLayer: false,
+        showWaterwayLayer: false,
+        selectedWaterbodyId: mariana.id,
+        hoveredWaterbodyId: pacific.id,
+      }),
+    ).toEqual(sample)
+    expect(getWaterbodyIdForLayer('path', { waterbodyId: mariana.id })).toBe(
+      mariana.id,
+    )
   })
 
   it('exposes 197 capitals and 141 non-capital cities without overlap', () => {

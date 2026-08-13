@@ -1,9 +1,9 @@
-import { motion, useReducedMotion } from 'motion/react'
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 
 import { countriesByCode, getCountrySource } from '../../data/countries'
 import type { City, CitySelectionReason } from '../../data/citySchema'
 import type { Country, CountrySource } from '../../data/countrySchema'
+import { DetailPanelShell } from './DetailPanelShell'
 
 type CountryDetailPanelProps = {
   country: Country
@@ -40,8 +40,6 @@ export function CountryDetailPanel({
   onSelectCity,
   onBackToCountry,
 }: CountryDetailPanelProps) {
-  const reducedMotion = useReducedMotion() ?? false
-  const panelRef = useRef<HTMLElement>(null)
   const countryReferencedSources = useMemo(() => {
     const sourceIds = new Set([
       'world-countries',
@@ -61,38 +59,22 @@ export function CountryDetailPanel({
     [selectedCity],
   )
 
-  useEffect(() => {
-    const panel = panelRef.current
-    if (!panel) return
-    if (typeof panel.scrollTo === 'function') panel.scrollTo({ top: 0 })
-    else panel.scrollTop = 0
-  }, [country.code, selectedCity?.id])
-
   return (
-    <motion.aside
-      ref={panelRef}
-      className="country-detail"
-      aria-label={
+    <DetailPanelShell
+      label={
         selectedCity
           ? `${selectedCity.name.zh}城市知识卡`
           : `${country.name.zh}国家知识卡`
       }
-      initial={
-        reducedMotion ? false : { opacity: 0, x: 32, y: 18, scale: 0.98 }
+      closeLabel={selectedCity ? '关闭城市知识卡' : '关闭国家知识卡'}
+      identity={`${country.code}:${selectedCity?.id ?? 'country'}`}
+      onClose={onClose}
+      footer={
+        <p className="prototype-note">
+          原型地图 · 公开发布前需重新评估地图合规
+        </p>
       }
-      animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="country-detail-handle" aria-hidden="true" />
-      <button
-        type="button"
-        className="country-detail-close"
-        aria-label={selectedCity ? '关闭城市知识卡' : '关闭国家知识卡'}
-        onClick={onClose}
-      >
-        ×
-      </button>
-
       {selectedCity ? (
         <CityDetailView
           country={country}
@@ -109,9 +91,7 @@ export function CountryDetailPanel({
           onSelectCity={onSelectCity}
         />
       )}
-
-      <p className="prototype-note">原型地图 · 公开发布前需重新评估地图合规</p>
-    </motion.aside>
+    </DetailPanelShell>
   )
 }
 

@@ -44,9 +44,9 @@ describe('ExplorePage', () => {
     expect(
       screen.getByRole('navigation', { name: '地球显示控制' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '搜索国家' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '搜索地点' })).toBeInTheDocument()
     expect(
-      screen.queryByRole('combobox', { name: '搜索国家' }),
+      screen.queryByRole('combobox', { name: '搜索地点' }),
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('link', { name: 'My Geo 首页' }),
@@ -66,6 +66,16 @@ describe('ExplorePage', () => {
       'aria-pressed',
       'false',
     )
+    expect(screen.getByRole('button', { name: '海洋' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.getByRole('button', { name: '水域' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.getByText('海洋：大洋、海与海湾')).toBeInTheDocument()
+    expect(screen.getByText('水域：海峡与海沟')).toBeInTheDocument()
   })
 
   it('opens, focuses, and closes the search dialog from the control deck', async () => {
@@ -76,16 +86,16 @@ describe('ExplorePage', () => {
       </Tooltip.Provider>,
     )
 
-    const trigger = screen.getByRole('button', { name: '搜索国家' })
+    const trigger = screen.getByRole('button', { name: '搜索地点' })
     await user.click(trigger)
 
-    const search = screen.getByRole('combobox', { name: '搜索国家' })
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
     expect(search).toHaveFocus()
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
     await user.keyboard('{Escape}')
     expect(
-      screen.queryByRole('combobox', { name: '搜索国家' }),
+      screen.queryByRole('combobox', { name: '搜索地点' }),
     ).not.toBeInTheDocument()
     expect(trigger).toHaveFocus()
   })
@@ -98,15 +108,15 @@ describe('ExplorePage', () => {
       </Tooltip.Provider>,
     )
 
-    const trigger = screen.getByRole('button', { name: '搜索国家' })
+    const trigger = screen.getByRole('button', { name: '搜索地点' })
     await user.click(trigger)
     expect(
-      screen.getByRole('combobox', { name: '搜索国家' }),
+      screen.getByRole('combobox', { name: '搜索地点' }),
     ).toBeInTheDocument()
 
     await user.click(await screen.findByTestId('mock-globe-scene'))
     expect(
-      screen.queryByRole('combobox', { name: '搜索国家' }),
+      screen.queryByRole('combobox', { name: '搜索地点' }),
     ).not.toBeInTheDocument()
     expect(trigger).toHaveFocus()
   })
@@ -118,8 +128,8 @@ describe('ExplorePage', () => {
       </Tooltip.Provider>,
     )
 
-    await userEvent.click(screen.getByRole('button', { name: '搜索国家' }))
-    let search = screen.getByRole('combobox', { name: '搜索国家' })
+    await userEvent.click(screen.getByRole('button', { name: '搜索地点' }))
+    let search = screen.getByRole('combobox', { name: '搜索地点' })
     await userEvent.type(search, '中国{Enter}')
     const firstRequestId = (
       globePropsMock.mock.lastCall![0] as {
@@ -127,8 +137,8 @@ describe('ExplorePage', () => {
       }
     ).cameraTarget.requestId
 
-    await userEvent.click(screen.getByRole('button', { name: '搜索国家' }))
-    search = screen.getByRole('combobox', { name: '搜索国家' })
+    await userEvent.click(screen.getByRole('button', { name: '搜索地点' }))
+    search = screen.getByRole('combobox', { name: '搜索地点' })
     await userEvent.keyboard('{Enter}')
     const secondRequestId = (
       globePropsMock.mock.lastCall![0] as {
@@ -158,9 +168,9 @@ describe('ExplorePage', () => {
       screen.queryByRole('region', { name: '地球图层控制' }),
     ).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: '搜索国家' }))
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
     await user.type(
-      screen.getByRole('combobox', { name: '搜索国家' }),
+      screen.getByRole('combobox', { name: '搜索地点' }),
       '中国{Enter}',
     )
     expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
@@ -174,9 +184,9 @@ describe('ExplorePage', () => {
       </Tooltip.Provider>,
     )
 
-    await user.click(screen.getByRole('button', { name: '搜索国家' }))
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
     await user.type(
-      screen.getByRole('combobox', { name: '搜索国家' }),
+      screen.getByRole('combobox', { name: '搜索地点' }),
       '中国{Enter}',
     )
     await user.click(screen.getByRole('button', { name: '探索城市上海' }))
@@ -238,6 +248,44 @@ describe('ExplorePage', () => {
       </Tooltip.Provider>,
     )
     expect(getProps()).toMatchObject({ showCapitals: false, showCities: false })
+  })
+
+  it('toggles waterbody layers and opens a searched waterbody card', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        showOceanLayer: boolean
+        showWaterwayLayer: boolean
+        selectedWaterbodyId: string | null
+        selectedCountryCode: string | null
+      }
+
+    await user.click(screen.getByRole('button', { name: '海洋' }))
+    expect(getProps()).toMatchObject({
+      showOceanLayer: true,
+      showWaterwayLayer: false,
+    })
+    await user.click(screen.getByRole('button', { name: '水域' }))
+    expect(getProps()).toMatchObject({
+      showOceanLayer: true,
+      showWaterwayLayer: true,
+    })
+
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.clear(search)
+    await user.type(search, '太平洋{Enter}')
+    expect(await screen.findByLabelText('太平洋水域知识卡')).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      selectedWaterbodyId: 'pacific-ocean',
+      selectedCountryCode: null,
+    })
+    expect(screen.getByText(/不代表领海/)).toBeInTheDocument()
   })
 
   it('does not reveal city layers when the committed globe view changes', () => {

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { countries } from '../../data/countries'
-import { searchCountries } from './countrySearchUtils'
+import { cities, countries } from '../../data/countries'
+import { waterbodies } from '../../data/waterbodies'
+import { searchCountries, searchPlaces } from './countrySearchUtils'
 
 describe('searchCountries', () => {
   it.each([
@@ -19,5 +20,32 @@ describe('searchCountries', () => {
     expect(
       searchCountries(countries, '').every((country) => country.featured),
     ).toBe(true)
+  })
+
+  it('finds cities, waterbodies, aliases, and country ISO values', () => {
+    expect(
+      searchPlaces(countries, cities, waterbodies, '上海')[0],
+    ).toMatchObject({
+      type: 'city',
+      city: { id: 'cn-shanghai' },
+    })
+    expect(
+      searchPlaces(countries, cities, waterbodies, 'Pacific')[0],
+    ).toMatchObject({
+      type: 'waterbody',
+      waterbody: { id: 'pacific-ocean' },
+    })
+    expect(
+      searchPlaces(countries, cities, waterbodies, 'La Manche')[0],
+    ).toMatchObject({
+      type: 'waterbody',
+      waterbody: { id: 'english-channel' },
+    })
+    expect(searchPlaces(countries, cities, waterbodies, 'CN')[0]).toMatchObject(
+      {
+        type: 'country',
+        country: { code: 'CN' },
+      },
+    )
   })
 })

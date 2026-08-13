@@ -12,6 +12,7 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import { getCitiesForCountry, getCity, getCountry } from '../../data/countries'
+import { getWaterbody } from '../../data/waterbodies'
 import { ControlButton } from '../../shared/components/ControlButton'
 import { WebGLFallback } from '../../shared/components/WebGLFallback'
 import { supportsWebGL } from '../../shared/lib/webgl'
@@ -27,6 +28,8 @@ import {
 } from '../../scene/countrySceneInteraction'
 import { CountryDetailPanel } from './CountryDetailPanel'
 import { CountrySearch } from './CountrySearch'
+import type { PlaceSearchResult } from './countrySearchUtils'
+import { WaterbodyDetailPanel } from './WaterbodyDetailPanel'
 import { useExperienceStore } from './useExperienceStore'
 import { WorldMiniMap, type WorldMiniMapHandle } from './WorldMiniMap'
 
@@ -84,15 +87,23 @@ function LayersIcon() {
 type LayerControlProps = {
   showCapitals: boolean
   showCities: boolean
+  showOceanLayer: boolean
+  showWaterwayLayer: boolean
   onToggleCapitals: () => void
   onToggleCities: () => void
+  onToggleOceanLayer: () => void
+  onToggleWaterwayLayer: () => void
 }
 
 function LayerControl({
   showCapitals,
   showCities,
+  showOceanLayer,
+  showWaterwayLayer,
   onToggleCapitals,
   onToggleCities,
+  onToggleOceanLayer,
+  onToggleWaterwayLayer,
 }: LayerControlProps) {
   return (
     <section className="layer-control" aria-label="地球图层控制">
@@ -123,7 +134,35 @@ function LayerControl({
           <span>城市</span>
           <span className="layer-toggle-switch" aria-hidden="true" />
         </button>
+        <button
+          type="button"
+          className="layer-toggle is-ocean"
+          aria-pressed={showOceanLayer}
+          aria-describedby="ocean-layer-description"
+          onClick={onToggleOceanLayer}
+        >
+          <span className="layer-toggle-dot" aria-hidden="true" />
+          <span>海洋</span>
+          <span className="layer-toggle-switch" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="layer-toggle is-waterway"
+          aria-pressed={showWaterwayLayer}
+          aria-describedby="waterway-layer-description"
+          onClick={onToggleWaterwayLayer}
+        >
+          <span className="layer-toggle-dot" aria-hidden="true" />
+          <span>水域</span>
+          <span className="layer-toggle-switch" aria-hidden="true" />
+        </button>
       </div>
+      <p id="ocean-layer-description" className="layer-control-description">
+        海洋：大洋、海与海湾
+      </p>
+      <p id="waterway-layer-description" className="layer-control-description">
+        水域：海峡与海沟
+      </p>
     </section>
   )
 }
@@ -140,8 +179,16 @@ export function ExplorePage() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [showCapitals, setShowCapitals] = useState(false)
   const [showCities, setShowCities] = useState(false)
+  const [showOceanLayer, setShowOceanLayer] = useState(false)
+  const [showWaterwayLayer, setShowWaterwayLayer] = useState(false)
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null)
   const [hoveredCityId, setHoveredCityId] = useState<string | null>(null)
+  const [selectedWaterbodyId, setSelectedWaterbodyId] = useState<string | null>(
+    null,
+  )
+  const [hoveredWaterbodyId, setHoveredWaterbodyId] = useState<string | null>(
+    null,
+  )
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(() => ({
     requestId: 0,
     position: getCountry('CN')!.center,
@@ -185,6 +232,7 @@ export function ExplorePage() {
 
   const selectedCountry = getCountry(selectedCountryCode)
   const selectedCity = getCity(selectedCityId)
+  const selectedWaterbody = getWaterbody(selectedWaterbodyId)
   const visibleCountryCities = getCitiesForCountry(selectedCountryCode)
   const toggleCapitalLayer = useCallback(() => {
     const nextVisible = !showCapitals
@@ -206,6 +254,30 @@ export function ExplorePage() {
         : cityId
     })
   }, [selectedCityId, showCities])
+  const toggleOceanLayer = useCallback(() => {
+    const nextVisible = !showOceanLayer
+    setShowOceanLayer(nextVisible)
+    if (!nextVisible) {
+      setHoveredWaterbodyId((id) => {
+        const waterbody = getWaterbody(id)
+        return waterbody?.layer === 'ocean' && id !== selectedWaterbodyId
+          ? null
+          : id
+      })
+    }
+  }, [selectedWaterbodyId, showOceanLayer])
+  const toggleWaterwayLayer = useCallback(() => {
+    const nextVisible = !showWaterwayLayer
+    setShowWaterwayLayer(nextVisible)
+    if (!nextVisible) {
+      setHoveredWaterbodyId((id) => {
+        const waterbody = getWaterbody(id)
+        return waterbody?.layer === 'waterway' && id !== selectedWaterbodyId
+          ? null
+          : id
+      })
+    }
+  }, [selectedWaterbodyId, showWaterwayLayer])
   const requestCameraTarget = useCallback(
     (position: GeoPosition, distance = OVERVIEW_CAMERA_DISTANCE) => {
       cameraRequestIdRef.current += 1
@@ -224,6 +296,8 @@ export function ExplorePage() {
       setMiniMapExpanded(false)
       setSelectedCityId(null)
       setHoveredCityId(null)
+      setSelectedWaterbodyId(null)
+      setHoveredWaterbodyId(null)
       selectCountry(countryCode)
       requestCameraTarget(country.center)
     },
@@ -235,6 +309,8 @@ export function ExplorePage() {
       if (!city) return
       setMiniMapExpanded(false)
       selectCountry(city.countryCode)
+      setSelectedWaterbodyId(null)
+      setHoveredWaterbodyId(null)
       setSelectedCityId(city.id)
       requestCameraTarget(
         { latitude: city.latitude, longitude: city.longitude },
@@ -247,7 +323,30 @@ export function ExplorePage() {
     setSelectedCityId(null)
     setHoveredCityId(null)
     selectCountry(null)
+    setSelectedWaterbodyId(null)
+    setHoveredWaterbodyId(null)
   }, [selectCountry])
+  const navigateToWaterbody = useCallback(
+    (waterbodyId: string) => {
+      const waterbody = getWaterbody(waterbodyId)
+      if (!waterbody) return
+      setMiniMapExpanded(false)
+      selectCountry(null)
+      setSelectedCityId(null)
+      setHoveredCityId(null)
+      setSelectedWaterbodyId(waterbody.id)
+      requestCameraTarget(waterbody.center, waterbody.cameraDistance)
+    },
+    [requestCameraTarget, selectCountry],
+  )
+  const navigateToSearchResult = useCallback(
+    (result: PlaceSearchResult) => {
+      if (result.type === 'country') navigateToCountry(result.country.code)
+      else if (result.type === 'city') navigateToCity(result.city.id)
+      else navigateToWaterbody(result.waterbody.id)
+    },
+    [navigateToCity, navigateToCountry, navigateToWaterbody],
+  )
   const handleMiniMapNavigation = useCallback(
     (navigation: WorldMiniMapNavigation) => {
       if (navigation.kind === 'country') {
@@ -272,12 +371,16 @@ export function ExplorePage() {
     !reducedMotion &&
     selectedCountryCode === null &&
     hoveredCountryCode === null &&
-    hoveredCityId === null
+    hoveredCityId === null &&
+    hoveredWaterbodyId === null &&
+    selectedWaterbodyId === null
 
   return (
     <main
       className={
-        selectedCountry ? 'explore-shell has-country-detail' : 'explore-shell'
+        selectedCountry || selectedWaterbody
+          ? 'explore-shell has-country-detail'
+          : 'explore-shell'
       }
     >
       <div className="space-glow space-glow-one" aria-hidden="true" />
@@ -298,14 +401,20 @@ export function ExplorePage() {
             reducedMotion={reducedMotion}
             showCapitals={showCapitals}
             showCities={showCities}
+            showOceanLayer={showOceanLayer}
+            showWaterwayLayer={showWaterwayLayer}
             selectedCountryCode={selectedCountryCode}
             selectedCityId={selectedCityId}
             hoveredCountryCode={hoveredCountryCode}
             hoveredCityId={hoveredCityId}
+            selectedWaterbodyId={selectedWaterbodyId}
+            hoveredWaterbodyId={hoveredWaterbodyId}
             onSelectCountry={navigateToCountry}
             onSelectCity={navigateToCity}
             onHoverCountry={hoverCountry}
             onHoverCity={setHoveredCityId}
+            onSelectWaterbody={navigateToWaterbody}
+            onHoverWaterbody={setHoveredWaterbodyId}
             onViewCenterChange={handleViewCenterChange}
             onViewCenterCommit={handleViewCenterCommit}
           />
@@ -320,8 +429,12 @@ export function ExplorePage() {
         <LayerControl
           showCapitals={showCapitals}
           showCities={showCities}
+          showOceanLayer={showOceanLayer}
+          showWaterwayLayer={showWaterwayLayer}
           onToggleCapitals={toggleCapitalLayer}
           onToggleCities={toggleCityLayer}
+          onToggleOceanLayer={toggleOceanLayer}
+          onToggleWaterwayLayer={toggleWaterwayLayer}
         />
       ) : null}
 
@@ -342,13 +455,21 @@ export function ExplorePage() {
               id={searchDialogId}
               className="search-dialog"
               role="dialog"
-              aria-label="搜索国家"
+              aria-label="搜索地点"
             >
               <CountrySearch
-                key={selectedCountry?.code ?? 'no-selection'}
-                selectedCountry={selectedCountry}
-                onSelect={navigateToCountry}
-                onClearSelection={clearSelection}
+                key={
+                  selectedCountry?.code ??
+                  selectedCity?.id ??
+                  selectedWaterbody?.id ??
+                  'no-selection'
+                }
+                selectedLabel={
+                  selectedCity?.name.zh ??
+                  selectedCountry?.name.zh ??
+                  selectedWaterbody?.name.zh
+                }
+                onSelect={navigateToSearchResult}
                 autoFocus
                 onRequestClose={closeSearch}
               />
@@ -385,7 +506,7 @@ export function ExplorePage() {
               ref={searchButtonRef}
               className="search-control"
               icon={<SearchIcon />}
-              label="搜索国家"
+              label="搜索地点"
               aria-haspopup="dialog"
               aria-expanded={searchOpen}
               aria-controls={searchDialogId}
@@ -403,6 +524,14 @@ export function ExplorePage() {
           selectedCity={selectedCity}
           onSelectCity={navigateToCity}
           onBackToCountry={() => setSelectedCityId(null)}
+          onClose={clearSelection}
+          onSelectCountry={navigateToCountry}
+        />
+      ) : null}
+      {selectedWaterbody ? (
+        <WaterbodyDetailPanel
+          key={selectedWaterbody.id}
+          waterbody={selectedWaterbody}
           onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />

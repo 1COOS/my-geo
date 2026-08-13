@@ -2,9 +2,9 @@ import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 async function openCountrySearch(page: Page) {
-  const trigger = page.getByRole('button', { name: '搜索国家' })
+  const trigger = page.getByRole('button', { name: '搜索地点' })
   await trigger.click()
-  const search = page.getByRole('combobox', { name: '搜索国家' })
+  const search = page.getByRole('combobox', { name: '搜索地点' })
   await expect(search).toBeFocused()
   return search
 }
@@ -29,8 +29,8 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
   ).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'My Geo 首页' })).toHaveCount(0)
   await expect(page.getByText('MY GEO · EARTH EXPLORATION LAB')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '搜索国家' })).toBeVisible()
-  await expect(page.getByRole('combobox', { name: '搜索国家' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '搜索地点' })).toBeVisible()
+  await expect(page.getByRole('combobox', { name: '搜索地点' })).toHaveCount(0)
 
   const { scene } = await waitForSceneOrFallback(page)
 
@@ -172,9 +172,9 @@ test('keeps phone landscape controls separated and country details usable', asyn
   const search = await openCountrySearch(page)
   await expect(search).toBeVisible()
   const dialogBox = await page
-    .getByRole('dialog', { name: '搜索国家' })
+    .getByRole('dialog', { name: '搜索地点' })
     .boundingBox()
-  const results = page.getByRole('listbox', { name: '国家搜索结果' })
+  const results = page.getByRole('listbox', { name: '地点搜索结果' })
   const popoverBox = await page.locator('.country-search-popover').boundingBox()
   expect(dialogBox).not.toBeNull()
   expect(popoverBox).not.toBeNull()
@@ -420,6 +420,46 @@ test('toggles adaptive capital and city labels and opens a selected city', async
   ).toBeVisible()
 })
 
+test('toggles waterbody layers, searches a sea, and replaces its selected range', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const oceanToggle = layerControl.getByRole('button', { name: '海洋' })
+  const waterwayToggle = layerControl.getByRole('button', { name: '水域' })
+  await expect(oceanToggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(waterwayToggle).toHaveAttribute('aria-pressed', 'false')
+  await oceanToggle.click()
+  await waterwayToggle.click()
+  await expect
+    .poll(() => page.locator('[data-waterbody-id]:not([hidden])').count())
+    .toBeGreaterThan(0)
+
+  let search = await openCountrySearch(page)
+  await search.fill('地中海')
+  await search.press('Enter')
+  const mediterraneanCard = page.getByLabel('地中海水域知识卡')
+  await expect(mediterraneanCard).toBeVisible()
+  await expect(mediterraneanCard.getByText(/不代表领海/)).toBeVisible()
+  await expect(
+    page.locator('[data-waterbody-id="mediterranean-sea"]'),
+  ).toBeVisible()
+
+  search = await openCountrySearch(page)
+  await search.fill('马里亚纳海沟')
+  await search.press('Enter')
+  await expect(page.getByLabel('马里亚纳海沟水域知识卡')).toBeVisible()
+  await expect(mediterraneanCard).toHaveCount(0)
+
+  await page.getByRole('button', { name: '画质：平衡' }).click()
+  await expect(page.getByRole('button', { name: '画质：低功耗' })).toBeVisible()
+})
+
 test('keeps capital labels synchronized during automatic rotation', async ({
   page,
 }) => {
@@ -636,7 +676,7 @@ test('reloads the core experience while offline', async ({ page, context }) => {
   await context.setOffline(true)
   try {
     await page.reload({ waitUntil: 'domcontentloaded' })
-    await expect(page.getByRole('button', { name: '搜索国家' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '搜索地点' })).toBeVisible()
     const scene = page.getByTestId('globe-scene')
     if (await scene.isVisible()) {
       await expect(page.getByTestId('world-mini-map')).toBeVisible()

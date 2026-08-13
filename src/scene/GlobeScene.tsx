@@ -18,7 +18,14 @@ import {
   getCity,
   getCountry,
 } from '../data/countries'
+import {
+  getWaterbody,
+  getWaterbodyGeometry,
+  waterbodies,
+  waterbodyKindLabels,
+} from '../data/waterbodies'
 import type { City } from '../data/citySchema'
+import type { Waterbody } from '../data/waterbodySchema'
 import type { CameraTarget, GlobeView } from '../shared/types/geo'
 import {
   getBoundaryCode,
@@ -30,9 +37,14 @@ import {
   getGlobeViewOffset,
   getOverviewCameraPosition,
   getVisibleLayerCities,
+  getVisibleLayerWaterbodies,
+  getWaterbodyIdForLayer,
+  getWaterbodyMarker,
   OVERVIEW_CAMERA_DISTANCE,
   shouldApplyCameraTargetRequest,
   type CityMarker,
+  type GlobePointMarker,
+  type WaterbodyMarker,
 } from './countrySceneInteraction'
 
 export type GlobeSceneProps = {
@@ -42,22 +54,44 @@ export type GlobeSceneProps = {
   reducedMotion: boolean
   showCapitals: boolean
   showCities: boolean
+  showOceanLayer: boolean
+  showWaterwayLayer: boolean
   selectedCountryCode: string | null
   selectedCityId: string | null
   hoveredCountryCode: string | null
   hoveredCityId: string | null
+  selectedWaterbodyId: string | null
+  hoveredWaterbodyId: string | null
   onSelectCountry: (countryCode: string) => void
   onSelectCity: (cityId: string) => void
   onHoverCountry: (countryCode: string | null) => void
   onHoverCity: (cityId: string | null) => void
+  onSelectWaterbody: (waterbodyId: string) => void
+  onHoverWaterbody: (waterbodyId: string | null) => void
   onViewCenterChange: (view: GlobeView) => void
   onViewCenterCommit: (view: GlobeView) => void
 }
 
 type WorldProps = GlobeSceneProps & {
-  labelCities: City[]
+  labelItems: MapLabel[]
   labelLayerRef: RefObject<HTMLDivElement | null>
 }
+
+type MapLabel =
+  | {
+      id: string
+      type: 'city'
+      latitude: number
+      longitude: number
+      city: City
+    }
+  | {
+      id: string
+      type: 'waterbody'
+      latitude: number
+      longitude: number
+      waterbody: Waterbody
+    }
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
   0,
@@ -89,13 +123,16 @@ function overlaps(left: LabelRect, right: LabelRect) {
 }
 
 function getLabelPriority(
-  city: City,
+  item: MapLabel,
   selectedCityId: string | null,
   hoveredCityId: string | null,
+  selectedWaterbodyId: string | null,
+  hoveredWaterbodyId: string | null,
 ) {
-  if (city.id === selectedCityId) return 0
-  if (city.id === hoveredCityId) return 1
-  return (city.isCapital ? 2 : 10) + city.order / 10
+  if (item.id === selectedCityId || item.id === selectedWaterbodyId) return 0
+  if (item.id === hoveredCityId || item.id === hoveredWaterbodyId) return 1
+  if (item.type === 'waterbody') return 2 + item.waterbody.labelPriority / 100
+  return (item.city.isCapital ? 3 : 10) + item.city.order / 10
 }
 
 function World({
@@ -107,13 +144,17 @@ function World({
   selectedCityId,
   hoveredCountryCode,
   hoveredCityId,
+  selectedWaterbodyId,
+  hoveredWaterbodyId,
   onSelectCountry,
   onSelectCity,
   onHoverCountry,
   onHoverCity,
+  onSelectWaterbody,
+  onHoverWaterbody,
   onViewCenterChange,
   onViewCenterCommit,
-  labelCities,
+  labelItems,
   labelLayerRef,
 }: WorldProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
@@ -143,16 +184,61 @@ function World({
       }),
     [],
   )
-  const cityMarkers = useMemo<CityMarker[]>(() => {
-    return labelCities.map((city) => ({
-      cityId: city.id,
-      countryCode: city.countryCode,
-      lat: city.latitude,
-      lng: city.longitude,
-      name: city.name.zh,
-      isCapital: city.isCapital,
-    }))
-  }, [labelCities])
+  const pointMarkers = useMemo<GlobePointMarker[]>(() => {
+    return labelItems.map((item) =>
+      item.type === 'city'
+        ? ({
+            markerType: 'city',
+            cityId: item.city.id,
+            countryCode: item.city.countryCode,
+            lat: item.city.latitude,
+            lng: item.city.longitude,
+            name: item.city.name.zh,
+            isCapital: item.city.isCapital,
+          } satisfies CityMarker)
+        : ({
+            markerType: 'waterbody',
+            waterbodyId: item.waterbody.id,
+            layer: item.waterbody.layer,
+            kind: item.waterbody.kind,
+            lat: item.waterbody.center.latitude,
+            lng: item.waterbody.center.longitude,
+            name: item.waterbody.name.zh,
+          } satisfies WaterbodyMarker),
+    )
+  }, [labelItems])
+  const selectedWaterbodyGeometry = getWaterbodyGeometry(selectedWaterbodyId)
+  const selectedSurfaceFeature = useMemo(
+    () =>
+      selectedWaterbodyGeometry?.kind === 'surface'
+        ? {
+            type: 'Feature' as const,
+            properties: { waterbodyId: selectedWaterbodyGeometry.id },
+            geometry:
+              quality === 'low'
+                ? selectedWaterbodyGeometry.lowDetailGeometry
+                : selectedWaterbodyGeometry.geometry,
+          }
+        : null,
+    [quality, selectedWaterbodyGeometry],
+  )
+  const selectedTrenchPath =
+    selectedWaterbodyGeometry?.kind === 'trench'
+      ? {
+          waterbodyId: selectedWaterbodyGeometry.id,
+          points:
+            quality === 'low'
+              ? selectedWaterbodyGeometry.lowDetailPoints
+              : selectedWaterbodyGeometry.points,
+        }
+      : null
+  const polygonsData = useMemo(
+    () =>
+      selectedSurfaceFeature
+        ? [...countryBoundaries.features, selectedSurfaceFeature]
+        : countryBoundaries.features,
+    [selectedSurfaceFeature],
+  )
 
   const syncPointOfView = useCallback(() => {
     globeRef.current?.setPointOfView(camera)
@@ -180,18 +266,39 @@ function World({
     const acceptedRects: LabelRect[] = []
     let visibleCount = 0
 
-    const sortedCities = [...labelCities].sort(
+    const sortedItems = [...labelItems].sort(
       (left, right) =>
-        getLabelPriority(left, selectedCityId, hoveredCityId) -
-        getLabelPriority(right, selectedCityId, hoveredCityId),
+        getLabelPriority(
+          left,
+          selectedCityId,
+          hoveredCityId,
+          selectedWaterbodyId,
+          hoveredWaterbodyId,
+        ) -
+        getLabelPriority(
+          right,
+          selectedCityId,
+          hoveredCityId,
+          selectedWaterbodyId,
+          hoveredWaterbodyId,
+        ),
     )
+    const groupCount = { city: 0, waterbody: 0 }
+    const ordinaryGroupLimit = Math.ceil(budget / 2)
 
-    for (const city of sortedCities) {
+    for (const item of sortedItems) {
       if (visibleCount >= budget) break
-      const element = labelElements.get(city.id)
+      const element = labelElements.get(item.id)
       if (!element) continue
 
-      const coordinate = globe.getCoords(city.latitude, city.longitude, 0.04)
+      const forced =
+        item.id === selectedCityId ||
+        item.id === hoveredCityId ||
+        item.id === selectedWaterbodyId ||
+        item.id === hoveredWaterbodyId
+      if (!forced && groupCount[item.type] >= ordinaryGroupLimit) continue
+
+      const coordinate = globe.getCoords(item.latitude, item.longitude, 0.04)
       const worldPosition = new Vector3(
         coordinate.x,
         coordinate.y,
@@ -206,7 +313,9 @@ function World({
         continue
       }
 
-      const width = Math.max(56, city.name.zh.length * 14 + 28)
+      const labelName =
+        item.type === 'city' ? item.city.name.zh : item.waterbody.name.zh
+      const width = Math.max(56, labelName.length * 14 + 28)
       const height = 28
       const rect = {
         left: x - width / 2 - 5,
@@ -214,7 +323,6 @@ function World({
         right: x + width / 2 + 5,
         bottom: y + height / 2 + 5,
       }
-      const forced = city.id === selectedCityId || city.id === hoveredCityId
       if (
         !forced &&
         acceptedRects.some((accepted) => overlaps(rect, accepted))
@@ -224,17 +332,20 @@ function World({
 
       element.hidden = false
       element.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`
-      nextVisibleIds.add(city.id)
+      nextVisibleIds.add(item.id)
       acceptedRects.push(rect)
       visibleCount += 1
+      groupCount[item.type] += 1
     }
     visibleLabelIdsRef.current = nextVisibleIds
   }, [
     camera,
     hoveredCityId,
-    labelCities,
+    hoveredWaterbodyId,
+    labelItems,
     quality,
     selectedCityId,
+    selectedWaterbodyId,
     size.height,
     size.width,
   ])
@@ -243,13 +354,13 @@ function World({
     const labelLayer = labelLayerRef.current
     if (!labelLayer) return
     labelElementsRef.current = new Map(
-      [...labelLayer.querySelectorAll<HTMLElement>('[data-city-id]')].map(
-        (element) => [element.dataset.cityId ?? '', element],
+      [...labelLayer.querySelectorAll<HTMLElement>('[data-map-label-id]')].map(
+        (element) => [element.dataset.mapLabelId ?? '', element],
       ),
     )
     visibleLabelIdsRef.current.clear()
     layoutCityLabels()
-  }, [labelCities, labelLayerRef, layoutCityLabels])
+  }, [labelItems, labelLayerRef, layoutCityLabels])
 
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return
@@ -455,24 +566,31 @@ function World({
         atmosphereColor="#70dfff"
         atmosphereAltitude={0.18}
         globeCurvatureResolution={quality === 'balanced' ? 3 : 5}
-        polygonsData={countryBoundaries.features}
+        polygonsData={polygonsData}
         polygonGeoJsonGeometry="geometry"
         polygonCapColor={(value) => {
+          if (getWaterbodyIdForLayer('polygon', value)) return '#24d4ff55'
           const countryCode = getBoundaryCode(value)
           if (countryCode === selectedCountryCode) return '#f2c75c'
           if (countryCode === hoveredCountryCode) return '#68d7ff'
           return '#176593'
         }}
         polygonSideColor={(value) =>
-          getBoundaryCode(value) === selectedCountryCode ? '#b88927' : '#0a3552'
+          getWaterbodyIdForLayer('polygon', value)
+            ? '#086e8f44'
+            : getBoundaryCode(value) === selectedCountryCode
+              ? '#b88927'
+              : '#0a3552'
         }
         polygonStrokeColor={(value) => {
+          if (getWaterbodyIdForLayer('polygon', value)) return '#83ecff'
           const countryCode = getBoundaryCode(value)
           if (countryCode === selectedCountryCode) return '#fff1a8'
           if (countryCode === hoveredCountryCode) return '#d8f7ff'
           return '#6cb4d4'
         }}
         polygonAltitude={(value) => {
+          if (getWaterbodyIdForLayer('polygon', value)) return 0.034
           const countryCode = getBoundaryCode(value)
           if (countryCode === selectedCountryCode) return 0.027
           if (countryCode === hoveredCountryCode) return 0.017
@@ -480,11 +598,17 @@ function World({
         }}
         polygonCapCurvatureResolution={quality === 'balanced' ? 2 : 4}
         polygonsTransitionDuration={reducedMotion ? 0 : 260}
-        pointsData={cityMarkers}
+        pointsData={pointMarkers}
         pointLat="lat"
         pointLng="lng"
         pointAltitude={0.018}
         pointRadius={(value) => {
+          const waterbodyMarker = getWaterbodyMarker(value)
+          if (waterbodyMarker) {
+            if (waterbodyMarker.waterbodyId === selectedWaterbodyId) return 0.62
+            if (waterbodyMarker.waterbodyId === hoveredWaterbodyId) return 0.54
+            return waterbodyMarker.layer === 'ocean' ? 0.4 : 0.34
+          }
           const marker = getCityMarker(value)
           if (marker?.cityId === selectedCityId) return 0.58
           if (marker?.cityId === hoveredCityId) return 0.5
@@ -492,6 +616,14 @@ function World({
           return marker.countryCode === selectedCountryCode ? 0.46 : 0.34
         }}
         pointColor={(value) => {
+          const waterbodyMarker = getWaterbodyMarker(value)
+          if (waterbodyMarker) {
+            if (waterbodyMarker.waterbodyId === selectedWaterbodyId)
+              return '#ffffff'
+            if (waterbodyMarker.waterbodyId === hoveredWaterbodyId)
+              return '#d9bcff'
+            return waterbodyMarker.layer === 'ocean' ? '#31e4ff' : '#aa7cff'
+          }
           const marker = getCityMarker(value)
           if (marker?.cityId === selectedCityId) return '#ffffff'
           if (marker?.cityId === hoveredCityId) return '#b8f5ff'
@@ -501,6 +633,16 @@ function World({
         }}
         pointResolution={quality === 'balanced' ? 16 : 8}
         pointsTransitionDuration={reducedMotion ? 0 : 220}
+        pathsData={selectedTrenchPath ? [selectedTrenchPath] : []}
+        pathPoints="points"
+        pathPointLat={0}
+        pathPointLng={1}
+        pathPointAlt={0.035}
+        pathColor={() => '#c493ff'}
+        pathStroke={quality === 'balanced' ? 0.55 : 0.35}
+        pathDashLength={0.12}
+        pathDashGap={0.06}
+        pathTransitionDuration={reducedMotion ? 0 : 220}
         onGlobeReady={() => {
           globeReadyRef.current = true
           syncPointOfView()
@@ -508,11 +650,20 @@ function World({
           applyCameraTargetRequest()
         }}
         onHover={(layer, value) => {
+          const waterbodyId = getWaterbodyIdForLayer(layer, value)
+          onHoverWaterbody(waterbodyId)
           const cityId = getCityIdForLayer(layer, value)
           onHoverCity(cityId)
-          onHoverCountry(cityId ? null : getCountryCodeForLayer(layer, value))
+          onHoverCountry(
+            cityId || waterbodyId ? null : getCountryCodeForLayer(layer, value),
+          )
         }}
         onClick={(layer, value) => {
+          const waterbodyId = getWaterbodyIdForLayer(layer, value)
+          if (waterbodyId) {
+            onSelectWaterbody(waterbodyId)
+            return
+          }
           const cityId = getCityIdForLayer(layer, value)
           if (cityId) {
             onSelectCity(cityId)
@@ -565,6 +716,7 @@ export function GlobeScene(props: GlobeSceneProps) {
   const labelLayerRef = useRef<HTMLDivElement>(null)
   const hoveredCountry = getCountry(props.hoveredCountryCode)
   const hoveredCity = getCity(props.hoveredCityId)
+  const hoveredWaterbody = getWaterbody(props.hoveredWaterbodyId)
   const labelCities = useMemo(
     () =>
       getVisibleLayerCities(cities, {
@@ -579,6 +731,40 @@ export function GlobeScene(props: GlobeSceneProps) {
       props.showCapitals,
       props.showCities,
     ],
+  )
+  const labelWaterbodies = useMemo(
+    () =>
+      getVisibleLayerWaterbodies(waterbodies, {
+        showOceanLayer: props.showOceanLayer,
+        showWaterwayLayer: props.showWaterwayLayer,
+        selectedWaterbodyId: props.selectedWaterbodyId,
+        hoveredWaterbodyId: props.hoveredWaterbodyId,
+      }),
+    [
+      props.hoveredWaterbodyId,
+      props.selectedWaterbodyId,
+      props.showOceanLayer,
+      props.showWaterwayLayer,
+    ],
+  )
+  const labelItems = useMemo<MapLabel[]>(
+    () => [
+      ...labelCities.map((city) => ({
+        id: city.id,
+        type: 'city' as const,
+        latitude: city.latitude,
+        longitude: city.longitude,
+        city,
+      })),
+      ...labelWaterbodies.map((waterbody) => ({
+        id: waterbody.id,
+        type: 'waterbody' as const,
+        latitude: waterbody.center.latitude,
+        longitude: waterbody.center.longitude,
+        waterbody,
+      })),
+    ],
+    [labelCities, labelWaterbodies],
   )
 
   return (
@@ -614,14 +800,14 @@ export function GlobeScene(props: GlobeSceneProps) {
       >
         <World
           {...props}
-          labelCities={labelCities}
+          labelItems={labelItems}
           labelLayerRef={labelLayerRef}
         />
       </Canvas>
       <div
         ref={labelLayerRef}
         className="globe-city-labels"
-        aria-label="首都与主要城市标签"
+        aria-label="城市与水域地点标签"
       >
         {labelCities.map((city) => (
           <button
@@ -629,6 +815,7 @@ export function GlobeScene(props: GlobeSceneProps) {
             key={city.id}
             hidden
             className={city.isCapital ? 'city-label is-capital' : 'city-label'}
+            data-map-label-id={city.id}
             data-city-id={city.id}
             aria-label={`定位到${city.name.zh}${city.isCapital ? '首都' : '城市'}`}
             onPointerEnter={() => props.onHoverCity(city.id)}
@@ -639,10 +826,32 @@ export function GlobeScene(props: GlobeSceneProps) {
             {city.name.zh}
           </button>
         ))}
+        {labelWaterbodies.map((waterbody) => (
+          <button
+            type="button"
+            key={waterbody.id}
+            hidden
+            className={`city-label waterbody-label is-${waterbody.layer}`}
+            data-map-label-id={waterbody.id}
+            data-waterbody-id={waterbody.id}
+            aria-label={`定位到${waterbody.name.zh}${waterbodyKindLabels[waterbody.kind]}`}
+            onPointerEnter={() => props.onHoverWaterbody(waterbody.id)}
+            onPointerLeave={() => props.onHoverWaterbody(null)}
+            onClick={() => props.onSelectWaterbody(waterbody.id)}
+          >
+            <span aria-hidden="true" />
+            {waterbody.name.zh}
+          </button>
+        ))}
       </div>
-      {hoveredCity || hoveredCountry ? (
+      {hoveredWaterbody || hoveredCity || hoveredCountry ? (
         <div ref={tooltipRef} className="country-hover-tooltip" role="tooltip">
-          {hoveredCity ? (
+          {hoveredWaterbody ? (
+            <>
+              <span>{hoveredWaterbody.name.zh}</span>
+              <small>{waterbodyKindLabels[hoveredWaterbody.kind]}</small>
+            </>
+          ) : hoveredCity ? (
             <>
               <span>{hoveredCity.name.zh}</span>
               <small>
