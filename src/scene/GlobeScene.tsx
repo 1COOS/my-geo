@@ -13,9 +13,8 @@ import {
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
 import {
-  capitalCities,
+  cities,
   countryBoundaries,
-  getCitiesForCountry,
   getCity,
   getCountry,
 } from '../data/countries'
@@ -24,13 +23,15 @@ import type { CameraTarget, GlobeView } from '../shared/types/geo'
 import {
   getBoundaryCode,
   getCameraFlightDuration,
-  getCapitalLabelBudget,
+  getCityLabelBudget,
   getCityIdForLayer,
   getCityMarker,
   getCountryCodeForLayer,
   getGlobeViewOffset,
   getOverviewCameraPosition,
+  getVisibleLayerCities,
   OVERVIEW_CAMERA_DISTANCE,
+  shouldApplyCameraTargetRequest,
   type CityMarker,
 } from './countrySceneInteraction'
 
@@ -39,7 +40,8 @@ export type GlobeSceneProps = {
   cameraTarget: CameraTarget
   quality: 'balanced' | 'low'
   reducedMotion: boolean
-  visibleCityCountryCode: string | null
+  showCapitals: boolean
+  showCities: boolean
   selectedCountryCode: string | null
   selectedCityId: string | null
   hoveredCountryCode: string | null
@@ -90,12 +92,10 @@ function getLabelPriority(
   city: City,
   selectedCityId: string | null,
   hoveredCityId: string | null,
-  visibleCityCountryCode: string | null,
 ) {
   if (city.id === selectedCityId) return 0
   if (city.id === hoveredCityId) return 1
-  if (city.countryCode === visibleCityCountryCode) return 2 + city.order / 10
-  return 10 + city.order / 10
+  return (city.isCapital ? 2 : 10) + city.order / 10
 }
 
 function World({
@@ -103,7 +103,6 @@ function World({
   cameraTarget,
   quality,
   reducedMotion,
-  visibleCityCountryCode,
   selectedCountryCode,
   selectedCityId,
   hoveredCountryCode,
@@ -121,10 +120,13 @@ function World({
   const controlsRef = useRef<OrbitControlsImpl>(null)
   const globeReadyRef = useRef(false)
   const cameraTargetRef = useRef(cameraTarget)
+  const appliedCameraRequestIdRef = useRef<number | null>(null)
   const cameraFlightRef = useRef<CameraFlight | null>(null)
+  const labelLayoutPendingRef = useRef(true)
   const viewCenterFrameRef = useRef<number | null>(null)
   const labelElementsRef = useRef(new Map<string, HTMLElement>())
   const visibleLabelIdsRef = useRef(new Set<string>())
+  const flyToTargetRef = useRef<(target: CameraTarget) => void>(() => undefined)
   const { camera, gl, size } = useThree()
   const rendererSize = useMemo(
     () => new Vector2(size.width, size.height),
@@ -142,26 +144,15 @@ function World({
     [],
   )
   const cityMarkers = useMemo<CityMarker[]>(() => {
-    const cityIds = new Set(capitalCities.map((city) => city.id))
-    for (const city of getCitiesForCountry(visibleCityCountryCode)) {
-      cityIds.add(city.id)
-    }
-    return [...cityIds].flatMap((cityId) => {
-      const city = getCity(cityId)
-      return city
-        ? [
-            {
-              cityId: city.id,
-              countryCode: city.countryCode,
-              lat: city.latitude,
-              lng: city.longitude,
-              name: city.name.zh,
-              isCapital: city.isCapital,
-            },
-          ]
-        : []
-    })
-  }, [visibleCityCountryCode])
+    return labelCities.map((city) => ({
+      cityId: city.id,
+      countryCode: city.countryCode,
+      lat: city.latitude,
+      lng: city.longitude,
+      name: city.name.zh,
+      isCapital: city.isCapital,
+    }))
+  }, [labelCities])
 
   const syncPointOfView = useCallback(() => {
     globeRef.current?.setPointOfView(camera)
@@ -171,6 +162,11 @@ function World({
     const globe = globeRef.current
     if (!globe) return
 
+    // OrbitControls updates the camera before Three.js refreshes its matrices.
+    // Project labels from the current camera pose so the DOM overlay shares the
+    // exact frame rendered by WebGL.
+    camera.updateMatrixWorld()
+
     const labelElements = labelElementsRef.current
     for (const cityId of visibleLabelIdsRef.current) {
       const element = labelElements.get(cityId)
@@ -179,25 +175,15 @@ function World({
     const nextVisibleIds = new Set<string>()
 
     const touchDevice = navigator.maxTouchPoints > 0
-    const budget = getCapitalLabelBudget(quality, touchDevice)
+    const budget = getCityLabelBudget(quality, touchDevice)
     const globeRadius = globe.getGlobeRadius()
     const acceptedRects: LabelRect[] = []
     let visibleCount = 0
 
     const sortedCities = [...labelCities].sort(
       (left, right) =>
-        getLabelPriority(
-          left,
-          selectedCityId,
-          hoveredCityId,
-          visibleCityCountryCode,
-        ) -
-        getLabelPriority(
-          right,
-          selectedCityId,
-          hoveredCityId,
-          visibleCityCountryCode,
-        ),
+        getLabelPriority(left, selectedCityId, hoveredCityId) -
+        getLabelPriority(right, selectedCityId, hoveredCityId),
     )
 
     for (const city of sortedCities) {
@@ -251,7 +237,6 @@ function World({
     selectedCityId,
     size.height,
     size.width,
-    visibleCityCountryCode,
   ])
 
   useEffect(() => {
@@ -303,11 +288,10 @@ function World({
     if (viewCenterFrameRef.current !== null) return
     viewCenterFrameRef.current = window.requestAnimationFrame(() => {
       viewCenterFrameRef.current = null
-      layoutCityLabels()
       const view = getView()
       if (view) onViewCenterChange(view)
     })
-  }, [getView, layoutCityLabels, onViewCenterChange])
+  }, [getView, onViewCenterChange])
 
   const commitView = useCallback(() => {
     layoutCityLabels()
@@ -357,35 +341,59 @@ function World({
     [camera, commitView, reducedMotion, syncPointOfView],
   )
 
+  const applyCameraTargetRequest = useCallback(() => {
+    const target = cameraTargetRef.current
+    if (
+      !globeReadyRef.current ||
+      !globeRef.current ||
+      !shouldApplyCameraTargetRequest(
+        appliedCameraRequestIdRef.current,
+        target.requestId,
+      )
+    ) {
+      return
+    }
+
+    appliedCameraRequestIdRef.current = target.requestId
+    cameraFlightRef.current = null
+    if (controlsRef.current) controlsRef.current.enabled = true
+    flyToTargetRef.current(target)
+  }, [])
+
   useFrame((_state, delta) => {
     const flight = cameraFlightRef.current
-    if (!flight) return
+    if (flight) {
+      flight.elapsed = Math.min(flight.elapsed + delta, flight.duration)
+      const progress = flight.elapsed / flight.duration
+      const easedProgress = 1 - Math.pow(1 - progress, 3)
+      camera.position.lerpVectors(flight.from, flight.to, easedProgress)
+      camera.lookAt(0, 0, 0)
+      controlsRef.current?.target.set(0, 0, 0)
+      syncPointOfView()
+      labelLayoutPendingRef.current = true
+      scheduleViewChange()
 
-    flight.elapsed = Math.min(flight.elapsed + delta, flight.duration)
-    const progress = flight.elapsed / flight.duration
-    const easedProgress = 1 - Math.pow(1 - progress, 3)
-    camera.position.lerpVectors(flight.from, flight.to, easedProgress)
-    camera.lookAt(0, 0, 0)
-    controlsRef.current?.target.set(0, 0, 0)
-    syncPointOfView()
-    scheduleViewChange()
-
-    if (progress >= 1) {
-      cameraFlightRef.current = null
-      if (controlsRef.current) {
-        controlsRef.current.enabled = true
-        controlsRef.current.update()
+      if (progress >= 1) {
+        cameraFlightRef.current = null
+        if (controlsRef.current) {
+          controlsRef.current.enabled = true
+          controlsRef.current.update()
+        }
+        commitView()
       }
-      commitView()
+    }
+
+    if (autoRotate || labelLayoutPendingRef.current) {
+      labelLayoutPendingRef.current = false
+      layoutCityLabels()
     }
   })
 
   useEffect(() => {
     cameraTargetRef.current = cameraTarget
-    cameraFlightRef.current = null
-    if (controlsRef.current) controlsRef.current.enabled = true
-    flyToTarget(cameraTarget)
-  }, [cameraTarget, flyToTarget])
+    flyToTargetRef.current = flyToTarget
+    applyCameraTargetRequest()
+  }, [applyCameraTargetRequest, cameraTarget, flyToTarget])
 
   useEffect(() => {
     gl.setPixelRatio(
@@ -497,7 +505,7 @@ function World({
           globeReadyRef.current = true
           syncPointOfView()
           layoutCityLabels()
-          flyToTarget(cameraTargetRef.current)
+          applyCameraTargetRequest()
         }}
         onHover={(layer, value) => {
           const cityId = getCityIdForLayer(layer, value)
@@ -532,6 +540,7 @@ function World({
         autoRotateSpeed={0.42}
         onChange={() => {
           syncPointOfView()
+          labelLayoutPendingRef.current = true
           scheduleViewChange()
         }}
         onEnd={commitView}
@@ -556,16 +565,21 @@ export function GlobeScene(props: GlobeSceneProps) {
   const labelLayerRef = useRef<HTMLDivElement>(null)
   const hoveredCountry = getCountry(props.hoveredCountryCode)
   const hoveredCity = getCity(props.hoveredCityId)
-  const labelCities = useMemo(() => {
-    const cityIds = new Set(capitalCities.map((city) => city.id))
-    for (const city of getCitiesForCountry(props.visibleCityCountryCode)) {
-      cityIds.add(city.id)
-    }
-    return [...cityIds].flatMap((cityId) => {
-      const city = getCity(cityId)
-      return city ? [city] : []
-    })
-  }, [props.visibleCityCountryCode])
+  const labelCities = useMemo(
+    () =>
+      getVisibleLayerCities(cities, {
+        showCapitals: props.showCapitals,
+        showCities: props.showCities,
+        selectedCityId: props.selectedCityId,
+        hoveredCityId: props.hoveredCityId,
+      }),
+    [
+      props.hoveredCityId,
+      props.selectedCityId,
+      props.showCapitals,
+      props.showCities,
+    ],
+  )
 
   return (
     <div

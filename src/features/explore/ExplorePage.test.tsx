@@ -55,6 +55,17 @@ describe('ExplorePage', () => {
       screen.queryByText('MY GEO · EARTH EXPLORATION LAB'),
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('world-mini-map')).toBeInTheDocument()
+    expect(
+      screen.getByRole('region', { name: '地球图层控制' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '首都' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.getByRole('button', { name: '城市' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
   })
 
   it('opens, focuses, and closes the search dialog from the control deck', async () => {
@@ -143,6 +154,9 @@ describe('ExplorePage', () => {
     expect(
       screen.getByRole('navigation', { name: '地球显示控制' }),
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('region', { name: '地球图层控制' }),
+    ).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '搜索国家' }))
     await user.type(
@@ -188,7 +202,72 @@ describe('ExplorePage', () => {
     expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
   })
 
-  it('shows the center-country cities after a close committed view', () => {
+  it('toggles capital and non-capital city layers independently', async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        showCapitals: boolean
+        showCities: boolean
+      }
+
+    expect(getProps()).toMatchObject({ showCapitals: false, showCities: false })
+
+    await user.click(screen.getByRole('button', { name: '首都' }))
+    expect(getProps()).toMatchObject({ showCapitals: true, showCities: false })
+    expect(screen.getByRole('button', { name: '首都' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    await user.click(screen.getByRole('button', { name: '城市' }))
+    expect(getProps()).toMatchObject({ showCapitals: true, showCities: true })
+
+    await user.click(screen.getByRole('button', { name: '首都' }))
+    expect(getProps()).toMatchObject({ showCapitals: false, showCities: true })
+
+    unmount()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    expect(getProps()).toMatchObject({ showCapitals: false, showCities: false })
+  })
+
+  it('does not reveal city layers when the committed globe view changes', () => {
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    const props = globePropsMock.mock.lastCall![0] as {
+      showCapitals: boolean
+      showCities: boolean
+      onViewCenterCommit: (view: {
+        position: { latitude: number; longitude: number }
+        distance: number
+      }) => void
+    }
+
+    props.onViewCenterCommit({
+      position: { latitude: 35, longitude: 105 },
+      distance: 240,
+    })
+    expect(globePropsMock.mock.lastCall![0]).toMatchObject({
+      showCapitals: false,
+      showCities: false,
+    })
+  })
+
+  it('clears a hovered city when its layer is switched off', async () => {
+    const user = userEvent.setup()
     render(
       <Tooltip.Provider>
         <ExplorePage />
@@ -197,19 +276,15 @@ describe('ExplorePage', () => {
 
     const getProps = () =>
       globePropsMock.mock.lastCall![0] as {
-        visibleCityCountryCode: string | null
-        onViewCenterCommit: (view: {
-          position: { latitude: number; longitude: number }
-          distance: number
-        }) => void
+        hoveredCityId: string | null
+        onHoverCity: (cityId: string | null) => void
       }
 
-    act(() =>
-      getProps().onViewCenterCommit({
-        position: { latitude: 35, longitude: 105 },
-        distance: 240,
-      }),
-    )
-    expect(getProps().visibleCityCountryCode).toBe('CN')
+    await user.click(screen.getByRole('button', { name: '城市' }))
+    act(() => getProps().onHoverCity('cn-shanghai'))
+    expect(getProps().hoveredCityId).toBe('cn-shanghai')
+
+    await user.click(screen.getByRole('button', { name: '城市' }))
+    expect(getProps().hoveredCityId).toBeNull()
   })
 })

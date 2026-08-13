@@ -24,13 +24,11 @@ import type {
 import {
   CITY_CAMERA_DISTANCE,
   OVERVIEW_CAMERA_DISTANCE,
-  resolveProximityCountryCode,
 } from '../../scene/countrySceneInteraction'
 import { CountryDetailPanel } from './CountryDetailPanel'
 import { CountrySearch } from './CountrySearch'
 import { useExperienceStore } from './useExperienceStore'
 import { WorldMiniMap, type WorldMiniMapHandle } from './WorldMiniMap'
-import { findCountryAtPosition } from './worldMiniMapUtils'
 
 const GlobeScene = lazy(async () => {
   const sceneModule = await import('../../scene/GlobeScene')
@@ -73,6 +71,63 @@ function SearchIcon() {
   )
 }
 
+function LayersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m12 3.8 8 4.4-8 4.4-8-4.4z" />
+      <path d="m4 12.1 8 4.4 8-4.4" />
+      <path d="m4 16 8 4.4 8-4.4" />
+    </svg>
+  )
+}
+
+type LayerControlProps = {
+  showCapitals: boolean
+  showCities: boolean
+  onToggleCapitals: () => void
+  onToggleCities: () => void
+}
+
+function LayerControl({
+  showCapitals,
+  showCities,
+  onToggleCapitals,
+  onToggleCities,
+}: LayerControlProps) {
+  return (
+    <section className="layer-control" aria-label="地球图层控制">
+      <div className="layer-control-heading">
+        <span className="layer-control-icon" aria-hidden="true">
+          <LayersIcon />
+        </span>
+        <span>图层</span>
+      </div>
+      <div className="layer-control-options">
+        <button
+          type="button"
+          className="layer-toggle is-capital"
+          aria-pressed={showCapitals}
+          onClick={onToggleCapitals}
+        >
+          <span className="layer-toggle-dot" aria-hidden="true" />
+          <span>首都</span>
+          <span className="layer-toggle-switch" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="layer-toggle is-city"
+          aria-pressed={showCities}
+          onClick={onToggleCities}
+        >
+          <span className="layer-toggle-dot" aria-hidden="true" />
+          <span>城市</span>
+          <span className="layer-toggle-switch" aria-hidden="true" />
+        </button>
+      </div>
+    </section>
+  )
+}
+
 export function ExplorePage() {
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion() ?? false
@@ -83,11 +138,10 @@ export function ExplorePage() {
   const searchButtonRef = useRef<HTMLButtonElement>(null)
   const [miniMapExpanded, setMiniMapExpanded] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [showCapitals, setShowCapitals] = useState(false)
+  const [showCities, setShowCities] = useState(false)
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null)
   const [hoveredCityId, setHoveredCityId] = useState<string | null>(null)
-  const [proximityCountryCode, setProximityCountryCode] = useState<
-    string | null
-  >(null)
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(() => ({
     requestId: 0,
     position: getCountry('CN')!.center,
@@ -131,8 +185,27 @@ export function ExplorePage() {
 
   const selectedCountry = getCountry(selectedCountryCode)
   const selectedCity = getCity(selectedCityId)
-  const visibleCityCountryCode = selectedCountryCode ?? proximityCountryCode
   const visibleCountryCities = getCitiesForCountry(selectedCountryCode)
+  const toggleCapitalLayer = useCallback(() => {
+    const nextVisible = !showCapitals
+    setShowCapitals(nextVisible)
+    if (nextVisible) return
+    setHoveredCityId((cityId) => {
+      const city = getCity(cityId)
+      return city?.isCapital && city.id !== selectedCityId ? null : cityId
+    })
+  }, [selectedCityId, showCapitals])
+  const toggleCityLayer = useCallback(() => {
+    const nextVisible = !showCities
+    setShowCities(nextVisible)
+    if (nextVisible) return
+    setHoveredCityId((cityId) => {
+      const city = getCity(cityId)
+      return city && !city.isCapital && city.id !== selectedCityId
+        ? null
+        : cityId
+    })
+  }, [selectedCityId, showCities])
   const requestCameraTarget = useCallback(
     (position: GeoPosition, distance = OVERVIEW_CAMERA_DISTANCE) => {
       cameraRequestIdRef.current += 1
@@ -151,7 +224,6 @@ export function ExplorePage() {
       setMiniMapExpanded(false)
       setSelectedCityId(null)
       setHoveredCityId(null)
-      setProximityCountryCode(null)
       selectCountry(countryCode)
       requestCameraTarget(country.center)
     },
@@ -162,7 +234,6 @@ export function ExplorePage() {
       const city = getCity(cityId)
       if (!city) return
       setMiniMapExpanded(false)
-      setProximityCountryCode(null)
       selectCountry(city.countryCode)
       setSelectedCityId(city.id)
       requestCameraTarget(
@@ -185,7 +256,6 @@ export function ExplorePage() {
       }
 
       clearSelection()
-      setProximityCountryCode(null)
       requestCameraTarget(navigation.position)
     },
     [clearSelection, navigateToCountry, requestCameraTarget],
@@ -193,24 +263,9 @@ export function ExplorePage() {
   const handleViewCenterChange = useCallback((view: GlobeView) => {
     miniMapRef.current?.setViewCenter(view.position)
   }, [])
-  const handleViewCenterCommit = useCallback(
-    (view: GlobeView) => {
-      miniMapRef.current?.setViewCenter(view.position)
-      if (selectedCountryCode) {
-        setProximityCountryCode(null)
-        return
-      }
-      const centerCountryCode = findCountryAtPosition(view.position)
-      setProximityCountryCode((previousCountryCode) =>
-        resolveProximityCountryCode(
-          previousCountryCode,
-          centerCountryCode,
-          view.distance,
-        ),
-      )
-    },
-    [selectedCountryCode],
-  )
+  const handleViewCenterCommit = useCallback((view: GlobeView) => {
+    miniMapRef.current?.setViewCenter(view.position)
+  }, [])
 
   const effectiveAutoRotate =
     autoRotate &&
@@ -241,7 +296,8 @@ export function ExplorePage() {
             cameraTarget={cameraTarget}
             quality={quality}
             reducedMotion={reducedMotion}
-            visibleCityCountryCode={visibleCityCountryCode}
+            showCapitals={showCapitals}
+            showCities={showCities}
             selectedCountryCode={selectedCountryCode}
             selectedCityId={selectedCityId}
             hoveredCountryCode={hoveredCountryCode}
@@ -259,6 +315,15 @@ export function ExplorePage() {
           <WebGLFallback />
         </div>
       )}
+
+      {webGLAvailable ? (
+        <LayerControl
+          showCapitals={showCapitals}
+          showCities={showCities}
+          onToggleCapitals={toggleCapitalLayer}
+          onToggleCities={toggleCityLayer}
+        />
+      ) : null}
 
       {webGLAvailable ? (
         <WorldMiniMap

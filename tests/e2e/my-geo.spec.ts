@@ -16,6 +16,11 @@ async function waitForSceneOrFallback(page: Page) {
   return { scene, fallback }
 }
 
+function parseMiniMapTransform(transform: string | null) {
+  const match = transform?.match(/translate\(([-\d.]+)(?:\s|,)\s*([-\d.]+)\)/)
+  return match ? { x: Number(match[1]), y: Number(match[2]) } : null
+}
+
 test('loads the responsive My Geo exploration shell', async ({ page }) => {
   await page.goto('/')
 
@@ -31,6 +36,12 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
 
   if (await scene.isVisible()) {
     await expect(page.getByTestId('world-mini-map')).toBeVisible()
+    const layerControl = page.getByRole('region', { name: '地球图层控制' })
+    const capitals = layerControl.getByRole('button', { name: '首都' })
+    const cities = layerControl.getByRole('button', { name: '城市' })
+    await expect(layerControl).toBeVisible()
+    await expect(capitals).toHaveAttribute('aria-pressed', 'false')
+    await expect(cities).toHaveAttribute('aria-pressed', 'false')
     await expect(
       page.getByRole('navigation', { name: '地球显示控制' }),
     ).toBeVisible()
@@ -141,15 +152,22 @@ test('keeps phone landscape controls separated and country details usable', asyn
 
   const map = page.getByTestId('world-mini-map')
   const controls = page.getByRole('navigation', { name: '地球显示控制' })
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
   await expect(map).toBeVisible()
   await expect(page.getByRole('button', { name: '定位图' })).toBeHidden()
   await expect(controls).toBeVisible()
+  await expect(layerControl).toBeVisible()
 
   const mapBox = await map.boundingBox()
   const controlsBox = await controls.boundingBox()
+  const layerControlBox = await layerControl.boundingBox()
   expect(mapBox).not.toBeNull()
   expect(controlsBox).not.toBeNull()
+  expect(layerControlBox).not.toBeNull()
   expect(mapBox!.x + mapBox!.width).toBeLessThanOrEqual(controlsBox!.x)
+  expect(layerControlBox!.x).toBeGreaterThanOrEqual(11)
+  expect(layerControlBox!.y).toBeGreaterThanOrEqual(11)
+  expect(layerControlBox!.y + layerControlBox!.height).toBeLessThan(mapBox!.y)
 
   const search = await openCountrySearch(page)
   await expect(search).toBeVisible()
@@ -351,7 +369,7 @@ test('keeps the 2D map synchronized with country and globe navigation', async ({
   await expect(map.locator('.is-selected')).toHaveCount(0)
 })
 
-test('shows adaptive capital labels and opens a city from the country card', async ({
+test('toggles adaptive capital and city labels and opens a selected city', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -360,9 +378,27 @@ test('shows adaptive capital labels and opens a city from the country card', asy
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const capitalToggle = layerControl.getByRole('button', { name: '首都' })
+  const cityToggle = layerControl.getByRole('button', { name: '城市' })
   const labels = page.locator('.city-label:not([hidden])')
+  await expect(labels).toHaveCount(0)
+  await capitalToggle.click()
+  await expect(capitalToggle).toHaveAttribute('aria-pressed', 'true')
   await expect.poll(() => labels.count()).toBeGreaterThan(0)
   expect(await labels.count()).toBeLessThanOrEqual(30)
+
+  await capitalToggle.click()
+  await expect(labels).toHaveCount(0)
+  await cityToggle.click()
+  await expect(cityToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect.poll(() => labels.count()).toBeGreaterThan(0)
+  expect(
+    await page.locator('.city-label.is-capital:not([hidden])').count(),
+  ).toBe(0)
+
+  await cityToggle.click()
+  await expect(labels).toHaveCount(0)
 
   const search = await openCountrySearch(page)
   await search.fill('中国')
@@ -375,12 +411,121 @@ test('shows adaptive capital labels and opens a city from the country card', asy
 
   const cityCard = page.getByLabel('上海城市知识卡')
   await expect(cityCard).toBeVisible()
+  await expect(page.locator('[data-city-id="cn-shanghai"]')).toBeVisible()
   await expect(cityCard.getByRole('heading', { name: '上海' })).toBeVisible()
   await expect(cityCard.getByText('世界知名')).toBeVisible()
   await cityCard.getByText(/资料来源/).click()
   await expect(
     cityCard.getByText('SimpleMaps World Cities Database'),
   ).toBeVisible()
+})
+
+test('keeps capital labels synchronized during automatic rotation', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  await page.getByRole('button', { name: '首都' }).click()
+  const marker = page.getByTestId('world-mini-map-view-marker')
+  const labelLayer = page.locator('.globe-city-labels')
+  await expect
+    .poll(() => labelLayer.locator('.city-label:not([hidden])').count())
+    .toBeGreaterThan(0)
+
+  const firstTransform = await marker.getAttribute('transform')
+  await expect
+    .poll(() => marker.getAttribute('transform'), { timeout: 6_000 })
+    .not.toBe(firstTransform)
+
+  const snapshots = await labelLayer
+    .locator('.city-label')
+    .evaluateAll((labels) =>
+      Object.fromEntries(
+        labels
+          .filter((label) => !(label as HTMLElement).hidden)
+          .map((label) => [
+            (label as HTMLElement).dataset.cityId ?? '',
+            (label as HTMLElement).style.transform,
+          ]),
+      ),
+    )
+
+  await expect
+    .poll(
+      async () => {
+        const current = await labelLayer
+          .locator('.city-label')
+          .evaluateAll((labels) =>
+            Object.fromEntries(
+              labels
+                .filter((label) => !(label as HTMLElement).hidden)
+                .map((label) => [
+                  (label as HTMLElement).dataset.cityId ?? '',
+                  (label as HTMLElement).style.transform,
+                ]),
+            ),
+          )
+        return Object.entries(snapshots).some(
+          ([cityId, transform]) =>
+            current[cityId] !== undefined && current[cityId] !== transform,
+        )
+      },
+      { timeout: 6_000 },
+    )
+    .toBe(true)
+})
+
+test('does not replay a stale city camera target after dragging', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { scene, fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const search = await openCountrySearch(page)
+  await search.fill('中国')
+  await search.press('Enter')
+  const countryCard = page.getByLabel('中国国家知识卡')
+  await countryCard.getByRole('button', { name: '探索城市上海' }).click()
+  await expect(page.getByLabel('上海城市知识卡')).toBeVisible()
+
+  const marker = page.getByTestId('world-mini-map-view-marker')
+  await page.waitForTimeout(1_300)
+  const cityTransform = await marker.getAttribute('transform')
+  const sceneBox = await scene.boundingBox()
+  expect(sceneBox).not.toBeNull()
+
+  await page.mouse.move(
+    sceneBox!.x + sceneBox!.width * 0.5,
+    sceneBox!.y + sceneBox!.height * 0.48,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    sceneBox!.x + sceneBox!.width * 0.72,
+    sceneBox!.y + sceneBox!.height * 0.55,
+    { steps: 10 },
+  )
+  await page.mouse.up()
+
+  await expect
+    .poll(() => marker.getAttribute('transform'))
+    .not.toBe(cityTransform)
+  const cityPoint = parseMiniMapTransform(cityTransform)
+  expect(cityPoint).not.toBeNull()
+  await page.waitForTimeout(1_500)
+  const settledPoint = parseMiniMapTransform(
+    await marker.getAttribute('transform'),
+  )
+  expect(settledPoint).not.toBeNull()
+  expect(
+    Math.hypot(settledPoint!.x - cityPoint!.x, settledPoint!.y - cityPoint!.y),
+  ).toBeGreaterThan(8)
 })
 
 test('keeps the full 2D map visible in touch landscape', async ({ page }) => {
@@ -408,6 +553,43 @@ test('keeps the full 2D map visible in touch landscape', async ({ page }) => {
   await map.locator('[data-country-code="CN"]').click()
   await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
   await expect(map).toBeVisible()
+})
+
+test('keeps the layer panel inside an iPad landscape safe area', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    })
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      value: 'MacIntel',
+    })
+  })
+  await page.setViewportSize({ width: 1194, height: 834 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const box = await layerControl.boundingBox()
+  expect(box).not.toBeNull()
+  expect(box!.x).toBeGreaterThanOrEqual(11)
+  expect(box!.y).toBeGreaterThanOrEqual(11)
+  expect(box!.x + box!.width).toBeLessThanOrEqual(1194 - 11)
+  expect(box!.y + box!.height).toBeLessThanOrEqual(834 - 11)
+
+  await layerControl.getByRole('button', { name: '首都' }).click()
+  await layerControl.getByRole('button', { name: '城市' }).click()
+  await expect(
+    layerControl.getByRole('button', { name: '首都' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    layerControl.getByRole('button', { name: '城市' }),
+  ).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('shows the fallback instead of crashing without WebGL', async ({

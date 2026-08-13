@@ -3,8 +3,6 @@ import type { City } from '../data/citySchema'
 
 export const OVERVIEW_CAMERA_DISTANCE = 425
 export const CITY_CAMERA_DISTANCE = 190
-export const PROXIMITY_ENTER_DISTANCE = 250
-export const PROXIMITY_EXIT_DISTANCE = 275
 export const GLOBE_VERTICAL_CENTER_RATIO = 0.45
 
 type CartesianPosition = {
@@ -47,6 +45,25 @@ export type CityMarker = {
   isCapital: boolean
 }
 
+export type CityLayerVisibility = {
+  showCapitals: boolean
+  showCities: boolean
+  selectedCityId: string | null
+  hoveredCityId: string | null
+}
+
+export function getVisibleLayerCities(
+  cities: readonly City[],
+  visibility: CityLayerVisibility,
+) {
+  return cities.filter(
+    (city) =>
+      city.id === visibility.selectedCityId ||
+      city.id === visibility.hoveredCityId ||
+      (city.isCapital ? visibility.showCapitals : visibility.showCities),
+  )
+}
+
 export function getBoundaryCode(value: object | undefined) {
   return (value as CountryBoundary | undefined)?.properties.code ?? null
 }
@@ -73,19 +90,7 @@ export function getCityIdForLayer(
   return layer === 'point' ? (getCityMarker(value)?.cityId ?? null) : null
 }
 
-export function resolveProximityCountryCode(
-  previousCountryCode: string | null,
-  centerCountryCode: string | null,
-  distance: number,
-) {
-  if (!centerCountryCode) return null
-  if (previousCountryCode === centerCountryCode) {
-    return distance <= PROXIMITY_EXIT_DISTANCE ? centerCountryCode : null
-  }
-  return distance <= PROXIMITY_ENTER_DISTANCE ? centerCountryCode : null
-}
-
-export function getCapitalLabelBudget(
+export function getCityLabelBudget(
   quality: 'balanced' | 'low',
   touchDevice: boolean,
 ) {
@@ -94,4 +99,11 @@ export function getCapitalLabelBudget(
 
 export function getCameraFlightDuration(reducedMotion: boolean) {
   return reducedMotion ? 0 : 1.05
+}
+
+export function shouldApplyCameraTargetRequest(
+  appliedRequestId: number | null,
+  nextRequestId: number,
+) {
+  return appliedRequestId !== nextRequestId
 }
