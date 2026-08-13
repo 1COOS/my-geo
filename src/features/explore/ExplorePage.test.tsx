@@ -1,9 +1,10 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import '../../app/i18n'
+import type { GeoPosition } from '../../shared/types/geo'
 import { ExplorePage } from './ExplorePage'
 
 const globePropsMock = vi.fn()
@@ -149,5 +150,66 @@ describe('ExplorePage', () => {
       '中国{Enter}',
     )
     expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
+  })
+
+  it('opens a city knowledge card and requests the closer city camera distance', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    await user.click(screen.getByRole('button', { name: '搜索国家' }))
+    await user.type(
+      screen.getByRole('combobox', { name: '搜索国家' }),
+      '中国{Enter}',
+    )
+    await user.click(screen.getByRole('button', { name: '探索城市上海' }))
+
+    expect(screen.getByLabelText('上海城市知识卡')).toBeInTheDocument()
+    expect(
+      (
+        globePropsMock.mock.lastCall![0] as {
+          cameraTarget: { distance: number; position: GeoPosition }
+          selectedCityId: string | null
+        }
+      ).cameraTarget.distance,
+    ).toBe(190)
+    expect(
+      (
+        globePropsMock.mock.lastCall![0] as {
+          selectedCityId: string | null
+        }
+      ).selectedCityId,
+    ).toBe('cn-shanghai')
+
+    await user.click(screen.getByRole('button', { name: '← 返回中国' }))
+    expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
+  })
+
+  it('shows the center-country cities after a close committed view', () => {
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        visibleCityCountryCode: string | null
+        onViewCenterCommit: (view: {
+          position: { latitude: number; longitude: number }
+          distance: number
+        }) => void
+      }
+
+    act(() =>
+      getProps().onViewCenterCommit({
+        position: { latitude: 35, longitude: 105 },
+        distance: 240,
+      }),
+    )
+    expect(getProps().visibleCityCountryCode).toBe('CN')
   })
 })

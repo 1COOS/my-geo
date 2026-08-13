@@ -1,5 +1,21 @@
 [
   {
+    "id": "world-cities",
+    "name": "SimpleMaps World Cities Database",
+    "publisher": "SimpleMaps / world-cities-json contributors",
+    "version": "world-cities-json 1.0.1",
+    "url": "https://simplemaps.com/data/world-cities",
+    "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+  },
+  {
+    "id": "my-geo-city-review",
+    "name": "My Geo reviewed city selection",
+    "publisher": "My Geo project",
+    "version": "2026-08-13",
+    "url": "https://github.com/1COOS/my-geo/blob/main/scripts/city-content.ts",
+    "license": "Repository-owned reviewed educational metadata"
+  },
+  {
     "id": "world-countries",
     "name": "World Countries dataset",
     "publisher": "mledoze/countries contributors",

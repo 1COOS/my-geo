@@ -6,6 +6,12 @@ export type GeoPosition = {
 export type CameraTarget = {
   requestId: number
   position: GeoPosition
+  distance: number
+}
+
+export type GlobeView = {
+  position: GeoPosition
+  distance: number
 }
 
 export type WorldMiniMapNavigation =

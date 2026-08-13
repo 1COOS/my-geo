@@ -179,6 +179,21 @@ test('keeps phone landscape controls separated and country details usable', asyn
   await expect(
     card.getByRole('button', { name: '关闭国家知识卡' }),
   ).toBeVisible()
+
+  const shanghai = card.getByRole('button', { name: '探索城市上海' })
+  await expect(shanghai).toBeVisible()
+  await shanghai.click({ force: true })
+  const cityCard = page.getByLabel('上海城市知识卡')
+  await expect(cityCard).toBeVisible()
+  await expect(cityCard.getByText('经济中心')).toBeVisible()
+  await expect(cityCard.getByText(/31\.1667°N/)).toBeVisible()
+  const cityCardBox = await cityCard.boundingBox()
+  expect(cityCardBox).not.toBeNull()
+  expect(cityCardBox!.y).toBeGreaterThanOrEqual(11)
+  expect(cityCardBox!.y + cityCardBox!.height).toBeLessThanOrEqual(379)
+
+  await cityCard.getByRole('button', { name: '← 返回中国' }).click()
+  await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
 })
 
 for (const viewport of [
@@ -336,6 +351,38 @@ test('keeps the 2D map synchronized with country and globe navigation', async ({
   await expect(map.locator('.is-selected')).toHaveCount(0)
 })
 
+test('shows adaptive capital labels and opens a city from the country card', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const labels = page.locator('.city-label:not([hidden])')
+  await expect.poll(() => labels.count()).toBeGreaterThan(0)
+  expect(await labels.count()).toBeLessThanOrEqual(30)
+
+  const search = await openCountrySearch(page)
+  await search.fill('中国')
+  await search.press('Enter')
+  const countryCard = page.getByLabel('中国国家知识卡')
+  await expect(
+    countryCard.getByRole('button', { name: '探索城市上海' }),
+  ).toBeVisible()
+  await countryCard.getByRole('button', { name: '探索城市上海' }).click()
+
+  const cityCard = page.getByLabel('上海城市知识卡')
+  await expect(cityCard).toBeVisible()
+  await expect(cityCard.getByRole('heading', { name: '上海' })).toBeVisible()
+  await expect(cityCard.getByText('世界知名')).toBeVisible()
+  await cityCard.getByText(/资料来源/).click()
+  await expect(
+    cityCard.getByText('SimpleMaps World Cities Database'),
+  ).toBeVisible()
+})
+
 test('keeps the full 2D map visible in touch landscape', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'maxTouchPoints', {
@@ -433,7 +480,7 @@ test('searches China and opens the featured knowledge card', async ({
     'src',
     '/flags/cn.svg',
   )
-  await expect(card.getByText('北京', { exact: true })).toBeVisible()
+  await expect(card.getByRole('button', { name: '探索城市北京' })).toBeVisible()
   await expect(card.getByText('人民币（CNY）')).toBeVisible()
   await expect(card.getByText('中国香港')).toBeVisible()
   await expect(card.getByText('中国澳门')).toBeVisible()
@@ -468,7 +515,9 @@ test('searches a microstate without Natural Earth geometry', async ({
 
   const card = page.getByLabel('梵蒂冈国家知识卡')
   await expect(card).toBeVisible()
-  await expect(card.getByText('梵蒂冈城', { exact: true })).toBeVisible()
+  await expect(
+    card.getByRole('button', { name: '探索城市梵蒂冈城' }),
+  ).toBeVisible()
   await expect(card.getByText('梵蒂冈城国')).toBeVisible()
   await expect(card.getByText('0.44 km²')).toBeVisible()
   await expect(card.getByText('拉丁语')).toBeVisible()

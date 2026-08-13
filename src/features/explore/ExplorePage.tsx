@@ -11,19 +11,26 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { getCountry } from '../../data/countries'
+import { getCitiesForCountry, getCity, getCountry } from '../../data/countries'
 import { ControlButton } from '../../shared/components/ControlButton'
 import { WebGLFallback } from '../../shared/components/WebGLFallback'
 import { supportsWebGL } from '../../shared/lib/webgl'
 import type {
   CameraTarget,
   GeoPosition,
+  GlobeView,
   WorldMiniMapNavigation,
 } from '../../shared/types/geo'
+import {
+  CITY_CAMERA_DISTANCE,
+  OVERVIEW_CAMERA_DISTANCE,
+  resolveProximityCountryCode,
+} from '../../scene/countrySceneInteraction'
 import { CountryDetailPanel } from './CountryDetailPanel'
 import { CountrySearch } from './CountrySearch'
 import { useExperienceStore } from './useExperienceStore'
 import { WorldMiniMap, type WorldMiniMapHandle } from './WorldMiniMap'
+import { findCountryAtPosition } from './worldMiniMapUtils'
 
 const GlobeScene = lazy(async () => {
   const sceneModule = await import('../../scene/GlobeScene')
@@ -76,9 +83,15 @@ export function ExplorePage() {
   const searchButtonRef = useRef<HTMLButtonElement>(null)
   const [miniMapExpanded, setMiniMapExpanded] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(null)
+  const [hoveredCityId, setHoveredCityId] = useState<string | null>(null)
+  const [proximityCountryCode, setProximityCountryCode] = useState<
+    string | null
+  >(null)
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(() => ({
     requestId: 0,
     position: getCountry('CN')!.center,
+    distance: OVERVIEW_CAMERA_DISTANCE,
   }))
   const webGLAvailable = useMemo(() => supportsWebGL(), [])
   const {
@@ -117,23 +130,53 @@ export function ExplorePage() {
   }, [closeSearch, searchOpen])
 
   const selectedCountry = getCountry(selectedCountryCode)
-  const requestCameraTarget = useCallback((position: GeoPosition) => {
-    cameraRequestIdRef.current += 1
-    setCameraTarget({
-      requestId: cameraRequestIdRef.current,
-      position,
-    })
-  }, [])
+  const selectedCity = getCity(selectedCityId)
+  const visibleCityCountryCode = selectedCountryCode ?? proximityCountryCode
+  const visibleCountryCities = getCitiesForCountry(selectedCountryCode)
+  const requestCameraTarget = useCallback(
+    (position: GeoPosition, distance = OVERVIEW_CAMERA_DISTANCE) => {
+      cameraRequestIdRef.current += 1
+      setCameraTarget({
+        requestId: cameraRequestIdRef.current,
+        position,
+        distance,
+      })
+    },
+    [],
+  )
   const navigateToCountry = useCallback(
     (countryCode: string) => {
       const country = getCountry(countryCode)
       if (!country) return
       setMiniMapExpanded(false)
+      setSelectedCityId(null)
+      setHoveredCityId(null)
+      setProximityCountryCode(null)
       selectCountry(countryCode)
       requestCameraTarget(country.center)
     },
     [requestCameraTarget, selectCountry],
   )
+  const navigateToCity = useCallback(
+    (cityId: string) => {
+      const city = getCity(cityId)
+      if (!city) return
+      setMiniMapExpanded(false)
+      setProximityCountryCode(null)
+      selectCountry(city.countryCode)
+      setSelectedCityId(city.id)
+      requestCameraTarget(
+        { latitude: city.latitude, longitude: city.longitude },
+        CITY_CAMERA_DISTANCE,
+      )
+    },
+    [requestCameraTarget, selectCountry],
+  )
+  const clearSelection = useCallback(() => {
+    setSelectedCityId(null)
+    setHoveredCityId(null)
+    selectCountry(null)
+  }, [selectCountry])
   const handleMiniMapNavigation = useCallback(
     (navigation: WorldMiniMapNavigation) => {
       if (navigation.kind === 'country') {
@@ -141,20 +184,40 @@ export function ExplorePage() {
         return
       }
 
-      selectCountry(null)
+      clearSelection()
+      setProximityCountryCode(null)
       requestCameraTarget(navigation.position)
     },
-    [navigateToCountry, requestCameraTarget, selectCountry],
+    [clearSelection, navigateToCountry, requestCameraTarget],
   )
-  const handleViewCenterChange = useCallback((position: GeoPosition) => {
-    miniMapRef.current?.setViewCenter(position)
+  const handleViewCenterChange = useCallback((view: GlobeView) => {
+    miniMapRef.current?.setViewCenter(view.position)
   }, [])
+  const handleViewCenterCommit = useCallback(
+    (view: GlobeView) => {
+      miniMapRef.current?.setViewCenter(view.position)
+      if (selectedCountryCode) {
+        setProximityCountryCode(null)
+        return
+      }
+      const centerCountryCode = findCountryAtPosition(view.position)
+      setProximityCountryCode((previousCountryCode) =>
+        resolveProximityCountryCode(
+          previousCountryCode,
+          centerCountryCode,
+          view.distance,
+        ),
+      )
+    },
+    [selectedCountryCode],
+  )
 
   const effectiveAutoRotate =
     autoRotate &&
     !reducedMotion &&
     selectedCountryCode === null &&
-    hoveredCountryCode === null
+    hoveredCountryCode === null &&
+    hoveredCityId === null
 
   return (
     <main
@@ -178,12 +241,17 @@ export function ExplorePage() {
             cameraTarget={cameraTarget}
             quality={quality}
             reducedMotion={reducedMotion}
+            visibleCityCountryCode={visibleCityCountryCode}
             selectedCountryCode={selectedCountryCode}
+            selectedCityId={selectedCityId}
             hoveredCountryCode={hoveredCountryCode}
+            hoveredCityId={hoveredCityId}
             onSelectCountry={navigateToCountry}
+            onSelectCity={navigateToCity}
             onHoverCountry={hoverCountry}
+            onHoverCity={setHoveredCityId}
             onViewCenterChange={handleViewCenterChange}
-            onViewCenterCommit={handleViewCenterChange}
+            onViewCenterCommit={handleViewCenterCommit}
           />
         </Suspense>
       ) : (
@@ -215,7 +283,7 @@ export function ExplorePage() {
                 key={selectedCountry?.code ?? 'no-selection'}
                 selectedCountry={selectedCountry}
                 onSelect={navigateToCountry}
-                onClearSelection={() => selectCountry(null)}
+                onClearSelection={clearSelection}
                 autoFocus
                 onRequestClose={closeSearch}
               />
@@ -266,7 +334,11 @@ export function ExplorePage() {
         <CountryDetailPanel
           key={selectedCountry.code}
           country={selectedCountry}
-          onClose={() => selectCountry(null)}
+          cities={visibleCountryCities}
+          selectedCity={selectedCity}
+          onSelectCity={navigateToCity}
+          onBackToCountry={() => setSelectedCityId(null)}
+          onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />
       ) : null}

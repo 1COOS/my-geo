@@ -2,7 +2,7 @@ import { OrbitControls, Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import R3fGlobe, { type GlobeMethods } from 'r3f-globe'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react'
 import {
   Color,
   MeshStandardMaterial,
@@ -12,30 +12,49 @@ import {
 } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
-import { countries, countryBoundaries, getCountry } from '../data/countries'
-import type { CameraTarget, GeoPosition } from '../shared/types/geo'
+import {
+  capitalCities,
+  countryBoundaries,
+  getCitiesForCountry,
+  getCity,
+  getCountry,
+} from '../data/countries'
+import type { City } from '../data/citySchema'
+import type { CameraTarget, GlobeView } from '../shared/types/geo'
 import {
   getBoundaryCode,
   getCameraFlightDuration,
-  getCapitalMarkerCode,
+  getCapitalLabelBudget,
+  getCityIdForLayer,
+  getCityMarker,
   getCountryCodeForLayer,
   getGlobeViewOffset,
   getOverviewCameraPosition,
   OVERVIEW_CAMERA_DISTANCE,
-  type CapitalMarker,
+  type CityMarker,
 } from './countrySceneInteraction'
 
-type GlobeSceneProps = {
+export type GlobeSceneProps = {
   autoRotate: boolean
   cameraTarget: CameraTarget
   quality: 'balanced' | 'low'
   reducedMotion: boolean
+  visibleCityCountryCode: string | null
   selectedCountryCode: string | null
+  selectedCityId: string | null
   hoveredCountryCode: string | null
+  hoveredCityId: string | null
   onSelectCountry: (countryCode: string) => void
+  onSelectCity: (cityId: string) => void
   onHoverCountry: (countryCode: string | null) => void
-  onViewCenterChange: (position: GeoPosition) => void
-  onViewCenterCommit: (position: GeoPosition) => void
+  onHoverCity: (cityId: string | null) => void
+  onViewCenterChange: (view: GlobeView) => void
+  onViewCenterCommit: (view: GlobeView) => void
+}
+
+type WorldProps = GlobeSceneProps & {
+  labelCities: City[]
+  labelLayerRef: RefObject<HTMLDivElement | null>
 }
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
@@ -51,24 +70,61 @@ type CameraFlight = {
   duration: number
 }
 
+type LabelRect = {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+function overlaps(left: LabelRect, right: LabelRect) {
+  return !(
+    left.right < right.left ||
+    left.left > right.right ||
+    left.bottom < right.top ||
+    left.top > right.bottom
+  )
+}
+
+function getLabelPriority(
+  city: City,
+  selectedCityId: string | null,
+  hoveredCityId: string | null,
+  visibleCityCountryCode: string | null,
+) {
+  if (city.id === selectedCityId) return 0
+  if (city.id === hoveredCityId) return 1
+  if (city.countryCode === visibleCityCountryCode) return 2 + city.order / 10
+  return 10 + city.order / 10
+}
+
 function World({
   autoRotate,
   cameraTarget,
   quality,
   reducedMotion,
+  visibleCityCountryCode,
   selectedCountryCode,
+  selectedCityId,
   hoveredCountryCode,
+  hoveredCityId,
   onSelectCountry,
+  onSelectCity,
   onHoverCountry,
+  onHoverCity,
   onViewCenterChange,
   onViewCenterCommit,
-}: GlobeSceneProps) {
+  labelCities,
+  labelLayerRef,
+}: WorldProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const controlsRef = useRef<OrbitControlsImpl>(null)
   const globeReadyRef = useRef(false)
   const cameraTargetRef = useRef(cameraTarget)
   const cameraFlightRef = useRef<CameraFlight | null>(null)
   const viewCenterFrameRef = useRef<number | null>(null)
+  const labelElementsRef = useRef(new Map<string, HTMLElement>())
+  const visibleLabelIdsRef = useRef(new Set<string>())
   const { camera, gl, size } = useThree()
   const rendererSize = useMemo(
     () => new Vector2(size.width, size.height),
@@ -85,24 +141,130 @@ function World({
       }),
     [],
   )
-  const capitalMarkers = useMemo<CapitalMarker[]>(
-    () =>
-      countries.flatMap((country) =>
-        country.hasGeometry
-          ? []
-          : country.capitals.slice(0, 1).map((capital) => ({
-              countryCode: country.code,
-              lat: capital.latitude,
-              lng: capital.longitude,
-              name: capital.name.zh,
-            })),
-      ),
-    [],
-  )
+  const cityMarkers = useMemo<CityMarker[]>(() => {
+    const cityIds = new Set(capitalCities.map((city) => city.id))
+    for (const city of getCitiesForCountry(visibleCityCountryCode)) {
+      cityIds.add(city.id)
+    }
+    return [...cityIds].flatMap((cityId) => {
+      const city = getCity(cityId)
+      return city
+        ? [
+            {
+              cityId: city.id,
+              countryCode: city.countryCode,
+              lat: city.latitude,
+              lng: city.longitude,
+              name: city.name.zh,
+              isCapital: city.isCapital,
+            },
+          ]
+        : []
+    })
+  }, [visibleCityCountryCode])
 
   const syncPointOfView = useCallback(() => {
     globeRef.current?.setPointOfView(camera)
   }, [camera])
+
+  const layoutCityLabels = useCallback(() => {
+    const globe = globeRef.current
+    if (!globe) return
+
+    const labelElements = labelElementsRef.current
+    for (const cityId of visibleLabelIdsRef.current) {
+      const element = labelElements.get(cityId)
+      if (element) element.hidden = true
+    }
+    const nextVisibleIds = new Set<string>()
+
+    const touchDevice = navigator.maxTouchPoints > 0
+    const budget = getCapitalLabelBudget(quality, touchDevice)
+    const globeRadius = globe.getGlobeRadius()
+    const acceptedRects: LabelRect[] = []
+    let visibleCount = 0
+
+    const sortedCities = [...labelCities].sort(
+      (left, right) =>
+        getLabelPriority(
+          left,
+          selectedCityId,
+          hoveredCityId,
+          visibleCityCountryCode,
+        ) -
+        getLabelPriority(
+          right,
+          selectedCityId,
+          hoveredCityId,
+          visibleCityCountryCode,
+        ),
+    )
+
+    for (const city of sortedCities) {
+      if (visibleCount >= budget) break
+      const element = labelElements.get(city.id)
+      if (!element) continue
+
+      const coordinate = globe.getCoords(city.latitude, city.longitude, 0.04)
+      const worldPosition = new Vector3(
+        coordinate.x,
+        coordinate.y,
+        coordinate.z,
+      )
+      if (worldPosition.dot(camera.position) <= globeRadius ** 2) continue
+
+      const screenPosition = worldPosition.clone().project(camera)
+      const x = (screenPosition.x * 0.5 + 0.5) * size.width
+      const y = (-screenPosition.y * 0.5 + 0.5) * size.height
+      if (x < 12 || x > size.width - 12 || y < 12 || y > size.height - 12) {
+        continue
+      }
+
+      const width = Math.max(56, city.name.zh.length * 14 + 28)
+      const height = 28
+      const rect = {
+        left: x - width / 2 - 5,
+        top: y - height / 2 - 5,
+        right: x + width / 2 + 5,
+        bottom: y + height / 2 + 5,
+      }
+      const forced = city.id === selectedCityId || city.id === hoveredCityId
+      if (
+        !forced &&
+        acceptedRects.some((accepted) => overlaps(rect, accepted))
+      ) {
+        continue
+      }
+
+      element.hidden = false
+      element.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`
+      nextVisibleIds.add(city.id)
+      acceptedRects.push(rect)
+      visibleCount += 1
+    }
+    visibleLabelIdsRef.current = nextVisibleIds
+  }, [
+    camera,
+    hoveredCityId,
+    labelCities,
+    quality,
+    selectedCityId,
+    size.height,
+    size.width,
+    visibleCityCountryCode,
+  ])
+
+  useEffect(() => {
+    const labelLayer = labelLayerRef.current
+    if (!labelLayer) return
+    labelElementsRef.current = new Map(
+      [...labelLayer.querySelectorAll<HTMLElement>('[data-city-id]')].map(
+        (element) => [element.dataset.cityId ?? '', element],
+      ),
+    )
+    visibleLabelIdsRef.current.clear()
+    layoutCityLabels()
+  }, [labelCities, labelLayerRef, layoutCityLabels])
 
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return
@@ -117,47 +279,56 @@ function World({
     )
     camera.updateProjectionMatrix()
     syncPointOfView()
+    layoutCityLabels()
 
     return () => {
       camera.clearViewOffset()
       camera.updateProjectionMatrix()
     }
-  }, [camera, size.height, size.width, syncPointOfView])
+  }, [camera, layoutCityLabels, size.height, size.width, syncPointOfView])
 
-  const getViewCenter = useCallback((): GeoPosition | null => {
+  const getView = useCallback((): GlobeView | null => {
     const coordinate = globeRef.current?.toGeoCoords(camera.position)
     if (!coordinate) return null
     return {
-      latitude: coordinate.lat,
-      longitude: coordinate.lng,
+      position: {
+        latitude: coordinate.lat,
+        longitude: coordinate.lng,
+      },
+      distance: camera.position.length(),
     }
   }, [camera])
 
-  const scheduleViewCenterChange = useCallback(() => {
+  const scheduleViewChange = useCallback(() => {
     if (viewCenterFrameRef.current !== null) return
     viewCenterFrameRef.current = window.requestAnimationFrame(() => {
       viewCenterFrameRef.current = null
-      const position = getViewCenter()
-      if (position) onViewCenterChange(position)
+      layoutCityLabels()
+      const view = getView()
+      if (view) onViewCenterChange(view)
     })
-  }, [getViewCenter, onViewCenterChange])
+  }, [getView, layoutCityLabels, onViewCenterChange])
 
-  const commitViewCenter = useCallback(() => {
-    const position = getViewCenter()
-    if (!position) return
-    onViewCenterChange(position)
-    onViewCenterCommit(position)
-  }, [getViewCenter, onViewCenterChange, onViewCenterCommit])
+  const commitView = useCallback(() => {
+    layoutCityLabels()
+    const view = getView()
+    if (!view) return
+    onViewCenterChange(view)
+    onViewCenterCommit(view)
+  }, [getView, layoutCityLabels, onViewCenterChange, onViewCenterCommit])
 
-  const flyToPosition = useCallback(
-    (position: GeoPosition) => {
+  const flyToTarget = useCallback(
+    (target: CameraTarget) => {
       if (!globeReadyRef.current || !globeRef.current) return
       const destination = globeRef.current.getCoords(
-        position.latitude,
-        position.longitude,
+        target.position.latitude,
+        target.position.longitude,
         1.42,
       )
-      const overviewPosition = getOverviewCameraPosition(destination)
+      const overviewPosition = getOverviewCameraPosition(
+        destination,
+        target.distance,
+      )
       const targetPosition = new Vector3(
         overviewPosition.x,
         overviewPosition.y,
@@ -171,7 +342,7 @@ function World({
         controlsRef.current?.target.set(0, 0, 0)
         controlsRef.current?.update()
         syncPointOfView()
-        commitViewCenter()
+        commitView()
         return
       }
 
@@ -183,7 +354,7 @@ function World({
       }
       if (controlsRef.current) controlsRef.current.enabled = false
     },
-    [camera, commitViewCenter, reducedMotion, syncPointOfView],
+    [camera, commitView, reducedMotion, syncPointOfView],
   )
 
   useFrame((_state, delta) => {
@@ -197,7 +368,7 @@ function World({
     camera.lookAt(0, 0, 0)
     controlsRef.current?.target.set(0, 0, 0)
     syncPointOfView()
-    scheduleViewCenterChange()
+    scheduleViewChange()
 
     if (progress >= 1) {
       cameraFlightRef.current = null
@@ -205,7 +376,7 @@ function World({
         controlsRef.current.enabled = true
         controlsRef.current.update()
       }
-      commitViewCenter()
+      commitView()
     }
   })
 
@@ -213,14 +384,18 @@ function World({
     cameraTargetRef.current = cameraTarget
     cameraFlightRef.current = null
     if (controlsRef.current) controlsRef.current.enabled = true
-    flyToPosition(cameraTarget.position)
-  }, [cameraTarget, flyToPosition])
+    flyToTarget(cameraTarget)
+  }, [cameraTarget, flyToTarget])
 
   useEffect(() => {
     gl.setPixelRatio(
       Math.min(window.devicePixelRatio, quality === 'balanced' ? 1.75 : 1.2),
     )
   }, [gl, quality])
+
+  useEffect(() => {
+    layoutCityLabels()
+  }, [layoutCityLabels])
 
   useEffect(() => () => globeMaterial.dispose(), [globeMaterial])
 
@@ -297,30 +472,44 @@ function World({
         }}
         polygonCapCurvatureResolution={quality === 'balanced' ? 2 : 4}
         polygonsTransitionDuration={reducedMotion ? 0 : 260}
-        pointsData={capitalMarkers}
+        pointsData={cityMarkers}
         pointLat="lat"
         pointLng="lng"
         pointAltitude={0.018}
-        pointRadius={(value) =>
-          getCapitalMarkerCode(value) === selectedCountryCode ? 0.48 : 0.34
-        }
+        pointRadius={(value) => {
+          const marker = getCityMarker(value)
+          if (marker?.cityId === selectedCityId) return 0.58
+          if (marker?.cityId === hoveredCityId) return 0.5
+          if (!marker?.isCapital) return 0.3
+          return marker.countryCode === selectedCountryCode ? 0.46 : 0.34
+        }}
         pointColor={(value) => {
-          const countryCode = getCapitalMarkerCode(value)
-          if (countryCode === selectedCountryCode) return '#ffd85e'
-          if (countryCode === hoveredCountryCode) return '#9ff2ff'
-          return '#f5f0c7'
+          const marker = getCityMarker(value)
+          if (marker?.cityId === selectedCityId) return '#ffffff'
+          if (marker?.cityId === hoveredCityId) return '#b8f5ff'
+          if (!marker?.isCapital) return '#4dcfff'
+          if (marker.countryCode === selectedCountryCode) return '#ffd85e'
+          return '#f5cf62'
         }}
         pointResolution={quality === 'balanced' ? 16 : 8}
         pointsTransitionDuration={reducedMotion ? 0 : 220}
         onGlobeReady={() => {
           globeReadyRef.current = true
           syncPointOfView()
-          flyToPosition(cameraTargetRef.current.position)
+          layoutCityLabels()
+          flyToTarget(cameraTargetRef.current)
         }}
         onHover={(layer, value) => {
-          onHoverCountry(getCountryCodeForLayer(layer, value))
+          const cityId = getCityIdForLayer(layer, value)
+          onHoverCity(cityId)
+          onHoverCountry(cityId ? null : getCountryCodeForLayer(layer, value))
         }}
         onClick={(layer, value) => {
+          const cityId = getCityIdForLayer(layer, value)
+          if (cityId) {
+            onSelectCity(cityId)
+            return
+          }
           const countryCode = getCountryCodeForLayer(layer, value)
           if (countryCode) onSelectCountry(countryCode)
         }}
@@ -343,9 +532,9 @@ function World({
         autoRotateSpeed={0.42}
         onChange={() => {
           syncPointOfView()
-          scheduleViewCenterChange()
+          scheduleViewChange()
         }}
-        onEnd={commitViewCenter}
+        onEnd={commitView}
       />
 
       {quality === 'balanced' ? (
@@ -364,7 +553,19 @@ function World({
 
 export function GlobeScene(props: GlobeSceneProps) {
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const labelLayerRef = useRef<HTMLDivElement>(null)
   const hoveredCountry = getCountry(props.hoveredCountryCode)
+  const hoveredCity = getCity(props.hoveredCityId)
+  const labelCities = useMemo(() => {
+    const cityIds = new Set(capitalCities.map((city) => city.id))
+    for (const city of getCitiesForCountry(props.visibleCityCountryCode)) {
+      cityIds.add(city.id)
+    }
+    return [...cityIds].flatMap((cityId) => {
+      const city = getCity(cityId)
+      return city ? [city] : []
+    })
+  }, [props.visibleCityCountryCode])
 
   return (
     <div
@@ -377,7 +578,10 @@ export function GlobeScene(props: GlobeSceneProps) {
         if (!tooltipRef.current) return
         tooltipRef.current.style.transform = `translate3d(${event.clientX + 14}px, ${event.clientY + 14}px, 0)`
       }}
-      onPointerLeave={() => props.onHoverCountry(null)}
+      onPointerLeave={() => {
+        props.onHoverCountry(null)
+        props.onHoverCity(null)
+      }}
     >
       <Canvas
         camera={{
@@ -394,13 +598,50 @@ export function GlobeScene(props: GlobeSceneProps) {
         }}
         fallback={null}
       >
-        <World {...props} />
+        <World
+          {...props}
+          labelCities={labelCities}
+          labelLayerRef={labelLayerRef}
+        />
       </Canvas>
-      {hoveredCountry ? (
+      <div
+        ref={labelLayerRef}
+        className="globe-city-labels"
+        aria-label="首都与主要城市标签"
+      >
+        {labelCities.map((city) => (
+          <button
+            type="button"
+            key={city.id}
+            hidden
+            className={city.isCapital ? 'city-label is-capital' : 'city-label'}
+            data-city-id={city.id}
+            aria-label={`定位到${city.name.zh}${city.isCapital ? '首都' : '城市'}`}
+            onPointerEnter={() => props.onHoverCity(city.id)}
+            onPointerLeave={() => props.onHoverCity(null)}
+            onClick={() => props.onSelectCity(city.id)}
+          >
+            <span aria-hidden="true" />
+            {city.name.zh}
+          </button>
+        ))}
+      </div>
+      {hoveredCity || hoveredCountry ? (
         <div ref={tooltipRef} className="country-hover-tooltip" role="tooltip">
-          <img src={hoveredCountry.flagAsset} alt="" />
-          <span>{hoveredCountry.name.zh}</span>
-          <small>{hoveredCountry.code}</small>
+          {hoveredCity ? (
+            <>
+              <span>{hoveredCity.name.zh}</span>
+              <small>
+                {hoveredCity.isCapital ? '首都' : hoveredCity.name.en}
+              </small>
+            </>
+          ) : hoveredCountry ? (
+            <>
+              <img src={hoveredCountry.flagAsset} alt="" />
+              <span>{hoveredCountry.name.zh}</span>
+              <small>{hoveredCountry.code}</small>
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>

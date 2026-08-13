@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { countries, countryBoundaries, countrySourcesById } from './countries'
+import {
+  capitalCities,
+  cities,
+  countries,
+  countryBoundaries,
+  countrySourcesById,
+  getCitiesForCountry,
+} from './countries'
 
 const expectedFeaturedCodes = [
   'AU',
@@ -103,5 +110,57 @@ describe('generated country catalogue', () => {
     expect(
       countries.find((country) => country.code === 'VA')?.hasGeometry,
     ).toBe(false)
+  })
+
+  it('contains every authoritative capital and the reviewed priority-city allocation', () => {
+    expect(capitalCities).toHaveLength(197)
+    expect(cities).toHaveLength(338)
+    expect(new Set(cities.map((city) => city.id)).size).toBe(cities.length)
+
+    const expectedCounts = {
+      CN: 5,
+      IN: 5,
+      US: 5,
+      JP: 5,
+      SG: 1,
+      ZA: 4,
+      NZ: 3,
+    }
+    for (const [countryCode, count] of Object.entries(expectedCounts)) {
+      expect(getCitiesForCountry(countryCode)).toHaveLength(count)
+    }
+
+    expect(getCitiesForCountry('CN').map((city) => city.name.zh)).toEqual([
+      '北京',
+      '上海',
+      '广州',
+      '深圳',
+      '成都',
+    ])
+    expect(getCitiesForCountry('VA')).toHaveLength(1)
+    expect(getCitiesForCountry('VA')[0]?.isCapital).toBe(true)
+  })
+
+  it('keeps reviewed city sources, coordinates, reasons, and country orders valid', () => {
+    for (const city of cities) {
+      expect(city.latitude).toBeGreaterThanOrEqual(-90)
+      expect(city.latitude).toBeLessThanOrEqual(90)
+      expect(city.longitude).toBeGreaterThanOrEqual(-180)
+      expect(city.longitude).toBeLessThanOrEqual(180)
+      expect(city.name.zh).toBeTruthy()
+      expect(city.name.en).toBeTruthy()
+      expect(city.reasons.length).toBeGreaterThan(0)
+      for (const sourceId of city.sourceIds) {
+        expect(countrySourcesById.has(sourceId)).toBe(true)
+      }
+    }
+
+    for (const country of countries) {
+      expect(
+        getCitiesForCountry(country.code).map((city) => city.order),
+      ).toEqual(
+        getCitiesForCountry(country.code).map((_city, index) => index + 1),
+      )
+    }
   })
 })

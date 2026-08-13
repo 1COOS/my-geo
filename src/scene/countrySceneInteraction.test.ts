@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest'
 
 import { countryBoundaries } from '../data/countries'
 import {
+  CITY_CAMERA_DISTANCE,
   getCameraFlightDuration,
+  getCapitalLabelBudget,
   getCountryCodeForLayer,
   getGlobeViewOffset,
   getOverviewCameraPosition,
   GLOBE_VERTICAL_CENTER_RATIO,
   OVERVIEW_CAMERA_DISTANCE,
-  type CapitalMarker,
+  PROXIMITY_ENTER_DISTANCE,
+  PROXIMITY_EXIT_DISTANCE,
+  resolveProximityCountryCode,
+  type CityMarker,
 } from './countrySceneInteraction'
 
 describe('country scene interaction', () => {
@@ -16,11 +21,13 @@ describe('country scene interaction', () => {
     const chinaBoundary = countryBoundaries.features.find(
       (boundary) => boundary.properties.code === 'CN',
     )
-    const vaticanMarker: CapitalMarker = {
+    const vaticanMarker: CityMarker = {
+      cityId: 'va-vatican-city',
       countryCode: 'VA',
       lat: 41.904,
       lng: 12.453,
       name: '梵蒂冈城',
+      isCapital: true,
     }
 
     expect(getCountryCodeForLayer('polygon', chinaBoundary)).toBe('CN')
@@ -39,6 +46,32 @@ describe('country scene interaction', () => {
     expect(Math.hypot(position.x, position.y, position.z)).toBeCloseTo(
       OVERVIEW_CAMERA_DISTANCE,
     )
+  })
+
+  it('supports a closer city camera distance', () => {
+    const position = getOverviewCameraPosition(
+      { x: 20, y: -40, z: 80 },
+      CITY_CAMERA_DISTANCE,
+    )
+
+    expect(CITY_CAMERA_DISTANCE).toBe(190)
+    expect(Math.hypot(position.x, position.y, position.z)).toBeCloseTo(190)
+  })
+
+  it('uses 250/275 proximity hysteresis and clears ocean centers', () => {
+    expect(PROXIMITY_ENTER_DISTANCE).toBe(250)
+    expect(PROXIMITY_EXIT_DISTANCE).toBe(275)
+    expect(resolveProximityCountryCode(null, 'CN', 250)).toBe('CN')
+    expect(resolveProximityCountryCode(null, 'CN', 251)).toBeNull()
+    expect(resolveProximityCountryCode('CN', 'CN', 275)).toBe('CN')
+    expect(resolveProximityCountryCode('CN', 'CN', 276)).toBeNull()
+    expect(resolveProximityCountryCode('CN', null, 190)).toBeNull()
+  })
+
+  it('limits adaptive labels for low quality and touch devices', () => {
+    expect(getCapitalLabelBudget('balanced', false)).toBe(30)
+    expect(getCapitalLabelBudget('balanced', true)).toBe(16)
+    expect(getCapitalLabelBudget('low', false)).toBe(16)
   })
 
   it('places the globe center at 45 percent of the viewport height', () => {

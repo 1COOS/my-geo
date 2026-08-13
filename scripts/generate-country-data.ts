@@ -25,6 +25,8 @@ import {
   countrySourceRegistrySchema,
   type Country,
 } from '../src/data/countrySchema'
+import { cityCatalogSchema, type City } from '../src/data/citySchema'
+import { priorityCityCounts, reviewedCitySelections } from './city-content'
 
 type CitySource = {
   city: string
@@ -33,6 +35,8 @@ type CitySource = {
   lng: string
   iso2: string
   capital: string
+  population: string
+  id: string
 }
 
 type SourceFeature = {
@@ -70,6 +74,30 @@ function normalizeName(value: string) {
     .replace(/\p{Diacritic}/gu, '')
     .replace(/[^a-z0-9]/gi, '')
     .toLowerCase()
+}
+
+function slugify(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+}
+
+function findCitySource(countryCode: string, cityName: string) {
+  const normalizedName = normalizeName(cityName)
+  return citySource
+    .filter(
+      (city) =>
+        city.iso2 === countryCode &&
+        (normalizeName(city.city) === normalizedName ||
+          normalizeName(city.city_ascii) === normalizedName),
+    )
+    .sort(
+      (left, right) =>
+        Number(right.population || 0) - Number(left.population || 0),
+    )[0]
 }
 
 async function readJson<T>(filePath: string): Promise<T> {
@@ -121,12 +149,7 @@ function findCapital(
   const alias =
     capitalNameAliases[`${countryCode}:${capitalName}`] ?? capitalName
   const normalizedAlias = normalizeName(alias)
-  const matchingCity = citySource.find(
-    (city) =>
-      city.iso2 === countryCode &&
-      (normalizeName(city.city) === normalizedAlias ||
-        normalizeName(city.city_ascii) === normalizedAlias),
-  )
+  const matchingCity = findCitySource(countryCode, normalizedAlias)
 
   if (!matchingCity) {
     throw new Error(
@@ -310,6 +333,97 @@ const countriesByNumericCode = new Map(
   countries.map((country) => [country.numericCode, country]),
 )
 
+const cities: City[] = countries.flatMap((country) => {
+  const capitalCities = country.capitals.map((capital, index) => {
+    const alias =
+      capitalNameAliases[`${country.code}:${capital.name.en}`] ??
+      capital.name.en
+    const matchingCity = findCitySource(country.code, alias)
+
+    return {
+      id: `${country.code.toLowerCase()}-${slugify(capital.name.en)}`,
+      countryCode: country.code,
+      name: capital.name,
+      latitude: capital.latitude,
+      longitude: capital.longitude,
+      population: matchingCity?.population
+        ? Number(matchingCity.population)
+        : null,
+      isCapital: true,
+      order: index + 1,
+      reasons: ['capital'] as City['reasons'],
+      sourceIds: matchingCity
+        ? ['world-countries', 'world-cities']
+        : ['world-countries'],
+    }
+  })
+
+  const reviewedSelections =
+    reviewedCitySelections[
+      country.code as keyof typeof reviewedCitySelections
+    ] ?? []
+  const reviewedCities = reviewedSelections.map((selection, index) => {
+    const matchingCity = findCitySource(country.code, selection.sourceName)
+    if (!matchingCity) {
+      throw new Error(
+        `Missing reviewed city coordinates for ${country.code}:${selection.sourceName}`,
+      )
+    }
+    const topPopulationCandidates = citySource
+      .filter(
+        (city) =>
+          city.iso2 === country.code && Number(city.population || 0) > 0,
+      )
+      .sort(
+        (left, right) =>
+          Number(right.population || 0) - Number(left.population || 0),
+      )
+      .slice(0, 10)
+    const isTopPopulationCandidate = topPopulationCandidates.some(
+      (city) => city.id === matchingCity.id,
+    )
+    const hasReviewedReplacementReason = selection.reasons.some(
+      (reason) => reason !== 'population_center',
+    )
+    if (!isTopPopulationCandidate && !hasReviewedReplacementReason) {
+      throw new Error(
+        `Reviewed city outside the population top ten needs a non-population reason: ${country.code}:${selection.sourceName}`,
+      )
+    }
+
+    return {
+      id: `${country.code.toLowerCase()}-${slugify(selection.sourceName)}`,
+      countryCode: country.code,
+      name: {
+        zh: selection.nameZh,
+        en: selection.sourceName,
+      },
+      latitude: Number(matchingCity.lat),
+      longitude: Number(matchingCity.lng),
+      population: matchingCity.population
+        ? Number(matchingCity.population)
+        : null,
+      isCapital: false,
+      order: capitalCities.length + index + 1,
+      reasons: selection.reasons,
+      sourceIds: ['world-cities', 'my-geo-city-review'],
+    }
+  })
+
+  const expectedCount =
+    priorityCityCounts[country.code as keyof typeof priorityCityCounts]
+  if (
+    expectedCount &&
+    capitalCities.length + reviewedCities.length !== expectedCount
+  ) {
+    throw new Error(
+      `Unexpected reviewed city count for ${country.code}: expected ${expectedCount}, received ${capitalCities.length + reviewedCities.length}`,
+    )
+  }
+
+  return [...capitalCities, ...reviewedCities]
+})
+
 const boundaries = {
   type: 'FeatureCollection' as const,
   features: rawFeatureCollection.features.flatMap((sourceFeature) => {
@@ -341,6 +455,7 @@ const boundaries = {
 }
 
 countryCatalogSchema.parse(countries)
+cityCatalogSchema.parse(cities)
 countryBoundariesSchema.parse(boundaries)
 countrySourceRegistrySchema.parse(countrySources)
 
@@ -360,6 +475,7 @@ await writeFormattedJson(
   path.join(generatedDirectory, 'country-boundaries.json'),
   boundaries,
 )
+await writeFormattedJson(path.join(generatedDirectory, 'cities.json'), cities)
 
 await Promise.all(
   countries.map((country) =>
@@ -374,5 +490,5 @@ await Promise.all(
 )
 
 console.log(
-  `Generated ${countries.length} countries, ${boundaries.features.length} boundaries, and ${countries.length} local flags.`,
+  `Generated ${countries.length} countries, ${cities.length} capital and reviewed city entries, ${boundaries.features.length} boundaries, and ${countries.length} local flags.`,
 )

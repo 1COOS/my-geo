@@ -6,6 +6,8 @@ import {
   countryCatalogSchema,
   countrySourceRegistrySchema,
 } from '../src/data/countrySchema'
+import { cityCatalogSchema } from '../src/data/citySchema'
+import { priorityCityCounts } from './city-content'
 import {
   adjacentRegionNames,
   capitalChineseNames,
@@ -25,6 +27,9 @@ const boundaries = countryBoundariesSchema.parse(
   await readJson(
     path.join(projectRoot, 'src/data/generated/country-boundaries.json'),
   ),
+)
+const cities = cityCatalogSchema.parse(
+  await readJson(path.join(projectRoot, 'src/data/generated/cities.json')),
 )
 const sources = countrySourceRegistrySchema.parse(
   await readJson(
@@ -50,6 +55,44 @@ const boundaryCodes = new Set(
 const sourceIds = new Set(sources.map((source) => source.id))
 const allowedAdjacentRegionCodes = new Set(Object.keys(adjacentRegionNames))
 const countryCodes = new Set(countries.map((country) => country.code))
+const citiesByCountry = Map.groupBy(cities, (city) => city.countryCode)
+const priorityCountryCodes = Object.keys(priorityCityCounts).sort()
+
+if (priorityCountryCodes.length !== 50) {
+  throw new Error(
+    `Expected 50 priority countries, received ${priorityCountryCodes.length}`,
+  )
+}
+
+if (cities.filter((city) => city.isCapital).length !== 197) {
+  throw new Error('Expected exactly 197 capital city entries')
+}
+
+if (cities.length !== 338) {
+  throw new Error(`Expected 338 total city entries, received ${cities.length}`)
+}
+
+const priorityCityTotal = priorityCountryCodes.reduce(
+  (total, countryCode) =>
+    total + (citiesByCountry.get(countryCode)?.length ?? 0),
+  0,
+)
+if (priorityCityTotal !== 193) {
+  throw new Error(
+    `Expected 193 priority-country city entries, received ${priorityCityTotal}`,
+  )
+}
+
+for (const city of cities) {
+  if (!countryCodes.has(city.countryCode)) {
+    throw new Error(`Unknown country ${city.countryCode} on city ${city.id}`)
+  }
+  for (const sourceId of city.sourceIds) {
+    if (!sourceIds.has(sourceId)) {
+      throw new Error(`Unknown source ${sourceId} on city ${city.id}`)
+    }
+  }
+}
 
 for (const country of countries) {
   await access(path.join(projectRoot, `public${country.flagAsset}`))
@@ -68,6 +111,26 @@ for (const country of countries) {
         `Capital localization mismatch for ${country.code}:${capital.name.en}`,
       )
     }
+  }
+  const countryCities = citiesByCountry.get(country.code) ?? []
+  const capitalCityNames = countryCities
+    .filter((city) => city.isCapital)
+    .map((city) => city.name.en)
+  if (
+    JSON.stringify(capitalCityNames) !==
+    JSON.stringify(country.capitals.map((capital) => capital.name.en))
+  ) {
+    throw new Error(`Capital city authority mismatch for ${country.code}`)
+  }
+  const expectedCityCount =
+    priorityCityCounts[country.code as keyof typeof priorityCityCounts]
+  if (expectedCityCount && countryCities.length !== expectedCityCount) {
+    throw new Error(
+      `Expected ${expectedCityCount} reviewed cities for ${country.code}`,
+    )
+  }
+  if (!expectedCityCount && countryCities.some((city) => !city.isCapital)) {
+    throw new Error(`Unreviewed non-capital city found for ${country.code}`)
   }
   for (const language of country.languages) {
     if (!language.name.zh || language.name.zh === language.code) {
@@ -102,5 +165,5 @@ for (const country of countries) {
 }
 
 console.log(
-  `Validated ${countries.length} complete country cards, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
+  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
 )
