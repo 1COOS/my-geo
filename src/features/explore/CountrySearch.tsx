@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { countries } from '../../data/countries'
 import type { Country } from '../../data/countrySchema'
@@ -8,15 +8,20 @@ type CountrySearchProps = {
   selectedCountry: Country | undefined
   onSelect: (countryCode: string) => void
   onClearSelection: () => void
+  autoFocus?: boolean
+  onRequestClose?: () => void
 }
 
 export function CountrySearch({
   selectedCountry,
   onSelect,
   onClearSelection,
+  autoFocus = false,
+  onRequestClose,
 }: CountrySearchProps) {
   const listboxId = useId()
   const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState(selectedCountry?.name.zh ?? '')
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -24,11 +29,17 @@ export function CountrySearch({
   const results = useMemo(() => searchCountries(countries, query), [query])
   const activeCountry = results[activeIndex]
 
+  useEffect(() => {
+    if (!autoFocus) return
+    inputRef.current?.focus({ preventScroll: true })
+  }, [autoFocus])
+
   function chooseCountry(country: Country) {
     onSelect(country.code)
     setQuery(country.name.zh)
     setOpen(false)
     setActiveIndex(0)
+    onRequestClose?.()
   }
 
   return (
@@ -48,6 +59,7 @@ export function CountrySearch({
           <path d="m15.5 15.5 4.2 4.2" />
         </svg>
         <input
+          ref={inputRef}
           id={`${listboxId}-input`}
           role="combobox"
           type="search"
@@ -83,6 +95,10 @@ export function CountrySearch({
               chooseCountry(activeCountry)
             } else if (event.key === 'Escape') {
               event.preventDefault()
+              if (onRequestClose) {
+                onRequestClose()
+                return
+              }
               if (open || query) {
                 setQuery('')
                 setOpen(false)

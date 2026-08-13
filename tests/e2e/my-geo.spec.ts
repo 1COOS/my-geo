@@ -1,4 +1,20 @@
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+async function openCountrySearch(page: Page) {
+  const trigger = page.getByRole('button', { name: '搜索国家' })
+  await trigger.click()
+  const search = page.getByRole('combobox', { name: '搜索国家' })
+  await expect(search).toBeFocused()
+  return search
+}
+
+async function waitForSceneOrFallback(page: Page) {
+  const scene = page.getByTestId('globe-scene')
+  const fallback = page.getByTestId('webgl-fallback')
+  await expect(scene.or(fallback)).toBeVisible({ timeout: 15_000 })
+  return { scene, fallback }
+}
 
 test('loads the responsive My Geo exploration shell', async ({ page }) => {
   await page.goto('/')
@@ -6,11 +22,12 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
   await expect(
     page.getByRole('heading', { name: '转动地球，发现每一片土地' }),
   ).toHaveCount(0)
-  await expect(page.getByText('My Geo', { exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'My Geo 首页' })).toHaveCount(0)
+  await expect(page.getByText('MY GEO · EARTH EXPLORATION LAB')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '搜索国家' })).toBeVisible()
+  await expect(page.getByRole('combobox', { name: '搜索国家' })).toHaveCount(0)
 
-  const scene = page.getByTestId('globe-scene')
-  const fallback = page.getByTestId('webgl-fallback')
-  await expect(scene.or(fallback)).toBeVisible()
+  const { scene } = await waitForSceneOrFallback(page)
 
   if (await scene.isVisible()) {
     await expect(page.getByTestId('world-mini-map')).toBeVisible()
@@ -92,9 +109,7 @@ test('enters landscape automatically and preserves the mounted experience', asyn
 
   await page.setViewportSize({ width: 844, height: 390 })
   await expect(page.getByTestId('landscape-prompt')).toHaveCount(0)
-  const scene = page.getByTestId('globe-scene')
-  const fallback = page.getByTestId('webgl-fallback')
-  await expect(scene.or(fallback)).toBeVisible()
+  const { scene, fallback } = await waitForSceneOrFallback(page)
 
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(page.getByTestId('landscape-prompt')).toBeVisible()
@@ -102,7 +117,7 @@ test('enters landscape automatically and preserves the mounted experience', asyn
 
   await page.setViewportSize({ width: 844, height: 390 })
   await expect(page.getByTestId('landscape-prompt')).toHaveCount(0)
-  await expect(scene.or(fallback)).toBeVisible()
+  await expect(scene.or(fallback)).toBeVisible({ timeout: 15_000 })
 })
 
 test('keeps phone landscape controls separated and country details usable', async ({
@@ -121,26 +136,34 @@ test('keeps phone landscape controls separated and country details usable', asyn
   await page.setViewportSize({ width: 844, height: 390 })
   await page.goto('/')
 
-  const scene = page.getByTestId('globe-scene')
-  const fallback = page.getByTestId('webgl-fallback')
-  await expect(scene.or(fallback)).toBeVisible()
+  const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
-  const search = page.getByRole('combobox', { name: '搜索国家' })
-  const mapToggle = page.getByRole('button', { name: '定位图' })
+  const map = page.getByTestId('world-mini-map')
   const controls = page.getByRole('navigation', { name: '地球显示控制' })
-  await expect(search).toBeVisible()
-  await expect(mapToggle).toBeVisible()
+  await expect(map).toBeVisible()
+  await expect(page.getByRole('button', { name: '定位图' })).toBeHidden()
   await expect(controls).toBeVisible()
 
-  const searchBox = await search.boundingBox()
-  const mapToggleBox = await mapToggle.boundingBox()
+  const mapBox = await map.boundingBox()
   const controlsBox = await controls.boundingBox()
-  expect(searchBox).not.toBeNull()
-  expect(mapToggleBox).not.toBeNull()
+  expect(mapBox).not.toBeNull()
   expect(controlsBox).not.toBeNull()
-  expect(mapToggleBox!.y).toBeGreaterThan(searchBox!.y + searchBox!.height)
-  expect(mapToggleBox!.x + mapToggleBox!.width).toBeLessThan(controlsBox!.x)
+  expect(mapBox!.x + mapBox!.width).toBeLessThanOrEqual(controlsBox!.x)
+
+  const search = await openCountrySearch(page)
+  await expect(search).toBeVisible()
+  const dialogBox = await page
+    .getByRole('dialog', { name: '搜索国家' })
+    .boundingBox()
+  const results = page.getByRole('listbox', { name: '国家搜索结果' })
+  const popoverBox = await page.locator('.country-search-popover').boundingBox()
+  expect(dialogBox).not.toBeNull()
+  expect(popoverBox).not.toBeNull()
+  await expect(results).toBeVisible()
+  expect(dialogBox!.x).toBeGreaterThanOrEqual(mapBox!.x + mapBox!.width)
+  expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(512)
+  expect(popoverBox!.y).toBeGreaterThanOrEqual(11)
 
   await search.fill('中国')
   await search.press('Enter')
@@ -148,12 +171,101 @@ test('keeps phone landscape controls separated and country details usable', asyn
   await expect(card).toBeVisible()
   const cardBox = await card.boundingBox()
   expect(cardBox).not.toBeNull()
-  expect(cardBox!.y).toBeGreaterThan(0)
-  expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(390)
+  expect(cardBox!.y).toBeGreaterThanOrEqual(11)
+  expect(cardBox!.y).toBeLessThanOrEqual(13)
+  expect(cardBox!.y + cardBox!.height).toBeGreaterThanOrEqual(377)
+  expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(379)
+  expect(controlsBox!.x + controlsBox!.width).toBeLessThanOrEqual(cardBox!.x)
   await expect(
     card.getByRole('button', { name: '关闭国家知识卡' }),
   ).toBeVisible()
 })
+
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 1024, height: 768 },
+]) {
+  test(`reserves a ${viewport.width}px desktop stage for the globe beside country details`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+
+    const { scene, fallback } = await waitForSceneOrFallback(page)
+    if (await fallback.isVisible()) return
+
+    const initialSceneBox = await scene.boundingBox()
+    expect(initialSceneBox).not.toBeNull()
+    expect(initialSceneBox!.x).toBeLessThanOrEqual(1)
+    expect(initialSceneBox!.y).toBeLessThanOrEqual(1)
+    expect(initialSceneBox!.height).toBeGreaterThanOrEqual(viewport.height - 1)
+    expect(initialSceneBox!.width).toBeLessThan(viewport.width * 0.75)
+
+    const search = await openCountrySearch(page)
+    await search.fill('中国')
+    await search.press('Enter')
+
+    const card = page.getByLabel('中国国家知识卡')
+    const controls = page.getByRole('navigation', { name: '地球显示控制' })
+    const map = page.getByTestId('world-mini-map')
+    const [sceneBox, cardBox, controlsBox, mapBox] = await Promise.all([
+      scene.boundingBox(),
+      card.boundingBox(),
+      controls.boundingBox(),
+      map.boundingBox(),
+    ])
+    expect(sceneBox).not.toBeNull()
+    expect(cardBox).not.toBeNull()
+    expect(controlsBox).not.toBeNull()
+    expect(mapBox).not.toBeNull()
+    expect(
+      await page.evaluate(() => ({
+        page: window.scrollY,
+        shell: document.querySelector('.explore-shell')?.scrollTop ?? 0,
+      })),
+    ).toEqual({ page: 0, shell: 0 })
+    expect(sceneBox!.x + sceneBox!.width).toBeLessThanOrEqual(cardBox!.x)
+    await expect
+      .poll(
+        async () => (await card.boundingBox())?.y ?? Number.POSITIVE_INFINITY,
+      )
+      .toBeLessThanOrEqual(13)
+    expect(cardBox!.y + cardBox!.height).toBeGreaterThanOrEqual(
+      viewport.height - 13,
+    )
+    expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(
+      viewport.height - 11,
+    )
+    expect(mapBox!.x).toBeLessThanOrEqual(13)
+    expect(mapBox!.y + mapBox!.height).toBeGreaterThanOrEqual(
+      viewport.height - 13,
+    )
+    expect(mapBox!.x + mapBox!.width).toBeLessThanOrEqual(controlsBox!.x)
+    expect(controlsBox!.x + controlsBox!.width).toBeLessThanOrEqual(cardBox!.x)
+
+    const middleSlotCenter = (mapBox!.x + mapBox!.width + cardBox!.x) / 2
+    const controlsCenter = controlsBox!.x + controlsBox!.width / 2
+    expect(Math.abs(controlsCenter - middleSlotCenter)).toBeLessThanOrEqual(2)
+
+    const controlLabels = await controls
+      .locator('.control-button > span:last-child')
+      .evaluateAll((labels) =>
+        labels.map((label) => ({
+          width: (label as HTMLElement).getBoundingClientRect().width,
+          height: (label as HTMLElement).getBoundingClientRect().height,
+        })),
+      )
+    if (viewport.width <= 1120) {
+      expect(
+        controlLabels.every(({ width, height }) => width <= 1 && height <= 1),
+      ).toBe(true)
+    } else {
+      expect(
+        controlLabels.every(({ width, height }) => width > 1 && height > 1),
+      ).toBe(true)
+    }
+  })
+}
 
 test('keeps controls reachable on a mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
@@ -175,9 +287,7 @@ test('keeps the 2D map synchronized with country and globe navigation', async ({
 }) => {
   await page.goto('/')
 
-  const scene = page.getByTestId('globe-scene')
-  const fallback = page.getByTestId('webgl-fallback')
-  await expect(scene.or(fallback)).toBeVisible()
+  const { scene, fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
   const map = page.getByTestId('world-mini-map')
@@ -226,35 +336,31 @@ test('keeps the 2D map synchronized with country and globe navigation', async ({
   await expect(map.locator('.is-selected')).toHaveCount(0)
 })
 
-test('expands and collapses the 2D map above mobile controls', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 844 })
+test('keeps the full 2D map visible in touch landscape', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    })
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      value: 'MacIntel',
+    })
+  })
+  await page.setViewportSize({ width: 844, height: 390 })
   await page.goto('/')
 
-  const scene = page.getByTestId('globe-scene')
-  const fallback = page.getByTestId('webgl-fallback')
-  await expect(scene.or(fallback)).toBeVisible()
+  const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
   const toggle = page.getByRole('button', { name: '定位图' })
   const map = page.getByTestId('world-mini-map')
-  await expect(toggle).toBeVisible()
-  await expect(map).toBeHidden()
-
-  await toggle.click()
+  await expect(toggle).toBeHidden()
   await expect(map).toBeVisible()
-  const mapBox = await map.boundingBox()
-  const controlsBox = await page
-    .getByRole('navigation', { name: '地球显示控制' })
-    .boundingBox()
-  expect(mapBox).not.toBeNull()
-  expect(controlsBox).not.toBeNull()
-  expect(mapBox!.y + mapBox!.height).toBeLessThanOrEqual(controlsBox!.y)
 
   await map.locator('[data-country-code="CN"]').click()
   await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
-  await expect(map).toBeHidden()
+  await expect(map).toBeVisible()
 })
 
 test('shows the fallback instead of crashing without WebGL', async ({
@@ -275,6 +381,10 @@ test('shows the fallback instead of crashing without WebGL', async ({
   await expect(page.getByTestId('webgl-fallback')).toBeVisible()
   await expect(page.getByTestId('globe-scene')).toHaveCount(0)
   await expect(page.getByTestId('world-mini-map')).toHaveCount(0)
+  const search = await openCountrySearch(page)
+  await search.fill('中国')
+  await search.press('Enter')
+  await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
 })
 
 test('respects the system reduced-motion preference', async ({ page }) => {
@@ -297,7 +407,7 @@ test('reloads the core experience while offline', async ({ page, context }) => {
   await context.setOffline(true)
   try {
     await page.reload({ waitUntil: 'domcontentloaded' })
-    await expect(page.getByText('My Geo', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: '搜索国家' })).toBeVisible()
     const scene = page.getByTestId('globe-scene')
     if (await scene.isVisible()) {
       await expect(page.getByTestId('world-mini-map')).toBeVisible()
@@ -312,7 +422,7 @@ test('searches China and opens the featured knowledge card', async ({
 }) => {
   await page.goto('/')
 
-  const search = page.getByRole('combobox', { name: '搜索国家' })
+  const search = await openCountrySearch(page)
   await search.fill('中国')
   await search.press('Enter')
 
@@ -335,7 +445,7 @@ test('searches China and opens the featured knowledge card', async ({
 test('resets the globe view to China', async ({ page }) => {
   await page.goto('/')
 
-  const search = page.getByRole('combobox', { name: '搜索国家' })
+  const search = await openCountrySearch(page)
   await search.fill('法国')
   await search.press('Enter')
   await expect(page.getByLabel('法国国家知识卡')).toBeVisible()
@@ -343,7 +453,8 @@ test('resets the globe view to China', async ({ page }) => {
   await page.getByRole('button', { name: '重置视角' }).click()
 
   await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
-  await expect(search).toHaveValue('中国')
+  const resetSearch = await openCountrySearch(page)
+  await expect(resetSearch).toHaveValue('中国')
 })
 
 test('searches a microstate without Natural Earth geometry', async ({
@@ -351,7 +462,7 @@ test('searches a microstate without Natural Earth geometry', async ({
 }) => {
   await page.goto('/')
 
-  const search = page.getByRole('combobox', { name: '搜索国家' })
+  const search = await openCountrySearch(page)
   await search.fill('Vatican')
   await search.press('Enter')
 
@@ -369,7 +480,7 @@ test('selects a sovereign neighbour and opens the new country card', async ({
 }) => {
   await page.goto('/')
 
-  const search = page.getByRole('combobox', { name: '搜索国家' })
+  const search = await openCountrySearch(page)
   await search.fill('Vatican')
   await search.press('Enter')
   const vaticanCard = page.getByLabel('梵蒂冈国家知识卡')
@@ -380,13 +491,14 @@ test('selects a sovereign neighbour and opens the new country card', async ({
   await expect(italyCard).toBeVisible()
   await expect(italyCard.getByRole('heading', { name: '意大利' })).toBeVisible()
   await expect(italyCard.getByText('意大利共和国')).toBeVisible()
-  await expect(search).toHaveValue('意大利')
+  const italySearch = await openCountrySearch(page)
+  await expect(italySearch).toHaveValue('意大利')
 })
 
 test('expands the local knowledge-card sources', async ({ page }) => {
   await page.goto('/')
 
-  const search = page.getByRole('combobox', { name: '搜索国家' })
+  const search = await openCountrySearch(page)
   await search.fill('CN')
   await search.press('Enter')
   const card = page.getByLabel('中国国家知识卡')
@@ -401,7 +513,7 @@ test('uses the mobile bottom sheet for country details', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
 
-  const search = page.getByRole('combobox', { name: '搜索国家' })
+  const search = await openCountrySearch(page)
   await search.fill('CN')
   await search.press('Enter')
 
@@ -433,7 +545,7 @@ test('opens a country card from the offline cache', async ({
   await context.setOffline(true)
   try {
     await page.reload({ waitUntil: 'domcontentloaded' })
-    const search = page.getByRole('combobox', { name: '搜索国家' })
+    const search = await openCountrySearch(page)
     await search.fill('中国')
     await search.press('Enter')
     await expect(page.getByLabel('中国国家知识卡')).toBeVisible()

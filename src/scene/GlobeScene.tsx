@@ -3,7 +3,13 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import R3fGlobe, { type GlobeMethods } from 'r3f-globe'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { Color, MeshStandardMaterial, Vector2, Vector3 } from 'three'
+import {
+  Color,
+  MeshStandardMaterial,
+  PerspectiveCamera,
+  Vector2,
+  Vector3,
+} from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
 import { countries, countryBoundaries, getCountry } from '../data/countries'
@@ -13,6 +19,9 @@ import {
   getCameraFlightDuration,
   getCapitalMarkerCode,
   getCountryCodeForLayer,
+  getGlobeViewOffset,
+  getOverviewCameraPosition,
+  OVERVIEW_CAMERA_DISTANCE,
   type CapitalMarker,
 } from './countrySceneInteraction'
 
@@ -29,7 +38,11 @@ type GlobeSceneProps = {
   onViewCenterCommit: (position: GeoPosition) => void
 }
 
-const INITIAL_CAMERA_POSITION: [number, number, number] = [0, 18, 285]
+const INITIAL_CAMERA_POSITION: [number, number, number] = [
+  0,
+  18,
+  Math.sqrt(OVERVIEW_CAMERA_DISTANCE ** 2 - 18 ** 2),
+]
 
 type CameraFlight = {
   from: Vector3
@@ -91,6 +104,26 @@ function World({
     globeRef.current?.setPointOfView(camera)
   }, [camera])
 
+  useEffect(() => {
+    if (!(camera instanceof PerspectiveCamera)) return
+    const viewOffset = getGlobeViewOffset(size.width, size.height)
+    camera.setViewOffset(
+      viewOffset.fullWidth,
+      viewOffset.fullHeight,
+      viewOffset.offsetX,
+      viewOffset.offsetY,
+      viewOffset.width,
+      viewOffset.height,
+    )
+    camera.updateProjectionMatrix()
+    syncPointOfView()
+
+    return () => {
+      camera.clearViewOffset()
+      camera.updateProjectionMatrix()
+    }
+  }, [camera, size.height, size.width, syncPointOfView])
+
   const getViewCenter = useCallback((): GeoPosition | null => {
     const coordinate = globeRef.current?.toGeoCoords(camera.position)
     if (!coordinate) return null
@@ -124,10 +157,11 @@ function World({
         position.longitude,
         1.42,
       )
+      const overviewPosition = getOverviewCameraPosition(destination)
       const targetPosition = new Vector3(
-        destination.x,
-        destination.y,
-        destination.z,
+        overviewPosition.x,
+        overviewPosition.y,
+        overviewPosition.z,
       )
 
       const flightDuration = getCameraFlightDuration(reducedMotion)
@@ -300,7 +334,7 @@ function World({
         dampingFactor={0.055}
         enablePan={false}
         minDistance={155}
-        maxDistance={425}
+        maxDistance={OVERVIEW_CAMERA_DISTANCE}
         minPolarAngle={0.18}
         maxPolarAngle={Math.PI - 0.18}
         rotateSpeed={0.62}

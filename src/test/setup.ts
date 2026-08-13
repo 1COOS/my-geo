@@ -3,6 +3,14 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 
+class ResizeObserverMock implements ResizeObserver {
+  disconnect = vi.fn()
+  observe = vi.fn()
+  unobserve = vi.fn()
+}
+
+globalThis.ResizeObserver = ResizeObserverMock
+
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()

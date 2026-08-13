@@ -66,4 +66,27 @@ describe('CountrySearch', () => {
 
     expect(onClearSelection).toHaveBeenCalledTimes(1)
   })
+
+  it('requests the parent popover to close after selection or Escape', async () => {
+    const user = userEvent.setup()
+    const onRequestClose = vi.fn()
+
+    render(
+      <CountrySearch
+        selectedCountry={undefined}
+        onSelect={vi.fn()}
+        onClearSelection={vi.fn()}
+        autoFocus
+        onRequestClose={onRequestClose}
+      />,
+    )
+
+    const search = screen.getByRole('combobox', { name: '搜索国家' })
+    expect(search).toHaveFocus()
+    await user.type(search, '中国{Enter}')
+    expect(onRequestClose).toHaveBeenCalledTimes(1)
+
+    await user.keyboard('{Escape}')
+    expect(onRequestClose).toHaveBeenCalledTimes(2)
+  })
 })

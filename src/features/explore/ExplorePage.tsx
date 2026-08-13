@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -56,12 +57,25 @@ function ResetIcon() {
   )
 }
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="10.8" cy="10.8" r="6.3" />
+      <path d="m15.5 15.5 4.2 4.2" />
+    </svg>
+  )
+}
+
 export function ExplorePage() {
   const { t } = useTranslation()
   const reducedMotion = useReducedMotion() ?? false
+  const searchDialogId = useId()
   const cameraRequestIdRef = useRef(0)
   const miniMapRef = useRef<WorldMiniMapHandle>(null)
+  const controlDeckRef = useRef<HTMLDivElement>(null)
+  const searchButtonRef = useRef<HTMLButtonElement>(null)
   const [miniMapExpanded, setMiniMapExpanded] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(() => ({
     requestId: 0,
     position: getCountry('CN')!.center,
@@ -82,6 +96,25 @@ export function ExplorePage() {
   useEffect(() => {
     void hydrate()
   }, [hydrate])
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false)
+    queueMicrotask(() =>
+      searchButtonRef.current?.focus({ preventScroll: true }),
+    )
+  }, [])
+
+  useEffect(() => {
+    if (!searchOpen) return
+
+    const handleClick = (event: MouseEvent) => {
+      if (controlDeckRef.current?.contains(event.target as Node)) return
+      closeSearch()
+    }
+
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [closeSearch, searchOpen])
 
   const selectedCountry = getCountry(selectedCountryCode)
   const requestCameraTarget = useCallback((position: GeoPosition) => {
@@ -159,26 +192,6 @@ export function ExplorePage() {
         </div>
       )}
 
-      <header className="topbar">
-        <a className="brand" href="/" aria-label="My Geo 首页">
-          <img src="/icons/my-geo.svg" alt="" />
-          <span>{t('brand')}</span>
-        </a>
-        <div className="status-pill">
-          <span aria-hidden="true" />
-          {t('status')}
-        </div>
-      </header>
-
-      <div className="search-slot">
-        <CountrySearch
-          key={selectedCountry?.code ?? 'no-selection'}
-          selectedCountry={selectedCountry}
-          onSelect={navigateToCountry}
-          onClearSelection={() => selectCountry(null)}
-        />
-      </div>
-
       {webGLAvailable ? (
         <WorldMiniMap
           ref={miniMapRef}
@@ -189,30 +202,65 @@ export function ExplorePage() {
         />
       ) : null}
 
-      {webGLAvailable ? (
-        <nav className="control-dock" aria-label="地球显示控制">
-          <ControlButton
-            icon={<CompassIcon />}
-            label={t(effectiveAutoRotate ? 'rotateOn' : 'rotateOff')}
-            onClick={toggleAutoRotate}
-            disabled={reducedMotion}
-            aria-pressed={effectiveAutoRotate}
-          />
-          <ControlButton
-            icon={<SparkleIcon />}
-            label={t(quality === 'balanced' ? 'qualityBalanced' : 'qualityLow')}
-            onClick={toggleQuality}
-            aria-pressed={quality === 'balanced'}
-          />
-          <ControlButton
-            icon={<ResetIcon />}
-            label={t('reset')}
-            onClick={() => {
-              navigateToCountry('CN')
-            }}
-          />
-        </nav>
-      ) : null}
+      <div className="control-deck">
+        <div ref={controlDeckRef} className="control-deck-content">
+          {searchOpen ? (
+            <section
+              id={searchDialogId}
+              className="search-dialog"
+              role="dialog"
+              aria-label="搜索国家"
+            >
+              <CountrySearch
+                key={selectedCountry?.code ?? 'no-selection'}
+                selectedCountry={selectedCountry}
+                onSelect={navigateToCountry}
+                onClearSelection={() => selectCountry(null)}
+                autoFocus
+                onRequestClose={closeSearch}
+              />
+            </section>
+          ) : null}
+          <nav className="control-dock" aria-label="地球显示控制">
+            {webGLAvailable ? (
+              <>
+                <ControlButton
+                  icon={<CompassIcon />}
+                  label={t(effectiveAutoRotate ? 'rotateOn' : 'rotateOff')}
+                  onClick={toggleAutoRotate}
+                  disabled={reducedMotion}
+                  aria-pressed={effectiveAutoRotate}
+                />
+                <ControlButton
+                  icon={<SparkleIcon />}
+                  label={t(
+                    quality === 'balanced' ? 'qualityBalanced' : 'qualityLow',
+                  )}
+                  onClick={toggleQuality}
+                  aria-pressed={quality === 'balanced'}
+                />
+                <ControlButton
+                  icon={<ResetIcon />}
+                  label={t('reset')}
+                  onClick={() => {
+                    navigateToCountry('CN')
+                  }}
+                />
+              </>
+            ) : null}
+            <ControlButton
+              ref={searchButtonRef}
+              className="search-control"
+              icon={<SearchIcon />}
+              label="搜索国家"
+              aria-haspopup="dialog"
+              aria-expanded={searchOpen}
+              aria-controls={searchDialogId}
+              onClick={() => setSearchOpen((open) => !open)}
+            />
+          </nav>
+        </div>
+      </div>
 
       {selectedCountry ? (
         <CountryDetailPanel
@@ -222,8 +270,6 @@ export function ExplorePage() {
           onSelectCountry={navigateToCountry}
         />
       ) : null}
-
-      <footer className="footer-note">MY GEO · EARTH EXPLORATION LAB</footer>
     </main>
   )
 }
