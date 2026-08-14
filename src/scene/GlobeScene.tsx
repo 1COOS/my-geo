@@ -81,8 +81,7 @@ export type GlobeSceneProps = {
   showCities: boolean
   showOceanLayer: boolean
   showWaterwayLayer: boolean
-  showRiverLayer: boolean
-  showCanalLayer: boolean
+  showRiverAndCanalLayer: boolean
   showMountainLayer: boolean
   selectedCountryCode: string | null
   selectedCityId: string | null
@@ -231,8 +230,7 @@ function World({
   hoveredLinearFeatureId,
   selectedMountainRangeId,
   hoveredMountainRangeId,
-  showRiverLayer,
-  showCanalLayer,
+  showRiverAndCanalLayer,
   showMountainLayer,
   onSelectCountry,
   onSelectCity,
@@ -348,8 +346,7 @@ function World({
     return null
   }, [quality, selectedLinearFeature, selectedMountainRange])
   const visibleLinearFeatures = getVisibleLinearFeatures(linearGeoFeatures, {
-    showRiverLayer,
-    showCanalLayer,
+    showRiverAndCanalLayer,
     selectedLinearFeatureId,
     hoveredLinearFeatureId,
   })
@@ -1241,16 +1238,14 @@ export function GlobeScene(props: GlobeSceneProps) {
   const labelLinearFeatures = useMemo(
     () =>
       getVisibleLinearFeatures(linearGeoFeatures, {
-        showRiverLayer: props.showRiverLayer,
-        showCanalLayer: props.showCanalLayer,
+        showRiverAndCanalLayer: props.showRiverAndCanalLayer,
         selectedLinearFeatureId: props.selectedLinearFeatureId,
         hoveredLinearFeatureId: props.hoveredLinearFeatureId,
       }),
     [
       props.hoveredLinearFeatureId,
       props.selectedLinearFeatureId,
-      props.showCanalLayer,
-      props.showRiverLayer,
+      props.showRiverAndCanalLayer,
     ],
   )
   const labelMountainRanges = useMemo(

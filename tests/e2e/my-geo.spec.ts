@@ -104,7 +104,7 @@ async function expectLayerToolbarSingleLine(page: Page) {
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(layout.buttonCount).toBe(7)
+  expect(layout.buttonCount).toBe(6)
   expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
   expect(layout.rowSpread).toBeLessThan(2)
 }
@@ -133,10 +133,7 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
     const capitals = layerControl.getByRole('button', { name: '首都' })
     const cities = layerControl.getByRole('button', { name: '城市' })
     const rivers = layerControl.getByRole('button', {
-      name: '河流图层：世界重要河流水系',
-    })
-    const canals = layerControl.getByRole('button', {
-      name: '运河图层：重要人工运河',
+      name: '河流图层：世界重要河流与人工运河',
     })
     const mountains = layerControl.getByRole('button', {
       name: '山脉图层：世界著名山脉与最高峰',
@@ -145,7 +142,9 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
     await expect(capitals).toHaveAttribute('aria-pressed', 'false')
     await expect(cities).toHaveAttribute('aria-pressed', 'false')
     await expect(rivers).toHaveAttribute('aria-pressed', 'false')
-    await expect(canals).toHaveAttribute('aria-pressed', 'false')
+    await expect(
+      layerControl.getByRole('button', { name: '运河图层：重要人工运河' }),
+    ).toHaveCount(0)
     await expect(mountains).toHaveAttribute('aria-pressed', 'false')
     await expect(
       page.getByRole('navigation', { name: '地球显示控制' }),
@@ -446,6 +445,15 @@ test('keeps the 2D map synchronized with country and globe navigation', async ({
     .poll(() => marker.getAttribute('transform'))
     .not.toBe(initialTransform)
 
+  await page.mouse.click(
+    initialMapBox!.x + initialMapBox!.width * ((121 + 180) / 360),
+    initialMapBox!.y + initialMapBox!.height * ((90 - 23.7) / 180),
+  )
+  await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
+  await expect(map.locator('[data-country-code="CN"]')).toHaveClass(
+    /is-selected/,
+  )
+
   const sceneBox = await scene.boundingBox()
   expect(sceneBox).not.toBeNull()
   const markerBeforeDrag = await marker.getAttribute('transform')
@@ -470,7 +478,7 @@ test('keeps the 2D map synchronized with country and globe navigation', async ({
     mapBox!.x + mapBox!.width * (40 / 360),
     mapBox!.y + mapBox!.height * 0.5,
   )
-  await expect(page.getByLabel('法国国家知识卡')).toHaveCount(0)
+  await expect(page.getByLabel('中国国家知识卡')).toHaveCount(0)
   await expect(map.locator('.is-selected')).toHaveCount(0)
 })
 
@@ -556,6 +564,12 @@ test('toggles waterbody layers, searches a sea, and replaces its selected range'
   ).toBeVisible()
 
   search = await openCountrySearch(page)
+  await search.fill('渤海')
+  await search.press('Enter')
+  await expect(page.getByLabel('渤海水域知识卡')).toBeVisible()
+  await expect(page.locator('[data-waterbody-id="bohai-sea"]')).toBeVisible()
+
+  search = await openCountrySearch(page)
   await search.fill('马里亚纳海沟')
   await search.press('Enter')
   await expect(page.getByLabel('马里亚纳海沟水域知识卡')).toBeVisible()
@@ -577,13 +591,22 @@ test('shows river and canal paths and keeps linear feature selection exclusive',
 
   const layerControl = page.getByRole('region', { name: '地球图层控制' })
   await layerControl
-    .getByRole('button', { name: '河流图层：世界重要河流水系' })
-    .click()
-  await layerControl
-    .getByRole('button', { name: '运河图层：重要人工运河' })
+    .getByRole('button', {
+      name: '河流图层：世界重要河流与人工运河',
+    })
     .click()
   await expect
     .poll(() => page.locator('[data-linear-feature-id]:not([hidden])').count())
+    .toBeGreaterThan(0)
+  await expect
+    .poll(() =>
+      page.locator('.linear-feature-label.is-river:not([hidden])').count(),
+    )
+    .toBeGreaterThan(0)
+  await expect
+    .poll(() =>
+      page.locator('.linear-feature-label.is-canal:not([hidden])').count(),
+    )
     .toBeGreaterThan(0)
 
   let search = await openCountrySearch(page)
@@ -916,7 +939,7 @@ test('keeps the layer panel inside an iPad landscape safe area', async ({
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(toolbarLayout.buttonCount).toBe(7)
+  expect(toolbarLayout.buttonCount).toBe(6)
   expect(toolbarLayout.scrollWidth).toBeLessThanOrEqual(
     toolbarLayout.clientWidth + 1,
   )

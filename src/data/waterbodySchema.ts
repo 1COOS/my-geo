@@ -39,16 +39,42 @@ export const waterbodySchema = z.object({
   labelPriority: z.number().int().min(1).max(100),
 })
 
+const surfaceCoordinateSchema = z.tuple([
+  z.number().min(-180).max(180),
+  z.number().min(-90).max(90),
+])
+
+const polygonCoordinatesSchema = z
+  .array(z.array(surfaceCoordinateSchema).min(4))
+  .min(1)
+
+const surfaceGeometrySchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('Polygon'),
+    coordinates: polygonCoordinatesSchema,
+  }),
+  z.object({
+    type: z.literal('MultiPolygon'),
+    coordinates: z.array(polygonCoordinatesSchema).min(1),
+  }),
+])
+
 export const surfaceWaterbodyGeometrySchema = z.object({
   id: z.string().min(1),
   kind: z.literal('surface'),
-  geometry: z.object({
-    type: z.enum(['Polygon', 'MultiPolygon']),
-    coordinates: z.array(z.unknown()).min(1),
-  }),
-  lowDetailGeometry: z.object({
-    type: z.enum(['Polygon', 'MultiPolygon']),
-    coordinates: z.array(z.unknown()).min(1),
+  geometry: surfaceGeometrySchema,
+  lowDetailGeometry: surfaceGeometrySchema,
+  provenance: z.object({
+    archiveSha256: z.string().regex(/^[a-f0-9]{64}$/),
+    naturalEarthRecords: z.array(
+      z.object({ neId: z.number().int().positive() }),
+    ),
+    supplements: z.array(
+      z.object({
+        kind: z.literal('reviewed-outline'),
+        sourceIds: z.array(z.string().min(1)).min(1),
+      }),
+    ),
   }),
 })
 
@@ -71,7 +97,7 @@ export const waterbodyGeometrySchema = z.discriminatedUnion('kind', [
 
 export const waterbodyCatalogSchema = z
   .array(waterbodySchema)
-  .length(50)
+  .length(51)
   .superRefine((waterbodies, context) => {
     const ids = new Set<string>()
     for (const waterbody of waterbodies) {
@@ -105,7 +131,7 @@ export const waterbodyCatalogSchema = z
 
 export const waterbodyGeometryCatalogSchema = z
   .array(waterbodyGeometrySchema)
-  .length(50)
+  .length(51)
   .superRefine((geometries, context) => {
     const ids = new Set<string>()
     for (const geometry of geometries) {

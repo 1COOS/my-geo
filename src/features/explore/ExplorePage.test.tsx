@@ -75,11 +75,13 @@ describe('ExplorePage', () => {
       'false',
     )
     expect(
-      screen.getByRole('button', { name: '河流图层：世界重要河流水系' }),
+      screen.getByRole('button', {
+        name: '河流图层：世界重要河流与人工运河',
+      }),
     ).toHaveAttribute('aria-pressed', 'false')
     expect(
-      screen.getByRole('button', { name: '运河图层：重要人工运河' }),
-    ).toHaveAttribute('aria-pressed', 'false')
+      screen.queryByRole('button', { name: '运河图层：重要人工运河' }),
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', {
         name: '山脉图层：世界著名山脉与最高峰',
@@ -297,6 +299,14 @@ describe('ExplorePage', () => {
       selectedCountryCode: null,
     })
     expect(screen.getByText(/不代表领海/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    const bohaiSearch = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.clear(bohaiSearch)
+    await user.type(bohaiSearch, '渤海{Enter}')
+    expect(await screen.findByLabelText('渤海水域知识卡')).toBeInTheDocument()
+    expect(getProps()).toMatchObject({ selectedWaterbodyId: 'bohai-sea' })
+    expect(screen.getByText('中国东北部沿海、黄海西北部')).toBeInTheDocument()
   })
 
   it('toggles river and canal layers and keeps all place selection mutually exclusive', async () => {
@@ -308,23 +318,23 @@ describe('ExplorePage', () => {
     )
     const getProps = () =>
       globePropsMock.mock.lastCall![0] as {
-        showRiverLayer: boolean
-        showCanalLayer: boolean
+        showRiverAndCanalLayer: boolean
         selectedLinearFeatureId: string | null
         selectedWaterbodyId: string | null
         selectedCountryCode: string | null
       }
 
     await user.click(
-      screen.getByRole('button', { name: '河流图层：世界重要河流水系' }),
-    )
-    await user.click(
-      screen.getByRole('button', { name: '运河图层：重要人工运河' }),
+      screen.getByRole('button', {
+        name: '河流图层：世界重要河流与人工运河',
+      }),
     )
     expect(getProps()).toMatchObject({
-      showRiverLayer: true,
-      showCanalLayer: true,
+      showRiverAndCanalLayer: true,
     })
+    expect(
+      screen.queryByRole('button', { name: '运河图层：重要人工运河' }),
+    ).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '搜索地点' }))
     const search = screen.getByRole('combobox', { name: '搜索地点' })

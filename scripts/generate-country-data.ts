@@ -11,6 +11,7 @@ import {
   capitalChineseNames,
   capitalCoordinateOverrides,
   capitalNameAliases,
+  countryBoundaryGeometrySupplements,
   countryCurrencyOverrides,
   currencyOverrides,
   featuredCountryContent,
@@ -29,6 +30,7 @@ import { cityCatalogSchema, type City } from '../src/data/citySchema'
 import { priorityCityCounts, reviewedCitySelections } from './city-content'
 import { generateRiverGeometries } from './generate-river-geometries'
 import { generateMountainGeometries } from './generate-mountain-geometries'
+import { generateWaterbodyGeometries } from './generate-waterbody-geometries'
 
 type CitySource = {
   city: string
@@ -49,6 +51,11 @@ type SourceFeature = {
     type: string
     coordinates: unknown[]
   } | null
+}
+
+type BoundaryGeometry = {
+  type: 'Polygon' | 'MultiPolygon'
+  coordinates: unknown[]
 }
 
 const projectRoot = path.resolve(import.meta.dirname, '..')
@@ -125,6 +132,13 @@ const rawFeatureCollection = feature(
   topology,
   topology.objects.countries,
 ) as unknown as { type: 'FeatureCollection'; features: SourceFeature[] }
+
+const rawFeaturesByNumericCode = new Map(
+  rawFeatureCollection.features.map((sourceFeature) => [
+    String(sourceFeature.id).padStart(3, '0'),
+    sourceFeature,
+  ]),
+)
 
 const sourceCountries = countriesSource
   .filter((country) => country.unMember || country.cca2 === 'PS')
@@ -439,6 +453,41 @@ const boundaries = {
       return []
     }
 
+    const supplementalSourceFeatures = (
+      countryBoundaryGeometrySupplements[numericCode] ?? []
+    ).map((supplementalNumericCode) => {
+      const supplementalFeature = rawFeaturesByNumericCode.get(
+        supplementalNumericCode,
+      )
+      if (
+        !supplementalFeature?.geometry ||
+        (supplementalFeature.geometry.type !== 'Polygon' &&
+          supplementalFeature.geometry.type !== 'MultiPolygon')
+      ) {
+        throw new Error(
+          `Missing boundary geometry supplement ${supplementalNumericCode} for ${country.code}`,
+        )
+      }
+      return supplementalFeature
+    })
+    const sourceGeometries = [
+      sourceFeature.geometry as BoundaryGeometry,
+      ...supplementalSourceFeatures.map(
+        (feature) => feature.geometry as BoundaryGeometry,
+      ),
+    ]
+    const geometry: BoundaryGeometry =
+      sourceGeometries.length === 1
+        ? sourceGeometries[0]
+        : {
+            type: 'MultiPolygon',
+            coordinates: sourceGeometries.flatMap((sourceGeometry) =>
+              sourceGeometry.type === 'Polygon'
+                ? [sourceGeometry.coordinates]
+                : sourceGeometry.coordinates,
+            ),
+          }
+
     return [
       {
         type: 'Feature' as const,
@@ -447,10 +496,7 @@ const boundaries = {
           nameZh: country.name.zh,
           nameEn: country.name.en,
         },
-        geometry: {
-          type: sourceFeature.geometry.type,
-          coordinates: sourceFeature.geometry.coordinates,
-        },
+        geometry,
       },
     ]
   }),
@@ -480,6 +526,7 @@ await writeFormattedJson(
 await writeFormattedJson(path.join(generatedDirectory, 'cities.json'), cities)
 const riverGeometries = await generateRiverGeometries()
 const mountainGeometries = await generateMountainGeometries()
+const waterbodyGeometries = await generateWaterbodyGeometries()
 
 await Promise.all(
   countries.map((country) =>
@@ -494,5 +541,5 @@ await Promise.all(
 )
 
 console.log(
-  `Generated ${countries.length} countries, ${cities.length} capital and reviewed city entries, ${boundaries.features.length} boundaries, ${riverGeometries.length} river geometries, ${mountainGeometries.length} mountain geometries, and ${countries.length} local flags.`,
+  `Generated ${countries.length} countries, ${cities.length} capital and reviewed city entries, ${boundaries.features.length} boundaries, ${riverGeometries.length} river geometries, ${mountainGeometries.length} mountain geometries, ${waterbodyGeometries.length} surface waterbody geometries, and ${countries.length} local flags.`,
 )

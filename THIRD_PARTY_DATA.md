@@ -32,7 +32,7 @@ Border codes outside the 195-country catalogue are not treated as sovereign coun
 - License: ISC for the World Atlas package; Natural Earth vector data is public domain
 - Use: 1:110m prototype country polygons converted from TopoJSON to local GeoJSON.
 
-These boundaries are for internal product prototyping. Public release, especially in regulated jurisdictions, requires a separate map-compliance review.
+Natural Earth publishes Taiwan island as numeric feature `158`. My Geo incorporates that island polygon into China's numeric feature `156` when generating the local `CN` boundary; it does not create a separate country catalogue or knowledge-card entry. These boundaries are for internal product prototyping. Public release, especially in regulated jurisdictions, requires a separate map-compliance review.
 
 ## Capital coordinates
 
@@ -43,11 +43,14 @@ These boundaries are for internal product prototyping. Public release, especiall
 
 ## Oceans and named waterbodies
 
+- Primary surface geometry: Natural Earth 5.1.0 1:10m geography marine polygons, public domain. The pinned archive SHA-256 is `a2d3395904c41e718e02c3ec5bc988712164c524c236fad32d95d282ca303b2a`.
+- Build process: `data:generate` downloads or accepts a local copy of the pinned archive, verifies its version and SHA-256, resolves 45 catalogue objects by repository-reviewed `ne_id`, combines the north and south records for the Pacific and Atlantic oceans, and writes deterministic high and low-detail JSON. `data:validate` never accesses the network.
+- Reviewed geometry supplements: Natural Earth does not include matching polygons for the Bering Strait or Strait of Hormuz. My Geo stores small repository-owned teaching outlines for those two objects, reviewed against Marine Regions geographic names and IHO reference material; no copyrighted reference geometry is copied.
 - References: NOAA Ocean Service education materials, the GEBCO Gazetteer of Undersea Feature Names, International Hydrographic Organization standards, and Marine Regions geographic names.
-- Accessed: 2026-08-13.
-- Use: reviewed Chinese and English names, broad locations, classifications, adjacent land descriptions, and educational summaries for 50 oceans, seas, bays, gulfs, straits, and trenches.
+- Accessed: 2026-08-14.
+- Use: reviewed Chinese and English names, broad locations, classifications, adjacent land descriptions, and educational summaries for 51 oceans, seas, bays, gulfs, straits, and trenches.
 
-My Geo stores repository-owned summaries and deliberately simplified teaching geometries. Surface polygons and trench lines show an approximate location only. They are not hydrographic limits and do not represent territorial seas, exclusive economic zones, jurisdiction, sovereignty, or any legal boundary. Public release still requires a separate map-compliance and content review.
+My Geo stores repository-owned summaries and source-aligned, deliberately simplified teaching geometries. Surface polygons and trench lines show an approximate geographic extent only. They are not hydrographic limits and do not represent territorial seas, exclusive economic zones, jurisdiction, sovereignty, or any legal boundary. Public release still requires a separate map-compliance and content review.
 
 ## Major rivers and artificial canals
 

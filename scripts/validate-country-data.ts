@@ -1,6 +1,8 @@
 import { access, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import { geoContains } from 'd3-geo'
+
 import {
   countryBoundariesSchema,
   countryCatalogSchema,
@@ -23,6 +25,10 @@ import {
   NATURAL_EARTH_RIVER_ARCHIVE_SHA256,
   riverGeometryDefinitions,
 } from './river-geometry-content'
+import {
+  NATURAL_EARTH_MARINE_ARCHIVE_SHA256,
+  waterbodyGeometryDefinitions,
+} from './waterbody-geometry-content'
 import { waterbodies, waterbodyGeometries } from '../src/data/waterbodies'
 import { priorityCityCounts } from './city-content'
 import {
@@ -69,6 +75,29 @@ if (JSON.stringify(featuredCodes) !== JSON.stringify(expectedFeaturedCodes)) {
 const boundaryCodes = new Set(
   boundaries.features.map((boundary) => boundary.properties.code),
 )
+if (boundaries.features.length !== 166 || boundaryCodes.size !== 166) {
+  throw new Error(
+    `Expected 166 unique country boundaries, received ${boundaries.features.length}`,
+  )
+}
+const chinaBoundary = boundaries.features.find(
+  (boundary) => boundary.properties.code === 'CN',
+)
+if (
+  chinaBoundary?.geometry.type !== 'MultiPolygon' ||
+  chinaBoundary.geometry.coordinates.length !== 3 ||
+  !geoContains(chinaBoundary as never, [121, 23.7])
+) {
+  throw new Error(
+    'China boundary does not include the reviewed Taiwan island geometry',
+  )
+}
+if (
+  countries.some((country) => country.code === 'TW') ||
+  boundaryCodes.has('TW')
+) {
+  throw new Error('Taiwan must not become a separate country catalogue entry')
+}
 const sourceIds = new Set(sources.map((source) => source.id))
 const allowedAdjacentRegionCodes = new Set(Object.keys(adjacentRegionNames))
 const countryCodes = new Set(countries.map((country) => country.code))
@@ -259,7 +288,7 @@ for (const featureId of [
 
 const expectedWaterbodyKinds = {
   ocean: 5,
-  sea: 25,
+  sea: 26,
   gulf: 4,
   bay: 2,
   strait: 10,
@@ -280,6 +309,60 @@ for (const [kind, expectedCount] of Object.entries(expectedWaterbodyKinds)) {
 const waterbodyGeometryIds = new Set(
   waterbodyGeometries.map((geometry) => geometry.id),
 )
+const surfaceWaterbodyIds = new Set(
+  waterbodies
+    .filter((waterbody) => waterbody.kind !== 'trench')
+    .map((waterbody) => waterbody.id),
+)
+if (
+  waterbodyGeometryDefinitions.length !== 47 ||
+  waterbodyGeometryDefinitions.some(
+    (definition) => !surfaceWaterbodyIds.has(definition.id),
+  )
+) {
+  throw new Error('Surface waterbody geometry definitions do not match data')
+}
+
+const countSurfacePoints = (
+  geometry: Extract<
+    (typeof waterbodyGeometries)[number],
+    { kind: 'surface' }
+  >['geometry'],
+) =>
+  geometry.type === 'Polygon'
+    ? geometry.coordinates.reduce((total, ring) => total + ring.length, 0)
+    : geometry.coordinates.reduce(
+        (total, polygon) =>
+          total +
+          polygon.reduce((polygonTotal, ring) => polygonTotal + ring.length, 0),
+        0,
+      )
+
+let lowDetailWaterbodyPointCount = 0
+for (const geometry of waterbodyGeometries) {
+  if (geometry.kind !== 'surface') continue
+  const waterbody = waterbodies.find((item) => item.id === geometry.id)!
+  const maximumPoints =
+    waterbody.kind === 'ocean' ? 600 : waterbody.kind === 'strait' ? 100 : 300
+  const lowPointCount = countSurfacePoints(geometry.lowDetailGeometry)
+  if (lowPointCount > maximumPoints) {
+    throw new Error(
+      `${geometry.id} exceeds its low-detail point budget: ${lowPointCount}`,
+    )
+  }
+  if (
+    geometry.provenance.archiveSha256 !== NATURAL_EARTH_MARINE_ARCHIVE_SHA256
+  ) {
+    throw new Error(`Unexpected marine archive SHA on ${geometry.id}`)
+  }
+  lowDetailWaterbodyPointCount += lowPointCount
+}
+if (lowDetailWaterbodyPointCount > 8_000) {
+  throw new Error(
+    `Waterbody low-detail point budget exceeded: ${lowDetailWaterbodyPointCount}`,
+  )
+}
+
 for (const waterbody of waterbodies) {
   if (!waterbodyGeometryIds.has(waterbody.id)) {
     throw new Error(`Missing geometry for waterbody ${waterbody.id}`)

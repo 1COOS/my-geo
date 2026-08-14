@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { geoContains } from 'd3-geo'
 
 import {
   capitalCities,
@@ -109,6 +110,21 @@ describe('generated country catalogue', () => {
 
     expect(
       countries.find((country) => country.code === 'VA')?.hasGeometry,
+    ).toBe(false)
+    const chinaBoundary = countryBoundaries.features.find(
+      (feature) => feature.properties.code === 'CN',
+    )
+    expect(chinaBoundary?.geometry.type).toBe('MultiPolygon')
+    expect(
+      chinaBoundary?.geometry.type === 'MultiPolygon' &&
+        chinaBoundary.geometry.coordinates.length,
+    ).toBe(3)
+    expect(geoContains(chinaBoundary as never, [121, 23.7])).toBe(true)
+    expect(countries.some((country) => country.code === 'TW')).toBe(false)
+    expect(
+      countryBoundaries.features.some(
+        (feature) => feature.properties.code === 'TW',
+      ),
     ).toBe(false)
   })
 

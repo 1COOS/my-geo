@@ -53,6 +53,16 @@ export const countrySources: CountrySource[] = [
     license: 'Copyrighted reference database; linked, not copied',
   },
   {
+    id: 'natural-earth-marine',
+    name: 'Natural Earth geography marine polygons',
+    publisher: 'Natural Earth contributors',
+    version:
+      'Natural Earth 5.1.0 1:10m; SHA-256 a2d3395904c41e718e02c3ec5bc988712164c524c236fad32d95d282ca303b2a',
+    accessedAt: '2026-08-14',
+    url: 'https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-physical-labels/',
+    license: 'Public domain marine polygons; selected and simplified by My Geo',
+  },
+  {
     id: 'britannica-ocean',
     name: 'Ocean overview',
     publisher: 'Encyclopaedia Britannica',

@@ -1,11 +1,20 @@
 import { countrySourcesById } from './countries'
+import generatedWaterbodyGeometries from './generated/waterbody-geometries.json'
 import {
   waterbodyCatalogSchema,
   waterbodyGeometryCatalogSchema,
+  surfaceWaterbodyGeometrySchema,
   type Waterbody,
   type WaterbodyGeometry,
   type WaterbodyKind,
 } from './waterbodySchema'
+
+const generatedWaterbodyGeometriesById = new Map(
+  generatedWaterbodyGeometries.map((geometry) => {
+    const parsed = surfaceWaterbodyGeometrySchema.parse(geometry)
+    return [parsed.id, parsed]
+  }),
+)
 
 type SurfaceDefinition = {
   id: string
@@ -69,9 +78,9 @@ const trench = (
   land,
 })
 
-// These deliberately simplified extents are repository-reviewed teaching
-// shapes. They indicate where a named waterbody is found, not a legal,
-// hydrographic or jurisdictional boundary.
+// Bounds remain as compact catalogue reference extents. Rendered surface
+// geometry is generated from the pinned Natural Earth marine archive, with
+// reviewed repository-owned supplements for the two upstream gaps.
 const definitions: Definition[] = [
   surface(
     'pacific-ocean',
@@ -182,6 +191,17 @@ const definitions: Definition[] = [
     '中国与朝鲜半岛之间',
     ['中国东部', '朝鲜半岛'],
     { countries: ['CN', 'KP', 'KR'], priority: 10 },
+  ),
+  surface(
+    'bohai-sea',
+    '渤海',
+    'Bohai Sea',
+    'sea',
+    [38.5, 119.5],
+    [117.5, 37, 121.5, 41],
+    '中国东北部沿海、黄海西北部',
+    ['辽东半岛', '山东半岛', '华北平原'],
+    { aliases: ['Bo Hai'], countries: ['CN'], priority: 7 },
   ),
   surface(
     'sea-of-japan',
@@ -625,33 +645,6 @@ const kindFacts: Record<WaterbodyKind, string> = {
   trench: '海沟是海底狭长而深的凹地，许多形成于板块俯冲带附近。',
 }
 
-function ring(west: number, south: number, east: number, north: number) {
-  return [
-    [west, south],
-    [east, south],
-    [east, north],
-    [west, north],
-    [west, south],
-  ]
-}
-
-function geometryForBounds(bounds: [number, number, number, number]) {
-  const [west, south, east, north] = bounds
-  if (west <= east) {
-    return {
-      type: 'Polygon' as const,
-      coordinates: [ring(west, south, east, north)],
-    }
-  }
-  return {
-    type: 'MultiPolygon' as const,
-    coordinates: [
-      [ring(west, south, 180, north)],
-      [ring(-180, south, east, north)],
-    ],
-  }
-}
-
 function buildWaterbody(definition: Definition): Waterbody {
   const layer =
     definition.kind === 'strait' || definition.kind === 'trench'
@@ -669,7 +662,7 @@ function buildWaterbody(definition: Definition): Waterbody {
     region: definition.region,
     adjacentCountryCodes: definition.countries ?? [],
     adjacentLandmasses: definition.land,
-    summary: `${definition.zh}位于${definition.region}，属于${kindLabels[definition.kind]}。图层使用简化示意范围帮助理解它在全球的位置。`,
+    summary: `${definition.zh}位于${definition.region}，属于${kindLabels[definition.kind]}。图层使用来源对齐的简化示意范围帮助理解它在全球的位置。`,
     facts: [
       kindFacts[definition.kind],
       `${definition.zh}位于${definition.region}，与${definition.land.join('、')}等陆地或岛屿区域相邻。`,
@@ -677,7 +670,12 @@ function buildWaterbody(definition: Definition): Waterbody {
     sourceIds:
       definition.kind === 'trench'
         ? ['gebco-gazetteer', 'noaa-ocean', 'britannica-ocean']
-        : ['marine-regions', 'iho-oceans-seas', 'britannica-ocean'],
+        : [
+            'natural-earth-marine',
+            'marine-regions',
+            'iho-oceans-seas',
+            'britannica-ocean',
+          ],
     labelPriority: definition.priority ?? 30,
   }
 }
@@ -691,13 +689,11 @@ function buildGeometry(definition: Definition): WaterbodyGeometry {
       lowDetailPoints: [definition.points[0], definition.points.at(-1)!],
     }
   }
-  const geometry = geometryForBounds(definition.bounds)
-  return {
-    id: definition.id,
-    kind: 'surface',
-    geometry,
-    lowDetailGeometry: geometry,
+  const geometry = generatedWaterbodyGeometriesById.get(definition.id)
+  if (!geometry) {
+    throw new Error(`Missing generated waterbody geometry for ${definition.id}`)
   }
+  return geometry
 }
 
 export const waterbodies = waterbodyCatalogSchema.parse(

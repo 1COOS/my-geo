@@ -148,21 +148,19 @@ describe('country scene interaction', () => {
     )
   })
 
-  it('filters river and canal layers while preserving selected lines', () => {
+  it('toggles rivers and canals together while preserving selected lines', () => {
     const river = linearGeoFeatures.find((feature) => feature.kind === 'river')!
     const canal = linearGeoFeatures.find((feature) => feature.kind === 'canal')!
     expect(
       getVisibleLinearFeatures([river, canal], {
-        showRiverLayer: true,
-        showCanalLayer: false,
+        showRiverAndCanalLayer: true,
         selectedLinearFeatureId: null,
         hoveredLinearFeatureId: null,
       }),
-    ).toEqual([river])
+    ).toEqual([river, canal])
     expect(
       getVisibleLinearFeatures([river, canal], {
-        showRiverLayer: false,
-        showCanalLayer: false,
+        showRiverAndCanalLayer: false,
         selectedLinearFeatureId: canal.id,
         hoveredLinearFeatureId: river.id,
       }),

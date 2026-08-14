@@ -58,6 +58,19 @@ describe('searchCountries', () => {
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
+        '渤海',
+      )[0],
+    ).toMatchObject({
+      type: 'waterbody',
+      waterbody: { id: 'bohai-sea' },
+    })
+    expect(
+      searchPlaces(
+        countries,
+        cities,
+        waterbodies,
+        linearGeoFeatures,
+        mountainRanges,
         'La Manche',
       )[0],
     ).toMatchObject({

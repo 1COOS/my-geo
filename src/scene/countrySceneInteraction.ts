@@ -161,8 +161,7 @@ export function getVisibleLayerWaterbodies(
 }
 
 export type LinearFeatureLayerVisibility = {
-  showRiverLayer: boolean
-  showCanalLayer: boolean
+  showRiverAndCanalLayer: boolean
   selectedLinearFeatureId: string | null
   hoveredLinearFeatureId: string | null
 }
@@ -175,9 +174,7 @@ export function getVisibleLinearFeatures(
     (feature) =>
       feature.id === visibility.selectedLinearFeatureId ||
       feature.id === visibility.hoveredLinearFeatureId ||
-      (feature.kind === 'river'
-        ? visibility.showRiverLayer
-        : visibility.showCanalLayer),
+      visibility.showRiverAndCanalLayer,
   )
 }
 

@@ -22,6 +22,7 @@ describe('world mini map utilities', () => {
 
   it('detects polygon countries, dateline countries, microstates, and ocean', () => {
     expect(findCountryAtPosition(getCountry('CN')!.center)).toBe('CN')
+    expect(findCountryAtPosition({ latitude: 23.7, longitude: 121 })).toBe('CN')
     expect(findCountryAtPosition({ latitude: -17.8, longitude: 177.9 })).toBe(
       'FJ',
     )

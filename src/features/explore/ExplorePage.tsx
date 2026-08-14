@@ -97,15 +97,13 @@ type LayerControlProps = {
   showCities: boolean
   showOceanLayer: boolean
   showWaterwayLayer: boolean
-  showRiverLayer: boolean
-  showCanalLayer: boolean
+  showRiverAndCanalLayer: boolean
   showMountainLayer: boolean
   onToggleCapitals: () => void
   onToggleCities: () => void
   onToggleOceanLayer: () => void
   onToggleWaterwayLayer: () => void
-  onToggleRiverLayer: () => void
-  onToggleCanalLayer: () => void
+  onToggleRiverAndCanalLayer: () => void
   onToggleMountainLayer: () => void
 }
 
@@ -114,15 +112,13 @@ function LayerControl({
   showCities,
   showOceanLayer,
   showWaterwayLayer,
-  showRiverLayer,
-  showCanalLayer,
+  showRiverAndCanalLayer,
   showMountainLayer,
   onToggleCapitals,
   onToggleCities,
   onToggleOceanLayer,
   onToggleWaterwayLayer,
-  onToggleRiverLayer,
-  onToggleCanalLayer,
+  onToggleRiverAndCanalLayer,
   onToggleMountainLayer,
 }: LayerControlProps) {
   return (
@@ -175,24 +171,13 @@ function LayerControl({
         <button
           type="button"
           className="layer-toggle is-river"
-          aria-pressed={showRiverLayer}
-          aria-label="河流图层：世界重要河流水系"
-          title="河流：世界重要河流水系"
-          onClick={onToggleRiverLayer}
+          aria-pressed={showRiverAndCanalLayer}
+          aria-label="河流图层：世界重要河流与人工运河"
+          title="河流：世界重要河流与人工运河"
+          onClick={onToggleRiverAndCanalLayer}
         >
           <span className="layer-toggle-dot" aria-hidden="true" />
           <span>河流</span>
-        </button>
-        <button
-          type="button"
-          className="layer-toggle is-canal"
-          aria-pressed={showCanalLayer}
-          aria-label="运河图层：重要人工运河"
-          title="运河：重要人工运河"
-          onClick={onToggleCanalLayer}
-        >
-          <span className="layer-toggle-dot" aria-hidden="true" />
-          <span>运河</span>
         </button>
         <button
           type="button"
@@ -230,8 +215,7 @@ export function ExplorePage() {
   const [showCities, setShowCities] = useState(false)
   const [showOceanLayer, setShowOceanLayer] = useState(false)
   const [showWaterwayLayer, setShowWaterwayLayer] = useState(false)
-  const [showRiverLayer, setShowRiverLayer] = useState(false)
-  const [showCanalLayer, setShowCanalLayer] = useState(false)
+  const [showRiverAndCanalLayer, setShowRiverAndCanalLayer] = useState(false)
   const [showMountainLayer, setShowMountainLayer] = useState(false)
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null)
   const [hoveredCityId, setHoveredCityId] = useState<string | null>(null)
@@ -344,30 +328,15 @@ export function ExplorePage() {
       })
     }
   }, [selectedWaterbodyId, showWaterwayLayer])
-  const toggleRiverLayer = useCallback(() => {
-    const nextVisible = !showRiverLayer
-    setShowRiverLayer(nextVisible)
+  const toggleRiverAndCanalLayer = useCallback(() => {
+    const nextVisible = !showRiverAndCanalLayer
+    setShowRiverAndCanalLayer(nextVisible)
     if (!nextVisible) {
       setHoveredLinearFeatureId((id) => {
-        const feature = getLinearGeoFeature(id)
-        return feature?.kind === 'river' && id !== selectedLinearFeatureId
-          ? null
-          : id
+        return id && id !== selectedLinearFeatureId ? null : id
       })
     }
-  }, [selectedLinearFeatureId, showRiverLayer])
-  const toggleCanalLayer = useCallback(() => {
-    const nextVisible = !showCanalLayer
-    setShowCanalLayer(nextVisible)
-    if (!nextVisible) {
-      setHoveredLinearFeatureId((id) => {
-        const feature = getLinearGeoFeature(id)
-        return feature?.kind === 'canal' && id !== selectedLinearFeatureId
-          ? null
-          : id
-      })
-    }
-  }, [selectedLinearFeatureId, showCanalLayer])
+  }, [selectedLinearFeatureId, showRiverAndCanalLayer])
   const toggleMountainLayer = useCallback(() => {
     const nextVisible = !showMountainLayer
     setShowMountainLayer(nextVisible)
@@ -573,8 +542,7 @@ export function ExplorePage() {
             showCities={showCities}
             showOceanLayer={showOceanLayer}
             showWaterwayLayer={showWaterwayLayer}
-            showRiverLayer={showRiverLayer}
-            showCanalLayer={showCanalLayer}
+            showRiverAndCanalLayer={showRiverAndCanalLayer}
             showMountainLayer={showMountainLayer}
             selectedCountryCode={selectedCountryCode}
             selectedCityId={selectedCityId}
@@ -612,15 +580,13 @@ export function ExplorePage() {
           showCities={showCities}
           showOceanLayer={showOceanLayer}
           showWaterwayLayer={showWaterwayLayer}
-          showRiverLayer={showRiverLayer}
-          showCanalLayer={showCanalLayer}
+          showRiverAndCanalLayer={showRiverAndCanalLayer}
           showMountainLayer={showMountainLayer}
           onToggleCapitals={toggleCapitalLayer}
           onToggleCities={toggleCityLayer}
           onToggleOceanLayer={toggleOceanLayer}
           onToggleWaterwayLayer={toggleWaterwayLayer}
-          onToggleRiverLayer={toggleRiverLayer}
-          onToggleCanalLayer={toggleCanalLayer}
+          onToggleRiverAndCanalLayer={toggleRiverAndCanalLayer}
           onToggleMountainLayer={toggleMountainLayer}
         />
       ) : null}

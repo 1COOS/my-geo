@@ -719,12 +719,6 @@ a:focus-visible,
   border-color: rgb(54 220 237 / 28%);
 }
 
-.layer-toggle[aria-pressed='true'].is-canal {
-  color: #fff0bf;
-  background: rgb(247 191 79 / 12%);
-  border-color: rgb(247 191 79 / 28%);
-}
-
 .layer-toggle[aria-pressed='true'].is-mountain {
   color: #ffe9c3;
   background: rgb(217 155 82 / 13%);
@@ -770,21 +764,6 @@ a:focus-visible,
 .layer-toggle.is-river[aria-pressed='true'] .layer-toggle-dot {
   background: #36dced;
   box-shadow: 0 0 0.4rem rgb(54 220 237 / 40%);
-}
-
-.layer-toggle.is-canal .layer-toggle-dot {
-  width: 0.62rem;
-  height: 0.18rem;
-  border-radius: 0;
-}
-
-.layer-toggle.is-canal[aria-pressed='true'] .layer-toggle-dot {
-  background: repeating-linear-gradient(
-    90deg,
-    #f7bf4f 0 0.14rem,
-    transparent 0.14rem 0.22rem
-  );
-  box-shadow: none;
 }
 
 .layer-toggle.is-mountain .layer-toggle-dot {
