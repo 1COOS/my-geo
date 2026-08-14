@@ -61,6 +61,23 @@ describe('CountrySearch', () => {
     expect(onRequestClose).toHaveBeenCalledTimes(1)
   })
 
+  it('shows mountain ranges with their highest peak', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
+
+    render(<CountrySearch onSelect={onSelect} />)
+
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    expect(search).toHaveAttribute('placeholder', '搜索国家、城市与地理地点')
+    await user.type(search, 'Everest')
+    expect(screen.getByText(/最高峰：珠穆朗玛峰/)).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    expect(onSelect.mock.calls[0]?.[0]).toMatchObject({
+      type: 'mountainRange',
+      range: { id: 'himalayas' },
+    })
+  })
+
   it('requests the parent popover to close after selection or Escape', async () => {
     const user = userEvent.setup()
     const onRequestClose = vi.fn()

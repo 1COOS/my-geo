@@ -1,6 +1,7 @@
 import type { City } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
 import type { LinearGeoFeature } from '../../data/linearGeoFeatureSchema'
+import type { MountainRange } from '../../data/mountainRangeSchema'
 import type { Waterbody } from '../../data/waterbodySchema'
 
 export type PlaceSearchResult =
@@ -8,6 +9,7 @@ export type PlaceSearchResult =
   | { type: 'city'; city: City; country: Country }
   | { type: 'waterbody'; waterbody: Waterbody }
   | { type: 'linearFeature'; feature: LinearGeoFeature }
+  | { type: 'mountainRange'; range: MountainRange }
 
 export function normalizeCountrySearch(value: string) {
   return value
@@ -30,6 +32,7 @@ export function searchPlaces(
   cities: City[],
   waterbodies: Waterbody[],
   linearFeatures: LinearGeoFeature[],
+  mountainRanges: MountainRange[],
   query: string,
   limit = 8,
 ): PlaceSearchResult[] {
@@ -115,6 +118,32 @@ export function searchPlaces(
     }
   }
 
+  for (const range of mountainRanges) {
+    const countryNames = range.countryCodes.flatMap((countryCode) => {
+      const country = countriesByCode.get(countryCode)
+      return country ? [country.code, country.name.zh, country.name.en] : []
+    })
+    const score = matchScore(
+      [
+        range.name.zh,
+        range.name.en,
+        ...range.aliases,
+        range.highestPeak.name.zh,
+        range.highestPeak.name.en,
+        ...range.highestPeak.aliases,
+        ...countryNames,
+      ],
+      normalizedQuery,
+    )
+    if (score < 10) {
+      scored.push({
+        result: { type: 'mountainRange', range },
+        score: score + 0.18,
+        name: range.name.zh,
+      })
+    }
+  }
+
   return scored
     .sort(
       (left, right) =>
@@ -130,7 +159,7 @@ export function searchCountries(
   query: string,
   limit = 8,
 ) {
-  return searchPlaces(countries, [], [], [], query, limit).flatMap((result) =>
-    result.type === 'country' ? [result.country] : [],
+  return searchPlaces(countries, [], [], [], [], query, limit).flatMap(
+    (result) => (result.type === 'country' ? [result.country] : []),
   )
 }

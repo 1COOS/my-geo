@@ -68,6 +68,47 @@ async function expectSelectedLinearFeatureRoute(
   ).toBe(false)
 }
 
+async function expectSelectedMountainRoute(
+  page: Page,
+  rangeId: string,
+  labelName: string,
+) {
+  const overlay = page.getByTestId('selected-mountain-overlay')
+  const route = page.getByTestId('selected-mountain-route')
+  const peak = page.getByTestId('selected-mountain-peak')
+  const label = page.locator(`[data-map-label-id="${rangeId}"]`)
+
+  await expect(overlay).toHaveAttribute('data-mountain-range-id', rangeId)
+  await expect(overlay).toHaveAttribute('data-mountain-detail', 'high')
+  await expect(overlay).toBeVisible()
+  await expect(route).toHaveAttribute('d', /M[-\d.]+,[-\d.]+ L/)
+  await expect(peak).toBeVisible()
+  await expect(label).toBeVisible()
+  await expect(label).toHaveText(labelName)
+}
+
+async function expectLayerToolbarSingleLine(page: Page) {
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layout = await layerControl.evaluate((element) => {
+    const options = element.querySelector<HTMLElement>(
+      '.layer-control-options',
+    )!
+    const buttonTops = Array.from(
+      options.querySelectorAll<HTMLButtonElement>('button'),
+      (button) => button.getBoundingClientRect().top,
+    )
+    return {
+      clientWidth: options.clientWidth,
+      scrollWidth: options.scrollWidth,
+      buttonCount: buttonTops.length,
+      rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
+    }
+  })
+  expect(layout.buttonCount).toBe(7)
+  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
+  expect(layout.rowSpread).toBeLessThan(2)
+}
+
 function parseMiniMapTransform(transform: string | null) {
   const match = transform?.match(/translate\(([-\d.]+)(?:\s|,)\s*([-\d.]+)\)/)
   return match ? { x: Number(match[1]), y: Number(match[2]) } : null
@@ -97,11 +138,15 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
     const canals = layerControl.getByRole('button', {
       name: '运河图层：重要人工运河',
     })
+    const mountains = layerControl.getByRole('button', {
+      name: '山脉图层：世界著名山脉与最高峰',
+    })
     await expect(layerControl).toBeVisible()
     await expect(capitals).toHaveAttribute('aria-pressed', 'false')
     await expect(cities).toHaveAttribute('aria-pressed', 'false')
     await expect(rivers).toHaveAttribute('aria-pressed', 'false')
     await expect(canals).toHaveAttribute('aria-pressed', 'false')
+    await expect(mountains).toHaveAttribute('aria-pressed', 'false')
     await expect(
       page.getByRole('navigation', { name: '地球显示控制' }),
     ).toBeVisible()
@@ -584,6 +629,59 @@ test('shows river and canal paths and keeps linear feature selection exclusive',
   )
 })
 
+test('shows mountain ridges, highest peaks, and replaces global selection', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const mountainToggle = layerControl.getByRole('button', {
+    name: '山脉图层：世界著名山脉与最高峰',
+  })
+  await mountainToggle.click()
+  await expect(mountainToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect
+    .poll(() => page.locator('.mountain-range-label:not([hidden])').count())
+    .toBeGreaterThan(0)
+
+  await selectPlace(page, '珠穆朗玛峰')
+  const himalayaCard = page.getByRole('complementary', {
+    name: '喜马拉雅山脉知识卡',
+  })
+  await expect(himalayaCard).toBeVisible()
+  await expect(
+    himalayaCard.getByText('珠穆朗玛峰', { exact: true }),
+  ).toBeVisible()
+  await expectSelectedMountainRoute(page, 'himalayas', '喜马拉雅山脉')
+
+  await mountainToggle.click()
+  await expect(mountainToggle).toHaveAttribute('aria-pressed', 'false')
+  await expectSelectedMountainRoute(page, 'himalayas', '喜马拉雅山脉')
+
+  await selectPlace(page, '安第斯山脉')
+  await expect(
+    page.getByRole('complementary', { name: '安第斯山脉知识卡' }),
+  ).toBeVisible()
+  await expect(himalayaCard).toHaveCount(0)
+  await expectSelectedMountainRoute(page, 'andes', '安第斯山脉')
+  await page.getByRole('button', { name: '画质：平衡' }).click()
+  await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
+  await expect(page.getByTestId('selected-mountain-overlay')).toHaveAttribute(
+    'data-mountain-detail',
+    'high',
+  )
+
+  await selectPlace(page, '长江')
+  await expect(page.getByLabel('长江知识卡')).toBeVisible()
+  await expect(page.getByTestId('selected-mountain-overlay')).toHaveCount(0)
+  await expect(page.getByTestId('selected-mountain-peak')).toHaveCount(0)
+})
+
 for (const viewport of [
   { name: 'phone landscape', width: 844, height: 390, touch: true },
   { name: 'iPad landscape', width: 1194, height: 834, touch: true },
@@ -612,9 +710,18 @@ for (const viewport of [
     const { fallback } = await waitForSceneOrFallback(page)
     if (await fallback.isVisible()) return
 
+    await expectLayerToolbarSingleLine(page)
+
     await selectPlace(page, '科林斯运河')
     await expect(page.getByLabel('科林斯运河知识卡')).toBeVisible()
     await expectSelectedLinearFeatureRoute(page, 'corinth-canal', '科林斯运河')
+
+    await selectPlace(page, '阿尔卑斯山脉')
+    await expect(
+      page.getByRole('complementary', { name: '阿尔卑斯山脉知识卡' }),
+    ).toBeVisible()
+    await expectSelectedMountainRoute(page, 'alps', '阿尔卑斯山脉')
+    await expectLayerToolbarSingleLine(page)
   })
 }
 
@@ -794,6 +901,26 @@ test('keeps the layer panel inside an iPad landscape safe area', async ({
   expect(box!.y).toBeGreaterThanOrEqual(11)
   expect(box!.x + box!.width).toBeLessThanOrEqual(1194 - 11)
   expect(box!.y + box!.height).toBeLessThanOrEqual(834 - 11)
+  const toolbarLayout = await layerControl.evaluate((element) => {
+    const options = element.querySelector<HTMLElement>(
+      '.layer-control-options',
+    )!
+    const buttonTops = Array.from(
+      options.querySelectorAll<HTMLButtonElement>('button'),
+      (button) => button.getBoundingClientRect().top,
+    )
+    return {
+      clientWidth: options.clientWidth,
+      scrollWidth: options.scrollWidth,
+      buttonCount: buttonTops.length,
+      rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
+    }
+  })
+  expect(toolbarLayout.buttonCount).toBe(7)
+  expect(toolbarLayout.scrollWidth).toBeLessThanOrEqual(
+    toolbarLayout.clientWidth + 1,
+  )
+  expect(toolbarLayout.rowSpread).toBeLessThan(2)
 
   await layerControl.getByRole('button', { name: '首都' }).click()
   await layerControl.getByRole('button', { name: '城市' }).click()
@@ -827,6 +954,15 @@ test('shows the fallback instead of crashing without WebGL', async ({
   await search.fill('中国')
   await search.press('Enter')
   await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
+  const mountainSearch = await openCountrySearch(page)
+  await mountainSearch.fill('Everest')
+  await mountainSearch.press('Enter')
+  await expect(
+    page.getByRole('complementary', { name: '喜马拉雅山脉知识卡' }),
+  ).toBeVisible()
+  await expect(page.getByRole('region', { name: '地球图层控制' })).toHaveCount(
+    0,
+  )
 })
 
 test('respects the system reduced-motion preference', async ({ page }) => {

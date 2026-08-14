@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { cities, countries } from '../../data/countries'
 import { linearGeoFeatures } from '../../data/linearGeoFeatures'
+import { mountainRanges } from '../../data/mountainRanges'
 import { waterbodies } from '../../data/waterbodies'
 import { searchCountries, searchPlaces } from './countrySearchUtils'
 
@@ -30,6 +31,7 @@ describe('searchCountries', () => {
         cities,
         waterbodies,
         linearGeoFeatures,
+        mountainRanges,
         '上海',
       )[0],
     ).toMatchObject({
@@ -42,6 +44,7 @@ describe('searchCountries', () => {
         cities,
         waterbodies,
         linearGeoFeatures,
+        mountainRanges,
         'Pacific',
       )[0],
     ).toMatchObject({
@@ -54,6 +57,7 @@ describe('searchCountries', () => {
         cities,
         waterbodies,
         linearGeoFeatures,
+        mountainRanges,
         'La Manche',
       )[0],
     ).toMatchObject({
@@ -61,7 +65,14 @@ describe('searchCountries', () => {
       waterbody: { id: 'english-channel' },
     })
     expect(
-      searchPlaces(countries, cities, waterbodies, linearGeoFeatures, 'CN')[0],
+      searchPlaces(
+        countries,
+        cities,
+        waterbodies,
+        linearGeoFeatures,
+        mountainRanges,
+        'CN',
+      )[0],
     ).toMatchObject({
       type: 'country',
       country: { code: 'CN' },
@@ -75,6 +86,7 @@ describe('searchCountries', () => {
         cities,
         waterbodies,
         linearGeoFeatures,
+        mountainRanges,
         '长江',
       )[0],
     ).toMatchObject({
@@ -87,6 +99,7 @@ describe('searchCountries', () => {
         cities,
         waterbodies,
         linearGeoFeatures,
+        mountainRanges,
         'Suez',
       )[0],
     ).toMatchObject({
@@ -99,6 +112,7 @@ describe('searchCountries', () => {
         cities,
         waterbodies,
         linearGeoFeatures,
+        mountainRanges,
         '中国大运河',
       )[0],
     ).toMatchObject({
@@ -108,5 +122,28 @@ describe('searchCountries', () => {
         name: { zh: '京杭大运河' },
       },
     })
+  })
+
+  it('finds mountain ranges by range names, peaks, and countries', () => {
+    expect(
+      searchPlaces(
+        countries,
+        cities,
+        waterbodies,
+        linearGeoFeatures,
+        mountainRanges,
+        '喜马拉雅',
+      )[0],
+    ).toMatchObject({ type: 'mountainRange', range: { id: 'himalayas' } })
+    expect(
+      searchPlaces(
+        countries,
+        cities,
+        waterbodies,
+        linearGeoFeatures,
+        mountainRanges,
+        'Everest',
+      )[0],
+    ).toMatchObject({ type: 'mountainRange', range: { id: 'himalayas' } })
   })
 })

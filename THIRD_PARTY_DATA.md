@@ -60,6 +60,15 @@ My Geo stores repository-owned summaries and deliberately simplified teaching ge
 
 Five catalog objects include explicitly recorded educational supplements because Natural Earth does not contain a complete source-to-mouth main stem: the Yangtze, Mekong, Amazon, Paraná–Paraguay and Saint Lawrence–Great Lakes systems. Generated provenance records every Natural Earth feature/part and every inserted gap. The shipped lines remain teaching centerlines and intentionally omit ordinary tributaries, changing channels, floodplains, legal water boundaries, guaranteed depths, shipping conditions and real-time flow. HydroRIVERS and Hydrography90m are not used because their redistribution terms do not fit this offline PWA release.
 
+## Famous mountain ranges
+
+- Primary range envelopes: Natural Earth 5.0.0 1:10m geography region polygons, public domain. The pinned archive SHA-256 is `cb7b9db200284ed1551f20eacc7f3333e9b5f311c19f7cb2670694529f688682`.
+- Build process: `data:generate` verifies the pinned archive, resolves 30 repository-reviewed `ne_id` records, validates ordered ridge controls against their range envelopes, and writes deterministic high, medium and low-detail ridge lines. `data:validate` does not access the network.
+- Content references: Encyclopaedia Britannica mountain references, the U.S. Geological Survey, China's Ministry of Natural Resources, Geoscience Australia and Land Information New Zealand. Accessed 2026-08-14.
+- Use: Chinese and English names, broad locations, approximate lengths, highest-peak names, elevations, coordinates and original educational summaries.
+
+Natural Earth provides broad range polygons rather than crest lines. My Geo therefore treats those polygons as validation envelopes and derives repository-reviewed teaching ridges from ordered control points. The displayed line and peak marker are not a digital elevation model, complete mountain boundary, climbing route, hazard assessment, administrative border or sovereignty statement. Mountain and summit measurements can vary between surveys, so values marked as approximate should not be read as live surveying results.
+
 ## Flags
 
 - Source: `flag-icons@7.5.0`

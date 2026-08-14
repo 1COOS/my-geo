@@ -367,6 +367,84 @@ a:focus-visible,
   stroke: #25d7ea;
 }
 
+.selected-linear-feature-overlay.is-mountain
+  .selected-linear-feature-route-outer {
+  stroke: #d99b52;
+  filter: drop-shadow(0 0 5px rgb(217 155 82 / 78%));
+}
+
+.mountain-peak-marker {
+  position: absolute;
+  z-index: 7;
+  top: 0;
+  left: 0;
+  width: 2.2rem;
+  height: 2.5rem;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  pointer-events: auto;
+  will-change: transform;
+}
+
+.mountain-peak-marker-shape {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 1.7rem;
+  height: 1.55rem;
+  background: linear-gradient(135deg, #fffdf1 0 44%, #d99b52 45% 100%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 0 0.35rem rgb(255 214 107 / 85%));
+  transform: translateX(-50%);
+}
+
+.mountain-peak-marker-tooltip {
+  position: absolute;
+  bottom: calc(100% + 0.35rem);
+  left: 50%;
+  display: grid;
+  min-width: 8.8rem;
+  gap: 0.14rem;
+  padding: 0.55rem 0.65rem;
+  color: #fff6dc;
+  text-align: left;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+  background: rgb(42 28 9 / 94%);
+  border: 1px solid rgb(239 181 92 / 42%);
+  border-radius: 0.65rem;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 42%);
+  opacity: 0;
+  transform: translate(-50%, 0.3rem);
+}
+
+.mountain-peak-marker:hover .mountain-peak-marker-tooltip,
+.mountain-peak-marker:focus-visible .mountain-peak-marker-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.mountain-peak-marker-tooltip strong,
+.mountain-peak-marker-tooltip small,
+.mountain-peak-marker-tooltip b {
+  margin: 0;
+  font-style: normal;
+}
+
+.mountain-peak-marker-tooltip small {
+  color: #cbb890;
+  font-size: 0.62rem;
+}
+
+.mountain-peak-marker-tooltip b {
+  color: #ffd879;
+  font-size: 0.68rem;
+}
+
 .city-label {
   position: absolute;
   top: 0;
@@ -479,6 +557,28 @@ a:focus-visible,
   box-shadow:
     0 7px 20px rgb(0 0 0 / 38%),
     0 0 0 2px rgb(247 191 79 / 16%);
+}
+
+.mountain-range-label {
+  color: #ffe8bd;
+  background: rgb(49 31 9 / 87%);
+  border-color: rgb(217 155 82 / 42%);
+}
+
+.mountain-range-label > span {
+  width: 0.68rem;
+  height: 0.56rem;
+  background: #d99b52;
+  border-radius: 0;
+  box-shadow: 0 0 0.45rem rgb(217 155 82 / 48%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.mountain-range-label.is-selected {
+  border-color: rgb(255 225 166 / 82%);
+  box-shadow:
+    0 7px 20px rgb(0 0 0 / 38%),
+    0 0 0 2px rgb(217 155 82 / 18%);
 }
 
 @media (max-width: 900px), (max-height: 520px) {
@@ -625,6 +725,12 @@ a:focus-visible,
   border-color: rgb(247 191 79 / 28%);
 }
 
+.layer-toggle[aria-pressed='true'].is-mountain {
+  color: #ffe9c3;
+  background: rgb(217 155 82 / 13%);
+  border-color: rgb(217 155 82 / 30%);
+}
+
 .layer-toggle-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -679,6 +785,18 @@ a:focus-visible,
     transparent 0.14rem 0.22rem
   );
   box-shadow: none;
+}
+
+.layer-toggle.is-mountain .layer-toggle-dot {
+  width: 0.62rem;
+  height: 0.5rem;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.layer-toggle.is-mountain[aria-pressed='true'] .layer-toggle-dot {
+  background: #d99b52;
+  box-shadow: 0 0 0.4rem rgb(217 155 82 / 45%);
 }
 
 .country-hover-tooltip {
@@ -863,6 +981,14 @@ a:focus-visible,
 .place-result-icon.is-waterbody {
   background: transparent;
   border: 2px solid #31e4ff;
+}
+
+.place-result-icon.is-mountainRange {
+  height: 1.05rem;
+  background: #d99b52;
+  border-radius: 0;
+  box-shadow: 0 0 0.35rem rgb(217 155 82 / 36%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
 .country-search-popover button > span {
@@ -1387,6 +1513,58 @@ a:focus-visible,
     transparent 0.45rem 0.72rem
   );
   box-shadow: none;
+}
+
+.mountain-range-symbol {
+  display: block;
+  width: 4.2rem;
+  height: 3.7rem;
+  background: linear-gradient(135deg, #fff6da 0 36%, #d99b52 37% 100%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 0 1rem rgb(217 155 82 / 38%));
+}
+
+.mountain-range-heading p {
+  color: #e6ad64;
+}
+
+.mountain-peak-card {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.75rem 0.8rem;
+  background: rgb(217 155 82 / 8%);
+  border: 1px solid rgb(217 155 82 / 18%);
+  border-radius: 0.8rem;
+}
+
+.mountain-peak-card-icon {
+  width: 2rem;
+  height: 1.75rem;
+  background: linear-gradient(135deg, #fff6da 0 40%, #d99b52 41% 100%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.mountain-peak-card div {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.mountain-peak-card strong {
+  color: #fff1ce;
+  font-size: 0.84rem;
+}
+
+.mountain-peak-card div span {
+  color: #9fb1bc;
+  font-size: 0.66rem;
+}
+
+.mountain-peak-card b {
+  color: #ffd879;
+  font-size: 0.76rem;
+  white-space: nowrap;
 }
 
 .country-detail-flag {

@@ -16,6 +16,7 @@ import {
   getLinearGeoFeature,
   getLinearGeoFeatureGeometry,
 } from '../../data/linearGeoFeatures'
+import { getMountainRange } from '../../data/mountainRanges'
 import { getWaterbody } from '../../data/waterbodies'
 import { ControlButton } from '../../shared/components/ControlButton'
 import { WebGLFallback } from '../../shared/components/WebGLFallback'
@@ -35,6 +36,7 @@ import { CountryDetailPanel } from './CountryDetailPanel'
 import { CountrySearch } from './CountrySearch'
 import type { PlaceSearchResult } from './countrySearchUtils'
 import { LinearGeoFeatureDetailPanel } from './LinearGeoFeatureDetailPanel'
+import { MountainRangeDetailPanel } from './MountainRangeDetailPanel'
 import { WaterbodyDetailPanel } from './WaterbodyDetailPanel'
 import { useExperienceStore } from './useExperienceStore'
 import { WorldMiniMap, type WorldMiniMapHandle } from './WorldMiniMap'
@@ -97,12 +99,14 @@ type LayerControlProps = {
   showWaterwayLayer: boolean
   showRiverLayer: boolean
   showCanalLayer: boolean
+  showMountainLayer: boolean
   onToggleCapitals: () => void
   onToggleCities: () => void
   onToggleOceanLayer: () => void
   onToggleWaterwayLayer: () => void
   onToggleRiverLayer: () => void
   onToggleCanalLayer: () => void
+  onToggleMountainLayer: () => void
 }
 
 function LayerControl({
@@ -112,12 +116,14 @@ function LayerControl({
   showWaterwayLayer,
   showRiverLayer,
   showCanalLayer,
+  showMountainLayer,
   onToggleCapitals,
   onToggleCities,
   onToggleOceanLayer,
   onToggleWaterwayLayer,
   onToggleRiverLayer,
   onToggleCanalLayer,
+  onToggleMountainLayer,
 }: LayerControlProps) {
   return (
     <section className="layer-control" aria-label="地球图层控制">
@@ -188,6 +194,17 @@ function LayerControl({
           <span className="layer-toggle-dot" aria-hidden="true" />
           <span>运河</span>
         </button>
+        <button
+          type="button"
+          className="layer-toggle is-mountain"
+          aria-pressed={showMountainLayer}
+          aria-label="山脉图层：世界著名山脉与最高峰"
+          title="山脉：世界著名山脉与最高峰"
+          onClick={onToggleMountainLayer}
+        >
+          <span className="layer-toggle-dot" aria-hidden="true" />
+          <span>山脉</span>
+        </button>
       </div>
       <span id="ocean-layer-description" className="sr-only">
         海洋：大洋、海与海湾
@@ -215,6 +232,7 @@ export function ExplorePage() {
   const [showWaterwayLayer, setShowWaterwayLayer] = useState(false)
   const [showRiverLayer, setShowRiverLayer] = useState(false)
   const [showCanalLayer, setShowCanalLayer] = useState(false)
+  const [showMountainLayer, setShowMountainLayer] = useState(false)
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null)
   const [hoveredCityId, setHoveredCityId] = useState<string | null>(null)
   const [selectedWaterbodyId, setSelectedWaterbodyId] = useState<string | null>(
@@ -227,6 +245,12 @@ export function ExplorePage() {
     string | null
   >(null)
   const [hoveredLinearFeatureId, setHoveredLinearFeatureId] = useState<
+    string | null
+  >(null)
+  const [selectedMountainRangeId, setSelectedMountainRangeId] = useState<
+    string | null
+  >(null)
+  const [hoveredMountainRangeId, setHoveredMountainRangeId] = useState<
     string | null
   >(null)
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(() => ({
@@ -274,6 +298,7 @@ export function ExplorePage() {
   const selectedCity = getCity(selectedCityId)
   const selectedWaterbody = getWaterbody(selectedWaterbodyId)
   const selectedLinearFeature = getLinearGeoFeature(selectedLinearFeatureId)
+  const selectedMountainRange = getMountainRange(selectedMountainRangeId)
   const visibleCountryCities = getCitiesForCountry(selectedCountryCode)
   const toggleCapitalLayer = useCallback(() => {
     const nextVisible = !showCapitals
@@ -343,6 +368,13 @@ export function ExplorePage() {
       })
     }
   }, [selectedLinearFeatureId, showCanalLayer])
+  const toggleMountainLayer = useCallback(() => {
+    const nextVisible = !showMountainLayer
+    setShowMountainLayer(nextVisible)
+    if (!nextVisible && hoveredMountainRangeId !== selectedMountainRangeId) {
+      setHoveredMountainRangeId(null)
+    }
+  }, [hoveredMountainRangeId, selectedMountainRangeId, showMountainLayer])
   const requestCameraTarget = useCallback(
     (position: GeoPosition, distance = OVERVIEW_CAMERA_DISTANCE) => {
       cameraRequestIdRef.current += 1
@@ -365,6 +397,8 @@ export function ExplorePage() {
       setHoveredWaterbodyId(null)
       setSelectedLinearFeatureId(null)
       setHoveredLinearFeatureId(null)
+      setSelectedMountainRangeId(null)
+      setHoveredMountainRangeId(null)
       selectCountry(countryCode)
       requestCameraTarget(country.center)
     },
@@ -380,6 +414,8 @@ export function ExplorePage() {
       setHoveredWaterbodyId(null)
       setSelectedLinearFeatureId(null)
       setHoveredLinearFeatureId(null)
+      setSelectedMountainRangeId(null)
+      setHoveredMountainRangeId(null)
       setSelectedCityId(city.id)
       requestCameraTarget(
         { latitude: city.latitude, longitude: city.longitude },
@@ -396,6 +432,8 @@ export function ExplorePage() {
     setHoveredWaterbodyId(null)
     setSelectedLinearFeatureId(null)
     setHoveredLinearFeatureId(null)
+    setSelectedMountainRangeId(null)
+    setHoveredMountainRangeId(null)
   }, [selectCountry])
   const navigateToWaterbody = useCallback(
     (waterbodyId: string) => {
@@ -408,6 +446,8 @@ export function ExplorePage() {
       setSelectedWaterbodyId(waterbody.id)
       setSelectedLinearFeatureId(null)
       setHoveredLinearFeatureId(null)
+      setSelectedMountainRangeId(null)
+      setHoveredMountainRangeId(null)
       requestCameraTarget(waterbody.center, waterbody.cameraDistance)
     },
     [requestCameraTarget, selectCountry],
@@ -422,6 +462,8 @@ export function ExplorePage() {
       setHoveredCityId(null)
       setSelectedWaterbodyId(null)
       setHoveredWaterbodyId(null)
+      setSelectedMountainRangeId(null)
+      setHoveredMountainRangeId(null)
       setSelectedLinearFeatureId(feature.id)
       const geometry = getLinearGeoFeatureGeometry(feature.id)?.geometry
       const cameraDistance =
@@ -432,18 +474,39 @@ export function ExplorePage() {
     },
     [requestCameraTarget, selectCountry],
   )
+  const navigateToMountainRange = useCallback(
+    (rangeId: string) => {
+      const range = getMountainRange(rangeId)
+      if (!range) return
+      setMiniMapExpanded(false)
+      selectCountry(null)
+      setSelectedCityId(null)
+      setHoveredCityId(null)
+      setSelectedWaterbodyId(null)
+      setHoveredWaterbodyId(null)
+      setSelectedLinearFeatureId(null)
+      setHoveredLinearFeatureId(null)
+      setSelectedMountainRangeId(range.id)
+      setHoveredMountainRangeId(null)
+      requestCameraTarget(range.cameraPosition, range.cameraDistance)
+    },
+    [requestCameraTarget, selectCountry],
+  )
   const navigateToSearchResult = useCallback(
     (result: PlaceSearchResult) => {
       if (result.type === 'country') navigateToCountry(result.country.code)
       else if (result.type === 'city') navigateToCity(result.city.id)
       else if (result.type === 'waterbody')
         navigateToWaterbody(result.waterbody.id)
-      else navigateToLinearFeature(result.feature.id)
+      else if (result.type === 'linearFeature')
+        navigateToLinearFeature(result.feature.id)
+      else navigateToMountainRange(result.range.id)
     },
     [
       navigateToCity,
       navigateToCountry,
       navigateToLinearFeature,
+      navigateToMountainRange,
       navigateToWaterbody,
     ],
   )
@@ -475,12 +538,17 @@ export function ExplorePage() {
     hoveredWaterbodyId === null &&
     selectedWaterbodyId === null &&
     selectedLinearFeatureId === null &&
-    hoveredLinearFeatureId === null
+    hoveredLinearFeatureId === null &&
+    selectedMountainRangeId === null &&
+    hoveredMountainRangeId === null
 
   return (
     <main
       className={
-        selectedCountry || selectedWaterbody || selectedLinearFeature
+        selectedCountry ||
+        selectedWaterbody ||
+        selectedLinearFeature ||
+        selectedMountainRange
           ? 'explore-shell has-country-detail'
           : 'explore-shell'
       }
@@ -507,6 +575,7 @@ export function ExplorePage() {
             showWaterwayLayer={showWaterwayLayer}
             showRiverLayer={showRiverLayer}
             showCanalLayer={showCanalLayer}
+            showMountainLayer={showMountainLayer}
             selectedCountryCode={selectedCountryCode}
             selectedCityId={selectedCityId}
             hoveredCountryCode={hoveredCountryCode}
@@ -515,6 +584,8 @@ export function ExplorePage() {
             hoveredWaterbodyId={hoveredWaterbodyId}
             selectedLinearFeatureId={selectedLinearFeatureId}
             hoveredLinearFeatureId={hoveredLinearFeatureId}
+            selectedMountainRangeId={selectedMountainRangeId}
+            hoveredMountainRangeId={hoveredMountainRangeId}
             onSelectCountry={navigateToCountry}
             onSelectCity={navigateToCity}
             onHoverCountry={hoverCountry}
@@ -523,6 +594,8 @@ export function ExplorePage() {
             onHoverWaterbody={setHoveredWaterbodyId}
             onSelectLinearFeature={navigateToLinearFeature}
             onHoverLinearFeature={setHoveredLinearFeatureId}
+            onSelectMountainRange={navigateToMountainRange}
+            onHoverMountainRange={setHoveredMountainRangeId}
             onViewCenterChange={handleViewCenterChange}
             onViewCenterCommit={handleViewCenterCommit}
           />
@@ -541,12 +614,14 @@ export function ExplorePage() {
           showWaterwayLayer={showWaterwayLayer}
           showRiverLayer={showRiverLayer}
           showCanalLayer={showCanalLayer}
+          showMountainLayer={showMountainLayer}
           onToggleCapitals={toggleCapitalLayer}
           onToggleCities={toggleCityLayer}
           onToggleOceanLayer={toggleOceanLayer}
           onToggleWaterwayLayer={toggleWaterwayLayer}
           onToggleRiverLayer={toggleRiverLayer}
           onToggleCanalLayer={toggleCanalLayer}
+          onToggleMountainLayer={toggleMountainLayer}
         />
       ) : null}
 
@@ -575,13 +650,15 @@ export function ExplorePage() {
                   selectedCity?.id ??
                   selectedWaterbody?.id ??
                   selectedLinearFeature?.id ??
+                  selectedMountainRange?.id ??
                   'no-selection'
                 }
                 selectedLabel={
                   selectedCity?.name.zh ??
                   selectedCountry?.name.zh ??
                   selectedWaterbody?.name.zh ??
-                  selectedLinearFeature?.name.zh
+                  selectedLinearFeature?.name.zh ??
+                  selectedMountainRange?.name.zh
                 }
                 onSelect={navigateToSearchResult}
                 autoFocus
@@ -654,6 +731,14 @@ export function ExplorePage() {
         <LinearGeoFeatureDetailPanel
           key={selectedLinearFeature.id}
           feature={selectedLinearFeature}
+          onClose={clearSelection}
+          onSelectCountry={navigateToCountry}
+        />
+      ) : null}
+      {selectedMountainRange ? (
+        <MountainRangeDetailPanel
+          key={selectedMountainRange.id}
+          range={selectedMountainRange}
           onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />

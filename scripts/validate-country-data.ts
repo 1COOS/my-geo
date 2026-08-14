@@ -12,6 +12,14 @@ import {
   linearGeoFeatures,
 } from '../src/data/linearGeoFeatures'
 import {
+  mountainRangeGeometries,
+  mountainRanges,
+} from '../src/data/mountainRanges'
+import {
+  mountainGeometryDefinitions,
+  NATURAL_EARTH_MOUNTAIN_ARCHIVE_SHA256,
+} from './mountain-geometry-content'
+import {
   NATURAL_EARTH_RIVER_ARCHIVE_SHA256,
   riverGeometryDefinitions,
 } from './river-geometry-content'
@@ -66,6 +74,23 @@ const allowedAdjacentRegionCodes = new Set(Object.keys(adjacentRegionNames))
 const countryCodes = new Set(countries.map((country) => country.code))
 const citiesByCountry = Map.groupBy(cities, (city) => city.countryCode)
 const priorityCountryCodes = Object.keys(priorityCityCounts).sort()
+
+function getDistanceKilometers(
+  left: readonly [number, number],
+  right: readonly [number, number],
+) {
+  const toRadians = (value: number) => (value * Math.PI) / 180
+  const latitudeDelta = toRadians(right[1] - left[1])
+  const longitudeDelta = toRadians(right[0] - left[0])
+  const leftLatitude = toRadians(left[1])
+  const rightLatitude = toRadians(right[1])
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(leftLatitude) *
+      Math.cos(rightLatitude) *
+      Math.sin(longitudeDelta / 2) ** 2
+  return 12_742.0176 * Math.asin(Math.min(1, Math.sqrt(haversine)))
+}
 
 if (
   linearGeoFeatures.filter((feature) => feature.kind === 'river').length !== 30
@@ -148,6 +173,72 @@ for (const feature of linearGeoFeatures) {
 if (mediumRiverPointCount > 10_000 || lowRiverPointCount > 3_000) {
   throw new Error(
     `River geometry budgets exceeded: ${mediumRiverPointCount} medium, ${lowRiverPointCount} low`,
+  )
+}
+
+if (mountainRanges.length !== 30 || mountainRangeGeometries.length !== 30) {
+  throw new Error('Expected exactly 30 mountain ranges and geometries')
+}
+const mountainGeometryIds = new Set(
+  mountainRangeGeometries.map((geometry) => geometry.id),
+)
+const mountainDefinitionsById = new Map(
+  mountainGeometryDefinitions.map((definition) => [definition.id, definition]),
+)
+let mediumMountainPointCount = 0
+let lowMountainPointCount = 0
+for (const range of mountainRanges) {
+  const geometry = mountainRangeGeometries.find(
+    (candidate) => candidate.id === range.id,
+  )
+  const definition = mountainDefinitionsById.get(range.id)
+  if (!geometry || !mountainGeometryIds.has(range.id) || !definition) {
+    throw new Error(`Missing mountain geometry or mapping for ${range.id}`)
+  }
+  if (
+    geometry.provenance.archiveSha256 !==
+      NATURAL_EARTH_MOUNTAIN_ARCHIVE_SHA256 ||
+    geometry.provenance.naturalEarthNeId !== definition.naturalEarthNeId
+  ) {
+    throw new Error(`Unexpected mountain provenance on ${range.id}`)
+  }
+  for (const countryCode of [
+    ...range.countryCodes,
+    ...range.highestPeak.countryCodes,
+  ]) {
+    if (!countryCodes.has(countryCode)) {
+      throw new Error(`Unknown country ${countryCode} on ${range.id}`)
+    }
+  }
+  for (const sourceId of [
+    ...range.sourceIds,
+    ...geometry.provenance.correctionSourceIds,
+  ]) {
+    if (!sourceIds.has(sourceId)) {
+      throw new Error(`Unknown source ${sourceId} on ${range.id}`)
+    }
+  }
+  mediumMountainPointCount +=
+    geometry.mediumDetailGeometry.coordinates.flat().length
+  lowMountainPointCount += geometry.lowDetailGeometry.coordinates.flat().length
+  const peakPosition = [
+    range.highestPeak.position.longitude,
+    range.highestPeak.position.latitude,
+  ] as const
+  const peakDistance = Math.min(
+    ...geometry.geometry.coordinates
+      .flatMap((line) => line)
+      .map((point) => getDistanceKilometers(point, peakPosition)),
+  )
+  if (peakDistance > 85) {
+    throw new Error(
+      `${range.id} peak is ${peakDistance.toFixed(1)} km from its ridge`,
+    )
+  }
+}
+if (mediumMountainPointCount > 4_200 || lowMountainPointCount > 1_440) {
+  throw new Error(
+    `Mountain geometry budgets exceeded: ${mediumMountainPointCount} medium, ${lowMountainPointCount} low`,
   )
 }
 
@@ -314,5 +405,5 @@ for (const country of countries) {
 }
 
 console.log(
-  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
+  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
 )

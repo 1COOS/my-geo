@@ -80,6 +80,11 @@ describe('ExplorePage', () => {
     expect(
       screen.getByRole('button', { name: '运河图层：重要人工运河' }),
     ).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.getByRole('button', {
+        name: '山脉图层：世界著名山脉与最高峰',
+      }),
+    ).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByText('海洋：大洋、海与海湾')).toBeInTheDocument()
     expect(screen.getByText('水域：海峡与海沟')).toBeInTheDocument()
   })
@@ -337,6 +342,43 @@ describe('ExplorePage', () => {
     await user.type(nextSearch, '苏伊士运河{Enter}')
     expect(await screen.findByLabelText('苏伊士运河知识卡')).toBeInTheDocument()
     expect(screen.queryByLabelText('长江知识卡')).not.toBeInTheDocument()
+  })
+
+  it('toggles the mountain layer and opens a highest-peak knowledge card', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        showMountainLayer: boolean
+        selectedMountainRangeId: string | null
+        selectedLinearFeatureId: string | null
+        selectedCountryCode: string | null
+      }
+
+    const toggle = screen.getByRole('button', {
+      name: '山脉图层：世界著名山脉与最高峰',
+    })
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(getProps()).toMatchObject({ showMountainLayer: true })
+
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.type(search, '珠穆朗玛峰{Enter}')
+    expect(
+      await screen.findByLabelText('喜马拉雅山脉知识卡'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('珠穆朗玛峰')).toBeInTheDocument()
+    expect(screen.getByText(/8,849 m/)).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      selectedMountainRangeId: 'himalayas',
+      selectedLinearFeatureId: null,
+      selectedCountryCode: null,
+    })
   })
 
   it('does not reveal city layers when the committed globe view changes', () => {

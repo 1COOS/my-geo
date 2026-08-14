@@ -5,6 +5,7 @@ import {
   linearGeoFeatureKindLabels,
   linearGeoFeatures,
 } from '../../data/linearGeoFeatures'
+import { mountainRanges } from '../../data/mountainRanges'
 import { waterbodies, waterbodyKindLabels } from '../../data/waterbodies'
 import { searchPlaces, type PlaceSearchResult } from './countrySearchUtils'
 
@@ -19,6 +20,7 @@ function resultId(result: PlaceSearchResult) {
   if (result.type === 'country') return `country-${result.country.code}`
   if (result.type === 'city') return `city-${result.city.id}`
   if (result.type === 'linearFeature') return `linear-${result.feature.id}`
+  if (result.type === 'mountainRange') return `mountain-${result.range.id}`
   return `waterbody-${result.waterbody.id}`
 }
 
@@ -36,7 +38,14 @@ export function CountrySearch({
   const [activeIndex, setActiveIndex] = useState(0)
   const results = useMemo(
     () =>
-      searchPlaces(countries, cities, waterbodies, linearGeoFeatures, query),
+      searchPlaces(
+        countries,
+        cities,
+        waterbodies,
+        linearGeoFeatures,
+        mountainRanges,
+        query,
+      ),
     [query],
   )
   const activeResult = results[activeIndex]
@@ -54,7 +63,9 @@ export function CountrySearch({
           ? result.city.name.zh
           : result.type === 'waterbody'
             ? result.waterbody.name.zh
-            : result.feature.name.zh,
+            : result.type === 'linearFeature'
+              ? result.feature.name.zh
+              : result.range.name.zh,
     )
     setOpen(false)
     setActiveIndex(0)
@@ -83,7 +94,7 @@ export function CountrySearch({
           role="combobox"
           type="search"
           value={query}
-          placeholder="搜索国家、城市或水域"
+          placeholder="搜索国家、城市与地理地点"
           autoComplete="off"
           aria-expanded={open}
           aria-controls={listboxId}
@@ -149,7 +160,9 @@ export function CountrySearch({
                     ? result.city.name
                     : result.type === 'waterbody'
                       ? result.waterbody.name
-                      : result.feature.name
+                      : result.type === 'linearFeature'
+                        ? result.feature.name
+                        : result.range.name
               const badge =
                 result.type === 'country'
                   ? result.country.code
@@ -159,7 +172,9 @@ export function CountrySearch({
                       : '城市'
                     : result.type === 'waterbody'
                       ? waterbodyKindLabels[result.waterbody.kind]
-                      : linearGeoFeatureKindLabels[result.feature.kind]
+                      : result.type === 'linearFeature'
+                        ? linearGeoFeatureKindLabels[result.feature.kind]
+                        : '山脉'
               return (
                 <li
                   id={`${listboxId}-${id}`}
@@ -189,7 +204,9 @@ export function CountrySearch({
                         {name.en}
                         {result.type === 'city'
                           ? ` · ${result.country.name.zh}`
-                          : ''}
+                          : result.type === 'mountainRange'
+                            ? ` · 最高峰：${result.range.highestPeak.name.zh}`
+                            : ''}
                       </small>
                     </span>
                     <code>{badge}</code>
