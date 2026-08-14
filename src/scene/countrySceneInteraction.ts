@@ -1,5 +1,6 @@
 import type { CountryBoundary } from '../data/countrySchema'
 import type { City } from '../data/citySchema'
+import type { LinearGeoFeature } from '../data/linearGeoFeatureSchema'
 import type { Waterbody } from '../data/waterbodySchema'
 
 export const OVERVIEW_CAMERA_DISTANCE = 425
@@ -128,6 +129,16 @@ export function getWaterbodyIdForLayer(
   return null
 }
 
+export function getLinearFeatureIdForLayer(
+  layer: string | undefined,
+  value: object | undefined,
+) {
+  return layer === 'path'
+    ? ((value as { linearFeatureId?: string } | undefined)?.linearFeatureId ??
+        null)
+    : null
+}
+
 export type WaterbodyLayerVisibility = {
   showOceanLayer: boolean
   showWaterwayLayer: boolean
@@ -146,6 +157,27 @@ export function getVisibleLayerWaterbodies(
       (waterbody.layer === 'ocean'
         ? visibility.showOceanLayer
         : visibility.showWaterwayLayer),
+  )
+}
+
+export type LinearFeatureLayerVisibility = {
+  showRiverLayer: boolean
+  showCanalLayer: boolean
+  selectedLinearFeatureId: string | null
+  hoveredLinearFeatureId: string | null
+}
+
+export function getVisibleLinearFeatures(
+  features: readonly LinearGeoFeature[],
+  visibility: LinearFeatureLayerVisibility,
+) {
+  return features.filter(
+    (feature) =>
+      feature.id === visibility.selectedLinearFeatureId ||
+      feature.id === visibility.hoveredLinearFeatureId ||
+      (feature.kind === 'river'
+        ? visibility.showRiverLayer
+        : visibility.showCanalLayer),
   )
 }
 

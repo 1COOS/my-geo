@@ -61,6 +61,102 @@ export const countrySources: CountrySource[] = [
     license: referenceLicense,
   },
   {
+    id: 'natural-earth-rivers',
+    name: 'Natural Earth rivers and lake centerlines',
+    publisher: 'Natural Earth contributors',
+    version:
+      'Natural Earth 5.0.0 1:10m; SHA-256 ded71b01870855ccfe19b51f2ec14c9bb48fae23c0e9f3c11974d426433b5c38',
+    accessedAt: '2026-08-13',
+    url: 'https://naturalearthdata.com/downloads/10m-physical-vectors/10m-rivers-lake-centerlines/',
+    license:
+      'Public domain vector data; main stems selected and simplified by My Geo',
+  },
+  {
+    id: 'china-river-source-review',
+    name: 'China major-river source reach review',
+    publisher: 'My Geo review of public Ministry of Water Resources material',
+    accessedAt: '2026-08-13',
+    url: 'http://www.mwr.gov.cn/english/',
+    license:
+      'Official reference material; short repository-reviewed educational supplement',
+  },
+  {
+    id: 'mekong-source-review',
+    name: 'Mekong and Lancang source reach review',
+    publisher: 'Mekong River Commission and My Geo review',
+    accessedAt: '2026-08-13',
+    url: 'https://www.mrcmekong.org/',
+    license:
+      'Official reference material; short repository-reviewed educational supplement',
+  },
+  {
+    id: 'canadian-hydrographic-network',
+    name: 'Canadian Hydrographic Network reference',
+    publisher: 'Natural Resources Canada',
+    accessedAt: '2026-08-13',
+    url: 'https://open.canada.ca/data/en/dataset/a4b190fe-e090-4e6d-881e-b87956c07977',
+    license:
+      'Open Government Licence - Canada; referenced for review, not copied directly into shipped geometry',
+  },
+  {
+    id: 'peru-ana-rivers',
+    name: 'Peru national hydrographic reference',
+    publisher: 'Autoridad Nacional del Agua del Peru',
+    accessedAt: '2026-08-13',
+    url: 'https://www.ana.gob.pe/',
+    license:
+      'Official reference used to review a short repository-authored educational supplement',
+  },
+  {
+    id: 'brazil-ana-rivers',
+    name: 'Brazil national hydrographic reference',
+    publisher: 'Agencia Nacional de Aguas e Saneamento Basico',
+    accessedAt: '2026-08-13',
+    url: 'https://metadados.snirh.gov.br/',
+    license:
+      'Official reference used to review a short repository-authored Paraguay main-stem supplement',
+  },
+  {
+    id: 'britannica-rivers',
+    name: 'Major rivers reference collection',
+    publisher: 'Encyclopaedia Britannica',
+    accessedAt: '2026-08-13',
+    url: 'https://www.britannica.com/science/river',
+    license: referenceLicense,
+  },
+  {
+    id: 'britannica-canals',
+    name: 'Canal engineering and history references',
+    publisher: 'Encyclopaedia Britannica',
+    accessedAt: '2026-08-13',
+    url: 'https://www.britannica.com/technology/canal-waterway',
+    license: referenceLicense,
+  },
+  {
+    id: 'unesco-grand-canal',
+    name: 'The Grand Canal',
+    publisher: 'UNESCO World Heritage Centre',
+    accessedAt: '2026-08-13',
+    url: 'https://whc.unesco.org/en/list/1443/',
+    license: referenceLicense,
+  },
+  {
+    id: 'suez-canal-authority',
+    name: 'Suez Canal overview',
+    publisher: 'Suez Canal Authority',
+    accessedAt: '2026-08-13',
+    url: 'https://www.suezcanal.gov.eg/English/About/SuezCanal/Pages/CanalCharacteristics.aspx',
+    license: 'Official reference material; linked, not copied',
+  },
+  {
+    id: 'panama-canal-authority',
+    name: 'Panama Canal overview',
+    publisher: 'Panama Canal Authority',
+    accessedAt: '2026-08-13',
+    url: 'https://pancanal.com/en/history-of-the-panama-canal/',
+    license: 'Official reference material; linked, not copied',
+  },
+  {
     id: 'world-countries',
     name: 'World Countries dataset',
     publisher: 'mledoze/countries contributors',

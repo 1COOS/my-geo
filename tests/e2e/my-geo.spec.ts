@@ -16,6 +16,58 @@ async function waitForSceneOrFallback(page: Page) {
   return { scene, fallback }
 }
 
+async function selectPlace(page: Page, query: string) {
+  const search = await openCountrySearch(page)
+  await search.fill(query)
+  await search.press('Enter')
+}
+
+async function expectSelectedLinearFeatureRoute(
+  page: Page,
+  featureId: string,
+  labelName: string,
+) {
+  const overlay = page.getByTestId('selected-linear-feature-overlay')
+  const route = page.getByTestId('selected-linear-feature-route')
+  const start = page.getByTestId('selected-linear-feature-start')
+  const end = page.getByTestId('selected-linear-feature-end')
+  const label = page.locator(
+    `[data-linear-feature-id="${featureId}"].linear-feature-label`,
+  )
+
+  await expect(overlay).toHaveAttribute('data-linear-feature-id', featureId)
+  await expect(overlay).toBeVisible()
+  await expect(route).toHaveAttribute('d', /M[-\d.]+,[-\d.]+ L/)
+  await expect(route).toHaveCSS('stroke-width', /^(8|9)px$/)
+  await expect(start).toHaveAttribute('cx', /\d/)
+  await expect(start).toHaveAttribute('cy', /\d/)
+  await expect(end).toHaveAttribute('points', /\d/)
+  await expect(label).toBeVisible()
+  await expect(label).toHaveText(labelName)
+
+  const [routeBox, labelBox] = await Promise.all([
+    route.evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      return { x: box.x, y: box.y, width: box.width, height: box.height }
+    }),
+    label.evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      return { x: box.x, y: box.y, width: box.width, height: box.height }
+    }),
+  ])
+  expect(Math.max(routeBox.width, routeBox.height)).toBeGreaterThan(0.5)
+  const routeCenter = {
+    x: routeBox.x + routeBox.width / 2,
+    y: routeBox.y + routeBox.height / 2,
+  }
+  expect(
+    routeCenter.x >= labelBox.x &&
+      routeCenter.x <= labelBox.x + labelBox.width &&
+      routeCenter.y >= labelBox.y &&
+      routeCenter.y <= labelBox.y + labelBox.height,
+  ).toBe(false)
+}
+
 function parseMiniMapTransform(transform: string | null) {
   const match = transform?.match(/translate\(([-\d.]+)(?:\s|,)\s*([-\d.]+)\)/)
   return match ? { x: Number(match[1]), y: Number(match[2]) } : null
@@ -39,9 +91,17 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
     const layerControl = page.getByRole('region', { name: '地球图层控制' })
     const capitals = layerControl.getByRole('button', { name: '首都' })
     const cities = layerControl.getByRole('button', { name: '城市' })
+    const rivers = layerControl.getByRole('button', {
+      name: '河流图层：世界重要河流水系',
+    })
+    const canals = layerControl.getByRole('button', {
+      name: '运河图层：重要人工运河',
+    })
     await expect(layerControl).toBeVisible()
     await expect(capitals).toHaveAttribute('aria-pressed', 'false')
     await expect(cities).toHaveAttribute('aria-pressed', 'false')
+    await expect(rivers).toHaveAttribute('aria-pressed', 'false')
+    await expect(canals).toHaveAttribute('aria-pressed', 'false')
     await expect(
       page.getByRole('navigation', { name: '地球显示控制' }),
     ).toBeVisible()
@@ -457,7 +517,120 @@ test('toggles waterbody layers, searches a sea, and replaces its selected range'
   await expect(mediterraneanCard).toHaveCount(0)
 
   await page.getByRole('button', { name: '画质：平衡' }).click()
-  await expect(page.getByRole('button', { name: '画质：低功耗' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
+})
+
+test('shows river and canal paths and keeps linear feature selection exclusive', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  await layerControl
+    .getByRole('button', { name: '河流图层：世界重要河流水系' })
+    .click()
+  await layerControl
+    .getByRole('button', { name: '运河图层：重要人工运河' })
+    .click()
+  await expect
+    .poll(() => page.locator('[data-linear-feature-id]:not([hidden])').count())
+    .toBeGreaterThan(0)
+
+  let search = await openCountrySearch(page)
+  await search.fill('长江')
+  await search.press('Enter')
+  const riverCard = page.getByLabel('长江知识卡')
+  await expect(riverCard).toBeVisible()
+  await expect(
+    riverCard.getByText('青藏高原唐古拉山脉', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.locator(
+      '[data-linear-feature-id="yangtze-system"].linear-feature-label',
+    ),
+  ).toBeVisible()
+  await expectSelectedLinearFeatureRoute(page, 'yangtze-system', '长江')
+
+  search = await openCountrySearch(page)
+  await search.fill('苏伊士运河')
+  await search.press('Enter')
+  const canalCard = page.getByLabel('苏伊士运河知识卡')
+  await expect(canalCard).toBeVisible()
+  await expect(canalCard.getByText('地中海', { exact: true })).toBeVisible()
+  await expect(riverCard).toHaveCount(0)
+  await expectSelectedLinearFeatureRoute(page, 'suez-canal', '苏伊士运河')
+
+  search = await openCountrySearch(page)
+  await search.fill('巴拿马运河')
+  await search.press('Enter')
+  await expect(page.getByLabel('巴拿马运河知识卡')).toBeVisible()
+  await expectSelectedLinearFeatureRoute(page, 'panama-canal', '巴拿马运河')
+
+  search = await openCountrySearch(page)
+  await search.fill('科林斯运河')
+  await search.press('Enter')
+  const corinthCard = page.getByLabel('科林斯运河知识卡')
+  await expect(corinthCard).toBeVisible()
+  await expectSelectedLinearFeatureRoute(page, 'corinth-canal', '科林斯运河')
+
+  await corinthCard.getByRole('button', { name: '关闭运河知识卡' }).click()
+  await expect(page.getByTestId('selected-linear-feature-overlay')).toHaveCount(
+    0,
+  )
+})
+
+for (const viewport of [
+  { name: 'phone landscape', width: 844, height: 390, touch: true },
+  { name: 'iPad landscape', width: 1194, height: 834, touch: true },
+]) {
+  test(`keeps the selected canal route visible on ${viewport.name}`, async ({
+    page,
+  }) => {
+    if (viewport.touch) {
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'maxTouchPoints', {
+          configurable: true,
+          value: 5,
+        })
+        Object.defineProperty(navigator, 'platform', {
+          configurable: true,
+          value: 'MacIntel',
+        })
+      })
+    }
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    })
+    await page.goto('/')
+
+    const { fallback } = await waitForSceneOrFallback(page)
+    if (await fallback.isVisible()) return
+
+    await selectPlace(page, '科林斯运河')
+    await expect(page.getByLabel('科林斯运河知识卡')).toBeVisible()
+    await expectSelectedLinearFeatureRoute(page, 'corinth-canal', '科林斯运河')
+  })
+}
+
+test('keeps the selected canal enhancement visible in low quality mode', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  await page.getByRole('button', { name: '画质：平衡' }).click()
+  await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
+  await selectPlace(page, '苏伊士运河')
+  await expectSelectedLinearFeatureRoute(page, 'suez-canal', '苏伊士运河')
 })
 
 test('keeps capital labels synchronized during automatic rotation', async ({

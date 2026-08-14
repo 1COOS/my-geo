@@ -1,6 +1,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { cities, countries } from '../../data/countries'
+import {
+  linearGeoFeatureKindLabels,
+  linearGeoFeatures,
+} from '../../data/linearGeoFeatures'
 import { waterbodies, waterbodyKindLabels } from '../../data/waterbodies'
 import { searchPlaces, type PlaceSearchResult } from './countrySearchUtils'
 
@@ -14,6 +18,7 @@ type CountrySearchProps = {
 function resultId(result: PlaceSearchResult) {
   if (result.type === 'country') return `country-${result.country.code}`
   if (result.type === 'city') return `city-${result.city.id}`
+  if (result.type === 'linearFeature') return `linear-${result.feature.id}`
   return `waterbody-${result.waterbody.id}`
 }
 
@@ -30,7 +35,8 @@ export function CountrySearch({
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const results = useMemo(
-    () => searchPlaces(countries, cities, waterbodies, query),
+    () =>
+      searchPlaces(countries, cities, waterbodies, linearGeoFeatures, query),
     [query],
   )
   const activeResult = results[activeIndex]
@@ -46,7 +52,9 @@ export function CountrySearch({
         ? result.country.name.zh
         : result.type === 'city'
           ? result.city.name.zh
-          : result.waterbody.name.zh,
+          : result.type === 'waterbody'
+            ? result.waterbody.name.zh
+            : result.feature.name.zh,
     )
     setOpen(false)
     setActiveIndex(0)
@@ -139,7 +147,9 @@ export function CountrySearch({
                   ? result.country.name
                   : result.type === 'city'
                     ? result.city.name
-                    : result.waterbody.name
+                    : result.type === 'waterbody'
+                      ? result.waterbody.name
+                      : result.feature.name
               const badge =
                 result.type === 'country'
                   ? result.country.code
@@ -147,7 +157,9 @@ export function CountrySearch({
                     ? result.city.isCapital
                       ? '首都'
                       : '城市'
-                    : waterbodyKindLabels[result.waterbody.kind]
+                    : result.type === 'waterbody'
+                      ? waterbodyKindLabels[result.waterbody.kind]
+                      : linearGeoFeatureKindLabels[result.feature.kind]
               return (
                 <li
                   id={`${listboxId}-${id}`}
@@ -167,7 +179,7 @@ export function CountrySearch({
                       <img src={result.country.flagAsset} alt="" />
                     ) : (
                       <span
-                        className={`place-result-icon is-${result.type}`}
+                        className={`place-result-icon is-${result.type}${result.type === 'linearFeature' ? ` is-${result.feature.kind}` : ''}`}
                         aria-hidden="true"
                       />
                     )}

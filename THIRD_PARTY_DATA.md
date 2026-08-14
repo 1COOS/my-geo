@@ -49,6 +49,17 @@ These boundaries are for internal product prototyping. Public release, especiall
 
 My Geo stores repository-owned summaries and deliberately simplified teaching geometries. Surface polygons and trench lines show an approximate location only. They are not hydrographic limits and do not represent territorial seas, exclusive economic zones, jurisdiction, sovereignty, or any legal boundary. Public release still requires a separate map-compliance and content review.
 
+## Major rivers and artificial canals
+
+- Primary river geometry: Natural Earth 5.0.0 1:10m river and lake centerlines, public domain. The pinned archive SHA-256 is `ded71b01870855ccfe19b51f2ec14c9bb48fae23c0e9f3c11974d426433b5c38`.
+- Build process: `data:generate` downloads or accepts a local copy of the pinned archive, verifies the SHA-256, reads SHP/DBF records by repository-reviewed `ne_id` and part indexes, then commits deterministic high, medium and low-detail main-stem JSON. `data:validate` never accesses the network.
+- Supplement references: public Ministry of Water Resources material for the upper Yangtze review; Mekong River Commission material for the upper Mekong review; Natural Resources Canada's National Hydro Network for the Great Lakes–Saint Lawrence connection; Peru's ANA for the Amazon source reach; and Brazil's ANA/SNIRH for the Paraguay main stem. These references guide short repository-authored connectors; their original vector records are not copied into the committed JSON.
+- Content references: Encyclopaedia Britannica river and canal overviews, UNESCO's Grand Canal record, and official Suez and Panama canal authority pages.
+- Accessed: 2026-08-13.
+- Use: reviewed Chinese and English names, approximate lengths, sources and mouths or endpoints, connected waters, and simplified main-stem paths for 30 major river systems and 10 artificial canals.
+
+Five catalog objects include explicitly recorded educational supplements because Natural Earth does not contain a complete source-to-mouth main stem: the Yangtze, Mekong, Amazon, Paraná–Paraguay and Saint Lawrence–Great Lakes systems. Generated provenance records every Natural Earth feature/part and every inserted gap. The shipped lines remain teaching centerlines and intentionally omit ordinary tributaries, changing channels, floodplains, legal water boundaries, guaranteed depths, shipping conditions and real-time flow. HydroRIVERS and Hydrography90m are not used because their redistribution terms do not fit this offline PWA release.
+
 ## Flags
 
 - Source: `flag-icons@7.5.0`

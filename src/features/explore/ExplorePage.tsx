@@ -12,6 +12,10 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import { getCitiesForCountry, getCity, getCountry } from '../../data/countries'
+import {
+  getLinearGeoFeature,
+  getLinearGeoFeatureGeometry,
+} from '../../data/linearGeoFeatures'
 import { getWaterbody } from '../../data/waterbodies'
 import { ControlButton } from '../../shared/components/ControlButton'
 import { WebGLFallback } from '../../shared/components/WebGLFallback'
@@ -26,9 +30,11 @@ import {
   CITY_CAMERA_DISTANCE,
   OVERVIEW_CAMERA_DISTANCE,
 } from '../../scene/countrySceneInteraction'
+import { getCanalCameraDistance } from '../../scene/linearFeatureSceneInteraction'
 import { CountryDetailPanel } from './CountryDetailPanel'
 import { CountrySearch } from './CountrySearch'
 import type { PlaceSearchResult } from './countrySearchUtils'
+import { LinearGeoFeatureDetailPanel } from './LinearGeoFeatureDetailPanel'
 import { WaterbodyDetailPanel } from './WaterbodyDetailPanel'
 import { useExperienceStore } from './useExperienceStore'
 import { WorldMiniMap, type WorldMiniMapHandle } from './WorldMiniMap'
@@ -89,10 +95,14 @@ type LayerControlProps = {
   showCities: boolean
   showOceanLayer: boolean
   showWaterwayLayer: boolean
+  showRiverLayer: boolean
+  showCanalLayer: boolean
   onToggleCapitals: () => void
   onToggleCities: () => void
   onToggleOceanLayer: () => void
   onToggleWaterwayLayer: () => void
+  onToggleRiverLayer: () => void
+  onToggleCanalLayer: () => void
 }
 
 function LayerControl({
@@ -100,10 +110,14 @@ function LayerControl({
   showCities,
   showOceanLayer,
   showWaterwayLayer,
+  showRiverLayer,
+  showCanalLayer,
   onToggleCapitals,
   onToggleCities,
   onToggleOceanLayer,
   onToggleWaterwayLayer,
+  onToggleRiverLayer,
+  onToggleCanalLayer,
 }: LayerControlProps) {
   return (
     <section className="layer-control" aria-label="地球图层控制">
@@ -122,7 +136,6 @@ function LayerControl({
         >
           <span className="layer-toggle-dot" aria-hidden="true" />
           <span>首都</span>
-          <span className="layer-toggle-switch" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -132,7 +145,6 @@ function LayerControl({
         >
           <span className="layer-toggle-dot" aria-hidden="true" />
           <span>城市</span>
-          <span className="layer-toggle-switch" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -143,7 +155,6 @@ function LayerControl({
         >
           <span className="layer-toggle-dot" aria-hidden="true" />
           <span>海洋</span>
-          <span className="layer-toggle-switch" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -154,15 +165,36 @@ function LayerControl({
         >
           <span className="layer-toggle-dot" aria-hidden="true" />
           <span>水域</span>
-          <span className="layer-toggle-switch" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="layer-toggle is-river"
+          aria-pressed={showRiverLayer}
+          aria-label="河流图层：世界重要河流水系"
+          title="河流：世界重要河流水系"
+          onClick={onToggleRiverLayer}
+        >
+          <span className="layer-toggle-dot" aria-hidden="true" />
+          <span>河流</span>
+        </button>
+        <button
+          type="button"
+          className="layer-toggle is-canal"
+          aria-pressed={showCanalLayer}
+          aria-label="运河图层：重要人工运河"
+          title="运河：重要人工运河"
+          onClick={onToggleCanalLayer}
+        >
+          <span className="layer-toggle-dot" aria-hidden="true" />
+          <span>运河</span>
         </button>
       </div>
-      <p id="ocean-layer-description" className="layer-control-description">
+      <span id="ocean-layer-description" className="sr-only">
         海洋：大洋、海与海湾
-      </p>
-      <p id="waterway-layer-description" className="layer-control-description">
+      </span>
+      <span id="waterway-layer-description" className="sr-only">
         水域：海峡与海沟
-      </p>
+      </span>
     </section>
   )
 }
@@ -181,6 +213,8 @@ export function ExplorePage() {
   const [showCities, setShowCities] = useState(false)
   const [showOceanLayer, setShowOceanLayer] = useState(false)
   const [showWaterwayLayer, setShowWaterwayLayer] = useState(false)
+  const [showRiverLayer, setShowRiverLayer] = useState(false)
+  const [showCanalLayer, setShowCanalLayer] = useState(false)
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null)
   const [hoveredCityId, setHoveredCityId] = useState<string | null>(null)
   const [selectedWaterbodyId, setSelectedWaterbodyId] = useState<string | null>(
@@ -189,6 +223,12 @@ export function ExplorePage() {
   const [hoveredWaterbodyId, setHoveredWaterbodyId] = useState<string | null>(
     null,
   )
+  const [selectedLinearFeatureId, setSelectedLinearFeatureId] = useState<
+    string | null
+  >(null)
+  const [hoveredLinearFeatureId, setHoveredLinearFeatureId] = useState<
+    string | null
+  >(null)
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(() => ({
     requestId: 0,
     position: getCountry('CN')!.center,
@@ -233,6 +273,7 @@ export function ExplorePage() {
   const selectedCountry = getCountry(selectedCountryCode)
   const selectedCity = getCity(selectedCityId)
   const selectedWaterbody = getWaterbody(selectedWaterbodyId)
+  const selectedLinearFeature = getLinearGeoFeature(selectedLinearFeatureId)
   const visibleCountryCities = getCitiesForCountry(selectedCountryCode)
   const toggleCapitalLayer = useCallback(() => {
     const nextVisible = !showCapitals
@@ -278,6 +319,30 @@ export function ExplorePage() {
       })
     }
   }, [selectedWaterbodyId, showWaterwayLayer])
+  const toggleRiverLayer = useCallback(() => {
+    const nextVisible = !showRiverLayer
+    setShowRiverLayer(nextVisible)
+    if (!nextVisible) {
+      setHoveredLinearFeatureId((id) => {
+        const feature = getLinearGeoFeature(id)
+        return feature?.kind === 'river' && id !== selectedLinearFeatureId
+          ? null
+          : id
+      })
+    }
+  }, [selectedLinearFeatureId, showRiverLayer])
+  const toggleCanalLayer = useCallback(() => {
+    const nextVisible = !showCanalLayer
+    setShowCanalLayer(nextVisible)
+    if (!nextVisible) {
+      setHoveredLinearFeatureId((id) => {
+        const feature = getLinearGeoFeature(id)
+        return feature?.kind === 'canal' && id !== selectedLinearFeatureId
+          ? null
+          : id
+      })
+    }
+  }, [selectedLinearFeatureId, showCanalLayer])
   const requestCameraTarget = useCallback(
     (position: GeoPosition, distance = OVERVIEW_CAMERA_DISTANCE) => {
       cameraRequestIdRef.current += 1
@@ -298,6 +363,8 @@ export function ExplorePage() {
       setHoveredCityId(null)
       setSelectedWaterbodyId(null)
       setHoveredWaterbodyId(null)
+      setSelectedLinearFeatureId(null)
+      setHoveredLinearFeatureId(null)
       selectCountry(countryCode)
       requestCameraTarget(country.center)
     },
@@ -311,6 +378,8 @@ export function ExplorePage() {
       selectCountry(city.countryCode)
       setSelectedWaterbodyId(null)
       setHoveredWaterbodyId(null)
+      setSelectedLinearFeatureId(null)
+      setHoveredLinearFeatureId(null)
       setSelectedCityId(city.id)
       requestCameraTarget(
         { latitude: city.latitude, longitude: city.longitude },
@@ -325,6 +394,8 @@ export function ExplorePage() {
     selectCountry(null)
     setSelectedWaterbodyId(null)
     setHoveredWaterbodyId(null)
+    setSelectedLinearFeatureId(null)
+    setHoveredLinearFeatureId(null)
   }, [selectCountry])
   const navigateToWaterbody = useCallback(
     (waterbodyId: string) => {
@@ -335,7 +406,29 @@ export function ExplorePage() {
       setSelectedCityId(null)
       setHoveredCityId(null)
       setSelectedWaterbodyId(waterbody.id)
+      setSelectedLinearFeatureId(null)
+      setHoveredLinearFeatureId(null)
       requestCameraTarget(waterbody.center, waterbody.cameraDistance)
+    },
+    [requestCameraTarget, selectCountry],
+  )
+  const navigateToLinearFeature = useCallback(
+    (featureId: string) => {
+      const feature = getLinearGeoFeature(featureId)
+      if (!feature) return
+      setMiniMapExpanded(false)
+      selectCountry(null)
+      setSelectedCityId(null)
+      setHoveredCityId(null)
+      setSelectedWaterbodyId(null)
+      setHoveredWaterbodyId(null)
+      setSelectedLinearFeatureId(feature.id)
+      const geometry = getLinearGeoFeatureGeometry(feature.id)?.geometry
+      const cameraDistance =
+        feature.kind === 'canal'
+          ? getCanalCameraDistance(geometry)
+          : feature.cameraDistance
+      requestCameraTarget(feature.cameraPosition, cameraDistance)
     },
     [requestCameraTarget, selectCountry],
   )
@@ -343,9 +436,16 @@ export function ExplorePage() {
     (result: PlaceSearchResult) => {
       if (result.type === 'country') navigateToCountry(result.country.code)
       else if (result.type === 'city') navigateToCity(result.city.id)
-      else navigateToWaterbody(result.waterbody.id)
+      else if (result.type === 'waterbody')
+        navigateToWaterbody(result.waterbody.id)
+      else navigateToLinearFeature(result.feature.id)
     },
-    [navigateToCity, navigateToCountry, navigateToWaterbody],
+    [
+      navigateToCity,
+      navigateToCountry,
+      navigateToLinearFeature,
+      navigateToWaterbody,
+    ],
   )
   const handleMiniMapNavigation = useCallback(
     (navigation: WorldMiniMapNavigation) => {
@@ -373,12 +473,14 @@ export function ExplorePage() {
     hoveredCountryCode === null &&
     hoveredCityId === null &&
     hoveredWaterbodyId === null &&
-    selectedWaterbodyId === null
+    selectedWaterbodyId === null &&
+    selectedLinearFeatureId === null &&
+    hoveredLinearFeatureId === null
 
   return (
     <main
       className={
-        selectedCountry || selectedWaterbody
+        selectedCountry || selectedWaterbody || selectedLinearFeature
           ? 'explore-shell has-country-detail'
           : 'explore-shell'
       }
@@ -403,18 +505,24 @@ export function ExplorePage() {
             showCities={showCities}
             showOceanLayer={showOceanLayer}
             showWaterwayLayer={showWaterwayLayer}
+            showRiverLayer={showRiverLayer}
+            showCanalLayer={showCanalLayer}
             selectedCountryCode={selectedCountryCode}
             selectedCityId={selectedCityId}
             hoveredCountryCode={hoveredCountryCode}
             hoveredCityId={hoveredCityId}
             selectedWaterbodyId={selectedWaterbodyId}
             hoveredWaterbodyId={hoveredWaterbodyId}
+            selectedLinearFeatureId={selectedLinearFeatureId}
+            hoveredLinearFeatureId={hoveredLinearFeatureId}
             onSelectCountry={navigateToCountry}
             onSelectCity={navigateToCity}
             onHoverCountry={hoverCountry}
             onHoverCity={setHoveredCityId}
             onSelectWaterbody={navigateToWaterbody}
             onHoverWaterbody={setHoveredWaterbodyId}
+            onSelectLinearFeature={navigateToLinearFeature}
+            onHoverLinearFeature={setHoveredLinearFeatureId}
             onViewCenterChange={handleViewCenterChange}
             onViewCenterCommit={handleViewCenterCommit}
           />
@@ -431,10 +539,14 @@ export function ExplorePage() {
           showCities={showCities}
           showOceanLayer={showOceanLayer}
           showWaterwayLayer={showWaterwayLayer}
+          showRiverLayer={showRiverLayer}
+          showCanalLayer={showCanalLayer}
           onToggleCapitals={toggleCapitalLayer}
           onToggleCities={toggleCityLayer}
           onToggleOceanLayer={toggleOceanLayer}
           onToggleWaterwayLayer={toggleWaterwayLayer}
+          onToggleRiverLayer={toggleRiverLayer}
+          onToggleCanalLayer={toggleCanalLayer}
         />
       ) : null}
 
@@ -462,12 +574,14 @@ export function ExplorePage() {
                   selectedCountry?.code ??
                   selectedCity?.id ??
                   selectedWaterbody?.id ??
+                  selectedLinearFeature?.id ??
                   'no-selection'
                 }
                 selectedLabel={
                   selectedCity?.name.zh ??
                   selectedCountry?.name.zh ??
-                  selectedWaterbody?.name.zh
+                  selectedWaterbody?.name.zh ??
+                  selectedLinearFeature?.name.zh
                 }
                 onSelect={navigateToSearchResult}
                 autoFocus
@@ -532,6 +646,14 @@ export function ExplorePage() {
         <WaterbodyDetailPanel
           key={selectedWaterbody.id}
           waterbody={selectedWaterbody}
+          onClose={clearSelection}
+          onSelectCountry={navigateToCountry}
+        />
+      ) : null}
+      {selectedLinearFeature ? (
+        <LinearGeoFeatureDetailPanel
+          key={selectedLinearFeature.id}
+          feature={selectedLinearFeature}
           onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />

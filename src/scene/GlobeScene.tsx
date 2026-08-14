@@ -25,6 +25,13 @@ import {
   waterbodyKindLabels,
 } from '../data/waterbodies'
 import type { City } from '../data/citySchema'
+import {
+  getLinearGeoFeature,
+  getLinearGeoFeatureGeometry,
+  linearGeoFeatureKindLabels,
+  linearGeoFeatures,
+} from '../data/linearGeoFeatures'
+import type { LinearGeoFeature } from '../data/linearGeoFeatureSchema'
 import type { Waterbody } from '../data/waterbodySchema'
 import type { CameraTarget, GlobeView } from '../shared/types/geo'
 import {
@@ -35,9 +42,11 @@ import {
   getCityMarker,
   getCountryCodeForLayer,
   getGlobeViewOffset,
+  getLinearFeatureIdForLayer,
   getOverviewCameraPosition,
   getVisibleLayerCities,
   getVisibleLayerWaterbodies,
+  getVisibleLinearFeatures,
   getWaterbodyIdForLayer,
   getWaterbodyMarker,
   OVERVIEW_CAMERA_DISTANCE,
@@ -46,6 +55,11 @@ import {
   type GlobePointMarker,
   type WaterbodyMarker,
 } from './countrySceneInteraction'
+import {
+  getLinearFeatureEndpointPairs,
+  getLinearFeatureGeometryForScene,
+  getSelectedLinearFeatureLabelOffset,
+} from './linearFeatureSceneInteraction'
 
 export type GlobeSceneProps = {
   autoRotate: boolean
@@ -56,18 +70,24 @@ export type GlobeSceneProps = {
   showCities: boolean
   showOceanLayer: boolean
   showWaterwayLayer: boolean
+  showRiverLayer: boolean
+  showCanalLayer: boolean
   selectedCountryCode: string | null
   selectedCityId: string | null
   hoveredCountryCode: string | null
   hoveredCityId: string | null
   selectedWaterbodyId: string | null
   hoveredWaterbodyId: string | null
+  selectedLinearFeatureId: string | null
+  hoveredLinearFeatureId: string | null
   onSelectCountry: (countryCode: string) => void
   onSelectCity: (cityId: string) => void
   onHoverCountry: (countryCode: string | null) => void
   onHoverCity: (cityId: string | null) => void
   onSelectWaterbody: (waterbodyId: string) => void
   onHoverWaterbody: (waterbodyId: string | null) => void
+  onSelectLinearFeature: (featureId: string) => void
+  onHoverLinearFeature: (featureId: string | null) => void
   onViewCenterChange: (view: GlobeView) => void
   onViewCenterCommit: (view: GlobeView) => void
 }
@@ -75,6 +95,7 @@ export type GlobeSceneProps = {
 type WorldProps = GlobeSceneProps & {
   labelItems: MapLabel[]
   labelLayerRef: RefObject<HTMLDivElement | null>
+  selectedLinearFeatureOverlayRef: RefObject<SVGSVGElement | null>
 }
 
 type MapLabel =
@@ -91,6 +112,13 @@ type MapLabel =
       latitude: number
       longitude: number
       waterbody: Waterbody
+    }
+  | {
+      id: string
+      type: 'linearFeature'
+      latitude: number
+      longitude: number
+      feature: LinearGeoFeature
     }
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
@@ -113,6 +141,14 @@ type LabelRect = {
   bottom: number
 }
 
+type LabelGroup = 'capital' | 'city' | 'ocean' | 'waterway' | 'river' | 'canal'
+
+function getLabelGroup(item: MapLabel): LabelGroup {
+  if (item.type === 'city') return item.city.isCapital ? 'capital' : 'city'
+  if (item.type === 'waterbody') return item.waterbody.layer
+  return item.feature.kind
+}
+
 function overlaps(left: LabelRect, right: LabelRect) {
   return !(
     left.right < right.left ||
@@ -128,10 +164,24 @@ function getLabelPriority(
   hoveredCityId: string | null,
   selectedWaterbodyId: string | null,
   hoveredWaterbodyId: string | null,
+  selectedLinearFeatureId: string | null,
+  hoveredLinearFeatureId: string | null,
 ) {
-  if (item.id === selectedCityId || item.id === selectedWaterbodyId) return 0
-  if (item.id === hoveredCityId || item.id === hoveredWaterbodyId) return 1
+  if (
+    item.id === selectedCityId ||
+    item.id === selectedWaterbodyId ||
+    item.id === selectedLinearFeatureId
+  )
+    return 0
+  if (
+    item.id === hoveredCityId ||
+    item.id === hoveredWaterbodyId ||
+    item.id === hoveredLinearFeatureId
+  )
+    return 1
   if (item.type === 'waterbody') return 2 + item.waterbody.labelPriority / 100
+  if (item.type === 'linearFeature')
+    return 2.5 + item.feature.labelPriority / 100
   return (item.city.isCapital ? 3 : 10) + item.city.order / 10
 }
 
@@ -146,16 +196,23 @@ function World({
   hoveredCityId,
   selectedWaterbodyId,
   hoveredWaterbodyId,
+  selectedLinearFeatureId,
+  hoveredLinearFeatureId,
+  showRiverLayer,
+  showCanalLayer,
   onSelectCountry,
   onSelectCity,
   onHoverCountry,
   onHoverCity,
   onSelectWaterbody,
   onHoverWaterbody,
+  onSelectLinearFeature,
+  onHoverLinearFeature,
   onViewCenterChange,
   onViewCenterCommit,
   labelItems,
   labelLayerRef,
+  selectedLinearFeatureOverlayRef,
 }: WorldProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const controlsRef = useRef<OrbitControlsImpl>(null)
@@ -185,27 +242,31 @@ function World({
     [],
   )
   const pointMarkers = useMemo<GlobePointMarker[]>(() => {
-    return labelItems.map((item) =>
-      item.type === 'city'
-        ? ({
-            markerType: 'city',
-            cityId: item.city.id,
-            countryCode: item.city.countryCode,
-            lat: item.city.latitude,
-            lng: item.city.longitude,
-            name: item.city.name.zh,
-            isCapital: item.city.isCapital,
-          } satisfies CityMarker)
-        : ({
-            markerType: 'waterbody',
-            waterbodyId: item.waterbody.id,
-            layer: item.waterbody.layer,
-            kind: item.waterbody.kind,
-            lat: item.waterbody.center.latitude,
-            lng: item.waterbody.center.longitude,
-            name: item.waterbody.name.zh,
-          } satisfies WaterbodyMarker),
-    )
+    return labelItems
+      .map((item) =>
+        item.type === 'city'
+          ? ({
+              markerType: 'city',
+              cityId: item.city.id,
+              countryCode: item.city.countryCode,
+              lat: item.city.latitude,
+              lng: item.city.longitude,
+              name: item.city.name.zh,
+              isCapital: item.city.isCapital,
+            } satisfies CityMarker)
+          : item.type === 'waterbody'
+            ? ({
+                markerType: 'waterbody',
+                waterbodyId: item.waterbody.id,
+                layer: item.waterbody.layer,
+                kind: item.waterbody.kind,
+                lat: item.waterbody.center.latitude,
+                lng: item.waterbody.center.longitude,
+                name: item.waterbody.name.zh,
+              } satisfies WaterbodyMarker)
+            : null,
+      )
+      .filter((marker): marker is GlobePointMarker => marker !== null)
   }, [labelItems])
   const selectedWaterbodyGeometry = getWaterbodyGeometry(selectedWaterbodyId)
   const selectedSurfaceFeature = useMemo(
@@ -232,6 +293,42 @@ function World({
               : selectedWaterbodyGeometry.points,
         }
       : null
+  const selectedLinearFeature = getLinearGeoFeature(selectedLinearFeatureId)
+  const selectedLinearFeatureGeometry = useMemo(() => {
+    if (!selectedLinearFeature) return null
+    const geometry = getLinearGeoFeatureGeometry(selectedLinearFeature.id)
+    if (!geometry) return null
+    return getLinearFeatureGeometryForScene(geometry, quality, true)
+  }, [quality, selectedLinearFeature])
+  const visibleLinearFeatures = getVisibleLinearFeatures(linearGeoFeatures, {
+    showRiverLayer,
+    showCanalLayer,
+    selectedLinearFeatureId,
+    hoveredLinearFeatureId,
+  })
+  const linearPaths = visibleLinearFeatures.flatMap((feature) => {
+    const geometry = getLinearGeoFeatureGeometry(feature.id)
+    if (!geometry) return []
+    const lines = getLinearFeatureGeometryForScene(
+      geometry,
+      quality,
+      feature.id === selectedLinearFeatureId,
+    ).coordinates
+    return lines.map((points, segmentIndex) => ({
+      linearFeatureId: feature.id,
+      kind: feature.kind,
+      segmentIndex,
+      selected: feature.id === selectedLinearFeatureId,
+      hovered: feature.id === hoveredLinearFeatureId,
+      points: points.map(([longitude, latitude]) => [latitude, longitude]),
+    }))
+  })
+  const pathData = [
+    ...(selectedTrenchPath
+      ? [{ ...selectedTrenchPath, kind: 'trench' as const }]
+      : []),
+    ...linearPaths,
+  ]
   const polygonsData = useMemo(
     () =>
       selectedSurfaceFeature
@@ -243,6 +340,133 @@ function World({
   const syncPointOfView = useCallback(() => {
     globeRef.current?.setPointOfView(camera)
   }, [camera])
+
+  const projectSelectedLinearFeaturePoint = useCallback(
+    ([longitude, latitude]: readonly [number, number]) => {
+      const globe = globeRef.current
+      if (!globe) return null
+      const coordinate = globe.getCoords(latitude, longitude, 0.055)
+      const worldPosition = new Vector3(
+        coordinate.x,
+        coordinate.y,
+        coordinate.z,
+      )
+      const globeRadius = globe.getGlobeRadius()
+      const visible = worldPosition.dot(camera.position) > globeRadius ** 2
+      const screenPosition = worldPosition.project(camera)
+      return {
+        x: (screenPosition.x * 0.5 + 0.5) * size.width,
+        y: (-screenPosition.y * 0.5 + 0.5) * size.height,
+        visible,
+      }
+    },
+    [camera, size.height, size.width],
+  )
+
+  const getProjectedSelectedLinearFeatureLines = useCallback(() => {
+    if (!selectedLinearFeatureGeometry) return []
+    return selectedLinearFeatureGeometry.coordinates.map((line) =>
+      line
+        .map(projectSelectedLinearFeaturePoint)
+        .filter((point): point is NonNullable<typeof point> => point !== null),
+    )
+  }, [projectSelectedLinearFeaturePoint, selectedLinearFeatureGeometry])
+
+  const layoutSelectedLinearFeatureOverlay = useCallback(() => {
+    const overlay = selectedLinearFeatureOverlayRef.current
+    if (!overlay || !selectedLinearFeatureGeometry) return
+
+    camera.updateMatrixWorld()
+    const projectedLines = getProjectedSelectedLinearFeatureLines()
+    const pathParts: string[] = []
+    for (const line of projectedLines) {
+      let visibleRun: typeof line = []
+      const flushVisibleRun = () => {
+        if (visibleRun.length >= 2) {
+          pathParts.push(
+            visibleRun
+              .map(
+                (point, index) =>
+                  `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)},${point.y.toFixed(2)}`,
+              )
+              .join(' '),
+          )
+        }
+        visibleRun = []
+      }
+      for (const point of line) {
+        if (point.visible) visibleRun.push(point)
+        else flushVisibleRun()
+      }
+      flushVisibleRun()
+    }
+
+    const projectedEndpoints = getLinearFeatureEndpointPairs(
+      selectedLinearFeatureGeometry,
+    ).map((endpoints) => ({
+      start: projectSelectedLinearFeaturePoint([
+        endpoints.start.longitude,
+        endpoints.start.latitude,
+      ]),
+      end: projectSelectedLinearFeaturePoint([
+        endpoints.end.longitude,
+        endpoints.end.latitude,
+      ]),
+    }))
+    const route = pathParts.join(' ')
+    if (!route || projectedEndpoints.length === 0) {
+      overlay.style.display = 'none'
+      return
+    }
+
+    overlay.style.display = 'block'
+    overlay.setAttribute('viewBox', `0 0 ${size.width} ${size.height}`)
+    overlay
+      .querySelectorAll<SVGPathElement>('[data-linear-route-layer]')
+      .forEach((path) => path.setAttribute('d', route))
+    overlay
+      .querySelectorAll<SVGGElement>('[data-linear-endpoint-pair]')
+      .forEach((group, index) => {
+        const endpoints = projectedEndpoints[index]
+        if (!endpoints?.start?.visible && !endpoints?.end?.visible) {
+          group.style.display = 'none'
+          return
+        }
+        group.style.display = 'block'
+        const startMarker = group.querySelector<SVGCircleElement>(
+          '[data-linear-endpoint="start"]',
+        )
+        if (endpoints.start?.visible) {
+          startMarker?.setAttribute('cx', endpoints.start.x.toFixed(2))
+          startMarker?.setAttribute('cy', endpoints.start.y.toFixed(2))
+          startMarker?.setAttribute('visibility', 'visible')
+        } else {
+          startMarker?.setAttribute('visibility', 'hidden')
+        }
+        const endMarker = group.querySelector<SVGPolygonElement>(
+          '[data-linear-endpoint="end"]',
+        )
+        if (!endpoints.end?.visible) {
+          endMarker?.setAttribute('visibility', 'hidden')
+          return
+        }
+        endMarker?.setAttribute('visibility', 'visible')
+        const end = endpoints.end
+        const endRadius = 7
+        endMarker?.setAttribute(
+          'points',
+          `${end.x.toFixed(2)},${(end.y - endRadius).toFixed(2)} ${(end.x + endRadius).toFixed(2)},${end.y.toFixed(2)} ${end.x.toFixed(2)},${(end.y + endRadius).toFixed(2)} ${(end.x - endRadius).toFixed(2)},${end.y.toFixed(2)}`,
+        )
+      })
+  }, [
+    camera,
+    getProjectedSelectedLinearFeatureLines,
+    projectSelectedLinearFeaturePoint,
+    selectedLinearFeatureGeometry,
+    selectedLinearFeatureOverlayRef,
+    size.height,
+    size.width,
+  ])
 
   const layoutCityLabels = useCallback(() => {
     const globe = globeRef.current
@@ -274,6 +498,8 @@ function World({
           hoveredCityId,
           selectedWaterbodyId,
           hoveredWaterbodyId,
+          selectedLinearFeatureId,
+          hoveredLinearFeatureId,
         ) -
         getLabelPriority(
           right,
@@ -281,10 +507,20 @@ function World({
           hoveredCityId,
           selectedWaterbodyId,
           hoveredWaterbodyId,
+          selectedLinearFeatureId,
+          hoveredLinearFeatureId,
         ),
     )
-    const groupCount = { city: 0, waterbody: 0 }
-    const ordinaryGroupLimit = Math.ceil(budget / 2)
+    const groupCount: Record<LabelGroup, number> = {
+      capital: 0,
+      city: 0,
+      ocean: 0,
+      waterway: 0,
+      river: 0,
+      canal: 0,
+    }
+    const activeGroups = new Set(labelItems.map(getLabelGroup)).size
+    const ordinaryGroupLimit = Math.ceil(budget / Math.max(activeGroups, 1))
 
     for (const item of sortedItems) {
       if (visibleCount >= budget) break
@@ -295,8 +531,11 @@ function World({
         item.id === selectedCityId ||
         item.id === hoveredCityId ||
         item.id === selectedWaterbodyId ||
-        item.id === hoveredWaterbodyId
-      if (!forced && groupCount[item.type] >= ordinaryGroupLimit) continue
+        item.id === hoveredWaterbodyId ||
+        item.id === selectedLinearFeatureId ||
+        item.id === hoveredLinearFeatureId
+      const labelGroup = getLabelGroup(item)
+      if (!forced && groupCount[labelGroup] >= ordinaryGroupLimit) continue
 
       const coordinate = globe.getCoords(item.latitude, item.longitude, 0.04)
       const worldPosition = new Vector3(
@@ -307,16 +546,37 @@ function World({
       if (worldPosition.dot(camera.position) <= globeRadius ** 2) continue
 
       const screenPosition = worldPosition.clone().project(camera)
-      const x = (screenPosition.x * 0.5 + 0.5) * size.width
-      const y = (-screenPosition.y * 0.5 + 0.5) * size.height
+      let x = (screenPosition.x * 0.5 + 0.5) * size.width
+      let y = (-screenPosition.y * 0.5 + 0.5) * size.height
       if (x < 12 || x > size.width - 12 || y < 12 || y > size.height - 12) {
         continue
       }
 
       const labelName =
-        item.type === 'city' ? item.city.name.zh : item.waterbody.name.zh
+        item.type === 'city'
+          ? item.city.name.zh
+          : item.type === 'waterbody'
+            ? item.waterbody.name.zh
+            : item.feature.name.zh
       const width = Math.max(56, labelName.length * 14 + 28)
       const height = 28
+      if (
+        item.type === 'linearFeature' &&
+        item.id === selectedLinearFeatureId
+      ) {
+        const projectedRoute = getProjectedSelectedLinearFeatureLines()
+          .flat()
+          .filter((point) => point.visible)
+        const offset = getSelectedLinearFeatureLabelOffset(projectedRoute)
+        x = Math.max(
+          width / 2 + 12,
+          Math.min(size.width - width / 2 - 12, x + offset.x),
+        )
+        y = Math.max(
+          height / 2 + 12,
+          Math.min(size.height - height / 2 - 12, y + offset.y),
+        )
+      }
       const rect = {
         left: x - width / 2 - 5,
         top: y - height / 2 - 5,
@@ -335,17 +595,20 @@ function World({
       nextVisibleIds.add(item.id)
       acceptedRects.push(rect)
       visibleCount += 1
-      groupCount[item.type] += 1
+      groupCount[labelGroup] += 1
     }
     visibleLabelIdsRef.current = nextVisibleIds
   }, [
     camera,
+    getProjectedSelectedLinearFeatureLines,
     hoveredCityId,
     hoveredWaterbodyId,
+    hoveredLinearFeatureId,
     labelItems,
     quality,
     selectedCityId,
     selectedWaterbodyId,
+    selectedLinearFeatureId,
     size.height,
     size.width,
   ])
@@ -360,7 +623,13 @@ function World({
     )
     visibleLabelIdsRef.current.clear()
     layoutCityLabels()
-  }, [labelItems, labelLayerRef, layoutCityLabels])
+    layoutSelectedLinearFeatureOverlay()
+  }, [
+    labelItems,
+    labelLayerRef,
+    layoutCityLabels,
+    layoutSelectedLinearFeatureOverlay,
+  ])
 
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return
@@ -376,12 +645,20 @@ function World({
     camera.updateProjectionMatrix()
     syncPointOfView()
     layoutCityLabels()
+    layoutSelectedLinearFeatureOverlay()
 
     return () => {
       camera.clearViewOffset()
       camera.updateProjectionMatrix()
     }
-  }, [camera, layoutCityLabels, size.height, size.width, syncPointOfView])
+  }, [
+    camera,
+    layoutCityLabels,
+    layoutSelectedLinearFeatureOverlay,
+    size.height,
+    size.width,
+    syncPointOfView,
+  ])
 
   const getView = useCallback((): GlobeView | null => {
     const coordinate = globeRef.current?.toGeoCoords(camera.position)
@@ -406,11 +683,18 @@ function World({
 
   const commitView = useCallback(() => {
     layoutCityLabels()
+    layoutSelectedLinearFeatureOverlay()
     const view = getView()
     if (!view) return
     onViewCenterChange(view)
     onViewCenterCommit(view)
-  }, [getView, layoutCityLabels, onViewCenterChange, onViewCenterCommit])
+  }, [
+    getView,
+    layoutCityLabels,
+    layoutSelectedLinearFeatureOverlay,
+    onViewCenterChange,
+    onViewCenterCommit,
+  ])
 
   const flyToTarget = useCallback(
     (target: CameraTarget) => {
@@ -497,6 +781,7 @@ function World({
     if (autoRotate || labelLayoutPendingRef.current) {
       labelLayoutPendingRef.current = false
       layoutCityLabels()
+      layoutSelectedLinearFeatureOverlay()
     }
   })
 
@@ -514,7 +799,8 @@ function World({
 
   useEffect(() => {
     layoutCityLabels()
-  }, [layoutCityLabels])
+    layoutSelectedLinearFeatureOverlay()
+  }, [layoutCityLabels, layoutSelectedLinearFeatureOverlay])
 
   useEffect(() => () => globeMaterial.dispose(), [globeMaterial])
 
@@ -633,35 +919,76 @@ function World({
         }}
         pointResolution={quality === 'balanced' ? 16 : 8}
         pointsTransitionDuration={reducedMotion ? 0 : 220}
-        pathsData={selectedTrenchPath ? [selectedTrenchPath] : []}
+        pathsData={pathData}
         pathPoints="points"
         pathPointLat={0}
         pathPointLng={1}
-        pathPointAlt={0.035}
-        pathColor={() => '#c493ff'}
-        pathStroke={quality === 'balanced' ? 0.55 : 0.35}
-        pathDashLength={0.12}
-        pathDashGap={0.06}
+        pathPointAlt={(value: object) => {
+          const path = value as { kind?: string; selected?: boolean }
+          if (path.selected) return 0.055
+          if (path.kind === 'river') return 0.043
+          return 0.035
+        }}
+        pathColor={(value: object) => {
+          const path = value as {
+            kind?: string
+            selected?: boolean
+            hovered?: boolean
+          }
+          if (path.kind === 'canal' && path.selected) return '#ffd66b'
+          if (path.selected) return '#ffffff'
+          if (path.kind === 'canal') return path.hovered ? '#ffe9a5' : '#f7bf4f'
+          if (path.kind === 'river') return path.hovered ? '#d7fcff' : '#49e8f6'
+          return '#c493ff'
+        }}
+        pathStroke={(value: object) => {
+          const path = value as {
+            kind?: string
+            selected?: boolean
+            hovered?: boolean
+          }
+          if (path.selected) return quality === 'balanced' ? 0.34 : 0.24
+          if (path.hovered) return quality === 'balanced' ? 0.24 : 0.18
+          if (path.kind === 'canal') return quality === 'balanced' ? 0.12 : 0.08
+          if (path.kind === 'river') return quality === 'balanced' ? 0.2 : 0.14
+          return quality === 'balanced' ? 0.14 : 0.09
+        }}
+        pathDashLength={(value: object) =>
+          (value as { kind?: string }).kind === 'canal' ? 0.1 : 1
+        }
+        pathDashGap={(value: object) =>
+          (value as { kind?: string }).kind === 'canal' ? 0.06 : 0
+        }
         pathTransitionDuration={reducedMotion ? 0 : 220}
         onGlobeReady={() => {
           globeReadyRef.current = true
           syncPointOfView()
           layoutCityLabels()
+          layoutSelectedLinearFeatureOverlay()
           applyCameraTargetRequest()
         }}
         onHover={(layer, value) => {
           const waterbodyId = getWaterbodyIdForLayer(layer, value)
           onHoverWaterbody(waterbodyId)
+          const linearFeatureId = getLinearFeatureIdForLayer(layer, value)
+          onHoverLinearFeature(linearFeatureId)
           const cityId = getCityIdForLayer(layer, value)
           onHoverCity(cityId)
           onHoverCountry(
-            cityId || waterbodyId ? null : getCountryCodeForLayer(layer, value),
+            cityId || waterbodyId || linearFeatureId
+              ? null
+              : getCountryCodeForLayer(layer, value),
           )
         }}
         onClick={(layer, value) => {
           const waterbodyId = getWaterbodyIdForLayer(layer, value)
           if (waterbodyId) {
             onSelectWaterbody(waterbodyId)
+            return
+          }
+          const linearFeatureId = getLinearFeatureIdForLayer(layer, value)
+          if (linearFeatureId) {
+            onSelectLinearFeature(linearFeatureId)
             return
           }
           const cityId = getCityIdForLayer(layer, value)
@@ -714,9 +1041,17 @@ function World({
 export function GlobeScene(props: GlobeSceneProps) {
   const tooltipRef = useRef<HTMLDivElement>(null)
   const labelLayerRef = useRef<HTMLDivElement>(null)
+  const selectedLinearFeatureOverlayRef = useRef<SVGSVGElement>(null)
   const hoveredCountry = getCountry(props.hoveredCountryCode)
   const hoveredCity = getCity(props.hoveredCityId)
   const hoveredWaterbody = getWaterbody(props.hoveredWaterbodyId)
+  const hoveredLinearFeature = getLinearGeoFeature(props.hoveredLinearFeatureId)
+  const selectedLinearFeature = getLinearGeoFeature(
+    props.selectedLinearFeatureId,
+  )
+  const selectedLinearFeatureStemCount =
+    getLinearGeoFeatureGeometry(selectedLinearFeature?.id)?.geometry.coordinates
+      .length ?? 0
   const labelCities = useMemo(
     () =>
       getVisibleLayerCities(cities, {
@@ -747,6 +1082,21 @@ export function GlobeScene(props: GlobeSceneProps) {
       props.showWaterwayLayer,
     ],
   )
+  const labelLinearFeatures = useMemo(
+    () =>
+      getVisibleLinearFeatures(linearGeoFeatures, {
+        showRiverLayer: props.showRiverLayer,
+        showCanalLayer: props.showCanalLayer,
+        selectedLinearFeatureId: props.selectedLinearFeatureId,
+        hoveredLinearFeatureId: props.hoveredLinearFeatureId,
+      }),
+    [
+      props.hoveredLinearFeatureId,
+      props.selectedLinearFeatureId,
+      props.showCanalLayer,
+      props.showRiverLayer,
+    ],
+  )
   const labelItems = useMemo<MapLabel[]>(
     () => [
       ...labelCities.map((city) => ({
@@ -763,8 +1113,15 @@ export function GlobeScene(props: GlobeSceneProps) {
         longitude: waterbody.center.longitude,
         waterbody,
       })),
+      ...labelLinearFeatures.map((feature) => ({
+        id: feature.id,
+        type: 'linearFeature' as const,
+        latitude: feature.labelPosition.latitude,
+        longitude: feature.labelPosition.longitude,
+        feature,
+      })),
     ],
-    [labelCities, labelWaterbodies],
+    [labelCities, labelLinearFeatures, labelWaterbodies],
   )
 
   return (
@@ -781,6 +1138,8 @@ export function GlobeScene(props: GlobeSceneProps) {
       onPointerLeave={() => {
         props.onHoverCountry(null)
         props.onHoverCity(null)
+        props.onHoverWaterbody(null)
+        props.onHoverLinearFeature(null)
       }}
     >
       <Canvas
@@ -802,8 +1161,48 @@ export function GlobeScene(props: GlobeSceneProps) {
           {...props}
           labelItems={labelItems}
           labelLayerRef={labelLayerRef}
+          selectedLinearFeatureOverlayRef={selectedLinearFeatureOverlayRef}
         />
       </Canvas>
+      {selectedLinearFeature ? (
+        <svg
+          ref={selectedLinearFeatureOverlayRef}
+          className={`selected-linear-feature-overlay is-${selectedLinearFeature.kind}`}
+          data-testid="selected-linear-feature-overlay"
+          data-linear-feature-id={selectedLinearFeature.id}
+          data-linear-detail="high"
+          style={{ display: 'none' }}
+          aria-hidden="true"
+        >
+          <path
+            className="selected-linear-feature-route-outer"
+            data-testid="selected-linear-feature-route"
+            data-linear-route-layer="outer"
+          />
+          <path
+            className="selected-linear-feature-route-core"
+            data-linear-route-layer="core"
+          />
+          {Array.from(
+            { length: selectedLinearFeatureStemCount },
+            (_, index) => (
+              <g key={index} data-linear-endpoint-pair={index}>
+                <circle
+                  className="selected-linear-feature-endpoint is-start"
+                  data-testid="selected-linear-feature-start"
+                  data-linear-endpoint="start"
+                  r="6"
+                />
+                <polygon
+                  className="selected-linear-feature-endpoint is-end"
+                  data-testid="selected-linear-feature-end"
+                  data-linear-endpoint="end"
+                />
+              </g>
+            ),
+          )}
+        </svg>
+      ) : null}
       <div
         ref={labelLayerRef}
         className="globe-city-labels"
@@ -843,10 +1242,37 @@ export function GlobeScene(props: GlobeSceneProps) {
             {waterbody.name.zh}
           </button>
         ))}
+        {labelLinearFeatures.map((feature) => (
+          <button
+            type="button"
+            key={feature.id}
+            hidden
+            className={`city-label linear-feature-label is-${feature.kind}${feature.id === props.selectedLinearFeatureId ? 'is-selected' : ''}`}
+            data-map-label-id={feature.id}
+            data-linear-feature-id={feature.id}
+            aria-label={`定位到${feature.name.zh}${linearGeoFeatureKindLabels[feature.kind]}`}
+            onPointerEnter={() => props.onHoverLinearFeature(feature.id)}
+            onPointerLeave={() => props.onHoverLinearFeature(null)}
+            onClick={() => props.onSelectLinearFeature(feature.id)}
+          >
+            <span aria-hidden="true" />
+            {feature.name.zh}
+          </button>
+        ))}
       </div>
-      {hoveredWaterbody || hoveredCity || hoveredCountry ? (
+      {hoveredLinearFeature ||
+      hoveredWaterbody ||
+      hoveredCity ||
+      hoveredCountry ? (
         <div ref={tooltipRef} className="country-hover-tooltip" role="tooltip">
-          {hoveredWaterbody ? (
+          {hoveredLinearFeature ? (
+            <>
+              <span>{hoveredLinearFeature.name.zh}</span>
+              <small>
+                {linearGeoFeatureKindLabels[hoveredLinearFeature.kind]}
+              </small>
+            </>
+          ) : hoveredWaterbody ? (
             <>
               <span>{hoveredWaterbody.name.zh}</span>
               <small>{waterbodyKindLabels[hoveredWaterbody.kind]}</small>

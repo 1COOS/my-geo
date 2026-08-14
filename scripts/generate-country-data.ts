@@ -27,6 +27,7 @@ import {
 } from '../src/data/countrySchema'
 import { cityCatalogSchema, type City } from '../src/data/citySchema'
 import { priorityCityCounts, reviewedCitySelections } from './city-content'
+import { generateRiverGeometries } from './generate-river-geometries'
 
 type CitySource = {
   city: string
@@ -476,6 +477,7 @@ await writeFormattedJson(
   boundaries,
 )
 await writeFormattedJson(path.join(generatedDirectory, 'cities.json'), cities)
+const riverGeometries = await generateRiverGeometries()
 
 await Promise.all(
   countries.map((country) =>
@@ -490,5 +492,5 @@ await Promise.all(
 )
 
 console.log(
-  `Generated ${countries.length} countries, ${cities.length} capital and reviewed city entries, ${boundaries.features.length} boundaries, and ${countries.length} local flags.`,
+  `Generated ${countries.length} countries, ${cities.length} capital and reviewed city entries, ${boundaries.features.length} boundaries, ${riverGeometries.length} river geometries, and ${countries.length} local flags.`,
 )

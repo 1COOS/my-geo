@@ -74,6 +74,12 @@ describe('ExplorePage', () => {
       'aria-pressed',
       'false',
     )
+    expect(
+      screen.getByRole('button', { name: '河流图层：世界重要河流水系' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.getByRole('button', { name: '运河图层：重要人工运河' }),
+    ).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByText('海洋：大洋、海与海湾')).toBeInTheDocument()
     expect(screen.getByText('水域：海峡与海沟')).toBeInTheDocument()
   })
@@ -286,6 +292,51 @@ describe('ExplorePage', () => {
       selectedCountryCode: null,
     })
     expect(screen.getByText(/不代表领海/)).toBeInTheDocument()
+  })
+
+  it('toggles river and canal layers and keeps all place selection mutually exclusive', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        showRiverLayer: boolean
+        showCanalLayer: boolean
+        selectedLinearFeatureId: string | null
+        selectedWaterbodyId: string | null
+        selectedCountryCode: string | null
+      }
+
+    await user.click(
+      screen.getByRole('button', { name: '河流图层：世界重要河流水系' }),
+    )
+    await user.click(
+      screen.getByRole('button', { name: '运河图层：重要人工运河' }),
+    )
+    expect(getProps()).toMatchObject({
+      showRiverLayer: true,
+      showCanalLayer: true,
+    })
+
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.type(search, '长江{Enter}')
+    expect(await screen.findByLabelText('长江知识卡')).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      selectedLinearFeatureId: 'yangtze-system',
+      selectedWaterbodyId: null,
+      selectedCountryCode: null,
+    })
+
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    const nextSearch = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.clear(nextSearch)
+    await user.type(nextSearch, '苏伊士运河{Enter}')
+    expect(await screen.findByLabelText('苏伊士运河知识卡')).toBeInTheDocument()
+    expect(screen.queryByLabelText('长江知识卡')).not.toBeInTheDocument()
   })
 
   it('does not reveal city layers when the committed globe view changes', () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { cities, countryBoundaries } from '../data/countries'
 import { waterbodies } from '../data/waterbodies'
+import { linearGeoFeatures } from '../data/linearGeoFeatures'
 import {
   CITY_CAMERA_DISTANCE,
   getCameraFlightDuration,
@@ -11,6 +12,8 @@ import {
   getOverviewCameraPosition,
   getVisibleLayerCities,
   getVisibleLayerWaterbodies,
+  getVisibleLinearFeatures,
+  getLinearFeatureIdForLayer,
   getWaterbodyIdForLayer,
   GLOBE_VERTICAL_CENTER_RATIO,
   OVERVIEW_CAMERA_DISTANCE,
@@ -143,6 +146,30 @@ describe('country scene interaction', () => {
     expect(getWaterbodyIdForLayer('path', { waterbodyId: mariana.id })).toBe(
       mariana.id,
     )
+  })
+
+  it('filters river and canal layers while preserving selected lines', () => {
+    const river = linearGeoFeatures.find((feature) => feature.kind === 'river')!
+    const canal = linearGeoFeatures.find((feature) => feature.kind === 'canal')!
+    expect(
+      getVisibleLinearFeatures([river, canal], {
+        showRiverLayer: true,
+        showCanalLayer: false,
+        selectedLinearFeatureId: null,
+        hoveredLinearFeatureId: null,
+      }),
+    ).toEqual([river])
+    expect(
+      getVisibleLinearFeatures([river, canal], {
+        showRiverLayer: false,
+        showCanalLayer: false,
+        selectedLinearFeatureId: canal.id,
+        hoveredLinearFeatureId: river.id,
+      }),
+    ).toEqual([river, canal])
+    expect(
+      getLinearFeatureIdForLayer('path', { linearFeatureId: river.id }),
+    ).toBe(river.id)
   })
 
   it('exposes 197 capitals and 141 non-capital cities without overlap', () => {

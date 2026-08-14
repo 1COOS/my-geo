@@ -7,6 +7,14 @@ import {
   countrySourceRegistrySchema,
 } from '../src/data/countrySchema'
 import { cityCatalogSchema } from '../src/data/citySchema'
+import {
+  linearGeoFeatureGeometries,
+  linearGeoFeatures,
+} from '../src/data/linearGeoFeatures'
+import {
+  NATURAL_EARTH_RIVER_ARCHIVE_SHA256,
+  riverGeometryDefinitions,
+} from './river-geometry-content'
 import { waterbodies, waterbodyGeometries } from '../src/data/waterbodies'
 import { priorityCityCounts } from './city-content'
 import {
@@ -58,6 +66,105 @@ const allowedAdjacentRegionCodes = new Set(Object.keys(adjacentRegionNames))
 const countryCodes = new Set(countries.map((country) => country.code))
 const citiesByCountry = Map.groupBy(cities, (city) => city.countryCode)
 const priorityCountryCodes = Object.keys(priorityCityCounts).sort()
+
+if (
+  linearGeoFeatures.filter((feature) => feature.kind === 'river').length !== 30
+) {
+  throw new Error('Expected exactly 30 river systems')
+}
+if (
+  linearGeoFeatures.filter((feature) => feature.kind === 'canal').length !== 10
+) {
+  throw new Error('Expected exactly 10 artificial canals')
+}
+const linearGeometryIds = new Set(
+  linearGeoFeatureGeometries.map((geometry) => geometry.id),
+)
+const riverGeometryDefinitionsById = new Map(
+  riverGeometryDefinitions.map((definition) => [definition.id, definition]),
+)
+let mediumRiverPointCount = 0
+let lowRiverPointCount = 0
+for (const feature of linearGeoFeatures) {
+  if (!linearGeometryIds.has(feature.id)) {
+    throw new Error(`Missing geometry for linear feature ${feature.id}`)
+  }
+  for (const countryCode of feature.countryCodes) {
+    if (!countryCodes.has(countryCode)) {
+      throw new Error(`Unknown country ${countryCode} on ${feature.id}`)
+    }
+  }
+  for (const sourceId of feature.sourceIds) {
+    if (!sourceIds.has(sourceId)) {
+      throw new Error(`Unknown source ${sourceId} on ${feature.id}`)
+    }
+  }
+  const geometry = linearGeoFeatureGeometries.find(
+    (candidate) => candidate.id === feature.id,
+  )!
+  if (feature.kind === 'river') {
+    const definition = riverGeometryDefinitionsById.get(feature.id)
+    if (!definition) {
+      throw new Error(`Missing reviewed river mapping for ${feature.id}`)
+    }
+    if (
+      geometry.provenance?.archiveSha256 !== NATURAL_EARTH_RIVER_ARCHIVE_SHA256
+    ) {
+      throw new Error(`Unexpected river archive SHA-256 on ${feature.id}`)
+    }
+    if (geometry.geometry.coordinates.length !== definition.stems.length) {
+      throw new Error(`Unexpected main-stem count on ${feature.id}`)
+    }
+    mediumRiverPointCount +=
+      geometry.mediumDetailGeometry.coordinates.flat().length
+    lowRiverPointCount += geometry.lowDetailGeometry.coordinates.flat().length
+    for (
+      let index = 0;
+      index < geometry.geometry.coordinates.length;
+      index += 1
+    ) {
+      const high = geometry.geometry.coordinates[index]
+      const medium = geometry.mediumDetailGeometry.coordinates[index]
+      const low = geometry.lowDetailGeometry.coordinates[index]
+      if (high.length > 2_000 || medium.length > 320 || low.length > 96) {
+        throw new Error(`River point cap exceeded on ${feature.id}`)
+      }
+      if (high.length < medium.length || medium.length < low.length) {
+        throw new Error(`Non-monotonic detail levels on ${feature.id}`)
+      }
+    }
+    for (const supplement of geometry.provenance.supplements) {
+      for (const sourceId of supplement.sourceIds) {
+        if (!sourceIds.has(sourceId)) {
+          throw new Error(
+            `Unknown supplemental source ${sourceId} on ${feature.id}`,
+          )
+        }
+      }
+    }
+  }
+}
+
+if (mediumRiverPointCount > 10_000 || lowRiverPointCount > 3_000) {
+  throw new Error(
+    `River geometry budgets exceeded: ${mediumRiverPointCount} medium, ${lowRiverPointCount} low`,
+  )
+}
+
+for (const featureId of [
+  'yangtze-system',
+  'mekong-system',
+  'amazon-system',
+  'parana-paraguay-system',
+  'saint-lawrence-great-lakes-system',
+]) {
+  const geometry = linearGeoFeatureGeometries.find(
+    (candidate) => candidate.id === featureId,
+  )
+  if (!geometry?.provenance?.supplements.length) {
+    throw new Error(`Known river source gap is not declared on ${featureId}`)
+  }
+}
 
 const expectedWaterbodyKinds = {
   ocean: 5,
@@ -207,5 +314,5 @@ for (const country of countries) {
 }
 
 console.log(
-  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
+  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
 )

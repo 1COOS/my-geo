@@ -1,11 +1,13 @@
 import type { City } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
+import type { LinearGeoFeature } from '../../data/linearGeoFeatureSchema'
 import type { Waterbody } from '../../data/waterbodySchema'
 
 export type PlaceSearchResult =
   | { type: 'country'; country: Country }
   | { type: 'city'; city: City; country: Country }
   | { type: 'waterbody'; waterbody: Waterbody }
+  | { type: 'linearFeature'; feature: LinearGeoFeature }
 
 export function normalizeCountrySearch(value: string) {
   return value
@@ -27,6 +29,7 @@ export function searchPlaces(
   countries: Country[],
   cities: City[],
   waterbodies: Waterbody[],
+  linearFeatures: LinearGeoFeature[],
   query: string,
   limit = 8,
 ): PlaceSearchResult[] {
@@ -94,6 +97,24 @@ export function searchPlaces(
     }
   }
 
+  for (const feature of linearFeatures) {
+    const countryNames = feature.countryCodes.flatMap((countryCode) => {
+      const country = countriesByCode.get(countryCode)
+      return country ? [country.code, country.name.zh, country.name.en] : []
+    })
+    const score = matchScore(
+      [feature.name.zh, feature.name.en, ...feature.aliases, ...countryNames],
+      normalizedQuery,
+    )
+    if (score < 10) {
+      scored.push({
+        result: { type: 'linearFeature', feature },
+        score: score + 0.15,
+        name: feature.name.zh,
+      })
+    }
+  }
+
   return scored
     .sort(
       (left, right) =>
@@ -109,7 +130,7 @@ export function searchCountries(
   query: string,
   limit = 8,
 ) {
-  return searchPlaces(countries, [], [], query, limit).flatMap((result) =>
+  return searchPlaces(countries, [], [], [], query, limit).flatMap((result) =>
     result.type === 'country' ? [result.country] : [],
   )
 }
