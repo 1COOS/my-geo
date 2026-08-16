@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { cities, countries } from '../../data/countries'
+import { deserts } from '../../data/deserts'
 import { linearGeoFeatures } from '../../data/linearGeoFeatures'
 import { mountainRanges } from '../../data/mountainRanges'
 import { waterbodies } from '../../data/waterbodies'
@@ -158,5 +159,27 @@ describe('searchCountries', () => {
         'Everest',
       )[0],
     ).toMatchObject({ type: 'mountainRange', range: { id: 'himalayas' } })
+  })
+
+  it('finds deserts by Chinese, English, alias, and landscape names', () => {
+    for (const [query, id] of [
+      ['撒哈拉', 'sahara'],
+      ['Gobi', 'gobi'],
+      ['Empty Quarter', 'rub-al-khali'],
+      ['雅丹', 'lut'],
+    ] as const) {
+      expect(
+        searchPlaces(
+          countries,
+          cities,
+          waterbodies,
+          linearGeoFeatures,
+          mountainRanges,
+          query,
+          8,
+          deserts,
+        )[0],
+      ).toMatchObject({ type: 'desert', desert: { id } })
+    }
   })
 })

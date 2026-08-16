@@ -1,5 +1,6 @@
 import type { City } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
+import type { Desert } from '../../data/desertSchema'
 import type { LinearGeoFeature } from '../../data/linearGeoFeatureSchema'
 import type { MountainRange } from '../../data/mountainRangeSchema'
 import type { Waterbody } from '../../data/waterbodySchema'
@@ -10,6 +11,7 @@ export type PlaceSearchResult =
   | { type: 'waterbody'; waterbody: Waterbody }
   | { type: 'linearFeature'; feature: LinearGeoFeature }
   | { type: 'mountainRange'; range: MountainRange }
+  | { type: 'desert'; desert: Desert }
 
 export function normalizeCountrySearch(value: string) {
   return value
@@ -35,6 +37,7 @@ export function searchPlaces(
   mountainRanges: MountainRange[],
   query: string,
   limit = 8,
+  deserts: Desert[] = [],
 ): PlaceSearchResult[] {
   const normalizedQuery = normalizeCountrySearch(query)
   if (!normalizedQuery) {
@@ -140,6 +143,31 @@ export function searchPlaces(
         result: { type: 'mountainRange', range },
         score: score + 0.18,
         name: range.name.zh,
+      })
+    }
+  }
+
+  for (const desert of deserts) {
+    const countryNames = desert.countryCodes.flatMap((countryCode) => {
+      const country = countriesByCode.get(countryCode)
+      return country ? [country.code, country.name.zh, country.name.en] : []
+    })
+    const score = matchScore(
+      [
+        desert.name.zh,
+        desert.name.en,
+        ...desert.aliases,
+        desert.region,
+        ...desert.landscape,
+        ...countryNames,
+      ],
+      normalizedQuery,
+    )
+    if (score < 10) {
+      scored.push({
+        result: { type: 'desert', desert },
+        score: score + 0.16,
+        name: desert.name.zh,
       })
     }
   }

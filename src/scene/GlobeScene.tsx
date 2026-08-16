@@ -25,6 +25,8 @@ import {
   getCity,
   getCountry,
 } from '../data/countries'
+import { deserts, getDesert, getDesertGeometry } from '../data/deserts'
+import type { Desert } from '../data/desertSchema'
 import {
   getWaterbody,
   getWaterbodyGeometry,
@@ -85,6 +87,12 @@ import {
   getMountainRangeIdForLayer,
   getVisibleMountainRanges,
 } from './mountainSceneInteraction'
+import {
+  getDesertGeometryForScene,
+  getDesertIdForLayer,
+  getDesertPolygonState,
+  getVisibleDeserts,
+} from './desertSceneInteraction'
 
 export type GlobeSceneProps = {
   autoRotate: boolean
@@ -97,6 +105,7 @@ export type GlobeSceneProps = {
   showWaterwayLayer: boolean
   showRiverAndCanalLayer: boolean
   showMountainLayer: boolean
+  showDesertLayer: boolean
   selectedCountryCode: string | null
   selectedCityId: string | null
   hoveredCountryCode: string | null
@@ -107,6 +116,8 @@ export type GlobeSceneProps = {
   hoveredLinearFeatureId: string | null
   selectedMountainRangeId: string | null
   hoveredMountainRangeId: string | null
+  selectedDesertId: string | null
+  hoveredDesertId: string | null
   onSelectCountry: (countryCode: string) => void
   onSelectCity: (cityId: string) => void
   onHoverCountry: (countryCode: string | null) => void
@@ -117,6 +128,8 @@ export type GlobeSceneProps = {
   onHoverLinearFeature: (featureId: string | null) => void
   onSelectMountainRange: (rangeId: string) => void
   onHoverMountainRange: (rangeId: string | null) => void
+  onSelectDesert: (desertId: string) => void
+  onHoverDesert: (desertId: string | null) => void
   onViewCenterChange: (view: GlobeView) => void
   onViewCenterCommit: (view: GlobeView) => void
 }
@@ -160,6 +173,13 @@ type MapLabel =
       longitude: number
       range: MountainRange
     }
+  | {
+      id: string
+      type: 'desert'
+      latitude: number
+      longitude: number
+      desert: Desert
+    }
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
   0,
@@ -182,13 +202,20 @@ type LabelRect = {
 }
 
 type LabelGroup =
-  'capital' | 'city' | 'ocean' | 'waterway' | 'river' | 'canal' | 'mountain'
+  | 'capital'
+  | 'city'
+  | 'ocean'
+  | 'waterway'
+  | 'river'
+  | 'canal'
+  | 'mountain'
+  | 'desert'
 
 function getLabelGroup(item: MapLabel): LabelGroup {
   if (item.type === 'city') return item.city.isCapital ? 'capital' : 'city'
   if (item.type === 'waterbody') return item.waterbody.layer
   if (item.type === 'linearFeature') return item.feature.kind
-  return 'mountain'
+  return item.type === 'mountainRange' ? 'mountain' : 'desert'
 }
 
 function overlaps(left: LabelRect, right: LabelRect) {
@@ -210,25 +237,30 @@ function getLabelPriority(
   hoveredLinearFeatureId: string | null,
   selectedMountainRangeId: string | null,
   hoveredMountainRangeId: string | null,
+  selectedDesertId: string | null,
+  hoveredDesertId: string | null,
 ) {
   if (
     item.id === selectedCityId ||
     item.id === selectedWaterbodyId ||
     item.id === selectedLinearFeatureId ||
-    item.id === selectedMountainRangeId
+    item.id === selectedMountainRangeId ||
+    item.id === selectedDesertId
   )
     return 0
   if (
     item.id === hoveredCityId ||
     item.id === hoveredWaterbodyId ||
     item.id === hoveredLinearFeatureId ||
-    item.id === hoveredMountainRangeId
+    item.id === hoveredMountainRangeId ||
+    item.id === hoveredDesertId
   )
     return 1
   if (item.type === 'waterbody') return 2 + item.waterbody.labelPriority / 100
   if (item.type === 'linearFeature')
     return 2.5 + item.feature.labelPriority / 100
   if (item.type === 'mountainRange') return 2.7 + item.range.labelPriority / 100
+  if (item.type === 'desert') return 2.8 + item.desert.labelPriority / 100
   return (item.city.isCapital ? 3 : 10) + item.city.order / 10
 }
 
@@ -247,8 +279,11 @@ function World({
   hoveredLinearFeatureId,
   selectedMountainRangeId,
   hoveredMountainRangeId,
+  selectedDesertId,
+  hoveredDesertId,
   showRiverAndCanalLayer,
   showMountainLayer,
+  showDesertLayer,
   onSelectCountry,
   onSelectCity,
   onHoverCountry,
@@ -259,6 +294,8 @@ function World({
   onHoverLinearFeature,
   onSelectMountainRange,
   onHoverMountainRange,
+  onSelectDesert,
+  onHoverDesert,
   onViewCenterChange,
   onViewCenterCommit,
   labelItems,
@@ -381,6 +418,24 @@ function World({
       points: addGeographicPathAltitude(points, appearance.altitude),
     }
   }, [quality, selectedWaterbodyGeometry])
+  const visibleDesertFeatures = useMemo(
+    () =>
+      getVisibleDeserts(deserts, {
+        showDesertLayer,
+      }).flatMap((desert) => {
+        const geometry = getDesertGeometry(desert.id)
+        return geometry
+          ? [
+              {
+                type: 'Feature' as const,
+                properties: { desertId: desert.id },
+                geometry: getDesertGeometryForScene(geometry, quality),
+              },
+            ]
+          : []
+      }),
+    [quality, showDesertLayer],
+  )
   const selectedLinearFeature = getLinearGeoFeature(selectedLinearFeatureId)
   const selectedMountainRange = getMountainRange(selectedMountainRangeId)
   const selectedPathKind =
@@ -504,11 +559,12 @@ function World({
     [linearPaths, mountainPaths, selectedTrenchPath],
   )
   const polygonsData = useMemo(
-    () =>
-      selectedSurfaceFeature
-        ? [...countryBoundaries.features, selectedSurfaceFeature]
-        : countryBoundaries.features,
-    [selectedSurfaceFeature],
+    () => [
+      ...countryBoundaries.features,
+      ...visibleDesertFeatures,
+      ...(selectedSurfaceFeature ? [selectedSurfaceFeature] : []),
+    ],
+    [selectedSurfaceFeature, visibleDesertFeatures],
   )
 
   const syncPointOfView = useCallback(() => {
@@ -717,6 +773,8 @@ function World({
           hoveredLinearFeatureId,
           selectedMountainRangeId,
           hoveredMountainRangeId,
+          selectedDesertId,
+          hoveredDesertId,
         ) -
         getLabelPriority(
           right,
@@ -728,6 +786,8 @@ function World({
           hoveredLinearFeatureId,
           selectedMountainRangeId,
           hoveredMountainRangeId,
+          selectedDesertId,
+          hoveredDesertId,
         ),
     )
     const groupCount: Record<LabelGroup, number> = {
@@ -738,6 +798,7 @@ function World({
       river: 0,
       canal: 0,
       mountain: 0,
+      desert: 0,
     }
     const activeGroups = new Set(labelItems.map(getLabelGroup)).size
     const ordinaryGroupLimit = Math.ceil(budget / Math.max(activeGroups, 1))
@@ -755,7 +816,9 @@ function World({
         item.id === selectedLinearFeatureId ||
         item.id === hoveredLinearFeatureId ||
         item.id === selectedMountainRangeId ||
-        item.id === hoveredMountainRangeId
+        item.id === hoveredMountainRangeId ||
+        item.id === selectedDesertId ||
+        item.id === hoveredDesertId
       const labelGroup = getLabelGroup(item)
       if (!forced && groupCount[labelGroup] >= ordinaryGroupLimit) continue
 
@@ -781,7 +844,9 @@ function World({
             ? item.waterbody.name.zh
             : item.type === 'linearFeature'
               ? item.feature.name.zh
-              : item.range.name.zh
+              : item.type === 'mountainRange'
+                ? item.range.name.zh
+                : item.desert.name.zh
       const width = Math.max(56, labelName.length * 14 + 28)
       const height = 28
       if (
@@ -836,6 +901,7 @@ function World({
     hoveredWaterbodyId,
     hoveredLinearFeatureId,
     hoveredMountainRangeId,
+    hoveredDesertId,
     labelItems,
     quality,
     projectSelectedMountainPeak,
@@ -843,6 +909,7 @@ function World({
     selectedWaterbodyId,
     selectedLinearFeatureId,
     selectedMountainRangeId,
+    selectedDesertId,
     size.height,
     size.width,
   ])
@@ -1102,20 +1169,42 @@ function World({
         polygonGeoJsonGeometry="geometry"
         polygonCapColor={(value) => {
           if (getWaterbodyIdForLayer('polygon', value)) return '#24d4ff55'
+          const desertState = getDesertPolygonState(
+            value,
+            selectedDesertId,
+            hoveredDesertId,
+          )
+          if (desertState === 'selected') return '#ffd878e8'
+          if (desertState === 'hovered') return '#f6bc5dcc'
+          if (desertState === 'ordinary') return '#c98a3a94'
           const countryCode = getBoundaryCode(value)
           if (countryCode === selectedCountryCode) return '#f2c75c'
           if (countryCode === hoveredCountryCode) return '#68d7ff'
           return '#176593'
         }}
-        polygonSideColor={(value) =>
-          getWaterbodyIdForLayer('polygon', value)
-            ? '#086e8f44'
-            : getBoundaryCode(value) === selectedCountryCode
-              ? '#b88927'
-              : '#0a3552'
-        }
+        polygonSideColor={(value) => {
+          if (getWaterbodyIdForLayer('polygon', value)) return '#086e8f44'
+          const desertState = getDesertPolygonState(
+            value,
+            selectedDesertId,
+            hoveredDesertId,
+          )
+          if (desertState === 'selected') return '#a8651ccc'
+          if (desertState) return '#73451688'
+          return getBoundaryCode(value) === selectedCountryCode
+            ? '#b88927'
+            : '#0a3552'
+        }}
         polygonStrokeColor={(value) => {
           if (getWaterbodyIdForLayer('polygon', value)) return '#83ecff'
+          const desertState = getDesertPolygonState(
+            value,
+            selectedDesertId,
+            hoveredDesertId,
+          )
+          if (desertState === 'selected') return '#fff0bd'
+          if (desertState === 'hovered') return '#ffe09a'
+          if (desertState === 'ordinary') return '#e9ad58'
           const countryCode = getBoundaryCode(value)
           if (countryCode === selectedCountryCode) return '#fff1a8'
           if (countryCode === hoveredCountryCode) return '#d8f7ff'
@@ -1123,6 +1212,14 @@ function World({
         }}
         polygonAltitude={(value) => {
           if (getWaterbodyIdForLayer('polygon', value)) return 0.034
+          const desertState = getDesertPolygonState(
+            value,
+            selectedDesertId,
+            hoveredDesertId,
+          )
+          if (desertState === 'selected') return 0.042
+          if (desertState === 'hovered') return 0.032
+          if (desertState === 'ordinary') return 0.021
           const countryCode = getBoundaryCode(value)
           if (countryCode === selectedCountryCode) return 0.027
           if (countryCode === hoveredCountryCode) return 0.017
@@ -1191,10 +1288,16 @@ function World({
           onHoverLinearFeature(linearFeatureId)
           const mountainRangeId = getMountainRangeIdForLayer(layer, value)
           onHoverMountainRange(mountainRangeId)
+          const desertId = getDesertIdForLayer(layer, value)
+          onHoverDesert(desertId)
           const cityId = getCityIdForLayer(layer, value)
           onHoverCity(cityId)
           onHoverCountry(
-            cityId || waterbodyId || linearFeatureId || mountainRangeId
+            cityId ||
+              waterbodyId ||
+              linearFeatureId ||
+              mountainRangeId ||
+              desertId
               ? null
               : getCountryCodeForLayer(layer, value),
           )
@@ -1213,6 +1316,11 @@ function World({
           const mountainRangeId = getMountainRangeIdForLayer(layer, value)
           if (mountainRangeId) {
             onSelectMountainRange(mountainRangeId)
+            return
+          }
+          const desertId = getDesertIdForLayer(layer, value)
+          if (desertId) {
+            onSelectDesert(desertId)
             return
           }
           const cityId = getCityIdForLayer(layer, value)
@@ -1273,6 +1381,7 @@ export function GlobeScene(props: GlobeSceneProps) {
     onHoverLinearFeature,
     onHoverMountainRange,
     onHoverWaterbody,
+    onHoverDesert,
   } = props
   const tooltipRef = useRef<HTMLDivElement>(null)
   const labelLayerRef = useRef<HTMLDivElement>(null)
@@ -1285,6 +1394,7 @@ export function GlobeScene(props: GlobeSceneProps) {
   const hoveredWaterbody = getWaterbody(props.hoveredWaterbodyId)
   const hoveredLinearFeature = getLinearGeoFeature(props.hoveredLinearFeatureId)
   const hoveredMountainRange = getMountainRange(props.hoveredMountainRangeId)
+  const hoveredDesert = getDesert(props.hoveredDesertId)
   const selectedLinearFeature = getLinearGeoFeature(
     props.selectedLinearFeatureId,
   )
@@ -1295,12 +1405,14 @@ export function GlobeScene(props: GlobeSceneProps) {
     onHoverWaterbody(null)
     onHoverLinearFeature(null)
     onHoverMountainRange(null)
+    onHoverDesert(null)
   }, [
     onHoverCity,
     onHoverCountry,
     onHoverLinearFeature,
     onHoverMountainRange,
     onHoverWaterbody,
+    onHoverDesert,
   ])
   const beginControlsInteraction = useCallback(() => {
     if (controlsInteractingRef.current) return
@@ -1373,6 +1485,13 @@ export function GlobeScene(props: GlobeSceneProps) {
       props.showMountainLayer,
     ],
   )
+  const labelDeserts = useMemo(
+    () =>
+      getVisibleDeserts(deserts, {
+        showDesertLayer: props.showDesertLayer,
+      }),
+    [props.showDesertLayer],
+  )
   const labelItems = useMemo<MapLabel[]>(
     () => [
       ...labelCities.map((city) => ({
@@ -1403,8 +1522,21 @@ export function GlobeScene(props: GlobeSceneProps) {
         longitude: range.labelPosition.longitude,
         range,
       })),
+      ...labelDeserts.map((desert) => ({
+        id: desert.id,
+        type: 'desert' as const,
+        latitude: desert.center.latitude,
+        longitude: desert.center.longitude,
+        desert,
+      })),
     ],
-    [labelCities, labelLinearFeatures, labelMountainRanges, labelWaterbodies],
+    [
+      labelCities,
+      labelDeserts,
+      labelLinearFeatures,
+      labelMountainRanges,
+      labelWaterbodies,
+    ],
   )
 
   return (
@@ -1425,6 +1557,7 @@ export function GlobeScene(props: GlobeSceneProps) {
         props.onHoverWaterbody(null)
         props.onHoverLinearFeature(null)
         props.onHoverMountainRange(null)
+        props.onHoverDesert(null)
       }}
     >
       <Canvas
@@ -1534,7 +1667,7 @@ export function GlobeScene(props: GlobeSceneProps) {
       <div
         ref={labelLayerRef}
         className="globe-city-labels"
-        aria-label="城市、水域与地理地点标签"
+        aria-label="城市、水域、山脉与沙漠地理标签"
       >
         {labelCities.map((city) => (
           <button
@@ -1623,15 +1756,45 @@ export function GlobeScene(props: GlobeSceneProps) {
             {range.name.zh}
           </button>
         ))}
+        {labelDeserts.map((desert) => (
+          <button
+            type="button"
+            key={desert.id}
+            hidden
+            className={
+              desert.id === props.selectedDesertId
+                ? 'city-label desert-label is-selected'
+                : 'city-label desert-label'
+            }
+            data-map-label-id={desert.id}
+            data-desert-id={desert.id}
+            aria-label={`定位到${desert.name.zh}`}
+            onPointerEnter={() => {
+              if (!controlsInteractingRef.current)
+                props.onHoverDesert(desert.id)
+            }}
+            onPointerLeave={() => props.onHoverDesert(null)}
+            onClick={() => props.onSelectDesert(desert.id)}
+          >
+            <span aria-hidden="true" />
+            {desert.name.zh}
+          </button>
+        ))}
       </div>
       {!controlsInteracting &&
-      (hoveredMountainRange ||
+      (hoveredDesert ||
+        hoveredMountainRange ||
         hoveredLinearFeature ||
         hoveredWaterbody ||
         hoveredCity ||
         hoveredCountry) ? (
         <div ref={tooltipRef} className="country-hover-tooltip" role="tooltip">
-          {hoveredMountainRange ? (
+          {hoveredDesert ? (
+            <>
+              <span>{hoveredDesert.name.zh}</span>
+              <small>沙漠 · {hoveredDesert.name.en}</small>
+            </>
+          ) : hoveredMountainRange ? (
             <>
               <span>{hoveredMountainRange.name.zh}</span>
               <small>山脉 · {hoveredMountainRange.name.en}</small>

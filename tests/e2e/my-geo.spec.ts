@@ -104,7 +104,7 @@ async function expectLayerToolbarSingleLine(page: Page) {
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(layout.buttonCount).toBe(6)
+  expect(layout.buttonCount).toBe(7)
   expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
   expect(layout.rowSpread).toBeLessThan(2)
 }
@@ -705,9 +705,62 @@ test('shows mountain ridges, highest peaks, and replaces global selection', asyn
   await expect(page.getByTestId('selected-mountain-peak')).toHaveCount(0)
 })
 
+test('shows desert regions only while the layer is active', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const desertToggle = layerControl.getByRole('button', {
+    name: '沙漠图层：世界主要沙漠与荒漠景观',
+  })
+  await expect(desertToggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.locator('.desert-label')).toHaveCount(0)
+
+  await desertToggle.click()
+  await expect(desertToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect
+    .poll(() => page.locator('.desert-label:not([hidden])').count())
+    .toBeGreaterThan(0)
+  await desertToggle.click()
+  await expect(desertToggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.locator('.desert-label')).toHaveCount(0)
+
+  await selectPlace(page, '撒哈拉')
+  const saharaCard = page.getByRole('complementary', {
+    name: '撒哈拉沙漠知识卡',
+  })
+  await expect(saharaCard).toBeVisible()
+  await expect(saharaCard.getByText(/9,200,000 km²/)).toBeVisible()
+  await expect(saharaCard.getByText(/不是生态分区/)).toBeVisible()
+  await expect(desertToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('[data-desert-id="sahara"]')).toBeVisible()
+
+  await desertToggle.click()
+  await expect(desertToggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(saharaCard).toBeVisible()
+  await expect(page.locator('.desert-label')).toHaveCount(0)
+
+  await selectPlace(page, '戈壁')
+  await expect(desertToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    page.getByRole('complementary', { name: '戈壁沙漠知识卡' }),
+  ).toBeVisible()
+  await expect(saharaCard).toHaveCount(0)
+  await page.getByRole('button', { name: '画质：平衡' }).click()
+  await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
+  await expect(page.locator('[data-desert-id="gobi"]')).toBeVisible()
+})
+
 test('keeps geographic paths stable and suppresses hover while dragging', async ({
   page,
 }) => {
+  test.setTimeout(60_000)
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/')
 
@@ -1007,7 +1060,7 @@ test('keeps the layer panel inside an iPad landscape safe area', async ({
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(toolbarLayout.buttonCount).toBe(6)
+  expect(toolbarLayout.buttonCount).toBe(7)
   expect(toolbarLayout.scrollWidth).toBeLessThanOrEqual(
     toolbarLayout.clientWidth + 1,
   )

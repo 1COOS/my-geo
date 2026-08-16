@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { cities, countries } from '../../data/countries'
+import { deserts } from '../../data/deserts'
 import {
   linearGeoFeatureKindLabels,
   linearGeoFeatures,
@@ -21,6 +22,7 @@ function resultId(result: PlaceSearchResult) {
   if (result.type === 'city') return `city-${result.city.id}`
   if (result.type === 'linearFeature') return `linear-${result.feature.id}`
   if (result.type === 'mountainRange') return `mountain-${result.range.id}`
+  if (result.type === 'desert') return `desert-${result.desert.id}`
   return `waterbody-${result.waterbody.id}`
 }
 
@@ -45,6 +47,8 @@ export function CountrySearch({
         linearGeoFeatures,
         mountainRanges,
         query,
+        8,
+        deserts,
       ),
     [query],
   )
@@ -65,7 +69,9 @@ export function CountrySearch({
             ? result.waterbody.name.zh
             : result.type === 'linearFeature'
               ? result.feature.name.zh
-              : result.range.name.zh,
+              : result.type === 'mountainRange'
+                ? result.range.name.zh
+                : result.desert.name.zh,
     )
     setOpen(false)
     setActiveIndex(0)
@@ -162,7 +168,9 @@ export function CountrySearch({
                       ? result.waterbody.name
                       : result.type === 'linearFeature'
                         ? result.feature.name
-                        : result.range.name
+                        : result.type === 'mountainRange'
+                          ? result.range.name
+                          : result.desert.name
               const badge =
                 result.type === 'country'
                   ? result.country.code
@@ -174,7 +182,9 @@ export function CountrySearch({
                       ? waterbodyKindLabels[result.waterbody.kind]
                       : result.type === 'linearFeature'
                         ? linearGeoFeatureKindLabels[result.feature.kind]
-                        : '山脉'
+                        : result.type === 'mountainRange'
+                          ? '山脉'
+                          : '沙漠'
               return (
                 <li
                   id={`${listboxId}-${id}`}
@@ -206,7 +216,9 @@ export function CountrySearch({
                           ? ` · ${result.country.name.zh}`
                           : result.type === 'mountainRange'
                             ? ` · 最高峰：${result.range.highestPeak.name.zh}`
-                            : ''}
+                            : result.type === 'desert'
+                              ? ` · ${result.desert.region}`
+                              : ''}
                       </small>
                     </span>
                     <code>{badge}</code>

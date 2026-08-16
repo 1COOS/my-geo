@@ -17,6 +17,12 @@ import {
   mountainRangeGeometries,
   mountainRanges,
 } from '../src/data/mountainRanges'
+import { desertGeometries, deserts } from '../src/data/deserts'
+import {
+  desertGeometryDefinitions,
+  NATURAL_EARTH_DESERT_ARCHIVE_SHA256,
+  NATURAL_EARTH_DESERT_ARCHIVE_VERSION,
+} from './desert-geometry-content'
 import {
   mountainGeometryDefinitions,
   NATURAL_EARTH_MOUNTAIN_ARCHIVE_SHA256,
@@ -271,6 +277,67 @@ if (mediumMountainPointCount > 4_200 || lowMountainPointCount > 1_440) {
   )
 }
 
+if (deserts.length !== 20 || desertGeometries.length !== 20) {
+  throw new Error('Expected exactly 20 deserts and geometries')
+}
+const desertDefinitionsById = new Map(
+  desertGeometryDefinitions.map((definition) => [definition.id, definition]),
+)
+const countDesertPoints = (
+  geometry: (typeof desertGeometries)[number]['lowDetailGeometry'],
+) =>
+  geometry.type === 'Polygon'
+    ? geometry.coordinates.flat().length
+    : geometry.coordinates.flat(2).length
+let lowDetailDesertPointCount = 0
+for (const desert of deserts) {
+  const geometry = desertGeometries.find(
+    (candidate) => candidate.id === desert.id,
+  )
+  const definition = desertDefinitionsById.get(desert.id)
+  if (!geometry || !definition) {
+    throw new Error(`Missing desert geometry or mapping for ${desert.id}`)
+  }
+  if (
+    geometry.provenance.archiveVersion !==
+      NATURAL_EARTH_DESERT_ARCHIVE_VERSION ||
+    geometry.provenance.archiveSha256 !== NATURAL_EARTH_DESERT_ARCHIVE_SHA256 ||
+    geometry.provenance.naturalEarthNeId !== definition.naturalEarthNeId
+  ) {
+    throw new Error(`Unexpected desert provenance on ${desert.id}`)
+  }
+  if (
+    !geoContains(
+      { type: 'Feature', properties: {}, geometry: geometry.geometry } as never,
+      [desert.center.longitude, desert.center.latitude],
+    )
+  ) {
+    throw new Error(`Desert center is outside its geometry on ${desert.id}`)
+  }
+  const lowPointCount = countDesertPoints(geometry.lowDetailGeometry)
+  if (lowPointCount > definition.lowDetailMaximumPoints) {
+    throw new Error(
+      `${desert.id} exceeds its low-detail point budget: ${lowPointCount}`,
+    )
+  }
+  lowDetailDesertPointCount += lowPointCount
+  for (const countryCode of desert.countryCodes) {
+    if (!countryCodes.has(countryCode)) {
+      throw new Error(`Unknown country ${countryCode} on ${desert.id}`)
+    }
+  }
+  for (const sourceId of desert.sourceIds) {
+    if (!sourceIds.has(sourceId)) {
+      throw new Error(`Unknown source ${sourceId} on desert ${desert.id}`)
+    }
+  }
+}
+if (lowDetailDesertPointCount > 3_600) {
+  throw new Error(
+    `Desert low-detail point budget exceeded: ${lowDetailDesertPointCount}`,
+  )
+}
+
 for (const featureId of [
   'yangtze-system',
   'mekong-system',
@@ -488,5 +555,5 @@ for (const country of countries) {
 }
 
 console.log(
-  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
+  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
 )

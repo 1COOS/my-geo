@@ -581,6 +581,28 @@ a:focus-visible,
     0 0 0 2px rgb(217 155 82 / 18%);
 }
 
+.desert-label {
+  color: #ffe5ae;
+  background: rgb(55 34 8 / 88%);
+  border-color: rgb(233 173 88 / 46%);
+}
+
+.desert-label > span {
+  width: 0.72rem;
+  height: 0.42rem;
+  background: linear-gradient(150deg, #ffd878 0 48%, #b96f27 50% 100%);
+  border-radius: 70% 30% 18% 18%;
+  box-shadow: 0 0 0.45rem rgb(233 173 88 / 50%);
+  transform: skewX(-10deg);
+}
+
+.desert-label.is-selected {
+  border-color: rgb(255 225 157 / 86%);
+  box-shadow:
+    0 7px 20px rgb(0 0 0 / 38%),
+    0 0 0 2px rgb(233 173 88 / 20%);
+}
+
 @media (max-width: 900px), (max-height: 520px) {
   .selected-linear-feature-route-outer {
     stroke-width: 8px;
@@ -725,6 +747,12 @@ a:focus-visible,
   border-color: rgb(217 155 82 / 30%);
 }
 
+.layer-toggle[aria-pressed='true'].is-desert {
+  color: #ffe5ae;
+  background: rgb(201 138 58 / 14%);
+  border-color: rgb(233 173 88 / 32%);
+}
+
 .layer-toggle-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -776,6 +804,18 @@ a:focus-visible,
 .layer-toggle.is-mountain[aria-pressed='true'] .layer-toggle-dot {
   background: #d99b52;
   box-shadow: 0 0 0.4rem rgb(217 155 82 / 45%);
+}
+
+.layer-toggle.is-desert .layer-toggle-dot {
+  width: 0.62rem;
+  height: 0.38rem;
+  border-radius: 80% 20% 18% 18%;
+  transform: skewX(-12deg);
+}
+
+.layer-toggle.is-desert[aria-pressed='true'] .layer-toggle-dot {
+  background: #e9ad58;
+  box-shadow: 0 0 0.4rem rgb(233 173 88 / 48%);
 }
 
 .country-hover-tooltip {
@@ -968,6 +1008,14 @@ a:focus-visible,
   border-radius: 0;
   box-shadow: 0 0 0.35rem rgb(217 155 82 / 36%);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.place-result-icon.is-desert {
+  height: 0.82rem;
+  background: linear-gradient(150deg, #ffd878 0 48%, #b96f27 50% 100%);
+  border-radius: 80% 20% 18% 18%;
+  box-shadow: 0 0 0.35rem rgb(233 173 88 / 38%);
+  transform: skewX(-10deg);
 }
 
 .country-search-popover button > span {
@@ -1505,6 +1553,51 @@ a:focus-visible,
 
 .mountain-range-heading p {
   color: #e6ad64;
+}
+
+.desert-symbol {
+  position: relative;
+  display: block;
+  width: 4.5rem;
+  height: 3.4rem;
+  overflow: hidden;
+  background: linear-gradient(
+    158deg,
+    #ffe4a0 0 42%,
+    #db9140 43% 70%,
+    #9f5a22 71% 100%
+  );
+  border-radius: 100% 18% 20% 18%;
+  box-shadow:
+    0 0 0 0.55rem rgb(233 173 88 / 9%),
+    0 0 1.8rem rgb(233 173 88 / 30%);
+  transform: skewX(-9deg);
+}
+
+.desert-symbol::after {
+  position: absolute;
+  right: -0.4rem;
+  bottom: 0.35rem;
+  width: 3.4rem;
+  height: 1.25rem;
+  content: '';
+  background: rgb(255 224 154 / 32%);
+  border-radius: 100% 0 0;
+}
+
+.desert-heading p {
+  color: #e9ad58;
+}
+
+.desert-tag-list span {
+  color: #ffe0a1;
+  background: rgb(201 138 58 / 10%);
+  border-color: rgb(233 173 88 / 20%);
+}
+
+.desert-fact-list li > span {
+  color: #ffdda0;
+  background: rgb(201 138 58 / 18%);
 }
 
 .mountain-peak-card {
@@ -2512,6 +2605,20 @@ a:focus-visible,
 
   .landscape-runtime.is-touch-device .country-detail-heading h2 {
     font-size: 1.45rem;
+  }
+
+  .landscape-runtime.is-touch-device .desert-heading {
+    grid-template-columns: 3.55rem minmax(0, 1fr);
+    gap: 0.7rem;
+  }
+
+  .landscape-runtime.is-touch-device .desert-heading h2 {
+    font-size: 1.45rem;
+  }
+
+  .landscape-runtime.is-touch-device .desert-symbol {
+    width: 3.45rem;
+    height: 2.7rem;
   }
 }
 

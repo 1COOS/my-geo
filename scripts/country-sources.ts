@@ -93,6 +93,25 @@ export const countrySources: CountrySource[] = [
       'Public domain range envelopes; My Geo derives reviewed educational ridge lines',
   },
   {
+    id: 'natural-earth-deserts',
+    name: 'Natural Earth geography region polygons',
+    publisher: 'Natural Earth contributors',
+    version:
+      'Natural Earth 5.0.0 1:10m; SHA-256 cb7b9db200284ed1551f20eacc7f3333e9b5f311c19f7cb2670694529f688682',
+    accessedAt: '2026-08-16',
+    url: 'https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-physical-labels/',
+    license:
+      'Public domain desert-region polygons; selected and simplified by My Geo',
+  },
+  {
+    id: 'britannica-deserts',
+    name: 'Desert landform reference collection',
+    publisher: 'Encyclopaedia Britannica',
+    accessedAt: '2026-08-16',
+    url: 'https://www.britannica.com/science/desert',
+    license: referenceLicense,
+  },
+  {
     id: 'britannica-mountains',
     name: 'Mountain and mountain-range reference collection',
     publisher: 'Encyclopaedia Britannica',

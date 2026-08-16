@@ -78,6 +78,23 @@ describe('CountrySearch', () => {
     })
   })
 
+  it('shows deserts with their geographic region', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
+
+    render(<CountrySearch onSelect={onSelect} />)
+
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.type(search, '撒哈拉')
+    expect(screen.getByText(/北非/)).toBeInTheDocument()
+    expect(screen.getByText('沙漠')).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    expect(onSelect.mock.calls[0]?.[0]).toMatchObject({
+      type: 'desert',
+      desert: { id: 'sahara' },
+    })
+  })
+
   it('requests the parent popover to close after selection or Escape', async () => {
     const user = userEvent.setup()
     const onRequestClose = vi.fn()

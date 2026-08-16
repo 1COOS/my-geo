@@ -87,6 +87,11 @@ describe('ExplorePage', () => {
         name: '山脉图层：世界著名山脉与最高峰',
       }),
     ).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.getByRole('button', {
+        name: '沙漠图层：世界主要沙漠与荒漠景观',
+      }),
+    ).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByText('海洋：大洋、海与海湾')).toBeInTheDocument()
     expect(screen.getByText('水域：海峡与海沟')).toBeInTheDocument()
   })
@@ -388,6 +393,46 @@ describe('ExplorePage', () => {
       selectedMountainRangeId: 'himalayas',
       selectedLinearFeatureId: null,
       selectedCountryCode: null,
+    })
+  })
+
+  it('activates the desert layer on search and hides it without closing the card', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        showDesertLayer: boolean
+        selectedDesertId: string | null
+        selectedMountainRangeId: string | null
+        selectedCountryCode: string | null
+      }
+
+    const toggle = screen.getByRole('button', {
+      name: '沙漠图层：世界主要沙漠与荒漠景观',
+    })
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.type(search, '撒哈拉{Enter}')
+    expect(await screen.findByLabelText('撒哈拉沙漠知识卡')).toBeInTheDocument()
+    expect(screen.getByText(/9,200,000 km²/)).toBeInTheDocument()
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(getProps()).toMatchObject({
+      showDesertLayer: true,
+      selectedDesertId: 'sahara',
+      selectedMountainRangeId: null,
+      selectedCountryCode: null,
+    })
+
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByLabelText('撒哈拉沙漠知识卡')).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      showDesertLayer: false,
+      selectedDesertId: 'sahara',
     })
   })
 
