@@ -705,6 +705,74 @@ test('shows mountain ridges, highest peaks, and replaces global selection', asyn
   await expect(page.getByTestId('selected-mountain-peak')).toHaveCount(0)
 })
 
+test('keeps geographic paths stable and suppresses hover while dragging', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { scene, fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  await page.getByRole('button', { name: '自动旋转：开' }).click()
+  await expect(page.getByRole('button', { name: '自动旋转：关' })).toBeVisible()
+
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const riverToggle = layerControl.getByRole('button', {
+    name: '河流图层：世界重要河流与人工运河',
+  })
+  const mountainToggle = layerControl.getByRole('button', {
+    name: '山脉图层：世界著名山脉与最高峰',
+  })
+  await riverToggle.click()
+  await mountainToggle.click()
+
+  const riverLabel = page
+    .locator('.linear-feature-label.is-river:visible')
+    .first()
+  await expect(riverLabel).toBeVisible()
+  await riverLabel.hover()
+  await expect(page.getByRole('tooltip')).toBeVisible()
+
+  const canvasBox = await scene.locator('canvas').boundingBox()
+  expect(canvasBox).not.toBeNull()
+  await page.mouse.move(
+    canvasBox!.x + canvasBox!.width * 0.82,
+    canvasBox!.y + canvasBox!.height * 0.74,
+  )
+  await expect(page.getByRole('tooltip')).toHaveCount(0)
+  await page.mouse.down()
+  await page.mouse.move(
+    canvasBox!.x + canvasBox!.width * 0.76,
+    canvasBox!.y + canvasBox!.height * 0.7,
+    { steps: 2 },
+  )
+  await expect(scene).toHaveAttribute('data-controls-interacting', 'true')
+  await expect(page.getByRole('tooltip')).toHaveCount(0)
+  await page.mouse.move(
+    canvasBox!.x + canvasBox!.width * 0.46,
+    canvasBox!.y + canvasBox!.height * 0.52,
+    { steps: 12 },
+  )
+  await expect(page.getByRole('tooltip')).toHaveCount(0)
+  await page.mouse.up()
+
+  await expect(riverToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(mountainToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect
+    .poll(() => page.locator('.linear-feature-label:not([hidden])').count())
+    .toBeGreaterThan(0)
+  await expect
+    .poll(() => page.locator('.mountain-range-label:not([hidden])').count())
+    .toBeGreaterThan(0)
+
+  const restoredRiverLabel = page
+    .locator('.linear-feature-label.is-river:visible')
+    .first()
+  await restoredRiverLabel.dispatchEvent('pointerover')
+  await expect(page.getByRole('tooltip')).toBeVisible()
+})
+
 for (const viewport of [
   { name: 'phone landscape', width: 844, height: 390, touch: true },
   { name: 'iPad landscape', width: 1194, height: 834, touch: true },

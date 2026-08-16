@@ -2,7 +2,14 @@ import { OrbitControls, Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import R3fGlobe, { type GlobeMethods } from 'r3f-globe'
-import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
 import {
   Color,
   MeshStandardMaterial,
@@ -67,6 +74,13 @@ import {
   getSelectedLinearFeatureLabelOffset,
 } from './linearFeatureSceneInteraction'
 import {
+  addGeographicPathAltitude,
+  getGeographicPathAppearance,
+  getGeographicPathPointAltitude,
+  getGeographicPathPointLatitude,
+  getGeographicPathPointLongitude,
+} from './geographicPathStyle'
+import {
   getMountainGeometryForScene,
   getMountainRangeIdForLayer,
   getVisibleMountainRanges,
@@ -110,6 +124,9 @@ export type GlobeSceneProps = {
 type WorldProps = GlobeSceneProps & {
   labelItems: MapLabel[]
   labelLayerRef: RefObject<HTMLDivElement | null>
+  controlsInteractingRef: { current: boolean }
+  onControlsInteractionStart: () => void
+  onControlsInteractionEnd: () => void
   selectedLinearFeatureOverlayRef: RefObject<SVGSVGElement | null>
   selectedMountainPeakRef: RefObject<HTMLButtonElement | null>
 }
@@ -246,6 +263,9 @@ function World({
   onViewCenterCommit,
   labelItems,
   labelLayerRef,
+  controlsInteractingRef,
+  onControlsInteractionStart,
+  onControlsInteractionEnd,
   selectedLinearFeatureOverlayRef,
   selectedMountainPeakRef,
 }: WorldProps) {
@@ -276,6 +296,31 @@ function World({
       }),
     [],
   )
+  useEffect(() => {
+    const canvas = gl.domElement
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.buttons !== 0) onControlsInteractionStart()
+    }
+    canvas.addEventListener('pointerdown', onControlsInteractionStart, true)
+    window.addEventListener('pointermove', handlePointerMove, true)
+    window.addEventListener('pointerup', onControlsInteractionEnd, true)
+    window.addEventListener('pointercancel', onControlsInteractionEnd, true)
+
+    return () => {
+      canvas.removeEventListener(
+        'pointerdown',
+        onControlsInteractionStart,
+        true,
+      )
+      window.removeEventListener('pointermove', handlePointerMove, true)
+      window.removeEventListener('pointerup', onControlsInteractionEnd, true)
+      window.removeEventListener(
+        'pointercancel',
+        onControlsInteractionEnd,
+        true,
+      )
+    }
+  }, [gl, onControlsInteractionEnd, onControlsInteractionStart])
   const pointMarkers = useMemo<GlobePointMarker[]>(() => {
     return labelItems
       .map((item) =>
@@ -318,18 +363,33 @@ function World({
         : null,
     [quality, selectedWaterbodyGeometry],
   )
-  const selectedTrenchPath =
-    selectedWaterbodyGeometry?.kind === 'trench'
-      ? {
-          waterbodyId: selectedWaterbodyGeometry.id,
-          points:
-            quality === 'low'
-              ? selectedWaterbodyGeometry.lowDetailPoints
-              : selectedWaterbodyGeometry.points,
-        }
-      : null
+  const selectedTrenchPath = useMemo(() => {
+    if (selectedWaterbodyGeometry?.kind !== 'trench') return null
+    const pathState = {
+      waterbodyId: selectedWaterbodyGeometry.id,
+      kind: 'trench' as const,
+      selected: true,
+    }
+    const appearance = getGeographicPathAppearance(pathState, quality)
+    const points =
+      quality === 'low'
+        ? selectedWaterbodyGeometry.lowDetailPoints
+        : selectedWaterbodyGeometry.points
+    return {
+      ...pathState,
+      ...appearance,
+      points: addGeographicPathAltitude(points, appearance.altitude),
+    }
+  }, [quality, selectedWaterbodyGeometry])
   const selectedLinearFeature = getLinearGeoFeature(selectedLinearFeatureId)
   const selectedMountainRange = getMountainRange(selectedMountainRangeId)
+  const selectedPathKind =
+    selectedLinearFeature?.kind ??
+    (selectedMountainRange ? ('mountain' as const) : undefined)
+  const selectedPathAltitude = getGeographicPathAppearance(
+    { kind: selectedPathKind, selected: true },
+    quality,
+  ).altitude
   const selectedLinearFeatureGeometry = useMemo(() => {
     if (selectedLinearFeature) {
       const geometry = getLinearGeoFeatureGeometry(selectedLinearFeature.id)
@@ -345,57 +405,104 @@ function World({
     }
     return null
   }, [quality, selectedLinearFeature, selectedMountainRange])
-  const visibleLinearFeatures = getVisibleLinearFeatures(linearGeoFeatures, {
-    showRiverAndCanalLayer,
-    selectedLinearFeatureId,
-    hoveredLinearFeatureId,
-  })
-  const linearPaths = visibleLinearFeatures.flatMap((feature) => {
-    const geometry = getLinearGeoFeatureGeometry(feature.id)
-    if (!geometry) return []
-    const lines = getLinearFeatureGeometryForScene(
-      geometry,
+  const visibleLinearFeatures = useMemo(
+    () =>
+      getVisibleLinearFeatures(linearGeoFeatures, {
+        showRiverAndCanalLayer,
+        selectedLinearFeatureId,
+        hoveredLinearFeatureId,
+      }),
+    [hoveredLinearFeatureId, selectedLinearFeatureId, showRiverAndCanalLayer],
+  )
+  const linearPaths = useMemo(
+    () =>
+      visibleLinearFeatures.flatMap((feature) => {
+        const geometry = getLinearGeoFeatureGeometry(feature.id)
+        if (!geometry) return []
+        const lines = getLinearFeatureGeometryForScene(
+          geometry,
+          quality,
+          feature.id === selectedLinearFeatureId,
+        ).coordinates
+        return lines.map((points, segmentIndex) => {
+          const pathState = {
+            kind: feature.kind,
+            selected: feature.id === selectedLinearFeatureId,
+            hovered: feature.id === hoveredLinearFeatureId,
+          }
+          const appearance = getGeographicPathAppearance(pathState, quality)
+          return {
+            linearFeatureId: feature.id,
+            ...pathState,
+            ...appearance,
+            segmentIndex,
+            points: addGeographicPathAltitude(
+              points.map(([longitude, latitude]) => [latitude, longitude]),
+              appearance.altitude,
+            ),
+          }
+        })
+      }),
+    [
+      hoveredLinearFeatureId,
       quality,
-      feature.id === selectedLinearFeatureId,
-    ).coordinates
-    return lines.map((points, segmentIndex) => ({
-      linearFeatureId: feature.id,
-      kind: feature.kind,
-      segmentIndex,
-      selected: feature.id === selectedLinearFeatureId,
-      hovered: feature.id === hoveredLinearFeatureId,
-      points: points.map(([longitude, latitude]) => [latitude, longitude]),
-    }))
-  })
-  const visibleMountains = getVisibleMountainRanges(mountainRanges, {
-    showMountainLayer,
-    selectedMountainRangeId,
-    hoveredMountainRangeId,
-  })
-  const mountainPaths = visibleMountains.flatMap((range) => {
-    const geometry = getMountainRangeGeometry(range.id)
-    if (!geometry) return []
-    const lines = getMountainGeometryForScene(
-      geometry,
+      selectedLinearFeatureId,
+      visibleLinearFeatures,
+    ],
+  )
+  const visibleMountains = useMemo(
+    () =>
+      getVisibleMountainRanges(mountainRanges, {
+        showMountainLayer,
+        selectedMountainRangeId,
+        hoveredMountainRangeId,
+      }),
+    [hoveredMountainRangeId, selectedMountainRangeId, showMountainLayer],
+  )
+  const mountainPaths = useMemo(
+    () =>
+      visibleMountains.flatMap((range) => {
+        const geometry = getMountainRangeGeometry(range.id)
+        if (!geometry) return []
+        const lines = getMountainGeometryForScene(
+          geometry,
+          quality,
+          range.id === selectedMountainRangeId,
+        ).coordinates
+        return lines.map((points, segmentIndex) => {
+          const pathState = {
+            kind: 'mountain' as const,
+            selected: range.id === selectedMountainRangeId,
+            hovered: range.id === hoveredMountainRangeId,
+          }
+          const appearance = getGeographicPathAppearance(pathState, quality)
+          return {
+            mountainRangeId: range.id,
+            ...pathState,
+            ...appearance,
+            segmentIndex,
+            points: addGeographicPathAltitude(
+              points.map(([longitude, latitude]) => [latitude, longitude]),
+              appearance.altitude,
+            ),
+          }
+        })
+      }),
+    [
+      hoveredMountainRangeId,
       quality,
-      range.id === selectedMountainRangeId,
-    ).coordinates
-    return lines.map((points, segmentIndex) => ({
-      mountainRangeId: range.id,
-      kind: 'mountain' as const,
-      segmentIndex,
-      selected: range.id === selectedMountainRangeId,
-      hovered: range.id === hoveredMountainRangeId,
-      points: points.map(([longitude, latitude]) => [latitude, longitude]),
-    }))
-  })
-  const pathData = [
-    ...(selectedTrenchPath
-      ? [{ ...selectedTrenchPath, kind: 'trench' as const }]
-      : []),
-    ...linearPaths,
-    ...mountainPaths,
-  ]
+      selectedMountainRangeId,
+      visibleMountains,
+    ],
+  )
+  const pathData = useMemo(
+    () => [
+      ...(selectedTrenchPath ? [selectedTrenchPath] : []),
+      ...linearPaths,
+      ...mountainPaths,
+    ],
+    [linearPaths, mountainPaths, selectedTrenchPath],
+  )
   const polygonsData = useMemo(
     () =>
       selectedSurfaceFeature
@@ -412,7 +519,11 @@ function World({
     ([longitude, latitude]: readonly [number, number]) => {
       const globe = globeRef.current
       if (!globe) return null
-      const coordinate = globe.getCoords(latitude, longitude, 0.055)
+      const coordinate = globe.getCoords(
+        latitude,
+        longitude,
+        selectedPathAltitude,
+      )
       const worldPosition = new Vector3(
         coordinate.x,
         coordinate.y,
@@ -427,7 +538,7 @@ function World({
         visible,
       }
     },
-    [camera, size.height, size.width],
+    [camera, selectedPathAltitude, size.height, size.width],
   )
 
   const projectSelectedMountainPeak = useCallback(() => {
@@ -1056,51 +1167,14 @@ function World({
         pointsTransitionDuration={reducedMotion ? 0 : 220}
         pathsData={pathData}
         pathPoints="points"
-        pathPointLat={0}
-        pathPointLng={1}
-        pathPointAlt={(value: object) => {
-          const path = value as { kind?: string; selected?: boolean }
-          if (path.kind === 'mountain' && path.selected) return 0.066
-          if (path.selected) return 0.055
-          if (path.kind === 'mountain') return 0.05
-          if (path.kind === 'river') return 0.043
-          return 0.035
-        }}
-        pathColor={(value: object) => {
-          const path = value as {
-            kind?: string
-            selected?: boolean
-            hovered?: boolean
-          }
-          if (path.kind === 'canal' && path.selected) return '#ffd66b'
-          if (path.selected) return '#ffffff'
-          if (path.kind === 'mountain')
-            return path.hovered ? '#ffe8ae' : '#d99b52'
-          if (path.kind === 'canal') return path.hovered ? '#ffe9a5' : '#f7bf4f'
-          if (path.kind === 'river') return path.hovered ? '#d7fcff' : '#49e8f6'
-          return '#c493ff'
-        }}
-        pathStroke={(value: object) => {
-          const path = value as {
-            kind?: string
-            selected?: boolean
-            hovered?: boolean
-          }
-          if (path.selected) return quality === 'balanced' ? 0.34 : 0.24
-          if (path.hovered) return quality === 'balanced' ? 0.24 : 0.18
-          if (path.kind === 'mountain')
-            return quality === 'balanced' ? 0.2 : 0.14
-          if (path.kind === 'canal') return quality === 'balanced' ? 0.12 : 0.08
-          if (path.kind === 'river') return quality === 'balanced' ? 0.2 : 0.14
-          return quality === 'balanced' ? 0.14 : 0.09
-        }}
-        pathDashLength={(value: object) =>
-          (value as { kind?: string }).kind === 'canal' ? 0.1 : 1
-        }
-        pathDashGap={(value: object) =>
-          (value as { kind?: string }).kind === 'canal' ? 0.06 : 0
-        }
-        pathTransitionDuration={reducedMotion ? 0 : 220}
+        pathPointLat={getGeographicPathPointLatitude}
+        pathPointLng={getGeographicPathPointLongitude}
+        pathPointAlt={getGeographicPathPointAltitude}
+        pathColor="color"
+        pathStroke="stroke"
+        pathDashLength="dashLength"
+        pathDashGap="dashGap"
+        pathTransitionDuration={0}
         onGlobeReady={() => {
           globeReadyRef.current = true
           syncPointOfView()
@@ -1110,6 +1184,7 @@ function World({
           applyCameraTargetRequest()
         }}
         onHover={(layer, value) => {
+          if (controlsInteractingRef.current) return
           const waterbodyId = getWaterbodyIdForLayer(layer, value)
           onHoverWaterbody(waterbodyId)
           const linearFeatureId = getLinearFeatureIdForLayer(layer, value)
@@ -1165,12 +1240,16 @@ function World({
         zoomSpeed={0.72}
         autoRotate={autoRotate}
         autoRotateSpeed={0.42}
+        onStart={onControlsInteractionStart}
         onChange={() => {
           syncPointOfView()
           labelLayoutPendingRef.current = true
           scheduleViewChange()
         }}
-        onEnd={commitView}
+        onEnd={() => {
+          onControlsInteractionEnd()
+          commitView()
+        }}
       />
 
       {quality === 'balanced' ? (
@@ -1188,8 +1267,17 @@ function World({
 }
 
 export function GlobeScene(props: GlobeSceneProps) {
+  const {
+    onHoverCity,
+    onHoverCountry,
+    onHoverLinearFeature,
+    onHoverMountainRange,
+    onHoverWaterbody,
+  } = props
   const tooltipRef = useRef<HTMLDivElement>(null)
   const labelLayerRef = useRef<HTMLDivElement>(null)
+  const controlsInteractingRef = useRef(false)
+  const [controlsInteracting, setControlsInteracting] = useState(false)
   const selectedLinearFeatureOverlayRef = useRef<SVGSVGElement>(null)
   const selectedMountainPeakRef = useRef<HTMLButtonElement>(null)
   const hoveredCountry = getCountry(props.hoveredCountryCode)
@@ -1201,6 +1289,30 @@ export function GlobeScene(props: GlobeSceneProps) {
     props.selectedLinearFeatureId,
   )
   const selectedMountainRange = getMountainRange(props.selectedMountainRangeId)
+  const clearHoveredEntities = useCallback(() => {
+    onHoverCountry(null)
+    onHoverCity(null)
+    onHoverWaterbody(null)
+    onHoverLinearFeature(null)
+    onHoverMountainRange(null)
+  }, [
+    onHoverCity,
+    onHoverCountry,
+    onHoverLinearFeature,
+    onHoverMountainRange,
+    onHoverWaterbody,
+  ])
+  const beginControlsInteraction = useCallback(() => {
+    if (controlsInteractingRef.current) return
+    controlsInteractingRef.current = true
+    setControlsInteracting(true)
+    clearHoveredEntities()
+  }, [clearHoveredEntities])
+  const endControlsInteraction = useCallback(() => {
+    if (!controlsInteractingRef.current) return
+    controlsInteractingRef.current = false
+    setControlsInteracting(false)
+  }, [])
   const selectedLinearFeatureStemCount = selectedLinearFeature
     ? (getLinearGeoFeatureGeometry(selectedLinearFeature.id)?.geometry
         .coordinates.length ?? 0)
@@ -1299,6 +1411,7 @@ export function GlobeScene(props: GlobeSceneProps) {
     <div
       className="globe-canvas"
       data-testid="globe-scene"
+      data-controls-interacting={controlsInteracting ? 'true' : 'false'}
       role="application"
       aria-label="交互式 3D 地球。拖动旋转，滚轮缩放，方向键移动视角。"
       tabIndex={0}
@@ -1333,6 +1446,9 @@ export function GlobeScene(props: GlobeSceneProps) {
           {...props}
           labelItems={labelItems}
           labelLayerRef={labelLayerRef}
+          controlsInteractingRef={controlsInteractingRef}
+          onControlsInteractionStart={beginControlsInteraction}
+          onControlsInteractionEnd={endControlsInteraction}
           selectedLinearFeatureOverlayRef={selectedLinearFeatureOverlayRef}
           selectedMountainPeakRef={selectedMountainPeakRef}
         />
@@ -1429,7 +1545,9 @@ export function GlobeScene(props: GlobeSceneProps) {
             data-map-label-id={city.id}
             data-city-id={city.id}
             aria-label={`定位到${city.name.zh}${city.isCapital ? '首都' : '城市'}`}
-            onPointerEnter={() => props.onHoverCity(city.id)}
+            onPointerEnter={() => {
+              if (!controlsInteractingRef.current) props.onHoverCity(city.id)
+            }}
             onPointerLeave={() => props.onHoverCity(null)}
             onClick={() => props.onSelectCity(city.id)}
           >
@@ -1446,7 +1564,10 @@ export function GlobeScene(props: GlobeSceneProps) {
             data-map-label-id={waterbody.id}
             data-waterbody-id={waterbody.id}
             aria-label={`定位到${waterbody.name.zh}${waterbodyKindLabels[waterbody.kind]}`}
-            onPointerEnter={() => props.onHoverWaterbody(waterbody.id)}
+            onPointerEnter={() => {
+              if (!controlsInteractingRef.current)
+                props.onHoverWaterbody(waterbody.id)
+            }}
             onPointerLeave={() => props.onHoverWaterbody(null)}
             onClick={() => props.onSelectWaterbody(waterbody.id)}
           >
@@ -1467,7 +1588,10 @@ export function GlobeScene(props: GlobeSceneProps) {
             data-map-label-id={feature.id}
             data-linear-feature-id={feature.id}
             aria-label={`定位到${feature.name.zh}${linearGeoFeatureKindLabels[feature.kind]}`}
-            onPointerEnter={() => props.onHoverLinearFeature(feature.id)}
+            onPointerEnter={() => {
+              if (!controlsInteractingRef.current)
+                props.onHoverLinearFeature(feature.id)
+            }}
             onPointerLeave={() => props.onHoverLinearFeature(null)}
             onClick={() => props.onSelectLinearFeature(feature.id)}
           >
@@ -1488,7 +1612,10 @@ export function GlobeScene(props: GlobeSceneProps) {
             data-map-label-id={range.id}
             data-mountain-range-id={range.id}
             aria-label={`定位到${range.name.zh}`}
-            onPointerEnter={() => props.onHoverMountainRange(range.id)}
+            onPointerEnter={() => {
+              if (!controlsInteractingRef.current)
+                props.onHoverMountainRange(range.id)
+            }}
             onPointerLeave={() => props.onHoverMountainRange(null)}
             onClick={() => props.onSelectMountainRange(range.id)}
           >
@@ -1497,11 +1624,12 @@ export function GlobeScene(props: GlobeSceneProps) {
           </button>
         ))}
       </div>
-      {hoveredMountainRange ||
-      hoveredLinearFeature ||
-      hoveredWaterbody ||
-      hoveredCity ||
-      hoveredCountry ? (
+      {!controlsInteracting &&
+      (hoveredMountainRange ||
+        hoveredLinearFeature ||
+        hoveredWaterbody ||
+        hoveredCity ||
+        hoveredCountry) ? (
         <div ref={tooltipRef} className="country-hover-tooltip" role="tooltip">
           {hoveredMountainRange ? (
             <>
