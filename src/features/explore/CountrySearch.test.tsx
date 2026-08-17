@@ -68,7 +68,10 @@ describe('CountrySearch', () => {
     render(<CountrySearch onSelect={onSelect} />)
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
-    expect(search).toHaveAttribute('placeholder', '搜索国家、城市与地理地点')
+    expect(search).toHaveAttribute(
+      'placeholder',
+      '搜索国家、城市、古迹与地理地点',
+    )
     await user.type(search, 'Everest')
     expect(screen.getByText(/最高峰：珠穆朗玛峰/)).toBeInTheDocument()
     await user.keyboard('{Enter}')
@@ -92,6 +95,23 @@ describe('CountrySearch', () => {
     expect(onSelect.mock.calls[0]?.[0]).toMatchObject({
       type: 'desert',
       desert: { id: 'sahara' },
+    })
+  })
+
+  it('shows landmarks with their category and location', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
+
+    render(<CountrySearch onSelect={onSelect} />)
+
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.type(search, '长城')
+    expect(screen.getByText(/防御工程 · 中国北方/)).toBeInTheDocument()
+    expect(screen.getByText('古迹')).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    expect(onSelect.mock.calls[0]?.[0]).toMatchObject({
+      type: 'landmark',
+      landmark: { id: 'great-wall' },
     })
   })
 

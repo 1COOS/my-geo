@@ -603,6 +603,28 @@ a:focus-visible,
     0 0 0 2px rgb(233 173 88 / 20%);
 }
 
+.landmark-label {
+  color: #fff0bf;
+  background: rgb(103 68 18 / 88%);
+  border-color: rgb(255 203 99 / 46%);
+}
+
+.landmark-label > span {
+  width: 0.58rem;
+  height: 0.58rem;
+  background: #ffc85c;
+  border-radius: 0.08rem 0.08rem 50% 50%;
+  box-shadow: 0 0 0 0.18rem rgb(255 200 92 / 15%);
+  transform: rotate(45deg);
+}
+
+.landmark-label.is-selected {
+  border-color: rgb(255 226 157 / 86%);
+  box-shadow:
+    0 7px 20px rgb(0 0 0 / 38%),
+    0 0 0 2px rgb(255 200 92 / 22%);
+}
+
 @media (max-width: 900px), (max-height: 520px) {
   .selected-linear-feature-route-outer {
     stroke-width: 8px;
@@ -753,6 +775,12 @@ a:focus-visible,
   border-color: rgb(233 173 88 / 32%);
 }
 
+.layer-toggle[aria-pressed='true'].is-landmark {
+  color: #fff1bd;
+  background: rgb(180 117 26 / 14%);
+  border-color: rgb(255 200 92 / 34%);
+}
+
 .layer-toggle-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -816,6 +844,18 @@ a:focus-visible,
 .layer-toggle.is-desert[aria-pressed='true'] .layer-toggle-dot {
   background: #e9ad58;
   box-shadow: 0 0 0.4rem rgb(233 173 88 / 48%);
+}
+
+.layer-toggle.is-landmark .layer-toggle-dot {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 0.08rem 0.08rem 50% 50%;
+  transform: rotate(45deg);
+}
+
+.layer-toggle.is-landmark[aria-pressed='true'] .layer-toggle-dot {
+  background: #ffc85c;
+  box-shadow: 0 0 0.42rem rgb(255 200 92 / 52%);
 }
 
 .country-hover-tooltip {
@@ -1016,6 +1056,15 @@ a:focus-visible,
   border-radius: 80% 20% 18% 18%;
   box-shadow: 0 0 0.35rem rgb(233 173 88 / 38%);
   transform: skewX(-10deg);
+}
+
+.place-result-icon.is-landmark {
+  width: 1.05rem;
+  height: 1.05rem;
+  background: #ffc85c;
+  border-radius: 0.12rem 0.12rem 50% 50%;
+  box-shadow: 0 0 0.35rem rgb(255 200 92 / 42%);
+  transform: rotate(45deg);
 }
 
 .country-search-popover button > span {
@@ -1606,6 +1655,49 @@ a:focus-visible,
 .desert-fact-list li > span {
   color: #ffdda0;
   background: rgb(201 138 58 / 18%);
+}
+
+.landmark-symbol {
+  position: relative;
+  display: block;
+  width: 3.2rem;
+  height: 3.2rem;
+  background: linear-gradient(145deg, #ffe4a0, #c78922);
+  border-radius: 0.45rem 0.45rem 58% 58%;
+  box-shadow:
+    0 0 0 0.5rem rgb(255 200 92 / 8%),
+    0 0 1.6rem rgb(255 200 92 / 28%);
+  transform: rotate(45deg) scale(0.72);
+}
+
+.landmark-symbol::after {
+  position: absolute;
+  inset: 0.75rem;
+  content: '';
+  background: rgb(71 43 6 / 55%);
+  border-radius: 50%;
+}
+
+.landmark-heading p {
+  color: #ffc85c;
+}
+
+.landmark-tag-list span {
+  color: #ffe8af;
+  background: rgb(180 117 26 / 10%);
+  border-color: rgb(255 200 92 / 20%);
+}
+
+.landmark-fact-list li > span {
+  color: #5a3600;
+  background: #ffc85c;
+}
+
+.city-detail-facts dd small {
+  display: block;
+  margin-top: 0.08rem;
+  color: #829fb1;
+  font-size: 0.56rem;
 }
 
 .mountain-peak-card {

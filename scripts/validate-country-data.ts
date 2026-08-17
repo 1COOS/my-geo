@@ -18,6 +18,7 @@ import {
   mountainRanges,
 } from '../src/data/mountainRanges'
 import { desertGeometries, deserts } from '../src/data/deserts'
+import { landmarks } from '../src/data/landmarks'
 import {
   desertGeometryDefinitions,
   NATURAL_EARTH_DESERT_ARCHIVE_SHA256,
@@ -484,6 +485,19 @@ for (const city of cities) {
   }
 }
 
+for (const landmark of landmarks) {
+  if (!countryCodes.has(landmark.countryCode)) {
+    throw new Error(
+      `Unknown country ${landmark.countryCode} on landmark ${landmark.id}`,
+    )
+  }
+  for (const sourceId of landmark.sourceIds) {
+    if (!sourceIds.has(sourceId)) {
+      throw new Error(`Unknown source ${sourceId} on landmark ${landmark.id}`)
+    }
+  }
+}
+
 for (const country of countries) {
   await access(path.join(projectRoot, `public${country.flagAsset}`))
   if (country.hasGeometry !== boundaryCodes.has(country.code)) {
@@ -560,5 +574,5 @@ for (const country of countries) {
 }
 
 console.log(
-  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
+  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${landmarks.length} landmarks, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
 )

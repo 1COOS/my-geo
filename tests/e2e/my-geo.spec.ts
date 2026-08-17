@@ -104,7 +104,7 @@ async function expectLayerToolbarSingleLine(page: Page) {
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(layout.buttonCount).toBe(7)
+  expect(layout.buttonCount).toBe(8)
   expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
   expect(layout.rowSpread).toBeLessThan(2)
 }
@@ -761,6 +761,68 @@ test('shows desert regions only while the layer is active', async ({
   await expect(page.locator('[data-desert-id="gobi"]')).toBeVisible()
 })
 
+test('shows landmark points, searches the Great Wall, and keeps its card after hiding the layer', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const landmarkToggle = layerControl.getByRole('button', {
+    name: '名胜古迹图层：世界著名文化与历史遗产',
+  })
+  await expect(landmarkToggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.locator('.landmark-label')).toHaveCount(0)
+
+  await landmarkToggle.focus()
+  await expect(landmarkToggle).toBeFocused()
+  await landmarkToggle.press('Enter')
+  await expect(landmarkToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.landmark-label')).toHaveCount(30)
+  await expect
+    .poll(() => page.locator('.landmark-label:not([hidden])').count())
+    .toBeGreaterThan(0)
+
+  const search = await openCountrySearch(page)
+  await search.fill('长城')
+  await search.press('Enter')
+
+  const card = page.getByRole('complementary', { name: '长城古迹知识卡' })
+  await expect(card).toBeVisible()
+  await expect(card.getByText('公元前7世纪至明代')).toBeVisible()
+  await expect(card.getByText(/资料来源/)).toHaveCount(0)
+  await expect(page.locator('[data-landmark-id="great-wall"]')).toBeVisible()
+
+  await page.getByRole('button', { name: '画质：平衡' }).click()
+  await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
+  expect(
+    await page.locator('.landmark-label:not([hidden])').count(),
+  ).toBeLessThanOrEqual(16)
+  await expect(page.locator('[data-landmark-id="great-wall"]')).toBeVisible()
+
+  await landmarkToggle.click()
+  await expect(landmarkToggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.locator('.landmark-label')).toHaveCount(0)
+  await expect(card).toBeVisible()
+
+  await card.getByRole('button', { name: '关闭长城古迹知识卡' }).click()
+  await expect(card).toHaveCount(0)
+  await expect(landmarkToggle).toHaveAttribute('aria-pressed', 'false')
+
+  const reopenedSearch = await openCountrySearch(page)
+  await reopenedSearch.fill('长城')
+  await reopenedSearch.press('Enter')
+  await expect(card).toBeVisible()
+  await expect(landmarkToggle).toHaveAttribute('aria-pressed', 'true')
+
+  await card.getByRole('button', { name: '探索中国' }).click()
+  await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
+  await expect(card).toHaveCount(0)
+})
+
 test('keeps geographic paths stable and suppresses hover while dragging', async ({
   page,
 }) => {
@@ -831,6 +893,7 @@ test('keeps geographic paths stable and suppresses hover while dragging', async 
 })
 
 for (const viewport of [
+  { name: 'desktop', width: 1280, height: 720, touch: false },
   { name: 'phone landscape', width: 844, height: 390, touch: true },
   { name: 'iPad landscape', width: 1194, height: 834, touch: true },
 ]) {
@@ -1064,7 +1127,7 @@ test('keeps the layer panel inside an iPad landscape safe area', async ({
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(toolbarLayout.buttonCount).toBe(7)
+  expect(toolbarLayout.buttonCount).toBe(8)
   expect(toolbarLayout.scrollWidth).toBeLessThanOrEqual(
     toolbarLayout.clientWidth + 1,
   )

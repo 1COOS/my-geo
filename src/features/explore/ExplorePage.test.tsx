@@ -92,6 +92,11 @@ describe('ExplorePage', () => {
         name: '沙漠图层：世界主要沙漠与荒漠景观',
       }),
     ).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.getByRole('button', {
+        name: '名胜古迹图层：世界著名文化与历史遗产',
+      }),
+    ).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByText('海洋：大洋、海与海湾')).toBeInTheDocument()
     expect(screen.getByText('水域：海峡与海沟')).toBeInTheDocument()
   })
@@ -433,6 +438,47 @@ describe('ExplorePage', () => {
     expect(getProps()).toMatchObject({
       showDesertLayer: false,
       selectedDesertId: 'sahara',
+    })
+  })
+
+  it('activates the landmark layer on search and hides it without closing the card', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        showLandmarkLayer: boolean
+        selectedLandmarkId: string | null
+        selectedDesertId: string | null
+        selectedCountryCode: string | null
+      }
+
+    const toggle = screen.getByRole('button', {
+      name: '名胜古迹图层：世界著名文化与历史遗产',
+    })
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.type(search, '长城{Enter}')
+
+    expect(await screen.findByLabelText('长城古迹知识卡')).toBeInTheDocument()
+    expect(screen.getByText('公元前7世纪至明代')).toBeInTheDocument()
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(getProps()).toMatchObject({
+      showLandmarkLayer: true,
+      selectedLandmarkId: 'great-wall',
+      selectedDesertId: null,
+      selectedCountryCode: null,
+    })
+
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByLabelText('长城古迹知识卡')).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      showLandmarkLayer: false,
+      selectedLandmarkId: 'great-wall',
     })
   })
 

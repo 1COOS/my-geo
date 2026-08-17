@@ -2,6 +2,7 @@ import type { CountryBoundary } from '../data/countrySchema'
 import type { City } from '../data/citySchema'
 import type { LinearGeoFeature } from '../data/linearGeoFeatureSchema'
 import type { Waterbody } from '../data/waterbodySchema'
+import type { LandmarkMarker } from './landmarkSceneInteraction'
 
 export const OVERVIEW_CAMERA_DISTANCE = 425
 export const CITY_CAMERA_DISTANCE = 190
@@ -59,7 +60,7 @@ export type WaterbodyMarker = {
   name: string
 }
 
-export type GlobePointMarker = CityMarker | WaterbodyMarker
+export type GlobePointMarker = CityMarker | WaterbodyMarker | LandmarkMarker
 
 export type CityLayerVisibility = {
   showCapitals: boolean

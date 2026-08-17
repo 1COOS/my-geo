@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { cities, countries } from '../../data/countries'
 import { deserts } from '../../data/deserts'
 import { linearGeoFeatures } from '../../data/linearGeoFeatures'
+import { landmarks } from '../../data/landmarks'
 import { mountainRanges } from '../../data/mountainRanges'
 import { waterbodies } from '../../data/waterbodies'
 import { searchCountries, searchPlaces } from './countrySearchUtils'
@@ -181,5 +182,46 @@ describe('searchCountries', () => {
         )[0],
       ).toMatchObject({ type: 'desert', desert: { id } })
     }
+  })
+
+  it('finds landmarks by Chinese, English, alias, and location names', () => {
+    for (const [query, id] of [
+      ['长城', 'great-wall'],
+      ['Taj Mahal', 'taj-mahal'],
+      ['白鹭城', 'himeji-castle'],
+      ['Wiltshire', 'stonehenge'],
+    ] as const) {
+      expect(
+        searchPlaces(
+          countries,
+          cities,
+          waterbodies,
+          linearGeoFeatures,
+          mountainRanges,
+          query,
+          8,
+          deserts,
+          landmarks,
+        )[0],
+      ).toMatchObject({ type: 'landmark', landmark: { id } })
+    }
+
+    const countryResults = searchPlaces(
+      countries,
+      cities,
+      waterbodies,
+      linearGeoFeatures,
+      mountainRanges,
+      '柬埔寨',
+      8,
+      deserts,
+      landmarks,
+    )
+    expect(
+      countryResults.some(
+        (result) =>
+          result.type === 'landmark' && result.landmark.id === 'angkor-wat',
+      ),
+    ).toBe(true)
   })
 })

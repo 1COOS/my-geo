@@ -27,6 +27,8 @@ import {
 } from '../data/countries'
 import { deserts, getDesert, getDesertGeometry } from '../data/deserts'
 import type { Desert } from '../data/desertSchema'
+import { getLandmark, landmarks } from '../data/landmarks'
+import type { Landmark } from '../data/landmarkSchema'
 import {
   getWaterbody,
   getWaterbodyGeometry,
@@ -88,6 +90,13 @@ import {
   getVisibleMountainRanges,
 } from './mountainSceneInteraction'
 import {
+  getLandmarkIdForLayer,
+  getLandmarkLabelPriority,
+  getLandmarkMarker,
+  getVisibleLandmarks,
+  type LandmarkMarker,
+} from './landmarkSceneInteraction'
+import {
   getDesertGeometryForScene,
   getDesertIdForLayer,
   getDesertPolygonState,
@@ -106,6 +115,7 @@ export type GlobeSceneProps = {
   showRiverAndCanalLayer: boolean
   showMountainLayer: boolean
   showDesertLayer: boolean
+  showLandmarkLayer: boolean
   selectedCountryCode: string | null
   selectedCityId: string | null
   hoveredCountryCode: string | null
@@ -118,6 +128,8 @@ export type GlobeSceneProps = {
   hoveredMountainRangeId: string | null
   selectedDesertId: string | null
   hoveredDesertId: string | null
+  selectedLandmarkId: string | null
+  hoveredLandmarkId: string | null
   onSelectCountry: (countryCode: string) => void
   onSelectCity: (cityId: string) => void
   onHoverCountry: (countryCode: string | null) => void
@@ -130,6 +142,8 @@ export type GlobeSceneProps = {
   onHoverMountainRange: (rangeId: string | null) => void
   onSelectDesert: (desertId: string) => void
   onHoverDesert: (desertId: string | null) => void
+  onSelectLandmark: (landmarkId: string) => void
+  onHoverLandmark: (landmarkId: string | null) => void
   onViewCenterChange: (view: GlobeView) => void
   onViewCenterCommit: (view: GlobeView) => void
 }
@@ -180,6 +194,13 @@ type MapLabel =
       longitude: number
       desert: Desert
     }
+  | {
+      id: string
+      type: 'landmark'
+      latitude: number
+      longitude: number
+      landmark: Landmark
+    }
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
   0,
@@ -210,12 +231,14 @@ type LabelGroup =
   | 'canal'
   | 'mountain'
   | 'desert'
+  | 'landmark'
 
 function getLabelGroup(item: MapLabel): LabelGroup {
   if (item.type === 'city') return item.city.isCapital ? 'capital' : 'city'
   if (item.type === 'waterbody') return item.waterbody.layer
   if (item.type === 'linearFeature') return item.feature.kind
-  return item.type === 'mountainRange' ? 'mountain' : 'desert'
+  if (item.type === 'mountainRange') return 'mountain'
+  return item.type
 }
 
 function overlaps(left: LabelRect, right: LabelRect) {
@@ -239,13 +262,22 @@ function getLabelPriority(
   hoveredMountainRangeId: string | null,
   selectedDesertId: string | null,
   hoveredDesertId: string | null,
+  selectedLandmarkId: string | null,
+  hoveredLandmarkId: string | null,
 ) {
+  if (item.type === 'landmark') {
+    return getLandmarkLabelPriority(item.landmark, {
+      selectedLandmarkId,
+      hoveredLandmarkId,
+    })
+  }
   if (
     item.id === selectedCityId ||
     item.id === selectedWaterbodyId ||
     item.id === selectedLinearFeatureId ||
     item.id === selectedMountainRangeId ||
-    item.id === selectedDesertId
+    item.id === selectedDesertId ||
+    item.id === selectedLandmarkId
   )
     return 0
   if (
@@ -253,7 +285,8 @@ function getLabelPriority(
     item.id === hoveredWaterbodyId ||
     item.id === hoveredLinearFeatureId ||
     item.id === hoveredMountainRangeId ||
-    item.id === hoveredDesertId
+    item.id === hoveredDesertId ||
+    item.id === hoveredLandmarkId
   )
     return 1
   if (item.type === 'waterbody') return 2 + item.waterbody.labelPriority / 100
@@ -281,6 +314,8 @@ function World({
   hoveredMountainRangeId,
   selectedDesertId,
   hoveredDesertId,
+  selectedLandmarkId,
+  hoveredLandmarkId,
   showRiverAndCanalLayer,
   showMountainLayer,
   showDesertLayer,
@@ -296,6 +331,8 @@ function World({
   onHoverMountainRange,
   onSelectDesert,
   onHoverDesert,
+  onSelectLandmark,
+  onHoverLandmark,
   onViewCenterChange,
   onViewCenterCommit,
   labelItems,
@@ -381,7 +418,15 @@ function World({
                 lng: item.waterbody.center.longitude,
                 name: item.waterbody.name.zh,
               } satisfies WaterbodyMarker)
-            : null,
+            : item.type === 'landmark'
+              ? ({
+                  markerType: 'landmark',
+                  landmarkId: item.landmark.id,
+                  lat: item.landmark.position.latitude,
+                  lng: item.landmark.position.longitude,
+                  name: item.landmark.name.zh,
+                } satisfies LandmarkMarker)
+              : null,
       )
       .filter((marker): marker is GlobePointMarker => marker !== null)
   }, [labelItems])
@@ -775,6 +820,8 @@ function World({
           hoveredMountainRangeId,
           selectedDesertId,
           hoveredDesertId,
+          selectedLandmarkId,
+          hoveredLandmarkId,
         ) -
         getLabelPriority(
           right,
@@ -788,6 +835,8 @@ function World({
           hoveredMountainRangeId,
           selectedDesertId,
           hoveredDesertId,
+          selectedLandmarkId,
+          hoveredLandmarkId,
         ),
     )
     const groupCount: Record<LabelGroup, number> = {
@@ -799,6 +848,7 @@ function World({
       canal: 0,
       mountain: 0,
       desert: 0,
+      landmark: 0,
     }
     const activeGroups = new Set(labelItems.map(getLabelGroup)).size
     const ordinaryGroupLimit = Math.ceil(budget / Math.max(activeGroups, 1))
@@ -818,7 +868,9 @@ function World({
         item.id === selectedMountainRangeId ||
         item.id === hoveredMountainRangeId ||
         item.id === selectedDesertId ||
-        item.id === hoveredDesertId
+        item.id === hoveredDesertId ||
+        item.id === selectedLandmarkId ||
+        item.id === hoveredLandmarkId
       const labelGroup = getLabelGroup(item)
       if (!forced && groupCount[labelGroup] >= ordinaryGroupLimit) continue
 
@@ -846,7 +898,9 @@ function World({
               ? item.feature.name.zh
               : item.type === 'mountainRange'
                 ? item.range.name.zh
-                : item.desert.name.zh
+                : item.type === 'desert'
+                  ? item.desert.name.zh
+                  : item.landmark.name.zh
       const width = Math.max(56, labelName.length * 14 + 28)
       const height = 28
       if (
@@ -902,6 +956,7 @@ function World({
     hoveredLinearFeatureId,
     hoveredMountainRangeId,
     hoveredDesertId,
+    hoveredLandmarkId,
     labelItems,
     quality,
     projectSelectedMountainPeak,
@@ -910,6 +965,7 @@ function World({
     selectedLinearFeatureId,
     selectedMountainRangeId,
     selectedDesertId,
+    selectedLandmarkId,
     size.height,
     size.width,
   ])
@@ -1238,6 +1294,10 @@ function World({
             if (waterbodyMarker.waterbodyId === hoveredWaterbodyId) return 0.54
             return waterbodyMarker.layer === 'ocean' ? 0.4 : 0.34
           }
+          const landmarkMarker = getLandmarkMarker(value)
+          if (landmarkMarker?.landmarkId === selectedLandmarkId) return 0.6
+          if (landmarkMarker?.landmarkId === hoveredLandmarkId) return 0.52
+          if (landmarkMarker) return 0.36
           const marker = getCityMarker(value)
           if (marker?.cityId === selectedCityId) return 0.58
           if (marker?.cityId === hoveredCityId) return 0.5
@@ -1253,6 +1313,11 @@ function World({
               return '#d9bcff'
             return waterbodyMarker.layer === 'ocean' ? '#31e4ff' : '#aa7cff'
           }
+          const landmarkMarker = getLandmarkMarker(value)
+          if (landmarkMarker?.landmarkId === selectedLandmarkId)
+            return '#ffffff'
+          if (landmarkMarker?.landmarkId === hoveredLandmarkId) return '#fff1bd'
+          if (landmarkMarker) return '#ffc85c'
           const marker = getCityMarker(value)
           if (marker?.cityId === selectedCityId) return '#ffffff'
           if (marker?.cityId === hoveredCityId) return '#b8f5ff'
@@ -1290,6 +1355,8 @@ function World({
           onHoverMountainRange(mountainRangeId)
           const desertId = getDesertIdForLayer(layer, value)
           onHoverDesert(desertId)
+          const landmarkId = getLandmarkIdForLayer(layer, value)
+          onHoverLandmark(landmarkId)
           const cityId = getCityIdForLayer(layer, value)
           onHoverCity(cityId)
           onHoverCountry(
@@ -1297,7 +1364,8 @@ function World({
               waterbodyId ||
               linearFeatureId ||
               mountainRangeId ||
-              desertId
+              desertId ||
+              landmarkId
               ? null
               : getCountryCodeForLayer(layer, value),
           )
@@ -1321,6 +1389,11 @@ function World({
           const desertId = getDesertIdForLayer(layer, value)
           if (desertId) {
             onSelectDesert(desertId)
+            return
+          }
+          const landmarkId = getLandmarkIdForLayer(layer, value)
+          if (landmarkId) {
+            onSelectLandmark(landmarkId)
             return
           }
           const cityId = getCityIdForLayer(layer, value)
@@ -1382,6 +1455,7 @@ export function GlobeScene(props: GlobeSceneProps) {
     onHoverMountainRange,
     onHoverWaterbody,
     onHoverDesert,
+    onHoverLandmark,
   } = props
   const tooltipRef = useRef<HTMLDivElement>(null)
   const labelLayerRef = useRef<HTMLDivElement>(null)
@@ -1395,6 +1469,7 @@ export function GlobeScene(props: GlobeSceneProps) {
   const hoveredLinearFeature = getLinearGeoFeature(props.hoveredLinearFeatureId)
   const hoveredMountainRange = getMountainRange(props.hoveredMountainRangeId)
   const hoveredDesert = getDesert(props.hoveredDesertId)
+  const hoveredLandmark = getLandmark(props.hoveredLandmarkId)
   const selectedLinearFeature = getLinearGeoFeature(
     props.selectedLinearFeatureId,
   )
@@ -1406,6 +1481,7 @@ export function GlobeScene(props: GlobeSceneProps) {
     onHoverLinearFeature(null)
     onHoverMountainRange(null)
     onHoverDesert(null)
+    onHoverLandmark(null)
   }, [
     onHoverCity,
     onHoverCountry,
@@ -1413,6 +1489,7 @@ export function GlobeScene(props: GlobeSceneProps) {
     onHoverMountainRange,
     onHoverWaterbody,
     onHoverDesert,
+    onHoverLandmark,
   ])
   const beginControlsInteraction = useCallback(() => {
     if (controlsInteractingRef.current) return
@@ -1492,6 +1569,13 @@ export function GlobeScene(props: GlobeSceneProps) {
       }),
     [props.showDesertLayer],
   )
+  const labelLandmarks = useMemo(
+    () =>
+      getVisibleLandmarks(landmarks, {
+        showLandmarkLayer: props.showLandmarkLayer,
+      }),
+    [props.showLandmarkLayer],
+  )
   const labelItems = useMemo<MapLabel[]>(
     () => [
       ...labelCities.map((city) => ({
@@ -1529,11 +1613,19 @@ export function GlobeScene(props: GlobeSceneProps) {
         longitude: desert.center.longitude,
         desert,
       })),
+      ...labelLandmarks.map((landmark) => ({
+        id: landmark.id,
+        type: 'landmark' as const,
+        latitude: landmark.position.latitude,
+        longitude: landmark.position.longitude,
+        landmark,
+      })),
     ],
     [
       labelCities,
       labelDeserts,
       labelLinearFeatures,
+      labelLandmarks,
       labelMountainRanges,
       labelWaterbodies,
     ],
@@ -1558,6 +1650,7 @@ export function GlobeScene(props: GlobeSceneProps) {
         props.onHoverLinearFeature(null)
         props.onHoverMountainRange(null)
         props.onHoverDesert(null)
+        props.onHoverLandmark(null)
       }}
     >
       <Canvas
@@ -1667,7 +1760,7 @@ export function GlobeScene(props: GlobeSceneProps) {
       <div
         ref={labelLayerRef}
         className="globe-city-labels"
-        aria-label="城市、水域、山脉与沙漠地理标签"
+        aria-label="城市、水域、山脉、沙漠与古迹地理标签"
       >
         {labelCities.map((city) => (
           <button
@@ -1780,16 +1873,46 @@ export function GlobeScene(props: GlobeSceneProps) {
             {desert.name.zh}
           </button>
         ))}
+        {labelLandmarks.map((landmark) => (
+          <button
+            type="button"
+            key={landmark.id}
+            hidden
+            className={
+              landmark.id === props.selectedLandmarkId
+                ? 'city-label landmark-label is-selected'
+                : 'city-label landmark-label'
+            }
+            data-map-label-id={landmark.id}
+            data-landmark-id={landmark.id}
+            aria-label={`定位到古迹${landmark.name.zh}`}
+            onPointerEnter={() => {
+              if (!controlsInteractingRef.current)
+                props.onHoverLandmark(landmark.id)
+            }}
+            onPointerLeave={() => props.onHoverLandmark(null)}
+            onClick={() => props.onSelectLandmark(landmark.id)}
+          >
+            <span aria-hidden="true" />
+            {landmark.name.zh}
+          </button>
+        ))}
       </div>
       {!controlsInteracting &&
-      (hoveredDesert ||
+      (hoveredLandmark ||
+        hoveredDesert ||
         hoveredMountainRange ||
         hoveredLinearFeature ||
         hoveredWaterbody ||
         hoveredCity ||
         hoveredCountry) ? (
         <div ref={tooltipRef} className="country-hover-tooltip" role="tooltip">
-          {hoveredDesert ? (
+          {hoveredLandmark ? (
+            <>
+              <span>{hoveredLandmark.name.zh}</span>
+              <small>古迹 · {hoveredLandmark.name.en}</small>
+            </>
+          ) : hoveredDesert ? (
             <>
               <span>{hoveredDesert.name.zh}</span>
               <small>沙漠 · {hoveredDesert.name.en}</small>

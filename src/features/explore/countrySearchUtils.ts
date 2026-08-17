@@ -2,6 +2,7 @@ import type { City } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
 import type { Desert } from '../../data/desertSchema'
 import type { LinearGeoFeature } from '../../data/linearGeoFeatureSchema'
+import type { Landmark } from '../../data/landmarkSchema'
 import type { MountainRange } from '../../data/mountainRangeSchema'
 import type { Waterbody } from '../../data/waterbodySchema'
 
@@ -12,6 +13,7 @@ export type PlaceSearchResult =
   | { type: 'linearFeature'; feature: LinearGeoFeature }
   | { type: 'mountainRange'; range: MountainRange }
   | { type: 'desert'; desert: Desert }
+  | { type: 'landmark'; landmark: Landmark }
 
 export function normalizeCountrySearch(value: string) {
   return value
@@ -38,6 +40,7 @@ export function searchPlaces(
   query: string,
   limit = 8,
   deserts: Desert[] = [],
+  landmarks: Landmark[] = [],
 ): PlaceSearchResult[] {
   const normalizedQuery = normalizeCountrySearch(query)
   if (!normalizedQuery) {
@@ -168,6 +171,30 @@ export function searchPlaces(
         result: { type: 'desert', desert },
         score: score + 0.16,
         name: desert.name.zh,
+      })
+    }
+  }
+
+  for (const landmark of landmarks) {
+    const country = countriesByCode.get(landmark.countryCode)
+    const score = matchScore(
+      [
+        landmark.name.zh,
+        landmark.name.en,
+        ...landmark.aliases,
+        landmark.location.zh,
+        landmark.location.en,
+        country?.code ?? '',
+        country?.name.zh ?? '',
+        country?.name.en ?? '',
+      ],
+      normalizedQuery,
+    )
+    if (score < 10) {
+      scored.push({
+        result: { type: 'landmark', landmark },
+        score: score + 0.17,
+        name: landmark.name.zh,
       })
     }
   }

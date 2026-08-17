@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { cities, countries } from '../../data/countries'
 import { deserts } from '../../data/deserts'
+import { landmarks, landmarkCategoryLabels } from '../../data/landmarks'
 import {
   linearGeoFeatureKindLabels,
   linearGeoFeatures,
@@ -23,6 +24,7 @@ function resultId(result: PlaceSearchResult) {
   if (result.type === 'linearFeature') return `linear-${result.feature.id}`
   if (result.type === 'mountainRange') return `mountain-${result.range.id}`
   if (result.type === 'desert') return `desert-${result.desert.id}`
+  if (result.type === 'landmark') return `landmark-${result.landmark.id}`
   return `waterbody-${result.waterbody.id}`
 }
 
@@ -49,6 +51,7 @@ export function CountrySearch({
         query,
         8,
         deserts,
+        landmarks,
       ),
     [query],
   )
@@ -71,7 +74,9 @@ export function CountrySearch({
               ? result.feature.name.zh
               : result.type === 'mountainRange'
                 ? result.range.name.zh
-                : result.desert.name.zh,
+                : result.type === 'desert'
+                  ? result.desert.name.zh
+                  : result.landmark.name.zh,
     )
     setOpen(false)
     setActiveIndex(0)
@@ -100,7 +105,7 @@ export function CountrySearch({
           role="combobox"
           type="search"
           value={query}
-          placeholder="搜索国家、城市与地理地点"
+          placeholder="搜索国家、城市、古迹与地理地点"
           autoComplete="off"
           aria-expanded={open}
           aria-controls={listboxId}
@@ -170,7 +175,9 @@ export function CountrySearch({
                         ? result.feature.name
                         : result.type === 'mountainRange'
                           ? result.range.name
-                          : result.desert.name
+                          : result.type === 'desert'
+                            ? result.desert.name
+                            : result.landmark.name
               const badge =
                 result.type === 'country'
                   ? result.country.code
@@ -184,7 +191,9 @@ export function CountrySearch({
                         ? linearGeoFeatureKindLabels[result.feature.kind]
                         : result.type === 'mountainRange'
                           ? '山脉'
-                          : '沙漠'
+                          : result.type === 'desert'
+                            ? '沙漠'
+                            : '古迹'
               return (
                 <li
                   id={`${listboxId}-${id}`}
@@ -218,7 +227,9 @@ export function CountrySearch({
                             ? ` · 最高峰：${result.range.highestPeak.name.zh}`
                             : result.type === 'desert'
                               ? ` · ${result.desert.region}`
-                              : ''}
+                              : result.type === 'landmark'
+                                ? ` · ${landmarkCategoryLabels[result.landmark.category]} · ${result.landmark.location.zh}`
+                                : ''}
                       </small>
                     </span>
                     <code>{badge}</code>
