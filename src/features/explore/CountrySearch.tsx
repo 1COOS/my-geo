@@ -2,6 +2,10 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { cities, countries } from '../../data/countries'
 import { deserts } from '../../data/deserts'
+import {
+  geographyReferenceLines,
+  geographyTopics,
+} from '../../data/geographyLearning'
 import { landmarks, landmarkCategoryLabels } from '../../data/landmarks'
 import {
   linearGeoFeatureKindLabels,
@@ -25,6 +29,8 @@ function resultId(result: PlaceSearchResult) {
   if (result.type === 'mountainRange') return `mountain-${result.range.id}`
   if (result.type === 'desert') return `desert-${result.desert.id}`
   if (result.type === 'landmark') return `landmark-${result.landmark.id}`
+  if (result.type === 'geographyTopic')
+    return `geography-${result.referenceLine?.id ?? result.topic.id}`
   return `waterbody-${result.waterbody.id}`
 }
 
@@ -52,6 +58,8 @@ export function CountrySearch({
         8,
         deserts,
         landmarks,
+        geographyTopics,
+        geographyReferenceLines,
       ),
     [query],
   )
@@ -76,7 +84,9 @@ export function CountrySearch({
                 ? result.range.name.zh
                 : result.type === 'desert'
                   ? result.desert.name.zh
-                  : result.landmark.name.zh,
+                  : result.type === 'landmark'
+                    ? result.landmark.name.zh
+                    : (result.referenceLine?.name.zh ?? result.topic.name.zh),
     )
     setOpen(false)
     setActiveIndex(0)
@@ -105,7 +115,7 @@ export function CountrySearch({
           role="combobox"
           type="search"
           value={query}
-          placeholder="搜索国家、城市、古迹与地理地点"
+          placeholder="搜索国家、地点或地理知识"
           autoComplete="off"
           aria-expanded={open}
           aria-controls={listboxId}
@@ -177,7 +187,10 @@ export function CountrySearch({
                           ? result.range.name
                           : result.type === 'desert'
                             ? result.desert.name
-                            : result.landmark.name
+                            : result.type === 'landmark'
+                              ? result.landmark.name
+                              : (result.referenceLine?.name ??
+                                result.topic.name)
               const badge =
                 result.type === 'country'
                   ? result.country.code
@@ -193,7 +206,11 @@ export function CountrySearch({
                           ? '山脉'
                           : result.type === 'desert'
                             ? '沙漠'
-                            : '古迹'
+                            : result.type === 'landmark'
+                              ? '古迹'
+                              : result.referenceLine
+                                ? '参考线'
+                                : '地理知识'
               return (
                 <li
                   id={`${listboxId}-${id}`}
@@ -231,7 +248,9 @@ export function CountrySearch({
                                 ? ` · ${result.desert.region}`
                                 : result.type === 'landmark'
                                   ? ` · ${landmarkCategoryLabels[result.landmark.category]} · ${result.landmark.location.zh}`
-                                  : ''}
+                                  : result.type === 'geographyTopic'
+                                    ? ` · ${result.topic.name.zh}`
+                                    : ''}
                       </small>
                     </span>
                     <code>{badge}</code>

@@ -8,20 +8,26 @@ import { WorldMiniMap, type WorldMiniMapHandle } from './WorldMiniMap'
 function renderMiniMap(overrides?: {
   expanded?: boolean
   selectedCountryCode?: string | null
+  showGeographyLearningLayer?: boolean
 }) {
   const onNavigate = vi.fn<(navigation: WorldMiniMapNavigation) => void>()
   const onExpandedChange = vi.fn()
+  const onSelectGeographyTopic = vi.fn()
   const ref = createRef<WorldMiniMapHandle>()
   render(
     <WorldMiniMap
       ref={ref}
       expanded={overrides?.expanded ?? true}
       selectedCountryCode={overrides?.selectedCountryCode ?? null}
+      showGeographyLearningLayer={
+        overrides?.showGeographyLearningLayer ?? false
+      }
+      onSelectGeographyTopic={onSelectGeographyTopic}
       onExpandedChange={onExpandedChange}
       onNavigate={onNavigate}
     />,
   )
-  return { onNavigate, onExpandedChange, ref }
+  return { onNavigate, onExpandedChange, onSelectGeographyTopic, ref }
 }
 
 describe('WorldMiniMap', () => {
@@ -94,5 +100,70 @@ describe('WorldMiniMap', () => {
 
     fireEvent.keyDown(map, { key: 'Escape' })
     expect(onExpandedChange).toHaveBeenCalledWith(false)
+  })
+
+  it('shows synchronized reference lines and updates the live interpretation', () => {
+    const { ref, onSelectGeographyTopic } = renderMiniMap({
+      showGeographyLearningLayer: true,
+    })
+
+    expect(
+      document.querySelector('[data-reference-line-id="equator"]'),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('2D定位图当前中心判读')).toHaveTextContent(
+      '北半球',
+    )
+
+    ref.current!.setViewCenter({ latitude: -66.5, longitude: 160 })
+    expect(screen.getByLabelText('2D定位图当前中心判读')).toHaveTextContent(
+      '东西半球分界线上',
+    )
+    expect(screen.getByLabelText('2D定位图当前中心判读')).toHaveTextContent(
+      '温带与寒带分界线上',
+    )
+
+    fireEvent.click(
+      document.querySelector('[data-reference-line-label="equator"]')!,
+    )
+    expect(onSelectGeographyTopic).toHaveBeenCalledWith(
+      'hemispheres',
+      'equator',
+    )
+  })
+
+  it('keeps the latest view center when the learning layer is enabled later', () => {
+    const ref = createRef<WorldMiniMapHandle>()
+    const onNavigate = vi.fn<(navigation: WorldMiniMapNavigation) => void>()
+    const onExpandedChange = vi.fn()
+    const onSelectGeographyTopic = vi.fn()
+    const { rerender } = render(
+      <WorldMiniMap
+        ref={ref}
+        expanded
+        selectedCountryCode={null}
+        showGeographyLearningLayer={false}
+        onSelectGeographyTopic={onSelectGeographyTopic}
+        onExpandedChange={onExpandedChange}
+        onNavigate={onNavigate}
+      />,
+    )
+
+    ref.current!.setViewCenter({ latitude: -66.5, longitude: 160 })
+    rerender(
+      <WorldMiniMap
+        ref={ref}
+        expanded
+        selectedCountryCode={null}
+        showGeographyLearningLayer
+        onSelectGeographyTopic={onSelectGeographyTopic}
+        onExpandedChange={onExpandedChange}
+        onNavigate={onNavigate}
+      />,
+    )
+
+    expect(screen.getByText('66.5°S · 160.0°E')).toBeInTheDocument()
+    expect(screen.getByLabelText('2D定位图当前中心判读')).toHaveTextContent(
+      '东西半球分界线上',
+    )
   })
 })

@@ -202,6 +202,16 @@ describe('ExplorePage', () => {
       '中国{Enter}',
     )
     expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '关闭国家知识卡' }))
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    await user.clear(screen.getByRole('combobox', { name: '搜索地点' }))
+    await user.type(
+      screen.getByRole('combobox', { name: '搜索地点' }),
+      '赤道{Enter}',
+    )
+    expect(screen.getByLabelText('经纬网知识卡')).toBeInTheDocument()
+    expect(screen.getByText('重要纬线与东西半球界线示意')).toBeInTheDocument()
   })
 
   it('opens a city knowledge card and requests the closer city camera distance', async () => {
@@ -526,6 +536,116 @@ describe('ExplorePage', () => {
     expect(getProps()).toMatchObject({
       showLandmarkLayer: false,
       selectedLandmarkId: 'great-wall',
+    })
+  })
+
+  it('opens the geography learning card, keeps it after hiding the layer, and updates committed interpretation', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        showGeographyLearningLayer: boolean
+        selectedGeographyTopicId: string | null
+        selectedReferenceLineId: string | null
+        onViewCenterChange: (view: {
+          position: { latitude: number; longitude: number }
+          distance: number
+        }) => void
+        onViewCenterCommit: (view: {
+          position: { latitude: number; longitude: number }
+          distance: number
+        }) => void
+      }
+
+    const toggle = screen.getByRole('button', {
+      name: '经纬教学图层：经纬网判读、半球、纬度分区与地球五带',
+    })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    act(() =>
+      getProps().onViewCenterChange({
+        position: { latitude: 23.5, longitude: -20 },
+        distance: 320,
+      }),
+    )
+    await user.click(toggle)
+
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('经纬网知识卡')).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      showGeographyLearningLayer: true,
+      selectedGeographyTopicId: 'grid-reading',
+      selectedReferenceLineId: null,
+    })
+    expect(screen.getByLabelText('当前中心判读')).toHaveTextContent(
+      '热带与温带分界线上',
+    )
+
+    act(() =>
+      getProps().onViewCenterCommit({
+        position: { latitude: -66.5, longitude: 160 },
+        distance: 320,
+      }),
+    )
+    expect(screen.getByLabelText('当前中心判读')).toHaveTextContent(
+      '东西半球分界线上',
+    )
+    expect(screen.getByLabelText('当前中心判读')).toHaveTextContent(
+      '温带与寒带分界线上',
+    )
+
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByLabelText('经纬网知识卡')).toBeInTheDocument()
+  })
+
+  it('searches a reference line, activates its layer, and replaces it with a country card', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        showGeographyLearningLayer: boolean
+        selectedGeographyTopicId: string | null
+        selectedReferenceLineId: string | null
+        cameraTarget: { position: { latitude: number; longitude: number } }
+      }
+
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    await user.type(
+      screen.getByRole('combobox', { name: '搜索地点' }),
+      '北回归线{Enter}',
+    )
+
+    expect(screen.getByLabelText('经纬网知识卡')).toBeInTheDocument()
+    expect(screen.getAllByText('北回归线 23.5°N').length).toBeGreaterThan(0)
+    expect(getProps()).toMatchObject({
+      showGeographyLearningLayer: true,
+      selectedGeographyTopicId: 'earth-zones',
+      selectedReferenceLineId: 'tropic-of-cancer',
+      cameraTarget: {
+        position: { latitude: 23.5, longitude: 105 },
+      },
+    })
+
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    await user.clear(screen.getByRole('combobox', { name: '搜索地点' }))
+    await user.type(
+      screen.getByRole('combobox', { name: '搜索地点' }),
+      '中国{Enter}',
+    )
+    expect(screen.queryByLabelText('经纬网知识卡')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      showGeographyLearningLayer: true,
+      selectedGeographyTopicId: null,
+      selectedReferenceLineId: null,
     })
   })
 

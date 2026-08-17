@@ -27,6 +27,15 @@ import {
 } from '../data/countries'
 import { deserts, getDesert, getDesertGeometry } from '../data/deserts'
 import type { Desert } from '../data/desertSchema'
+import {
+  geographyReferenceLines,
+  getReferenceLine,
+} from '../data/geographyLearning'
+import type {
+  GeographyTopicId,
+  ReferenceLine,
+  ReferenceLineId,
+} from '../data/geographyLearningSchema'
 import { getLandmark, landmarks } from '../data/landmarks'
 import type { Landmark } from '../data/landmarkSchema'
 import {
@@ -105,6 +114,11 @@ import {
   getDesertPolygonState,
   getVisibleDeserts,
 } from './desertSceneInteraction'
+import {
+  geographyCoordinateLabels,
+  getGeographyReferencePaths,
+  getReferenceLineIdForLayer,
+} from './geographyLearningScene'
 
 export type GlobeSceneProps = {
   autoRotate: boolean
@@ -120,6 +134,9 @@ export type GlobeSceneProps = {
   showMountainLayer: boolean
   showDesertLayer: boolean
   showLandmarkLayer: boolean
+  showGeographyLearningLayer: boolean
+  selectedGeographyTopicId: GeographyTopicId | null
+  selectedReferenceLineId: ReferenceLineId | null
   selectedCountryCode: string | null
   selectedCityId: string | null
   hoveredCountryCode: string | null
@@ -148,6 +165,10 @@ export type GlobeSceneProps = {
   onHoverDesert: (desertId: string | null) => void
   onSelectLandmark: (landmarkId: string) => void
   onHoverLandmark: (landmarkId: string | null) => void
+  onSelectGeographyTopic: (
+    topicId: GeographyTopicId,
+    referenceLineId?: ReferenceLineId | null,
+  ) => void
   onViewCenterChange: (view: GlobeView) => void
   onViewCenterCommit: (view: GlobeView) => void
 }
@@ -205,6 +226,20 @@ type MapLabel =
       longitude: number
       landmark: Landmark
     }
+  | {
+      id: string
+      type: 'referenceLine'
+      latitude: number
+      longitude: number
+      line: ReferenceLine
+    }
+  | {
+      id: string
+      type: 'coordinateLabel'
+      latitude: number
+      longitude: number
+      label: string
+    }
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
   0,
@@ -237,12 +272,15 @@ type LabelGroup =
   | 'mountain'
   | 'desert'
   | 'landmark'
+  | 'geography'
 
 function getLabelGroup(item: MapLabel): LabelGroup {
   if (item.type === 'city') return item.city.isCapital ? 'capital' : 'city'
   if (item.type === 'waterbody') return item.waterbody.layer
   if (item.type === 'linearFeature') return item.feature.kind
   if (item.type === 'mountainRange') return 'mountain'
+  if (item.type === 'referenceLine' || item.type === 'coordinateLabel')
+    return 'geography'
   return item.type
 }
 
@@ -273,7 +311,13 @@ function getLabelPriority(
   hoveredDesertId: string | null,
   selectedLandmarkId: string | null,
   hoveredLandmarkId: string | null,
+  selectedReferenceLineId: ReferenceLineId | null,
 ) {
+  if (item.type === 'referenceLine' && item.line.id === selectedReferenceLineId)
+    return 0
+  if (item.type === 'referenceLine')
+    return item.line.category === 'latitude-zone-boundary' ? 4.5 : 1.4
+  if (item.type === 'coordinateLabel') return 6
   if (item.type === 'landmark') {
     return getLandmarkLabelPriority(item.landmark, {
       selectedLandmarkId,
@@ -325,6 +369,8 @@ function World({
   hoveredDesertId,
   selectedLandmarkId,
   hoveredLandmarkId,
+  showGeographyLearningLayer,
+  selectedReferenceLineId,
   showRiverAndCanalLayer,
   showMountainLayer,
   showDesertLayer,
@@ -342,6 +388,7 @@ function World({
   onHoverDesert,
   onSelectLandmark,
   onHoverLandmark,
+  onSelectGeographyTopic,
   onViewCenterChange,
   onViewCenterCommit,
   labelItems,
@@ -628,13 +675,21 @@ function World({
       visibleMountains,
     ],
   )
+  const geographyReferencePaths = useMemo(
+    () =>
+      showGeographyLearningLayer
+        ? getGeographyReferencePaths(quality, selectedReferenceLineId)
+        : [],
+    [quality, selectedReferenceLineId, showGeographyLearningLayer],
+  )
   const pathData = useMemo(
     () => [
       ...(selectedTrenchPath ? [selectedTrenchPath] : []),
       ...linearPaths,
       ...mountainPaths,
+      ...geographyReferencePaths,
     ],
-    [linearPaths, mountainPaths, selectedTrenchPath],
+    [geographyReferencePaths, linearPaths, mountainPaths, selectedTrenchPath],
   )
   const polygonsData = useMemo(
     () => [
@@ -856,6 +911,7 @@ function World({
           hoveredDesertId,
           selectedLandmarkId,
           hoveredLandmarkId,
+          selectedReferenceLineId,
         ) -
         getLabelPriority(
           right,
@@ -871,6 +927,7 @@ function World({
           hoveredDesertId,
           selectedLandmarkId,
           hoveredLandmarkId,
+          selectedReferenceLineId,
         ),
     )
     const groupCount: Record<LabelGroup, number> = {
@@ -884,6 +941,7 @@ function World({
       mountain: 0,
       desert: 0,
       landmark: 0,
+      geography: 0,
     }
     const activeGroups = new Set(labelItems.map(getLabelGroup)).size
     const ordinaryGroupLimit = Math.ceil(budget / Math.max(activeGroups, 1))
@@ -905,9 +963,18 @@ function World({
         item.id === selectedDesertId ||
         item.id === hoveredDesertId ||
         item.id === selectedLandmarkId ||
-        item.id === hoveredLandmarkId
+        item.id === hoveredLandmarkId ||
+        (item.type === 'referenceLine' &&
+          item.line.id === selectedReferenceLineId) ||
+        (item.type === 'referenceLine' &&
+          item.line.category !== 'latitude-zone-boundary')
       const labelGroup = getLabelGroup(item)
-      if (!forced && groupCount[labelGroup] >= ordinaryGroupLimit) continue
+      if (
+        !forced &&
+        labelGroup !== 'geography' &&
+        groupCount[labelGroup] >= ordinaryGroupLimit
+      )
+        continue
 
       const coordinate = globe.getCoords(item.latitude, item.longitude, 0.04)
       const worldPosition = new Vector3(
@@ -935,7 +1002,11 @@ function World({
                 ? item.range.name.zh
                 : item.type === 'desert'
                   ? item.desert.name.zh
-                  : item.landmark.name.zh
+                  : item.type === 'landmark'
+                    ? item.landmark.name.zh
+                    : item.type === 'referenceLine'
+                      ? item.line.shortLabel
+                      : item.label
       const width = Math.max(56, labelName.length * 14 + 28)
       const height = 28
       if (
@@ -1022,6 +1093,7 @@ function World({
     selectedMountainRangeId,
     selectedDesertId,
     selectedLandmarkId,
+    selectedReferenceLineId,
     size.height,
     size.width,
   ])
@@ -1463,6 +1535,7 @@ function World({
           onHoverDesert(desertId)
           const landmarkId = getLandmarkIdForLayer(layer, value)
           onHoverLandmark(landmarkId)
+          const referenceLineId = getReferenceLineIdForLayer(layer, value)
           const cityId = getCityIdForLayer(layer, value)
           onHoverCity(cityId)
           onHoverCountry(
@@ -1471,7 +1544,8 @@ function World({
               linearFeatureId ||
               mountainRangeId ||
               desertId ||
-              landmarkId
+              landmarkId ||
+              referenceLineId
               ? null
               : getCountryCodeForLayer(layer, value),
           )
@@ -1500,6 +1574,12 @@ function World({
           const landmarkId = getLandmarkIdForLayer(layer, value)
           if (landmarkId) {
             onSelectLandmark(landmarkId)
+            return
+          }
+          const referenceLineId = getReferenceLineIdForLayer(layer, value)
+          const referenceLine = getReferenceLine(referenceLineId)
+          if (referenceLine) {
+            onSelectGeographyTopic(referenceLine.topicId, referenceLine.id)
             return
           }
           const cityId = getCityIdForLayer(layer, value)
@@ -1684,6 +1764,24 @@ export function GlobeScene(props: GlobeSceneProps) {
       }),
     [props.showLandmarkLayer],
   )
+  const labelReferenceLines = useMemo(
+    () => (props.showGeographyLearningLayer ? geographyReferenceLines : []),
+    [props.showGeographyLearningLayer],
+  )
+  const labelCoordinateItems = useMemo(
+    () =>
+      props.showGeographyLearningLayer
+        ? props.quality === 'balanced'
+          ? geographyCoordinateLabels
+          : geographyCoordinateLabels.filter(
+              (item) =>
+                item.label === '0°' ||
+                item.label.startsWith('60°') ||
+                item.label.startsWith('120°'),
+            )
+        : [],
+    [props.quality, props.showGeographyLearningLayer],
+  )
   const labelItems = useMemo<MapLabel[]>(
     () => [
       ...labelCities.map((city) => ({
@@ -1728,6 +1826,18 @@ export function GlobeScene(props: GlobeSceneProps) {
         longitude: landmark.position.longitude,
         landmark,
       })),
+      ...labelReferenceLines.map((line) => ({
+        id: `reference-${line.id}`,
+        type: 'referenceLine' as const,
+        latitude: line.anchorPosition.latitude,
+        longitude: line.anchorPosition.longitude,
+        line,
+      })),
+      ...labelCoordinateItems.map((item) => ({
+        ...item,
+        id: `coordinate-${item.id}`,
+        type: 'coordinateLabel' as const,
+      })),
     ],
     [
       labelCities,
@@ -1735,6 +1845,8 @@ export function GlobeScene(props: GlobeSceneProps) {
       labelLinearFeatures,
       labelLandmarks,
       labelMountainRanges,
+      labelCoordinateItems,
+      labelReferenceLines,
       labelWaterbodies,
     ],
   )
@@ -1868,7 +1980,7 @@ export function GlobeScene(props: GlobeSceneProps) {
       <div
         ref={labelLayerRef}
         className="globe-city-labels"
-        aria-label="城市、水域、山脉、沙漠与古迹地理标签"
+        aria-label="城市、水域、山脉、沙漠、古迹与经纬网地理标签"
       >
         {labelCities.map((city) => (
           <button
@@ -2008,6 +2120,36 @@ export function GlobeScene(props: GlobeSceneProps) {
             <span aria-hidden="true" />
             {landmark.name.zh}
           </button>
+        ))}
+        {labelReferenceLines.map((line) => (
+          <button
+            type="button"
+            key={line.id}
+            hidden
+            className={
+              line.id === props.selectedReferenceLineId
+                ? `city-label geography-reference-label is-${line.category} is-selected`
+                : `city-label geography-reference-label is-${line.category}`
+            }
+            data-map-label-id={`reference-${line.id}`}
+            data-reference-line-id={line.id}
+            aria-label={`打开${line.name.zh}知识`}
+            onClick={() => props.onSelectGeographyTopic(line.topicId, line.id)}
+          >
+            <span aria-hidden="true" />
+            {line.shortLabel}
+          </button>
+        ))}
+        {labelCoordinateItems.map((item) => (
+          <span
+            key={item.id}
+            hidden
+            className="city-label geography-coordinate-label"
+            data-map-label-id={`coordinate-${item.id}`}
+            aria-hidden="true"
+          >
+            {item.label}
+          </span>
         ))}
       </div>
       {!controlsInteracting &&

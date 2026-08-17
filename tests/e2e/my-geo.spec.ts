@@ -104,7 +104,7 @@ async function expectLayerToolbarSingleLine(page: Page) {
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(layout.buttonCount).toBe(9)
+  expect(layout.buttonCount).toBe(10)
   expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
   expect(layout.rowSpread).toBeLessThan(2)
 }
@@ -915,6 +915,101 @@ test('shows landmark points, searches the Great Wall, and keeps its card after h
   await expect(card).toHaveCount(0)
 })
 
+test('shows synchronized geography reference lines and opens curriculum knowledge', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const toggle = layerControl.getByRole('button', {
+    name: '经纬教学图层：经纬网判读、半球、纬度分区与地球五带',
+  })
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.locator('[data-reference-line-id]')).toHaveCount(0)
+
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  const card = page.getByRole('complementary', { name: '经纬网知识卡' })
+  await expect(card).toBeVisible()
+  await expect(card.getByRole('heading', { name: '经纬网判读' })).toBeVisible()
+  await expect(card.getByText('当前视角中心')).toBeVisible()
+  await expect(
+    page.locator('.world-mini-map-geography-layer line'),
+  ).toHaveCount(13)
+  await expect(page.locator('.geography-reference-label')).toHaveCount(13)
+  await expect
+    .poll(() =>
+      page.locator('.geography-reference-label:not([hidden])').count(),
+    )
+    .toBeGreaterThan(0)
+
+  await page.locator('[data-reference-line-label="tropic-of-cancer"]').click()
+  await expect(card.getByRole('heading', { name: '北回归线' })).toBeVisible()
+  await expect(card.getByText(/热带与北温带的分界线/)).toBeVisible()
+
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(card).toBeVisible()
+  await expect(page.locator('.world-mini-map-geography-layer')).toHaveCount(0)
+  await expect(page.locator('.geography-reference-label')).toHaveCount(0)
+
+  const search = await openCountrySearch(page)
+  await search.fill('东西半球')
+  await expect(page.getByText('地理知识', { exact: true })).toBeVisible()
+  await search.press('Enter')
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(card.getByRole('heading', { name: '半球划分' })).toBeVisible()
+})
+
+for (const viewport of [
+  { name: 'phone landscape', width: 844, height: 390 },
+  { name: 'iPad landscape', width: 1194, height: 834 },
+]) {
+  test(`keeps geography learning controls usable on ${viewport.name}`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        configurable: true,
+        value: 5,
+      })
+      Object.defineProperty(navigator, 'platform', {
+        configurable: true,
+        value: 'MacIntel',
+      })
+    })
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+
+    const { fallback } = await waitForSceneOrFallback(page)
+    if (await fallback.isVisible()) return
+
+    await expectLayerToolbarSingleLine(page)
+    const toggle = page.getByRole('button', {
+      name: '经纬教学图层：经纬网判读、半球、纬度分区与地球五带',
+    })
+    await expect(toggle).toBeVisible()
+    await toggle.click()
+
+    const card = page.getByRole('complementary', { name: '经纬网知识卡' })
+    await expect(card).toBeVisible()
+    await expect(page.getByLabel('2D定位图当前中心判读')).toBeVisible()
+    const cardBox = await card.boundingBox()
+    expect(cardBox).not.toBeNull()
+    expect(cardBox!.x).toBeGreaterThanOrEqual(0)
+    expect(cardBox!.y).toBeGreaterThanOrEqual(0)
+    expect(cardBox!.x + cardBox!.width).toBeLessThanOrEqual(viewport.width + 1)
+    expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(
+      viewport.height + 1,
+    )
+  })
+}
+
 test('keeps geographic paths stable and suppresses hover while dragging', async ({
   page,
 }) => {
@@ -1219,7 +1314,7 @@ test('keeps the layer panel inside an iPad landscape safe area', async ({
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(toolbarLayout.buttonCount).toBe(9)
+  expect(toolbarLayout.buttonCount).toBe(10)
   expect(toolbarLayout.scrollWidth).toBeLessThanOrEqual(
     toolbarLayout.clientWidth + 1,
   )

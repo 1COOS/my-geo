@@ -13,6 +13,14 @@ import { useTranslation } from 'react-i18next'
 
 import { getCitiesForCountry, getCity, getCountry } from '../../data/countries'
 import { getDesert } from '../../data/deserts'
+import {
+  getGeographyTopic,
+  getReferenceLine,
+} from '../../data/geographyLearning'
+import type {
+  GeographyTopicId,
+  ReferenceLineId,
+} from '../../data/geographyLearningSchema'
 import { getLandmark } from '../../data/landmarks'
 import {
   getLinearGeoFeature,
@@ -39,6 +47,7 @@ import { CountryDetailPanel } from './CountryDetailPanel'
 import { CountrySearch } from './CountrySearch'
 import type { PlaceSearchResult } from './countrySearchUtils'
 import { DesertDetailPanel } from './DesertDetailPanel'
+import { GeographyLearningPanel } from './GeographyLearningPanel'
 import { LinearGeoFeatureDetailPanel } from './LinearGeoFeatureDetailPanel'
 import { LandmarkDetailPanel } from './LandmarkDetailPanel'
 import { MountainRangeDetailPanel } from './MountainRangeDetailPanel'
@@ -107,6 +116,7 @@ type LayerControlProps = {
   showMountainLayer: boolean
   showDesertLayer: boolean
   showLandmarkLayer: boolean
+  showGeographyLearningLayer: boolean
   onToggleCapitals: () => void
   onToggleCities: () => void
   onToggleOceanLayer: () => void
@@ -116,6 +126,7 @@ type LayerControlProps = {
   onToggleMountainLayer: () => void
   onToggleDesertLayer: () => void
   onToggleLandmarkLayer: () => void
+  onToggleGeographyLearningLayer: () => void
 }
 
 function LayerControl({
@@ -128,6 +139,7 @@ function LayerControl({
   showMountainLayer,
   showDesertLayer,
   showLandmarkLayer,
+  showGeographyLearningLayer,
   onToggleCapitals,
   onToggleCities,
   onToggleOceanLayer,
@@ -137,6 +149,7 @@ function LayerControl({
   onToggleMountainLayer,
   onToggleDesertLayer,
   onToggleLandmarkLayer,
+  onToggleGeographyLearningLayer,
 }: LayerControlProps) {
   return (
     <section className="layer-control" aria-label="地球图层控制">
@@ -164,6 +177,17 @@ function LayerControl({
         >
           <span className="layer-toggle-dot" aria-hidden="true" />
           <span>城市</span>
+        </button>
+        <button
+          type="button"
+          className="layer-toggle is-geography"
+          aria-pressed={showGeographyLearningLayer}
+          aria-label="经纬教学图层：经纬网判读、半球、纬度分区与地球五带"
+          title="经纬：重要经纬线、半球与地球五带"
+          onClick={onToggleGeographyLearningLayer}
+        >
+          <span className="layer-toggle-dot" aria-hidden="true" />
+          <span>经纬</span>
         </button>
         <button
           type="button"
@@ -256,6 +280,7 @@ export function ExplorePage() {
   const reducedMotion = useReducedMotion() ?? false
   const searchDialogId = useId()
   const cameraRequestIdRef = useRef(0)
+  const currentViewCenterRef = useRef<GeoPosition>(getCountry('CN')!.center)
   const miniMapRef = useRef<WorldMiniMapHandle>(null)
   const controlDeckRef = useRef<HTMLDivElement>(null)
   const searchButtonRef = useRef<HTMLButtonElement>(null)
@@ -270,6 +295,12 @@ export function ExplorePage() {
   const [showMountainLayer, setShowMountainLayer] = useState(false)
   const [showDesertLayer, setShowDesertLayer] = useState(false)
   const [showLandmarkLayer, setShowLandmarkLayer] = useState(false)
+  const [showGeographyLearningLayer, setShowGeographyLearningLayer] =
+    useState(false)
+  const [selectedGeographyTopicId, setSelectedGeographyTopicId] =
+    useState<GeographyTopicId | null>(null)
+  const [selectedReferenceLineId, setSelectedReferenceLineId] =
+    useState<ReferenceLineId | null>(null)
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null)
   const [hoveredCityId, setHoveredCityId] = useState<string | null>(null)
   const [selectedWaterbodyId, setSelectedWaterbodyId] = useState<string | null>(
@@ -303,6 +334,9 @@ export function ExplorePage() {
     position: getCountry('CN')!.center,
     distance: OVERVIEW_CAMERA_DISTANCE,
   }))
+  const [committedViewCenter, setCommittedViewCenter] = useState<GeoPosition>(
+    () => getCountry('CN')!.center,
+  )
   const webGLAvailable = useMemo(() => supportsWebGL(), [])
   const {
     autoRotate,
@@ -346,7 +380,24 @@ export function ExplorePage() {
   const selectedMountainRange = getMountainRange(selectedMountainRangeId)
   const selectedDesert = getDesert(selectedDesertId)
   const selectedLandmark = getLandmark(selectedLandmarkId)
+  const selectedGeographyTopic = getGeographyTopic(selectedGeographyTopicId)
+  const selectedReferenceLine = getReferenceLine(selectedReferenceLineId)
   const visibleCountryCities = getCitiesForCountry(selectedCountryCode)
+  const clearPlaceSelection = useCallback(() => {
+    setSelectedCityId(null)
+    setHoveredCityId(null)
+    selectCountry(null)
+    setSelectedWaterbodyId(null)
+    setHoveredWaterbodyId(null)
+    setSelectedLinearFeatureId(null)
+    setHoveredLinearFeatureId(null)
+    setSelectedMountainRangeId(null)
+    setHoveredMountainRangeId(null)
+    setSelectedDesertId(null)
+    setHoveredDesertId(null)
+    setSelectedLandmarkId(null)
+    setHoveredLandmarkId(null)
+  }, [selectCountry])
   const toggleCapitalLayer = useCallback(() => {
     const nextVisible = !showCapitals
     setShowCapitals(nextVisible)
@@ -427,6 +478,15 @@ export function ExplorePage() {
     setShowLandmarkLayer(nextVisible)
     if (!nextVisible) setHoveredLandmarkId(null)
   }, [showLandmarkLayer])
+  const toggleGeographyLearningLayer = useCallback(() => {
+    const nextVisible = !showGeographyLearningLayer
+    setShowGeographyLearningLayer(nextVisible)
+    if (!nextVisible) return
+    clearPlaceSelection()
+    setCommittedViewCenter(currentViewCenterRef.current)
+    setSelectedGeographyTopicId('grid-reading')
+    setSelectedReferenceLineId(null)
+  }, [clearPlaceSelection, showGeographyLearningLayer])
   const requestCameraTarget = useCallback(
     (position: GeoPosition, distance = OVERVIEW_CAMERA_DISTANCE) => {
       cameraRequestIdRef.current += 1
@@ -437,6 +497,26 @@ export function ExplorePage() {
       })
     },
     [],
+  )
+  const openGeographyTopic = useCallback(
+    (
+      topicId: GeographyTopicId,
+      referenceLineId: ReferenceLineId | null = null,
+    ) => {
+      clearPlaceSelection()
+      setCommittedViewCenter(currentViewCenterRef.current)
+      setShowGeographyLearningLayer(true)
+      setSelectedGeographyTopicId(topicId)
+      setSelectedReferenceLineId(referenceLineId)
+      const referenceLine = getReferenceLine(referenceLineId)
+      if (referenceLine) {
+        requestCameraTarget(
+          referenceLine.focusPosition,
+          referenceLine.cameraDistance,
+        )
+      }
+    },
+    [clearPlaceSelection, requestCameraTarget],
   )
   const navigateToCountry = useCallback(
     (countryCode: string) => {
@@ -455,6 +535,8 @@ export function ExplorePage() {
       setHoveredDesertId(null)
       setSelectedLandmarkId(null)
       setHoveredLandmarkId(null)
+      setSelectedGeographyTopicId(null)
+      setSelectedReferenceLineId(null)
       selectCountry(countryCode)
       requestCameraTarget(country.center)
     },
@@ -476,6 +558,8 @@ export function ExplorePage() {
       setHoveredDesertId(null)
       setSelectedLandmarkId(null)
       setHoveredLandmarkId(null)
+      setSelectedGeographyTopicId(null)
+      setSelectedReferenceLineId(null)
       setSelectedCityId(city.id)
       requestCameraTarget(
         { latitude: city.latitude, longitude: city.longitude },
@@ -485,20 +569,10 @@ export function ExplorePage() {
     [requestCameraTarget, selectCountry],
   )
   const clearSelection = useCallback(() => {
-    setSelectedCityId(null)
-    setHoveredCityId(null)
-    selectCountry(null)
-    setSelectedWaterbodyId(null)
-    setHoveredWaterbodyId(null)
-    setSelectedLinearFeatureId(null)
-    setHoveredLinearFeatureId(null)
-    setSelectedMountainRangeId(null)
-    setHoveredMountainRangeId(null)
-    setSelectedDesertId(null)
-    setHoveredDesertId(null)
-    setSelectedLandmarkId(null)
-    setHoveredLandmarkId(null)
-  }, [selectCountry])
+    clearPlaceSelection()
+    setSelectedGeographyTopicId(null)
+    setSelectedReferenceLineId(null)
+  }, [clearPlaceSelection])
   const navigateToWaterbody = useCallback(
     (waterbodyId: string) => {
       const waterbody = getWaterbody(waterbodyId)
@@ -516,6 +590,8 @@ export function ExplorePage() {
       setHoveredDesertId(null)
       setSelectedLandmarkId(null)
       setHoveredLandmarkId(null)
+      setSelectedGeographyTopicId(null)
+      setSelectedReferenceLineId(null)
       if (waterbody.layer === 'lake') setShowLakeLayer(true)
       requestCameraTarget(waterbody.center, waterbody.cameraDistance)
     },
@@ -537,6 +613,8 @@ export function ExplorePage() {
       setHoveredDesertId(null)
       setSelectedLandmarkId(null)
       setHoveredLandmarkId(null)
+      setSelectedGeographyTopicId(null)
+      setSelectedReferenceLineId(null)
       setSelectedLinearFeatureId(feature.id)
       const geometry = getLinearGeoFeatureGeometry(feature.id)?.geometry
       const cameraDistance =
@@ -565,6 +643,8 @@ export function ExplorePage() {
       setHoveredDesertId(null)
       setSelectedLandmarkId(null)
       setHoveredLandmarkId(null)
+      setSelectedGeographyTopicId(null)
+      setSelectedReferenceLineId(null)
       requestCameraTarget(range.cameraPosition, range.cameraDistance)
     },
     [requestCameraTarget, selectCountry],
@@ -588,6 +668,8 @@ export function ExplorePage() {
       setHoveredDesertId(null)
       setSelectedLandmarkId(null)
       setHoveredLandmarkId(null)
+      setSelectedGeographyTopicId(null)
+      setSelectedReferenceLineId(null)
       requestCameraTarget(desert.center, desert.cameraDistance)
     },
     [requestCameraTarget, selectCountry],
@@ -611,6 +693,8 @@ export function ExplorePage() {
       setShowLandmarkLayer(true)
       setSelectedLandmarkId(landmark.id)
       setHoveredLandmarkId(null)
+      setSelectedGeographyTopicId(null)
+      setSelectedReferenceLineId(null)
       requestCameraTarget(landmark.position, LANDMARK_CAMERA_DISTANCE)
     },
     [requestCameraTarget, selectCountry],
@@ -626,7 +710,9 @@ export function ExplorePage() {
       else if (result.type === 'mountainRange')
         navigateToMountainRange(result.range.id)
       else if (result.type === 'desert') navigateToDesert(result.desert.id)
-      else navigateToLandmark(result.landmark.id)
+      else if (result.type === 'landmark')
+        navigateToLandmark(result.landmark.id)
+      else openGeographyTopic(result.topic.id, result.referenceLine?.id ?? null)
     },
     [
       navigateToCity,
@@ -636,6 +722,7 @@ export function ExplorePage() {
       navigateToLandmark,
       navigateToMountainRange,
       navigateToWaterbody,
+      openGeographyTopic,
     ],
   )
   const handleMiniMapNavigation = useCallback(
@@ -651,10 +738,13 @@ export function ExplorePage() {
     [clearSelection, navigateToCountry, requestCameraTarget],
   )
   const handleViewCenterChange = useCallback((view: GlobeView) => {
+    currentViewCenterRef.current = view.position
     miniMapRef.current?.setViewCenter(view.position)
   }, [])
   const handleViewCenterCommit = useCallback((view: GlobeView) => {
+    currentViewCenterRef.current = view.position
     miniMapRef.current?.setViewCenter(view.position)
+    setCommittedViewCenter(view.position)
   }, [])
 
   const effectiveAutoRotate =
@@ -672,7 +762,8 @@ export function ExplorePage() {
     selectedDesertId === null &&
     hoveredDesertId === null &&
     selectedLandmarkId === null &&
-    hoveredLandmarkId === null
+    hoveredLandmarkId === null &&
+    selectedGeographyTopicId === null
 
   return (
     <main
@@ -682,7 +773,8 @@ export function ExplorePage() {
         selectedLinearFeature ||
         selectedMountainRange ||
         selectedDesert ||
-        selectedLandmark
+        selectedLandmark ||
+        selectedGeographyTopic
           ? 'explore-shell has-country-detail'
           : 'explore-shell'
       }
@@ -712,6 +804,9 @@ export function ExplorePage() {
             showMountainLayer={showMountainLayer}
             showDesertLayer={showDesertLayer}
             showLandmarkLayer={showLandmarkLayer}
+            showGeographyLearningLayer={showGeographyLearningLayer}
+            selectedGeographyTopicId={selectedGeographyTopicId}
+            selectedReferenceLineId={selectedReferenceLineId}
             selectedCountryCode={selectedCountryCode}
             selectedCityId={selectedCityId}
             hoveredCountryCode={hoveredCountryCode}
@@ -740,6 +835,7 @@ export function ExplorePage() {
             onHoverDesert={setHoveredDesertId}
             onSelectLandmark={navigateToLandmark}
             onHoverLandmark={setHoveredLandmarkId}
+            onSelectGeographyTopic={openGeographyTopic}
             onViewCenterChange={handleViewCenterChange}
             onViewCenterCommit={handleViewCenterCommit}
           />
@@ -761,6 +857,7 @@ export function ExplorePage() {
           showMountainLayer={showMountainLayer}
           showDesertLayer={showDesertLayer}
           showLandmarkLayer={showLandmarkLayer}
+          showGeographyLearningLayer={showGeographyLearningLayer}
           onToggleCapitals={toggleCapitalLayer}
           onToggleCities={toggleCityLayer}
           onToggleOceanLayer={toggleOceanLayer}
@@ -770,6 +867,7 @@ export function ExplorePage() {
           onToggleMountainLayer={toggleMountainLayer}
           onToggleDesertLayer={toggleDesertLayer}
           onToggleLandmarkLayer={toggleLandmarkLayer}
+          onToggleGeographyLearningLayer={toggleGeographyLearningLayer}
         />
       ) : null}
 
@@ -778,6 +876,8 @@ export function ExplorePage() {
           ref={miniMapRef}
           expanded={miniMapExpanded}
           selectedCountryCode={selectedCountryCode}
+          showGeographyLearningLayer={showGeographyLearningLayer}
+          onSelectGeographyTopic={openGeographyTopic}
           onExpandedChange={setMiniMapExpanded}
           onNavigate={handleMiniMapNavigation}
         />
@@ -801,6 +901,8 @@ export function ExplorePage() {
                   selectedMountainRange?.id ??
                   selectedDesert?.id ??
                   selectedLandmark?.id ??
+                  selectedReferenceLine?.id ??
+                  selectedGeographyTopic?.id ??
                   'no-selection'
                 }
                 selectedLabel={
@@ -810,7 +912,9 @@ export function ExplorePage() {
                   selectedLinearFeature?.name.zh ??
                   selectedMountainRange?.name.zh ??
                   selectedDesert?.name.zh ??
-                  selectedLandmark?.name.zh
+                  selectedLandmark?.name.zh ??
+                  selectedReferenceLine?.name.zh ??
+                  selectedGeographyTopic?.name.zh
                 }
                 onSelect={navigateToSearchResult}
                 autoFocus
@@ -909,6 +1013,18 @@ export function ExplorePage() {
           landmark={selectedLandmark}
           onClose={clearSelection}
           onSelectCountry={navigateToCountry}
+        />
+      ) : null}
+      {selectedGeographyTopic ? (
+        <GeographyLearningPanel
+          topicId={selectedGeographyTopic.id}
+          referenceLineId={selectedReferenceLineId}
+          viewCenter={committedViewCenter}
+          onSelectTopic={openGeographyTopic}
+          onClose={() => {
+            setSelectedGeographyTopicId(null)
+            setSelectedReferenceLineId(null)
+          }}
         />
       ) : null}
     </main>

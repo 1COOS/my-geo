@@ -21,6 +21,14 @@ My Geo adds repository-owned Chinese labels for capitals, subregions and the sma
 
 Reference sites retain their own copyright. My Geo stores short original Chinese summaries rather than copying source prose.
 
+## 经纬网与义务教育地理知识
+
+- 课程范围基线：中华人民共和国教育部《义务教育课程方案和课程标准（2022年版）》发布页面，访问日期 2026-08-17。
+- 地理定义复核：Encyclopaedia Britannica 的 latitude / longitude 参考条目，访问日期 2026-08-17。
+- Use: 经纬度判读、南北与东西半球、低中高纬度、赤道、南北回归线、南北极圈和地球五带的仓库内教学内容。
+
+My Geo 使用中国大陆初中地理常用的近似值：回归线约 23.5°，极圈约 66.5°；东西半球以 20°W 和 160°E 组成的经线圈划分。0°和180°经线用于判读东西经，不作为东西半球界线。所有说明均为仓库原创总结，没有复制教材正文；参考链接不构成运行时依赖。
+
 ## Adjacent regions
 
 Border codes outside the 195-country catalogue are not treated as sovereign countries. The local data contract classifies Hong Kong, Macao, Gibraltar, French Guiana, Western Sahara and Kosovo as non-interactive adjacent-region labels. This classification is a product presentation rule and does not replace a public-release map-compliance review.

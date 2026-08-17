@@ -1,6 +1,10 @@
 import type { City } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
 import type { Desert } from '../../data/desertSchema'
+import type {
+  GeographyTopic,
+  ReferenceLine,
+} from '../../data/geographyLearningSchema'
 import type { LinearGeoFeature } from '../../data/linearGeoFeatureSchema'
 import type { Landmark } from '../../data/landmarkSchema'
 import type { MountainRange } from '../../data/mountainRangeSchema'
@@ -14,6 +18,11 @@ export type PlaceSearchResult =
   | { type: 'mountainRange'; range: MountainRange }
   | { type: 'desert'; desert: Desert }
   | { type: 'landmark'; landmark: Landmark }
+  | {
+      type: 'geographyTopic'
+      topic: GeographyTopic
+      referenceLine?: ReferenceLine
+    }
 
 export function normalizeCountrySearch(value: string) {
   return value
@@ -41,6 +50,8 @@ export function searchPlaces(
   limit = 8,
   deserts: Desert[] = [],
   landmarks: Landmark[] = [],
+  geographyTopics: GeographyTopic[] = [],
+  referenceLines: ReferenceLine[] = [],
 ): PlaceSearchResult[] {
   const normalizedQuery = normalizeCountrySearch(query)
   if (!normalizedQuery) {
@@ -196,6 +207,44 @@ export function searchPlaces(
         score: score + 0.17,
         name: landmark.name.zh,
       })
+    }
+  }
+
+  for (const topic of geographyTopics) {
+    const score = matchScore(
+      [topic.name.zh, topic.name.en, ...topic.aliases],
+      normalizedQuery,
+    )
+    if (score < 10) {
+      scored.push({
+        result: { type: 'geographyTopic', topic },
+        score: score + 0.05,
+        name: topic.name.zh,
+      })
+    }
+  }
+
+  for (const referenceLine of referenceLines) {
+    const score = matchScore(
+      [
+        referenceLine.name.zh,
+        referenceLine.name.en,
+        referenceLine.shortLabel,
+        ...referenceLine.aliases,
+      ],
+      normalizedQuery,
+    )
+    if (score < 10) {
+      const topic = geographyTopics.find(
+        (candidate) => candidate.id === referenceLine.topicId,
+      )
+      if (topic) {
+        scored.push({
+          result: { type: 'geographyTopic', topic, referenceLine },
+          score,
+          name: referenceLine.name.zh,
+        })
+      }
     }
   }
 

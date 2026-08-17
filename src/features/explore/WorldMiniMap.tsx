@@ -10,6 +10,12 @@ import {
 } from 'react'
 
 import { countryBoundaries, getCountry } from '../../data/countries'
+import { geographyReferenceLines } from '../../data/geographyLearning'
+import type {
+  GeographyTopicId,
+  ReferenceLineId,
+} from '../../data/geographyLearningSchema'
+import { classifyGeoPosition } from '../../shared/lib/geoClassification'
 import type {
   GeoPosition,
   WorldMiniMapNavigation,
@@ -32,6 +38,11 @@ import {
 type WorldMiniMapProps = {
   expanded: boolean
   selectedCountryCode: string | null
+  showGeographyLearningLayer: boolean
+  onSelectGeographyTopic: (
+    topicId: GeographyTopicId,
+    referenceLineId?: ReferenceLineId | null,
+  ) => void
   onExpandedChange: (expanded: boolean) => void
   onNavigate: (navigation: WorldMiniMapNavigation) => void
 }
@@ -44,12 +55,20 @@ const INITIAL_VIEW_CENTER = getCountry('CN')!.center
 
 export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
   function WorldMiniMap(
-    { expanded, selectedCountryCode, onExpandedChange, onNavigate },
+    {
+      expanded,
+      selectedCountryCode,
+      showGeographyLearningLayer,
+      onSelectGeographyTopic,
+      onExpandedChange,
+      onNavigate,
+    },
     ref,
   ) {
     const viewCenterRef = useRef<GeoPosition>(INITIAL_VIEW_CENTER)
     const viewMarkerRef = useRef<SVGGElement>(null)
     const coordinateLabelRef = useRef<HTMLOutputElement>(null)
+    const interpretationRef = useRef<HTMLOutputElement>(null)
     const [keyboardCursor, setKeyboardCursor] =
       useState<GeoPosition>(INITIAL_VIEW_CENTER)
     const boundaryPaths = useMemo(
@@ -81,6 +100,15 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
       }
       if (coordinateLabelRef.current) {
         coordinateLabelRef.current.value = formatGeoPosition(position)
+      }
+      if (interpretationRef.current) {
+        const classification = classifyGeoPosition(position)
+        interpretationRef.current.value = [
+          classification.latitudeHemisphere,
+          classification.longitudeHemisphere,
+          classification.latitudeZone,
+          classification.earthZone,
+        ].join(' · ')
       }
     }, [])
 
@@ -148,6 +176,8 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
       }
     }
 
+    const currentClassification = classifyGeoPosition(viewCenterRef.current)
+
     return (
       <aside
         className={expanded ? 'world-mini-map is-expanded' : 'world-mini-map'}
@@ -173,7 +203,7 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
               <span>WORLD POSITION</span>
             </div>
             <output ref={coordinateLabelRef} aria-live="off">
-              {formatGeoPosition(INITIAL_VIEW_CENTER)}
+              {formatGeoPosition(viewCenterRef.current)}
             </output>
             <button
               className="world-mini-map-close"
@@ -208,6 +238,67 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
                 <line key={`y-${y}`} x1={0} x2={360} y1={y} y2={y} />
               ))}
             </g>
+            {showGeographyLearningLayer ? (
+              <g className="world-mini-map-geography-layer">
+                {geographyReferenceLines.map((line) => {
+                  const position = projectGeoPosition(
+                    line.orientation === 'latitude'
+                      ? { latitude: line.coordinate, longitude: 0 }
+                      : { latitude: 0, longitude: line.coordinate },
+                  )
+                  if (!position) return null
+                  return line.orientation === 'latitude' ? (
+                    <line
+                      key={line.id}
+                      data-reference-line-id={line.id}
+                      data-reference-line-category={line.category}
+                      x1={0}
+                      x2={MINI_MAP_WIDTH}
+                      y1={position.y}
+                      y2={position.y}
+                    />
+                  ) : (
+                    <line
+                      key={line.id}
+                      data-reference-line-id={line.id}
+                      data-reference-line-category={line.category}
+                      x1={position.x}
+                      x2={position.x}
+                      y1={0}
+                      y2={MINI_MAP_HEIGHT}
+                    />
+                  )
+                })}
+                <g className="world-mini-map-degree-labels" aria-hidden="true">
+                  {[-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150].map(
+                    (longitude) => {
+                      const point = projectGeoPosition({
+                        latitude: 0,
+                        longitude,
+                      })!
+                      return (
+                        <text key={longitude} x={point.x} y={176}>
+                          {longitude === 0
+                            ? '0°'
+                            : `${Math.abs(longitude)}°${longitude > 0 ? 'E' : 'W'}`}
+                        </text>
+                      )
+                    },
+                  )}
+                  {[-60, -30, 30, 60].map((latitude) => {
+                    const point = projectGeoPosition({
+                      latitude,
+                      longitude: 0,
+                    })!
+                    return (
+                      <text key={latitude} x={4} y={point.y - 2}>
+                        {Math.abs(latitude)}°{latitude > 0 ? 'N' : 'S'}
+                      </text>
+                    )
+                  })}
+                </g>
+              </g>
+            ) : null}
             <g className="world-mini-map-countries">
               {boundaryPaths.map(({ code, path }) => {
                 const country = getCountry(code)
@@ -243,12 +334,48 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
                 </circle>
               ))}
             </g>
+            {showGeographyLearningLayer ? (
+              <g className="world-mini-map-reference-labels">
+                {geographyReferenceLines
+                  .filter(
+                    (line) =>
+                      line.category !== 'latitude-zone-boundary' &&
+                      line.id !== 'antimeridian',
+                  )
+                  .map((line) => {
+                    const point = projectGeoPosition(line.anchorPosition)
+                    if (!point) return null
+                    return (
+                      <text
+                        key={line.id}
+                        data-reference-line-label={line.id}
+                        x={point.x}
+                        y={point.y}
+                        role="button"
+                        tabIndex={0}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onSelectGeographyTopic(line.topicId, line.id)
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Enter' && event.key !== ' ') return
+                          event.preventDefault()
+                          event.stopPropagation()
+                          onSelectGeographyTopic(line.topicId, line.id)
+                        }}
+                      >
+                        {line.shortLabel}
+                      </text>
+                    )
+                  })}
+              </g>
+            ) : null}
             <g
               ref={viewMarkerRef}
               className="world-mini-map-view-marker"
               data-testid="world-mini-map-view-marker"
               transform={(() => {
-                const point = projectGeoPosition(INITIAL_VIEW_CENTER)!
+                const point = projectGeoPosition(viewCenterRef.current)!
                 return `translate(${point.x} ${point.y})`
               })()}
               aria-hidden="true"
@@ -266,6 +393,22 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
               />
             ) : null}
           </svg>
+
+          {showGeographyLearningLayer ? (
+            <output
+              ref={interpretationRef}
+              className="world-mini-map-interpretation"
+              aria-label="2D定位图当前中心判读"
+              aria-live="off"
+            >
+              {[
+                currentClassification.latitudeHemisphere,
+                currentClassification.longitudeHemisphere,
+                currentClassification.latitudeZone,
+                currentClassification.earthZone,
+              ].join(' · ')}
+            </output>
+          ) : null}
 
           <p className="sr-only">
             方向键每次移动 5 度；按住 Shift 每次移动 15 度；Enter

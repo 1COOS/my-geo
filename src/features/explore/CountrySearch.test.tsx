@@ -68,10 +68,7 @@ describe('CountrySearch', () => {
     render(<CountrySearch onSelect={onSelect} />)
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
-    expect(search).toHaveAttribute(
-      'placeholder',
-      '搜索国家、城市、古迹与地理地点',
-    )
+    expect(search).toHaveAttribute('placeholder', '搜索国家、地点或地理知识')
     await user.type(search, 'Everest')
     expect(screen.getByText(/最高峰：珠穆朗玛峰/)).toBeInTheDocument()
     await user.keyboard('{Enter}')
@@ -79,6 +76,27 @@ describe('CountrySearch', () => {
       type: 'mountainRange',
       range: { id: 'himalayas' },
     })
+  })
+
+  it('searches both reference lines and geography knowledge topics', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
+
+    render(<CountrySearch onSelect={onSelect} />)
+
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.type(search, '北回归线')
+    expect(screen.getByText('参考线')).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    expect(onSelect.mock.calls[0]?.[0]).toMatchObject({
+      type: 'geographyTopic',
+      topic: { id: 'earth-zones' },
+      referenceLine: { id: 'tropic-of-cancer' },
+    })
+
+    await user.clear(search)
+    await user.type(search, '东西半球')
+    expect(screen.getByText('地理知识')).toBeInTheDocument()
   })
 
   it('shows deserts with their geographic region', async () => {
