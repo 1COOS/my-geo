@@ -492,6 +492,11 @@ for (const country of countries) {
   if (!country.officialName.zh || !country.subregion.zh) {
     throw new Error(`Missing localized core content for ${country.code}`)
   }
+  if (!sourceIds.has(country.populationSourceId)) {
+    throw new Error(
+      `Unknown population source ${country.populationSourceId} on ${country.code}`,
+    )
+  }
   for (const capital of country.capitals) {
     if (
       capitalChineseNames[`${country.code}:${capital.name.en}`] !==

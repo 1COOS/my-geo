@@ -1,9 +1,8 @@
-import { useMemo } from 'react'
-
-import { countriesByCode, getCountrySource } from '../../data/countries'
+import { countriesByCode } from '../../data/countries'
 import type { City, CitySelectionReason } from '../../data/citySchema'
-import type { Country, CountrySource } from '../../data/countrySchema'
+import type { Country } from '../../data/countrySchema'
 import { DetailPanelShell } from './DetailPanelShell'
+import { ExpandableItems } from './ExpandableItems'
 
 type CountryDetailPanelProps = {
   country: Country
@@ -40,25 +39,6 @@ export function CountryDetailPanel({
   onSelectCity,
   onBackToCountry,
 }: CountryDetailPanelProps) {
-  const countryReferencedSources = useMemo(() => {
-    const sourceIds = new Set([
-      'world-countries',
-      ...country.highlights.flatMap((highlight) => highlight.sourceIds),
-    ])
-    return [...sourceIds].flatMap((sourceId) => {
-      const source = getCountrySource(sourceId)
-      return source ? [source] : []
-    })
-  }, [country.highlights])
-  const cityReferencedSources = useMemo(
-    () =>
-      selectedCity?.sourceIds.flatMap((sourceId) => {
-        const source = getCountrySource(sourceId)
-        return source ? [source] : []
-      }) ?? [],
-    [selectedCity],
-  )
-
   return (
     <DetailPanelShell
       label={
@@ -79,14 +59,12 @@ export function CountryDetailPanel({
         <CityDetailView
           country={country}
           city={selectedCity}
-          sources={cityReferencedSources}
           onBack={onBackToCountry}
         />
       ) : (
         <CountryDetailView
           country={country}
           cities={cities}
-          referencedSources={countryReferencedSources}
           onSelectCountry={onSelectCountry}
           onSelectCity={onSelectCity}
         />
@@ -98,7 +76,6 @@ export function CountryDetailPanel({
 type CountryDetailViewProps = {
   country: Country
   cities: City[]
-  referencedSources: CountrySource[]
   onSelectCountry: (countryCode: string) => void
   onSelectCity: (cityId: string) => void
 }
@@ -106,7 +83,6 @@ type CountryDetailViewProps = {
 function CountryDetailView({
   country,
   cities,
-  referencedSources,
   onSelectCountry,
   onSelectCity,
 }: CountryDetailViewProps) {
@@ -124,38 +100,101 @@ function CountryDetailView({
           <span>
             {country.name.en} · {country.code} / {country.alpha3Code}
           </span>
+          <small className="country-detail-official">
+            {country.officialName.zh} · {country.officialName.en}
+          </small>
         </div>
       </div>
 
-      <div className="country-official-name">
-        <p className="country-detail-label">正式国名</p>
-        <strong>{country.officialName.zh}</strong>
-        <small>{country.officialName.en}</small>
-      </div>
-
-      <section
-        className="country-detail-section"
-        aria-labelledby="capital-title"
-      >
-        <p id="capital-title" className="country-detail-label">
-          首都
-        </p>
-        {country.capitals.length > 0 ? (
-          <ul className="capital-list">
-            {country.capitals.map((capital) => (
-              <li key={`${capital.name.en}-${capital.latitude}`}>
-                <span aria-hidden="true">◎</span>
-                <div>
-                  <strong>{capital.name.zh}</strong>
-                  <small>{capital.name.en}</small>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="country-detail-muted">暂无首都资料</p>
-        )}
-      </section>
+      <dl className="detail-facts-grid country-overview-grid">
+        <div>
+          <dt>首都</dt>
+          <dd>
+            {country.capitals.length > 0 ? (
+              <span className="detail-value-stack">
+                {country.capitals.map((capital) => (
+                  <span key={`${capital.name.en}-${capital.latitude}`}>
+                    <strong>{capital.name.zh}</strong>
+                    <small>{capital.name.en}</small>
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <span className="country-detail-muted">暂无首都资料</span>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>人口</dt>
+          <dd>
+            <strong>
+              约 {populationFormatter.format(country.population)} 人
+            </strong>
+            <small>{country.populationYear} 年</small>
+          </dd>
+        </div>
+        <div>
+          <dt>次区域</dt>
+          <dd>
+            <strong>{country.subregion.zh}</strong>
+            <small>{country.subregion.en}</small>
+          </dd>
+        </div>
+        <div>
+          <dt>面积</dt>
+          <dd>
+            <strong>
+              {areaFormatter.format(country.areaSquareKilometers)} km²
+            </strong>
+          </dd>
+        </div>
+        <div>
+          <dt>语言</dt>
+          <dd>
+            <ExpandableItems
+              key={`${country.code}:languages`}
+              items={country.languages}
+              previewCount={2}
+              expandLabel="语言"
+              renderItems={(languages) => (
+                <ul className="country-data-list">
+                  {languages.map((language) => (
+                    <li key={language.code}>
+                      <strong>{language.name.zh}</strong>
+                      <small>{language.name.en}</small>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            />
+          </dd>
+        </div>
+        <div>
+          <dt>货币</dt>
+          <dd>
+            <ExpandableItems
+              key={`${country.code}:currencies`}
+              items={country.currencies}
+              previewCount={2}
+              expandLabel="货币"
+              renderItems={(currencies) => (
+                <ul className="country-data-list">
+                  {currencies.map((currency) => (
+                    <li key={currency.code}>
+                      <strong>
+                        {currency.name.zh}（{currency.code}）
+                      </strong>
+                      <small>
+                        {currency.name.en} · {currency.symbol}
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            />
+          </dd>
+        </div>
+      </dl>
 
       <section
         className="country-detail-section"
@@ -164,78 +203,36 @@ function CountryDetailView({
         <p id="cities-title" className="country-detail-label">
           首都与主要城市
         </p>
-        <ul className="city-list">
-          {cities.map((city) => (
-            <li key={city.id}>
-              <button
-                type="button"
-                onClick={() => onSelectCity(city.id)}
-                aria-label={`探索城市${city.name.zh}`}
-              >
-                <span
-                  className={
-                    city.isCapital ? 'city-dot is-capital' : 'city-dot'
-                  }
-                />
-                <span>
-                  <strong>{city.name.zh}</strong>
-                  <small>{city.name.en}</small>
-                </span>
-                <em>{city.isCapital ? '首都' : '城市'}</em>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <div className="country-facts-grid">
-        <section>
-          <p className="country-detail-label">语言</p>
-          <ul className="country-data-list">
-            {country.languages.map((language) => (
-              <li key={language.code}>
-                <strong>{language.name.zh}</strong>
-                <small>{language.name.en}</small>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <p className="country-detail-label">货币</p>
-          <ul className="country-data-list">
-            {country.currencies.map((currency) => (
-              <li key={currency.code}>
-                <strong>
-                  {currency.name.zh}（{currency.code}）
-                </strong>
-                <small>
-                  {currency.name.en} · {currency.symbol}
-                </small>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      <section className="country-detail-section">
-        <p className="country-detail-label">地理概览</p>
-        <dl className="country-geography-grid">
-          <div>
-            <dt>次区域</dt>
-            <dd>
-              <strong>{country.subregion.zh}</strong>
-              <small>{country.subregion.en}</small>
-            </dd>
-          </div>
-          <div>
-            <dt>面积</dt>
-            <dd>
-              <strong>
-                {areaFormatter.format(country.areaSquareKilometers)} km²
-              </strong>
-            </dd>
-          </div>
-        </dl>
+        <ExpandableItems
+          key={`${country.code}:cities`}
+          items={cities}
+          previewCount={3}
+          expandLabel="主要城市"
+          renderItems={(visibleCities) => (
+            <ul className="city-list">
+              {visibleCities.map((city) => (
+                <li key={city.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectCity(city.id)}
+                    aria-label={`探索城市${city.name.zh}`}
+                  >
+                    <span
+                      className={
+                        city.isCapital ? 'city-dot is-capital' : 'city-dot'
+                      }
+                    />
+                    <span>
+                      <strong>{city.name.zh}</strong>
+                      <small>{city.name.en}</small>
+                    </span>
+                    <em>{city.isCapital ? '首都' : '城市'}</em>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        />
       </section>
 
       <section className="country-detail-section">
@@ -243,22 +240,30 @@ function CountryDetailView({
         {country.borderCountryCodes.length > 0 ? (
           <div className="country-border-group">
             <span>主权国家</span>
-            <div className="country-border-list">
-              {country.borderCountryCodes.map((countryCode) => {
-                const borderCountry = countriesByCode.get(countryCode)
-                return borderCountry ? (
-                  <button
-                    type="button"
-                    key={countryCode}
-                    onClick={() => onSelectCountry(countryCode)}
-                    aria-label={`探索邻国${borderCountry.name.zh}`}
-                  >
-                    <img src={borderCountry.flagAsset} alt="" />
-                    <span>{borderCountry.name.zh}</span>
-                  </button>
-                ) : null
-              })}
-            </div>
+            <ExpandableItems
+              key={`${country.code}:borders`}
+              items={country.borderCountryCodes}
+              previewCount={6}
+              expandLabel="相邻国家"
+              renderItems={(countryCodes) => (
+                <div className="country-border-list">
+                  {countryCodes.map((countryCode) => {
+                    const borderCountry = countriesByCode.get(countryCode)
+                    return borderCountry ? (
+                      <button
+                        type="button"
+                        key={countryCode}
+                        onClick={() => onSelectCountry(countryCode)}
+                        aria-label={`探索邻国${borderCountry.name.zh}`}
+                      >
+                        <img src={borderCountry.flagAsset} alt="" />
+                        <span>{borderCountry.name.zh}</span>
+                      </button>
+                    ) : null
+                  })}
+                </div>
+              )}
+            />
           </div>
         ) : null}
         {country.adjacentRegions.length > 0 ? (
@@ -291,25 +296,6 @@ function CountryDetailView({
           ))}
         </ol>
       </section>
-
-      <details className="country-sources">
-        <summary>资料来源（{referencedSources.length}）</summary>
-        <ul>
-          {referencedSources.map((source) => (
-            <li key={source.id}>
-              <a href={source.url} target="_blank" rel="noreferrer">
-                {source.name}
-              </a>
-              <span>
-                {source.publisher}
-                {source.version ? ` · v${source.version}` : ''}
-                {source.accessedAt ? ` · 查阅于 ${source.accessedAt}` : ''}
-              </span>
-              <small>{source.license}</small>
-            </li>
-          ))}
-        </ul>
-      </details>
     </>
   )
 }
@@ -317,16 +303,10 @@ function CountryDetailView({
 type CityDetailViewProps = {
   country: Country
   city: City
-  sources: CountrySource[]
   onBack: () => void
 }
 
-function CityDetailView({
-  country,
-  city,
-  sources,
-  onBack,
-}: CityDetailViewProps) {
+function CityDetailView({ country, city, onBack }: CityDetailViewProps) {
   return (
     <>
       <button type="button" className="city-detail-back" onClick={onBack}>
@@ -355,15 +335,6 @@ function CityDetailView({
                 : `约 ${populationFormatter.format(city.population)} 人`}
             </dd>
           </div>
-          <div>
-            <dt>坐标</dt>
-            <dd>
-              {Math.abs(city.latitude).toFixed(4)}°
-              {city.latitude >= 0 ? 'N' : 'S'} ·{' '}
-              {Math.abs(city.longitude).toFixed(4)}°
-              {city.longitude >= 0 ? 'E' : 'W'}
-            </dd>
-          </div>
         </dl>
       </section>
 
@@ -375,26 +346,6 @@ function CityDetailView({
           ))}
         </ul>
       </section>
-
-      <details className="country-sources">
-        <summary>资料来源（{sources.length}）</summary>
-        <ul>
-          {sources.map((source) =>
-            source ? (
-              <li key={source.id}>
-                <a href={source.url} target="_blank" rel="noreferrer">
-                  {source.name}
-                </a>
-                <span>
-                  {source.publisher}
-                  {source.version ? ` · v${source.version}` : ''}
-                </span>
-                <small>{source.license}</small>
-              </li>
-            ) : null,
-          )}
-        </ul>
-      </details>
     </>
   )
 }

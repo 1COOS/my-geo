@@ -301,6 +301,7 @@ test('keeps phone landscape controls separated and country details usable', asyn
   await expect(
     card.getByRole('button', { name: '关闭国家知识卡' }),
   ).toBeVisible()
+  await expect(card.getByText('约 14.1亿 人')).toBeVisible()
 
   const shanghai = card.getByRole('button', { name: '探索城市上海' })
   await expect(shanghai).toBeVisible()
@@ -308,7 +309,7 @@ test('keeps phone landscape controls separated and country details usable', asyn
   const cityCard = page.getByLabel('上海城市知识卡')
   await expect(cityCard).toBeVisible()
   await expect(cityCard.getByText('经济中心')).toBeVisible()
-  await expect(cityCard.getByText(/31\.1667°N/)).toBeVisible()
+  await expect(cityCard.getByText(/31\.1667°N/)).toHaveCount(0)
   const cityCardBox = await cityCard.boundingBox()
   expect(cityCardBox).not.toBeNull()
   expect(cityCardBox!.y).toBeGreaterThanOrEqual(11)
@@ -345,6 +346,11 @@ for (const viewport of [
     const card = page.getByLabel('中国国家知识卡')
     const controls = page.getByRole('navigation', { name: '地球显示控制' })
     const map = page.getByTestId('world-mini-map')
+    await expect
+      .poll(
+        async () => (await card.boundingBox())?.y ?? Number.POSITIVE_INFINITY,
+      )
+      .toBeLessThanOrEqual(13)
     const [sceneBox, cardBox, controlsBox, mapBox] = await Promise.all([
       scene.boundingBox(),
       card.boundingBox(),
@@ -362,11 +368,6 @@ for (const viewport of [
       })),
     ).toEqual({ page: 0, shell: 0 })
     expect(sceneBox!.x + sceneBox!.width).toBeLessThanOrEqual(cardBox!.x)
-    await expect
-      .poll(
-        async () => (await card.boundingBox())?.y ?? Number.POSITIVE_INFINITY,
-      )
-      .toBeLessThanOrEqual(13)
     expect(cardBox!.y + cardBox!.height).toBeGreaterThanOrEqual(
       viewport.height - 13,
     )
@@ -527,10 +528,7 @@ test('toggles adaptive capital and city labels and opens a selected city', async
   await expect(page.locator('[data-city-id="cn-shanghai"]')).toBeVisible()
   await expect(cityCard.getByRole('heading', { name: '上海' })).toBeVisible()
   await expect(cityCard.getByText('世界知名')).toBeVisible()
-  await cityCard.getByText(/资料来源/).click()
-  await expect(
-    cityCard.getByText('SimpleMaps World Cities Database'),
-  ).toBeVisible()
+  await expect(cityCard.getByText(/资料来源/)).toHaveCount(0)
 })
 
 test('toggles waterbody layers, searches a sea, and replaces its selected range', async ({
@@ -559,6 +557,8 @@ test('toggles waterbody layers, searches a sea, and replaces its selected range'
   const mediterraneanCard = page.getByLabel('地中海水域知识卡')
   await expect(mediterraneanCard).toBeVisible()
   await expect(mediterraneanCard.getByText(/不代表领海/)).toBeVisible()
+  await expect(mediterraneanCard.getByText('代表坐标')).toHaveCount(0)
+  await expect(mediterraneanCard.getByText(/资料来源/)).toHaveCount(0)
   await expect(
     page.locator('[data-waterbody-id="mediterranean-sea"]'),
   ).toBeVisible()
@@ -614,6 +614,7 @@ test('shows river and canal paths and keeps linear feature selection exclusive',
   await search.press('Enter')
   const riverCard = page.getByLabel('长江知识卡')
   await expect(riverCard).toBeVisible()
+  await expect(riverCard.getByText(/资料来源/)).toHaveCount(0)
   await expect(
     riverCard.getByText('青藏高原唐古拉山脉', { exact: true }),
   ).toBeVisible()
@@ -677,6 +678,7 @@ test('shows mountain ridges, highest peaks, and replaces global selection', asyn
     name: '喜马拉雅山脉知识卡',
   })
   await expect(himalayaCard).toBeVisible()
+  await expect(himalayaCard.getByText(/资料来源/)).toHaveCount(0)
   await expect(
     himalayaCard.getByText('珠穆朗玛峰', { exact: true }),
   ).toBeVisible()
@@ -738,6 +740,8 @@ test('shows desert regions only while the layer is active', async ({
   await expect(saharaCard).toBeVisible()
   await expect(saharaCard.getByText(/9,200,000 km²/)).toBeVisible()
   await expect(saharaCard.getByText(/不是生态分区/)).toBeVisible()
+  await expect(saharaCard.getByText('代表坐标')).toHaveCount(0)
+  await expect(saharaCard.getByText(/资料来源/)).toHaveCount(0)
   await expect(desertToggle).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('[data-desert-id="sahara"]')).toBeVisible()
 
@@ -1219,7 +1223,9 @@ test('selects a sovereign neighbour and opens the new country card', async ({
   await expect(italySearch).toHaveValue('意大利')
 })
 
-test('expands the local knowledge-card sources', async ({ page }) => {
+test('expands compact knowledge-card lists with the keyboard and resets them on navigation', async ({
+  page,
+}) => {
   await page.goto('/')
 
   const search = await openCountrySearch(page)
@@ -1227,10 +1233,35 @@ test('expands the local knowledge-card sources', async ({ page }) => {
   await search.press('Enter')
   const card = page.getByLabel('中国国家知识卡')
 
-  await card.getByText('资料来源（3）').click()
+  await expect(card.getByRole('button', { name: '探索城市成都' })).toHaveCount(
+    0,
+  )
+  const cityExpand = card.getByRole('button', {
+    name: '查看全部主要城市（5）',
+  })
+  await cityExpand.focus()
+  await page.keyboard.press('Enter')
+  await expect(card.getByRole('button', { name: '探索城市成都' })).toBeVisible()
+
+  const borderExpand = card.getByRole('button', {
+    name: '查看全部相邻国家（14）',
+  })
+  await borderExpand.focus()
+  await page.keyboard.press('Space')
+  await card.getByRole('button', { name: '探索邻国俄罗斯' }).click()
+
+  const russiaCard = page.getByLabel('俄罗斯国家知识卡')
+  await expect(russiaCard).toBeVisible()
+  await russiaCard.getByRole('button', { name: '探索邻国中国' }).click()
+
+  const resetCard = page.getByLabel('中国国家知识卡')
   await expect(
-    card.getByRole('link', { name: 'China overview' }),
-  ).toHaveAttribute('href', 'https://www.britannica.com/place/China')
+    resetCard.getByRole('button', { name: '查看全部主要城市（5）' }),
+  ).toHaveAttribute('aria-expanded', 'false')
+  await expect(
+    resetCard.getByRole('button', { name: '查看全部相邻国家（14）' }),
+  ).toHaveAttribute('aria-expanded', 'false')
+  await expect(resetCard.getByText(/资料来源/)).toHaveCount(0)
 })
 
 test('uses the mobile bottom sheet for country details', async ({ page }) => {
@@ -1252,7 +1283,7 @@ test('uses the mobile bottom sheet for country details', async ({ page }) => {
   await expect(
     page.getByRole('button', { name: '关闭国家知识卡' }),
   ).toBeVisible()
-  await expect(card.getByText('地理概览')).toBeVisible()
+  await expect(card.getByText('面积')).toBeVisible()
 })
 
 test('opens a country card from the offline cache', async ({

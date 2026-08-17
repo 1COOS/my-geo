@@ -1,7 +1,8 @@
-import { countriesByCode, getCountrySource } from '../../data/countries'
+import { countriesByCode } from '../../data/countries'
 import { waterbodyKindLabels } from '../../data/waterbodies'
 import type { Waterbody } from '../../data/waterbodySchema'
 import { DetailPanelShell } from './DetailPanelShell'
+import { ExpandableItems } from './ExpandableItems'
 
 const numberFormatter = new Intl.NumberFormat('zh-CN', {
   maximumFractionDigits: 1,
@@ -16,11 +17,6 @@ export function WaterbodyDetailPanel({
   onClose: () => void
   onSelectCountry: (countryCode: string) => void
 }) {
-  const sources = waterbody.sourceIds.flatMap((sourceId) => {
-    const source = getCountrySource(sourceId)
-    return source ? [source] : []
-  })
-
   return (
     <DetailPanelShell
       label={`${waterbody.name.zh}水域知识卡`}
@@ -53,15 +49,6 @@ export function WaterbodyDetailPanel({
             <dt>所在区域</dt>
             <dd>{waterbody.region}</dd>
           </div>
-          <div>
-            <dt>代表坐标</dt>
-            <dd>
-              {Math.abs(waterbody.center.latitude).toFixed(1)}°
-              {waterbody.center.latitude >= 0 ? 'N' : 'S'} ·{' '}
-              {Math.abs(waterbody.center.longitude).toFixed(1)}°
-              {waterbody.center.longitude >= 0 ? 'E' : 'W'}
-            </dd>
-          </div>
           {waterbody.areaSquareKilometers ? (
             <div>
               <dt>面积</dt>
@@ -93,21 +80,29 @@ export function WaterbodyDetailPanel({
           ))}
         </div>
         {waterbody.adjacentCountryCodes.length ? (
-          <div className="country-border-list waterbody-country-list">
-            {waterbody.adjacentCountryCodes.map((countryCode) => {
-              const country = countriesByCode.get(countryCode)
-              return country ? (
-                <button
-                  key={countryCode}
-                  type="button"
-                  onClick={() => onSelectCountry(countryCode)}
-                >
-                  <img src={country.flagAsset} alt="" />
-                  <span>{country.name.zh}</span>
-                </button>
-              ) : null
-            })}
-          </div>
+          <ExpandableItems
+            key={`${waterbody.id}:countries`}
+            items={waterbody.adjacentCountryCodes}
+            previewCount={6}
+            expandLabel="相邻国家和地区"
+            renderItems={(countryCodes) => (
+              <div className="country-border-list waterbody-country-list">
+                {countryCodes.map((countryCode) => {
+                  const country = countriesByCode.get(countryCode)
+                  return country ? (
+                    <button
+                      key={countryCode}
+                      type="button"
+                      onClick={() => onSelectCountry(countryCode)}
+                    >
+                      <img src={country.flagAsset} alt="" />
+                      <span>{country.name.zh}</span>
+                    </button>
+                  ) : null
+                })}
+              </div>
+            )}
+          />
         ) : null}
       </section>
 
@@ -122,24 +117,6 @@ export function WaterbodyDetailPanel({
           ))}
         </ol>
       </section>
-
-      <details className="country-sources">
-        <summary>资料来源（{sources.length}）</summary>
-        <ul>
-          {sources.map((source) => (
-            <li key={source.id}>
-              <a href={source.url} target="_blank" rel="noreferrer">
-                {source.name}
-              </a>
-              <span>
-                {source.publisher}
-                {source.accessedAt ? ` · 查阅于 ${source.accessedAt}` : ''}
-              </span>
-              <small>{source.license}</small>
-            </li>
-          ))}
-        </ul>
-      </details>
     </DetailPanelShell>
   )
 }

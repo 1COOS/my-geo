@@ -28,6 +28,7 @@ import {
 } from '../src/data/countrySchema'
 import { cityCatalogSchema, type City } from '../src/data/citySchema'
 import { priorityCityCounts, reviewedCitySelections } from './city-content'
+import { countryPopulationByCode } from './country-population'
 import { generateRiverGeometries } from './generate-river-geometries'
 import { generateMountainGeometries } from './generate-mountain-geometries'
 import { generateWaterbodyGeometries } from './generate-waterbody-geometries'
@@ -228,6 +229,11 @@ const countries: Country[] = sourceCountries.map((country) => {
     throw new Error(`Missing Chinese subregion name for ${country.subregion}`)
   }
 
+  const population = countryPopulationByCode[country.cca2]
+  if (!population) {
+    throw new Error(`Missing reviewed population for ${country.cca2}`)
+  }
+
   const borderCountryCodes = country.borders.flatMap((borderCode) => {
     const countryCode = sovereignCountryCodesByAlpha3.get(borderCode)
     return countryCode ? [countryCode] : []
@@ -312,6 +318,9 @@ const countries: Country[] = sourceCountries.map((country) => {
       }
     }),
     areaSquareKilometers: country.area,
+    population: population.population,
+    populationYear: population.year,
+    populationSourceId: population.sourceId,
     landlocked: country.landlocked,
     borderCountryCodes,
     adjacentRegions,

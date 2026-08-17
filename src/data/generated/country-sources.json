@@ -236,6 +236,24 @@
     "license": "Open Database License (ODbL) 1.0"
   },
   {
+    "id": "world-bank-population",
+    "name": "Population, total (SP.POP.TOTL)",
+    "publisher": "World Bank",
+    "version": "2025 latest available values",
+    "accessedAt": "2026-08-17",
+    "url": "https://data.worldbank.org/indicator/SP.POP.TOTL",
+    "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+  },
+  {
+    "id": "vatican-population",
+    "name": "Vatican City population statistics",
+    "publisher": "Governorate of Vatican City State",
+    "version": "Updated 31 December 2024",
+    "accessedAt": "2026-08-17",
+    "url": "https://www.vaticanstate.va/en/state-and-government/general-informations/population.html",
+    "license": "Official reference material; population total transcribed"
+  },
+  {
     "id": "britannica-australia",
     "name": "Australia overview",
     "publisher": "Encyclopaedia Britannica",

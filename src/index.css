@@ -1385,7 +1385,7 @@ a:focus-visible,
   right: var(--edge-right);
   bottom: var(--edge-bottom);
   width: var(--detail-column);
-  padding: 1.3rem;
+  padding: 1.05rem;
   overflow-y: auto;
   color: #eaf7ff;
   background: linear-gradient(150deg, rgb(16 47 71 / 91%), rgb(5 20 35 / 94%));
@@ -1400,36 +1400,40 @@ a:focus-visible,
 }
 
 .country-detail-close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+  position: sticky;
+  z-index: 3;
+  top: 0;
+  float: right;
   display: grid;
-  width: 2rem;
-  height: 2rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 0 -2.75rem 0.5rem;
   color: #bed5e3;
-  font-size: 1.45rem;
+  font-size: 1.3rem;
   line-height: 1;
   cursor: pointer;
-  background: rgb(151 211 238 / 9%);
-  border: 1px solid rgb(151 211 238 / 12%);
+  background: rgb(17 48 70 / 88%);
+  border: 1px solid rgb(151 211 238 / 16%);
   border-radius: 50%;
   place-items: center;
 }
 
 .country-detail-heading {
   display: grid;
-  grid-template-columns: 5.2rem minmax(0, 1fr);
-  gap: 1rem;
+  grid-template-columns: 3.7rem minmax(0, 1fr);
+  gap: 0.75rem;
   align-items: center;
-  padding-right: 2.2rem;
+  min-height: 3.25rem;
+  padding-right: 3rem;
 }
 
 .waterbody-detail-heading {
   display: grid;
-  grid-template-columns: 4.4rem minmax(0, 1fr);
-  gap: 1rem;
+  grid-template-columns: 3.7rem minmax(0, 1fr);
+  gap: 0.75rem;
   align-items: center;
-  padding-right: 2.2rem;
+  min-height: 3.25rem;
+  padding-right: 3rem;
 }
 
 .waterbody-detail-heading p,
@@ -1440,28 +1444,32 @@ a:focus-visible,
 
 .waterbody-detail-heading p {
   color: #62dff8;
-  font-size: 0.67rem;
+  font-size: 0.6rem;
   font-weight: 780;
   letter-spacing: 0.12em;
 }
 
 .waterbody-detail-heading h2 {
-  margin-top: 0.2rem;
-  font-size: 1.9rem;
+  margin-top: 0.1rem;
+  font-size: 1.55rem;
+  line-height: 1.08;
 }
 
 .waterbody-detail-heading span {
   display: block;
-  margin-top: 0.18rem;
+  margin-top: 0.14rem;
+  overflow: hidden;
   color: #8caabd;
-  font-size: 0.72rem;
+  font-size: 0.64rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .waterbody-detail-symbol {
   display: grid;
-  width: 4.2rem;
-  height: 4.2rem;
-  border: 0.3rem solid #31e4ff;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 0.24rem solid #31e4ff;
   border-radius: 50%;
   box-shadow:
     0 0 0 0.55rem rgb(49 228 255 / 10%),
@@ -1469,9 +1477,9 @@ a:focus-visible,
 }
 
 .waterbody-detail-symbol.is-waterway {
-  width: 3.3rem;
-  height: 3.3rem;
-  margin-left: 0.45rem;
+  width: 2.55rem;
+  height: 2.55rem;
+  margin-left: 0.3rem;
   background: #aa7cff;
   border: 0;
   border-radius: 0.4rem;
@@ -1484,18 +1492,18 @@ a:focus-visible,
 .waterbody-summary {
   margin: 0;
   color: #c6dce8;
-  font-size: 0.8rem;
-  line-height: 1.75;
+  font-size: 0.74rem;
+  line-height: 1.58;
 }
 
 .waterbody-tag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.42rem;
+  gap: 0.32rem;
 }
 
 .waterbody-tag-list span {
-  padding: 0.38rem 0.58rem;
+  padding: 0.3rem 0.5rem;
   color: #bfeeff;
   font-size: 0.68rem;
   background: rgb(66 181 226 / 9%);
@@ -1504,14 +1512,14 @@ a:focus-visible,
 }
 
 .waterbody-country-list {
-  margin-top: 0.75rem;
+  margin-top: 0.55rem;
 }
 
 .linear-feature-symbol {
   position: relative;
   display: block;
-  width: 4.2rem;
-  height: 4.2rem;
+  width: 3.25rem;
+  height: 3.25rem;
   border-radius: 50%;
   box-shadow: 0 0 0 0.55rem rgb(54 220 237 / 9%);
 }
@@ -1544,8 +1552,8 @@ a:focus-visible,
 
 .mountain-range-symbol {
   display: block;
-  width: 4.2rem;
-  height: 3.7rem;
+  width: 3.3rem;
+  height: 2.85rem;
   background: linear-gradient(135deg, #fff6da 0 36%, #d99b52 37% 100%);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
   filter: drop-shadow(0 0 1rem rgb(217 155 82 / 38%));
@@ -1558,8 +1566,8 @@ a:focus-visible,
 .desert-symbol {
   position: relative;
   display: block;
-  width: 4.5rem;
-  height: 3.4rem;
+  width: 3.45rem;
+  height: 2.7rem;
   overflow: hidden;
   background: linear-gradient(
     158deg,
@@ -1578,8 +1586,8 @@ a:focus-visible,
   position: absolute;
   right: -0.4rem;
   bottom: 0.35rem;
-  width: 3.4rem;
-  height: 1.25rem;
+  width: 2.7rem;
+  height: 1rem;
   content: '';
   background: rgb(255 224 154 / 32%);
   border-radius: 100% 0 0;
@@ -1602,18 +1610,18 @@ a:focus-visible,
 
 .mountain-peak-card {
   display: grid;
-  grid-template-columns: 2.2rem minmax(0, 1fr) auto;
-  gap: 0.7rem;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+  gap: 0.55rem;
   align-items: center;
-  padding: 0.75rem 0.8rem;
+  padding: 0.58rem 0.65rem;
   background: rgb(217 155 82 / 8%);
   border: 1px solid rgb(217 155 82 / 18%);
   border-radius: 0.8rem;
 }
 
 .mountain-peak-card-icon {
-  width: 2rem;
-  height: 1.75rem;
+  width: 1.65rem;
+  height: 1.45rem;
   background: linear-gradient(135deg, #fff6da 0 40%, #d99b52 41% 100%);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
@@ -1625,7 +1633,7 @@ a:focus-visible,
 
 .mountain-peak-card strong {
   color: #fff1ce;
-  font-size: 0.84rem;
+  font-size: 0.76rem;
 }
 
 .mountain-peak-card div span {
@@ -1635,13 +1643,13 @@ a:focus-visible,
 
 .mountain-peak-card b {
   color: #ffd879;
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   white-space: nowrap;
 }
 
 .country-detail-flag {
-  width: 5.2rem;
-  height: 3.7rem;
+  width: 3.7rem;
+  height: 2.6rem;
   object-fit: cover;
   border: 1px solid rgb(255 255 255 / 15%);
   border-radius: 0.65rem;
@@ -1650,115 +1658,73 @@ a:focus-visible,
 
 .country-detail-heading p,
 .country-detail-heading h2,
-.country-detail-heading span {
+.country-detail-heading span,
+.country-detail-heading small {
   margin: 0;
 }
 
-.country-official-name {
-  padding: 0.8rem 0.9rem;
-  margin-top: 1.15rem;
-  background: rgb(91 177 215 / 6%);
-  border: 1px solid rgb(121 211 250 / 9%);
-  border-radius: 0.8rem;
-}
-
-.country-official-name .country-detail-label {
-  margin-bottom: 0.35rem;
-}
-
-.country-official-name strong,
-.country-official-name small,
 .country-data-list strong,
-.country-data-list small,
-.country-geography-grid strong,
-.country-geography-grid small {
+.country-data-list small {
   display: block;
-}
-
-.country-official-name strong {
-  font-size: 0.78rem;
-}
-
-.country-official-name small {
-  margin-top: 0.15rem;
-  color: #839eaf;
-  font-size: 0.63rem;
-  line-height: 1.4;
 }
 
 .country-detail-heading p {
   color: #68d8ff;
-  font-size: 0.64rem;
+  font-size: 0.58rem;
   font-weight: 750;
   letter-spacing: 0.1em;
 }
 
 .country-detail-heading h2 {
-  margin-top: 0.18rem;
-  font-size: clamp(1.65rem, 2.6vw, 2.35rem);
+  margin-top: 0.08rem;
+  font-size: clamp(1.45rem, 2vw, 1.75rem);
   line-height: 1.08;
   letter-spacing: -0.04em;
 }
 
 .country-detail-heading span {
   display: block;
-  margin-top: 0.34rem;
+  margin-top: 0.16rem;
   overflow: hidden;
   color: #8faebe;
-  font-size: 0.7rem;
+  font-size: 0.64rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.country-detail-official {
+  display: block;
+  margin-top: 0.16rem !important;
+  overflow: hidden;
+  color: #7895a6;
+  font-size: 0.56rem;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .country-detail-section {
-  margin-top: 1.35rem;
+  margin-top: 0.9rem;
 }
 
 .country-detail-label {
-  margin: 0 0 0.62rem;
+  margin: 0 0 0.42rem;
   color: #7599ad;
-  font-size: 0.62rem;
+  font-size: 0.59rem;
   font-weight: 760;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.capital-list,
 .fun-fact-list {
   padding: 0;
   margin: 0;
   list-style: none;
 }
 
-.capital-list {
-  display: flex;
-  gap: 0.55rem;
-  flex-wrap: wrap;
-}
-
-.capital-list li {
-  display: flex;
-  gap: 0.55rem;
-  align-items: center;
-  min-width: 8rem;
-  padding: 0.62rem 0.72rem;
-  background: rgb(91 177 215 / 8%);
-  border: 1px solid rgb(121 211 250 / 10%);
-  border-radius: 0.72rem;
-}
-
-.capital-list li > span {
-  color: #f6d76d;
-}
-
-.capital-list strong,
-.capital-list small {
-  display: block;
-}
-
 .city-list {
   display: grid;
-  gap: 0.42rem;
+  gap: 0.3rem;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -1767,11 +1733,11 @@ a:focus-visible,
 .city-list button {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.58rem;
+  gap: 0.5rem;
   align-items: center;
   width: 100%;
-  min-height: 3rem;
-  padding: 0.58rem 0.68rem;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.58rem;
   color: #deeff7;
   font: inherit;
   text-align: left;
@@ -1799,11 +1765,11 @@ a:focus-visible,
 }
 
 .city-list strong {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
 }
 
 .city-list small {
-  margin-top: 0.12rem;
+  margin-top: 0.08rem;
   color: #829fb1;
   font-size: 0.6rem;
 }
@@ -1828,8 +1794,9 @@ a:focus-visible,
 }
 
 .city-detail-back {
-  padding: 0.4rem 0.6rem;
-  margin: -0.25rem 2.4rem 0.8rem 0;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.65rem;
+  margin: -0.2rem 3rem 0.55rem 0;
   color: #92dfff;
   font: inherit;
   font-size: 0.68rem;
@@ -1849,15 +1816,15 @@ a:focus-visible,
 
 .city-detail-heading {
   display: grid;
-  grid-template-columns: 4rem minmax(0, 1fr);
-  gap: 0.9rem;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: 0.72rem;
   align-items: center;
-  padding-right: 2.2rem;
+  padding-right: 3rem;
 }
 
 .city-detail-heading img {
-  width: 4rem;
-  height: 2.85rem;
+  width: 3.5rem;
+  height: 2.45rem;
   object-fit: cover;
   border: 1px solid rgb(255 255 255 / 15%);
   border-radius: 0.55rem;
@@ -1871,56 +1838,91 @@ a:focus-visible,
 
 .city-detail-heading p {
   color: #67d9ff;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 760;
   letter-spacing: 0.1em;
 }
 
 .city-detail-heading h2 {
-  margin-top: 0.16rem;
-  font-size: clamp(1.6rem, 2.4vw, 2.15rem);
+  margin-top: 0.08rem;
+  font-size: clamp(1.4rem, 2vw, 1.7rem);
   line-height: 1.08;
 }
 
 .city-detail-heading span {
   display: block;
-  margin-top: 0.3rem;
+  margin-top: 0.16rem;
   overflow: hidden;
   color: #8faebe;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.detail-facts-grid,
 .city-detail-facts {
   display: grid;
-  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.38rem;
   margin: 0;
 }
 
-.city-detail-facts > div {
-  padding: 0.75rem;
-  background: rgb(91 177 215 / 7%);
-  border: 1px solid rgb(121 211 250 / 9%);
-  border-radius: 0.72rem;
+.detail-facts-grid {
+  margin-top: 0.85rem;
 }
 
+.detail-facts-grid > div,
+.city-detail-facts > div {
+  min-width: 0;
+  padding: 0.55rem 0.6rem;
+  background: rgb(91 177 215 / 7%);
+  border: 1px solid rgb(121 211 250 / 9%);
+  border-radius: 0.65rem;
+}
+
+.city-detail-facts > div:only-child {
+  grid-column: 1 / -1;
+}
+
+.detail-facts-grid dt,
 .city-detail-facts dt {
   color: #7393a5;
-  font-size: 0.58rem;
+  font-size: 0.55rem;
   font-weight: 700;
 }
 
+.detail-facts-grid dd,
 .city-detail-facts dd {
-  margin: 0.32rem 0 0;
+  margin: 0.22rem 0 0;
   color: #e2f3fa;
-  font-size: 0.75rem;
-  line-height: 1.45;
+  font-size: 0.7rem;
+  line-height: 1.38;
+}
+
+.detail-facts-grid dd > strong,
+.detail-facts-grid dd > small,
+.detail-value-stack,
+.detail-value-stack > span,
+.detail-value-stack strong,
+.detail-value-stack small {
+  display: block;
+}
+
+.detail-facts-grid dd > small,
+.detail-value-stack small {
+  margin-top: 0.08rem;
+  color: #829fb1;
+  font-size: 0.56rem;
+}
+
+.detail-value-stack {
+  display: grid;
+  gap: 0.28rem;
 }
 
 .city-reason-list {
   display: flex;
-  gap: 0.42rem;
+  gap: 0.32rem;
   flex-wrap: wrap;
   padding: 0;
   margin: 0;
@@ -1928,49 +1930,17 @@ a:focus-visible,
 }
 
 .city-reason-list li {
-  padding: 0.42rem 0.58rem;
+  padding: 0.34rem 0.5rem;
   color: #d7f2fc;
-  font-size: 0.64rem;
+  font-size: 0.61rem;
   background: rgb(77 207 255 / 9%);
   border: 1px solid rgb(111 218 255 / 13%);
   border-radius: 999px;
 }
 
-.capital-list strong {
-  font-size: 0.78rem;
-}
-
-.capital-list small {
-  margin-top: 0.1rem;
-  color: #829fb1;
-  font-size: 0.62rem;
-}
-
-.country-facts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.65rem;
-  margin-top: 1.2rem;
-}
-
-.country-facts-grid section {
-  min-width: 0;
-  padding: 0.78rem;
-  background: rgb(91 177 215 / 7%);
-  border: 1px solid rgb(121 211 250 / 9%);
-  border-radius: 0.75rem;
-}
-
-.country-facts-grid p:last-child {
-  margin: 0;
-  color: #e1eff7;
-  font-size: 0.73rem;
-  line-height: 1.45;
-}
-
 .country-data-list {
   display: grid;
-  gap: 0.48rem;
+  gap: 0.28rem;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -1978,58 +1948,24 @@ a:focus-visible,
 
 .country-data-list strong {
   color: #e1eff7;
-  font-size: 0.72rem;
-  line-height: 1.4;
+  font-size: 0.67rem;
+  line-height: 1.32;
 }
 
 .country-data-list small {
-  margin-top: 0.12rem;
+  margin-top: 0.06rem;
   color: #829fb1;
-  font-size: 0.59rem;
+  font-size: 0.55rem;
   line-height: 1.35;
 }
 
-.country-geography-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-  margin: 0;
-}
-
-.country-geography-grid > div {
-  padding: 0.72rem;
-  background: rgb(91 177 215 / 7%);
-  border: 1px solid rgb(121 211 250 / 9%);
-  border-radius: 0.72rem;
-}
-
-.country-geography-grid dt {
-  color: #7393a5;
-  font-size: 0.58rem;
-  font-weight: 700;
-}
-
-.country-geography-grid dd {
-  margin: 0.32rem 0 0;
-}
-
-.country-geography-grid strong {
-  font-size: 0.73rem;
-}
-
-.country-geography-grid small {
-  margin-top: 0.12rem;
-  color: #829fb1;
-  font-size: 0.58rem;
-}
-
 .country-border-group + .country-border-group {
-  margin-top: 0.8rem;
+  margin-top: 0.58rem;
 }
 
 .country-border-group > span {
   display: block;
-  margin-bottom: 0.42rem;
+  margin-bottom: 0.3rem;
   color: #829fb1;
   font-size: 0.61rem;
 }
@@ -2037,7 +1973,7 @@ a:focus-visible,
 .country-border-list,
 .country-region-list {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.3rem;
   flex-wrap: wrap;
 }
 
@@ -2046,8 +1982,8 @@ a:focus-visible,
   display: inline-flex;
   gap: 0.38rem;
   align-items: center;
-  min-height: 2rem;
-  padding: 0.35rem 0.55rem;
+  min-height: 2.75rem;
+  padding: 0.32rem 0.55rem;
   color: #cfe7f2;
   font: inherit;
   font-size: 0.65rem;
@@ -2082,6 +2018,7 @@ a:focus-visible,
 }
 
 .country-region-list > span {
+  min-height: 2rem;
   color: #a9bdc8;
   cursor: default;
   background: rgb(160 174 187 / 7%);
@@ -2095,22 +2032,22 @@ a:focus-visible,
 
 .fun-fact-list {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.42rem;
 }
 
 .fun-fact-list li {
   display: grid;
-  grid-template-columns: 1.55rem minmax(0, 1fr);
-  gap: 0.6rem;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  gap: 0.48rem;
   align-items: start;
 }
 
 .fun-fact-list li > span {
   display: grid;
-  width: 1.55rem;
-  height: 1.55rem;
+  width: 1.35rem;
+  height: 1.35rem;
   color: #0a2436;
-  font-size: 0.66rem;
+  font-size: 0.61rem;
   font-weight: 800;
   background: #f3cf62;
   border-radius: 50%;
@@ -2120,58 +2057,67 @@ a:focus-visible,
 .fun-fact-list p {
   margin: 0;
   color: #c5d9e5;
-  font-size: 0.74rem;
-  line-height: 1.52;
+  font-size: 0.7rem;
+  line-height: 1.45;
 }
 
-.country-sources {
-  padding: 0.78rem 0.85rem;
-  margin-top: 1.35rem;
-  background: rgb(91 177 215 / 5%);
-  border: 1px solid rgb(121 211 250 / 9%);
-  border-radius: 0.8rem;
+.detail-expandable {
+  display: grid;
+  gap: 0.32rem;
 }
 
-.country-sources summary {
-  color: #9ab8c8;
-  font-size: 0.68rem;
-  font-weight: 700;
+.detail-expand-toggle {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.5rem;
+  color: #83cfe9;
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 720;
   cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0.55rem;
 }
 
-.country-sources ul {
-  display: grid;
-  gap: 0.75rem;
-  padding: 0;
-  margin: 0.8rem 0 0;
-  list-style: none;
+.detail-expand-toggle span:last-child {
+  font-size: 0.8rem;
+  transition: transform 160ms ease;
 }
 
-.country-sources li {
-  display: grid;
-  gap: 0.18rem;
+.detail-expand-toggle[aria-expanded='true'] span:last-child {
+  transform: rotate(180deg);
 }
 
-.country-sources a {
-  width: fit-content;
-  color: #80dfff;
-  font-size: 0.68rem;
-  text-underline-offset: 0.18rem;
+.detail-expand-toggle:hover,
+.detail-expand-toggle:focus-visible {
+  color: #e7f8ff;
+  background: rgb(91 177 215 / 9%);
+  outline: none;
 }
 
-.country-sources span,
-.country-sources small {
-  color: #7590a0;
-  font-size: 0.57rem;
-  line-height: 1.4;
+.detail-expand-toggle:focus-visible {
+  box-shadow: inset 0 0 0 2px rgb(117 218 255 / 45%);
+}
+
+.detail-facts-grid .detail-expand-toggle {
+  justify-content: flex-start;
+  padding: 0.25rem 0;
+  text-align: left;
 }
 
 .prototype-note {
-  margin: 1.35rem 0 0;
+  padding-top: 0.65rem;
+  margin: 0.95rem 0 0;
   color: #607d90;
-  font-size: 0.58rem;
-  line-height: 1.45;
+  font-size: 0.55rem;
+  line-height: 1.4;
   text-align: center;
+  border-top: 1px solid rgb(121 211 250 / 8%);
 }
 
 .country-detail-muted {
@@ -2403,14 +2349,14 @@ a:focus-visible,
 
   .country-detail {
     position: fixed;
-    z-index: 9;
+    z-index: 12;
     top: auto;
     right: 0;
     bottom: 0;
     left: 0;
     width: auto;
     max-height: min(63dvh, 34rem);
-    padding: 1rem 1.15rem calc(1.2rem + env(safe-area-inset-bottom));
+    padding: 0.85rem 0.95rem calc(1rem + env(safe-area-inset-bottom));
     border-right: 0;
     border-bottom: 0;
     border-left: 0;
@@ -2421,22 +2367,22 @@ a:focus-visible,
     display: block;
     width: 2.8rem;
     height: 0.25rem;
-    margin: 0 auto 0.75rem;
+    margin: 0 auto 0.55rem;
     background: rgb(184 222 238 / 26%);
     border-radius: 999px;
   }
 
   .country-detail-heading {
-    grid-template-columns: 4.3rem minmax(0, 1fr);
+    grid-template-columns: 3.45rem minmax(0, 1fr);
   }
 
   .country-detail-flag {
-    width: 4.3rem;
-    height: 3rem;
+    width: 3.45rem;
+    height: 2.4rem;
   }
 
   .country-detail-heading h2 {
-    font-size: 1.65rem;
+    font-size: 1.42rem;
   }
 }
 
@@ -2584,7 +2530,7 @@ a:focus-visible,
     left: auto;
     width: var(--detail-column);
     max-height: none;
-    padding: 0.9rem;
+    padding: 0.75rem;
     border: 1px solid rgb(140 221 255 / 20%);
     border-radius: 1.2rem;
   }
@@ -2594,31 +2540,31 @@ a:focus-visible,
   }
 
   .landscape-runtime.is-touch-device .country-detail-heading {
-    grid-template-columns: 3.8rem minmax(0, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: 3.2rem minmax(0, 1fr);
+    gap: 0.6rem;
   }
 
   .landscape-runtime.is-touch-device .country-detail-flag {
-    width: 3.8rem;
-    height: 2.65rem;
+    width: 3.2rem;
+    height: 2.2rem;
   }
 
   .landscape-runtime.is-touch-device .country-detail-heading h2 {
-    font-size: 1.45rem;
+    font-size: 1.3rem;
   }
 
   .landscape-runtime.is-touch-device .desert-heading {
-    grid-template-columns: 3.55rem minmax(0, 1fr);
-    gap: 0.7rem;
+    grid-template-columns: 3.05rem minmax(0, 1fr);
+    gap: 0.55rem;
   }
 
   .landscape-runtime.is-touch-device .desert-heading h2 {
-    font-size: 1.45rem;
+    font-size: 1.3rem;
   }
 
   .landscape-runtime.is-touch-device .desert-symbol {
-    width: 3.45rem;
-    height: 2.7rem;
+    width: 3rem;
+    height: 2.3rem;
   }
 }
 

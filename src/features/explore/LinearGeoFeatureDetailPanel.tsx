@@ -1,7 +1,8 @@
-import { countriesByCode, getCountrySource } from '../../data/countries'
+import { countriesByCode } from '../../data/countries'
 import { linearGeoFeatureKindLabels } from '../../data/linearGeoFeatures'
 import type { LinearGeoFeature } from '../../data/linearGeoFeatureSchema'
 import { DetailPanelShell } from './DetailPanelShell'
+import { ExpandableItems } from './ExpandableItems'
 
 const lengthFormatter = new Intl.NumberFormat('zh-CN', {
   maximumFractionDigits: 1,
@@ -16,11 +17,6 @@ export function LinearGeoFeatureDetailPanel({
   onClose: () => void
   onSelectCountry: (countryCode: string) => void
 }) {
-  const sources = feature.sourceIds.flatMap((sourceId) => {
-    const source = getCountrySource(sourceId)
-    return source ? [source] : []
-  })
-
   return (
     <DetailPanelShell
       label={`${feature.name.zh}知识卡`}
@@ -104,21 +100,29 @@ export function LinearGeoFeatureDetailPanel({
             <span key={item}>{item}</span>
           ))}
         </div>
-        <div className="country-border-list waterbody-country-list">
-          {feature.countryCodes.map((countryCode) => {
-            const country = countriesByCode.get(countryCode)
-            return country ? (
-              <button
-                key={countryCode}
-                type="button"
-                onClick={() => onSelectCountry(countryCode)}
-              >
-                <img src={country.flagAsset} alt="" />
-                <span>{country.name.zh}</span>
-              </button>
-            ) : null
-          })}
-        </div>
+        <ExpandableItems
+          key={`${feature.id}:countries`}
+          items={feature.countryCodes}
+          previewCount={6}
+          expandLabel="流经国家和地区"
+          renderItems={(countryCodes) => (
+            <div className="country-border-list waterbody-country-list">
+              {countryCodes.map((countryCode) => {
+                const country = countriesByCode.get(countryCode)
+                return country ? (
+                  <button
+                    key={countryCode}
+                    type="button"
+                    onClick={() => onSelectCountry(countryCode)}
+                  >
+                    <img src={country.flagAsset} alt="" />
+                    <span>{country.name.zh}</span>
+                  </button>
+                ) : null
+              })}
+            </div>
+          )}
+        />
       </section>
 
       <section className="country-detail-section">
@@ -132,25 +136,6 @@ export function LinearGeoFeatureDetailPanel({
           ))}
         </ol>
       </section>
-
-      <details className="country-sources">
-        <summary>资料来源（{sources.length}）</summary>
-        <ul>
-          {sources.map((source) => (
-            <li key={source.id}>
-              <a href={source.url} target="_blank" rel="noreferrer">
-                {source.name}
-              </a>
-              <span>
-                {source.publisher}
-                {source.version ? ` · ${source.version}` : ''}
-                {source.accessedAt ? ` · 查阅于 ${source.accessedAt}` : ''}
-              </span>
-              <small>{source.license}</small>
-            </li>
-          ))}
-        </ul>
-      </details>
     </DetailPanelShell>
   )
 }

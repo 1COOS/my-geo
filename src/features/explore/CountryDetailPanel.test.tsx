@@ -70,19 +70,23 @@ describe('CountryDetailPanel', () => {
       'src',
       '/flags/cn.svg',
     )
-    expect(screen.getByText('中华人民共和国')).toBeInTheDocument()
+    expect(screen.getByText(/中华人民共和国/)).toBeInTheDocument()
     expect(screen.getAllByText('北京').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('约 14.1亿 人')).toBeInTheDocument()
+    expect(screen.getByText('2025 年')).toBeInTheDocument()
     expect(screen.getByText('人民币（CNY）')).toBeInTheDocument()
     expect(screen.getByText('中国香港')).toBeInTheDocument()
     expect(screen.getByText('中国澳门')).toBeInTheDocument()
-    expect(screen.getByText('资料来源（3）')).toBeInTheDocument()
+    expect(screen.queryByText(/资料来源/)).not.toBeInTheDocument()
   })
 
   it('renders a complete non-featured microstate card', () => {
     renderCountry('VA')
 
-    expect(screen.getByText('梵蒂冈城国')).toBeInTheDocument()
+    expect(screen.getByText(/梵蒂冈城国/)).toBeInTheDocument()
     expect(screen.getByText('0.44 km²')).toBeInTheDocument()
+    expect(screen.getByText('约 882 人')).toBeInTheDocument()
+    expect(screen.getByText('2024 年')).toBeInTheDocument()
     expect(screen.getByText('拉丁语')).toBeInTheDocument()
     expect(screen.queryByText('海陆属性')).not.toBeInTheDocument()
     expect(screen.queryByText('更多内容制作中')).not.toBeInTheDocument()
@@ -122,17 +126,7 @@ describe('CountryDetailPanel', () => {
     expect(screen.queryByRole('button', { name: /中国澳门/ })).toBeNull()
   })
 
-  it('expands the local source registry details', async () => {
-    renderCountry('VA')
-
-    await userEvent.click(screen.getByText('资料来源（1）'))
-
-    expect(
-      screen.getByRole('link', { name: 'World Countries dataset' }),
-    ).toHaveAttribute('href', 'https://github.com/mledoze/countries')
-  })
-
-  it('renders the reviewed city list as keyboard-accessible controls', () => {
+  it('keeps long city lists compact and keyboard-expandable', async () => {
     renderCountry('CN')
 
     expect(
@@ -141,20 +135,48 @@ describe('CountryDetailPanel', () => {
     expect(
       screen.getByRole('button', { name: '探索城市上海' }),
     ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '探索城市成都' })).toBeNull()
+
+    const expand = screen.getByRole('button', {
+      name: '查看全部主要城市（5）',
+    })
+    expect(expand).toHaveAttribute('aria-expanded', 'false')
+
+    await userEvent.click(expand)
+
+    expect(expand).toHaveAttribute('aria-expanded', 'true')
     expect(
       screen.getByRole('button', { name: '探索城市成都' }),
     ).toBeInTheDocument()
   })
 
-  it('switches to a city knowledge card with population, coordinates, reasons, and sources', async () => {
+  it('collapses long language and currency lists without dropping content', async () => {
+    renderCountry('ZW')
+
+    expect(screen.queryByText('卡兰加语')).not.toBeInTheDocument()
+    expect(screen.queryByText('欧元')).not.toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '查看全部语言（15）' }),
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: '查看全部货币（9）' }),
+    )
+
+    expect(screen.getByText('卡兰加语')).toBeInTheDocument()
+    expect(screen.getByText('欧元（EUR）')).toBeInTheDocument()
+  })
+
+  it('switches to a city knowledge card with population and reasons', async () => {
     const onBackToCountry = renderSelectedCity('CN', 'cn-shanghai')
 
     expect(screen.getByLabelText('上海城市知识卡')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '上海' })).toBeInTheDocument()
     expect(screen.getByText(/约 2407.3万 人/)).toBeInTheDocument()
-    expect(screen.getByText(/31\.1667°N/)).toBeInTheDocument()
+    expect(screen.queryByText(/31\.1667°N/)).not.toBeInTheDocument()
     expect(screen.getByText('经济中心')).toBeInTheDocument()
     expect(screen.getByText('世界知名')).toBeInTheDocument()
+    expect(screen.queryByText(/资料来源/)).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: '← 返回中国' }))
     expect(onBackToCountry).toHaveBeenCalledOnce()
