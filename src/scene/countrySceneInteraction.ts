@@ -8,6 +8,8 @@ export const OVERVIEW_CAMERA_DISTANCE = 425
 export const CITY_CAMERA_DISTANCE = 190
 export const WATERBODY_CAMERA_DISTANCE = 225
 export const GLOBE_VERTICAL_CENTER_RATIO = 0.45
+export const LAKE_LABEL_VERTICAL_OFFSET = 40
+export const MAP_LABEL_VIEWPORT_MARGIN = 12
 
 type CartesianPosition = {
   x: number
@@ -142,6 +144,7 @@ export function getLinearFeatureIdForLayer(
 
 export type WaterbodyLayerVisibility = {
   showOceanLayer: boolean
+  showLakeLayer: boolean
   showWaterwayLayer: boolean
   selectedWaterbodyId: string | null
   hoveredWaterbodyId: string | null
@@ -151,14 +154,94 @@ export function getVisibleLayerWaterbodies(
   waterbodies: readonly Waterbody[],
   visibility: WaterbodyLayerVisibility,
 ) {
-  return waterbodies.filter(
-    (waterbody) =>
+  return waterbodies.filter((waterbody) => {
+    if (waterbody.layer === 'lake') return visibility.showLakeLayer
+    return (
       waterbody.id === visibility.selectedWaterbodyId ||
       waterbody.id === visibility.hoveredWaterbodyId ||
       (waterbody.layer === 'ocean'
         ? visibility.showOceanLayer
-        : visibility.showWaterwayLayer),
+        : visibility.showWaterwayLayer)
+    )
+  })
+}
+
+export function getWaterbodyPolygonState(
+  value: object | undefined,
+  selectedWaterbodyId: string | null,
+  hoveredWaterbodyId: string | null,
+) {
+  const waterbodyId = getWaterbodyIdForLayer('polygon', value)
+  if (!waterbodyId) return null
+  if (waterbodyId === selectedWaterbodyId) return 'selected' as const
+  if (waterbodyId === hoveredWaterbodyId) return 'hovered' as const
+  return 'ordinary' as const
+}
+
+type MapLabelPlacementInput = {
+  x: number
+  y: number
+  labelWidth: number
+  labelHeight: number
+  viewportWidth: number
+  viewportHeight: number
+  isLake: boolean
+}
+
+export function getMapLabelPlacement({
+  x,
+  y,
+  labelWidth,
+  labelHeight,
+  viewportWidth,
+  viewportHeight,
+  isLake,
+}: MapLabelPlacementInput) {
+  if (!isLake) {
+    return {
+      x,
+      y,
+      leaderLength: 0,
+      leaderAngleDegrees: 0,
+    }
+  }
+
+  const placedX = Math.max(
+    labelWidth / 2 + MAP_LABEL_VIEWPORT_MARGIN,
+    Math.min(viewportWidth - labelWidth / 2 - MAP_LABEL_VIEWPORT_MARGIN, x),
   )
+  const placedY = Math.max(
+    labelHeight / 2 + MAP_LABEL_VIEWPORT_MARGIN,
+    Math.min(
+      viewportHeight - labelHeight / 2 - MAP_LABEL_VIEWPORT_MARGIN,
+      y - LAKE_LABEL_VERTICAL_OFFSET,
+    ),
+  )
+  const leaderStartY = placedY + labelHeight / 2
+  const leaderDeltaX = x - placedX
+  const leaderDeltaY = y - leaderStartY
+  const leaderLength =
+    leaderDeltaY > 0 ? Math.hypot(leaderDeltaX, leaderDeltaY) : 0
+
+  return {
+    x: placedX,
+    y: placedY,
+    leaderLength,
+    leaderAngleDegrees:
+      leaderLength > 0
+        ? (Math.atan2(leaderDeltaY, leaderDeltaX) * 180) / Math.PI
+        : 0,
+  }
+}
+
+export function getWaterbodyLabelState(
+  waterbodyId: string,
+  selectedWaterbodyId: string | null,
+  hoveredWaterbodyId: string | null,
+) {
+  if (waterbodyId === selectedWaterbodyId) return 'selected' as const
+  if (waterbodyId === hoveredWaterbodyId) return 'hovered' as const
+  return 'ordinary' as const
 }
 
 export type LinearFeatureLayerVisibility = {

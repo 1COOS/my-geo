@@ -33,6 +33,7 @@ import {
   riverGeometryDefinitions,
 } from './river-geometry-content'
 import {
+  NATURAL_EARTH_LAKES_ARCHIVE_SHA256,
   NATURAL_EARTH_MARINE_ARCHIVE_SHA256,
   waterbodyGeometryDefinitions,
 } from './waterbody-geometry-content'
@@ -359,6 +360,7 @@ const expectedWaterbodyKinds = {
   sea: 26,
   gulf: 4,
   bay: 2,
+  lake: 20,
   strait: 10,
   trench: 4,
 } as const
@@ -383,7 +385,7 @@ const surfaceWaterbodyIds = new Set(
     .map((waterbody) => waterbody.id),
 )
 if (
-  waterbodyGeometryDefinitions.length !== 47 ||
+  waterbodyGeometryDefinitions.length !== 67 ||
   waterbodyGeometryDefinitions.some(
     (definition) => !surfaceWaterbodyIds.has(definition.id),
   )
@@ -411,21 +413,29 @@ for (const geometry of waterbodyGeometries) {
   if (geometry.kind !== 'surface') continue
   const waterbody = waterbodies.find((item) => item.id === geometry.id)!
   const maximumPoints =
-    waterbody.kind === 'ocean' ? 600 : waterbody.kind === 'strait' ? 100 : 300
+    waterbody.kind === 'ocean'
+      ? 600
+      : waterbody.kind === 'strait'
+        ? 100
+        : waterbody.kind === 'lake'
+          ? 120
+          : 300
   const lowPointCount = countSurfacePoints(geometry.lowDetailGeometry)
   if (lowPointCount > maximumPoints) {
     throw new Error(
       `${geometry.id} exceeds its low-detail point budget: ${lowPointCount}`,
     )
   }
-  if (
-    geometry.provenance.archiveSha256 !== NATURAL_EARTH_MARINE_ARCHIVE_SHA256
-  ) {
-    throw new Error(`Unexpected marine archive SHA on ${geometry.id}`)
+  const expectedArchiveSha256 =
+    waterbody.kind === 'lake'
+      ? NATURAL_EARTH_LAKES_ARCHIVE_SHA256
+      : NATURAL_EARTH_MARINE_ARCHIVE_SHA256
+  if (geometry.provenance.archiveSha256 !== expectedArchiveSha256) {
+    throw new Error(`Unexpected archive SHA on ${geometry.id}`)
   }
   lowDetailWaterbodyPointCount += lowPointCount
 }
-if (lowDetailWaterbodyPointCount > 8_000) {
+if (lowDetailWaterbodyPointCount > 11_000) {
   throw new Error(
     `Waterbody low-detail point budget exceeded: ${lowDetailWaterbodyPointCount}`,
   )

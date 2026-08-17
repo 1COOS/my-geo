@@ -1,6 +1,8 @@
 export type WaterbodyPosition = [number, number]
 
-type SurfaceWaterbodyKind = 'ocean' | 'sea' | 'gulf' | 'bay' | 'strait'
+type SurfaceWaterbodyKind = 'ocean' | 'sea' | 'gulf' | 'bay' | 'lake' | 'strait'
+
+export type NaturalEarthWaterbodyDataset = 'marine' | 'lakes'
 
 type ReviewedOutline = {
   type: 'Polygon'
@@ -11,6 +13,7 @@ type ReviewedOutline = {
 export type WaterbodyGeometryDefinition = {
   id: string
   kind: SurfaceWaterbodyKind
+  dataset: NaturalEarthWaterbodyDataset
   naturalEarthNeIds: number[]
   lowDetailMaximumPoints: number
   reviewedOutline?: ReviewedOutline
@@ -22,8 +25,14 @@ export const NATURAL_EARTH_MARINE_ARCHIVE_URL =
 export const NATURAL_EARTH_MARINE_ARCHIVE_SHA256 =
   'a2d3395904c41e718e02c3ec5bc988712164c524c236fad32d95d282ca303b2a'
 
+export const NATURAL_EARTH_LAKES_ARCHIVE_URL =
+  'https://naturalearth.s3.amazonaws.com/10m_physical/ne_10m_lakes.zip'
+
+export const NATURAL_EARTH_LAKES_ARCHIVE_SHA256 =
+  '0803a06f9c3cb4671d89b68c48b142aad9366ba40f665245e12a913fbc61722a'
+
 const maximumPoints = (kind: SurfaceWaterbodyKind) =>
-  kind === 'ocean' ? 600 : kind === 'strait' ? 100 : 300
+  kind === 'ocean' ? 600 : kind === 'strait' ? 100 : kind === 'lake' ? 120 : 300
 
 const naturalEarth = (
   id: string,
@@ -32,8 +41,20 @@ const naturalEarth = (
 ): WaterbodyGeometryDefinition => ({
   id,
   kind,
+  dataset: 'marine',
   naturalEarthNeIds,
   lowDetailMaximumPoints: maximumPoints(kind),
+})
+
+const naturalEarthLake = (
+  id: string,
+  ...naturalEarthNeIds: number[]
+): WaterbodyGeometryDefinition => ({
+  id,
+  kind: 'lake',
+  dataset: 'lakes',
+  naturalEarthNeIds,
+  lowDetailMaximumPoints: maximumPoints('lake'),
 })
 
 const reviewed = (
@@ -42,6 +63,7 @@ const reviewed = (
 ): WaterbodyGeometryDefinition => ({
   id,
   kind: 'strait',
+  dataset: 'marine',
   naturalEarthNeIds: [],
   lowDetailMaximumPoints: maximumPoints('strait'),
   reviewedOutline: {
@@ -120,4 +142,24 @@ export const waterbodyGeometryDefinitions: WaterbodyGeometryDefinition[] = [
   naturalEarth('korea-strait', 'strait', 1159116907),
   naturalEarth('english-channel', 'strait', 1159116535),
   naturalEarth('strait-of-magellan', 'strait', 1159118553),
+  naturalEarthLake('lake-superior', 1159112991),
+  naturalEarthLake('lake-michigan', 1159113005),
+  naturalEarthLake('lake-huron', 1159113021),
+  naturalEarthLake('lake-erie', 1159106757),
+  naturalEarthLake('lake-ontario', 1159106765),
+  naturalEarthLake('great-bear-lake', 1159106721),
+  naturalEarthLake('great-slave-lake', 1159106729),
+  naturalEarthLake('lake-victoria', 1159113191),
+  naturalEarthLake('lake-tanganyika', 1159113185),
+  naturalEarthLake('lake-malawi', 1159113163),
+  naturalEarthLake('lake-chad', 1159113219),
+  naturalEarthLake('lake-turkana', 1159126669),
+  naturalEarthLake('lake-baikal', 1159113127),
+  naturalEarthLake('lake-balkhash', 1159113111),
+  naturalEarthLake('qinghai-lake', 1159126725),
+  naturalEarthLake('tonle-sap', 1159113439),
+  naturalEarthLake('dead-sea', 1159126747),
+  naturalEarthLake('lake-titicaca', 1159113279),
+  naturalEarthLake('lake-ladoga', 1159113095),
+  naturalEarthLake('lake-eyre', 1159126091, 1159126189),
 ]

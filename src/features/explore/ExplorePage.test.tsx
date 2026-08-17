@@ -76,6 +76,11 @@ describe('ExplorePage', () => {
     )
     expect(
       screen.getByRole('button', {
+        name: '湖泊图层：世界著名淡水与咸水湖泊',
+      }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.getByRole('button', {
         name: '河流图层：世界重要河流与人工运河',
       }),
     ).toHaveAttribute('aria-pressed', 'false')
@@ -283,6 +288,7 @@ describe('ExplorePage', () => {
     const getProps = () =>
       globePropsMock.mock.lastCall![0] as {
         showOceanLayer: boolean
+        showLakeLayer: boolean
         showWaterwayLayer: boolean
         selectedWaterbodyId: string | null
         selectedCountryCode: string | null
@@ -291,11 +297,22 @@ describe('ExplorePage', () => {
     await user.click(screen.getByRole('button', { name: '海洋' }))
     expect(getProps()).toMatchObject({
       showOceanLayer: true,
+      showLakeLayer: false,
+      showWaterwayLayer: false,
+    })
+    const lakeToggle = screen.getByRole('button', {
+      name: '湖泊图层：世界著名淡水与咸水湖泊',
+    })
+    await user.click(lakeToggle)
+    expect(getProps()).toMatchObject({
+      showOceanLayer: true,
+      showLakeLayer: true,
       showWaterwayLayer: false,
     })
     await user.click(screen.getByRole('button', { name: '水域' }))
     expect(getProps()).toMatchObject({
       showOceanLayer: true,
+      showLakeLayer: true,
       showWaterwayLayer: true,
     })
 
@@ -317,6 +334,36 @@ describe('ExplorePage', () => {
     expect(await screen.findByLabelText('渤海水域知识卡')).toBeInTheDocument()
     expect(getProps()).toMatchObject({ selectedWaterbodyId: 'bohai-sea' })
     expect(screen.getByText('中国东北部沿海、黄海西北部')).toBeInTheDocument()
+
+    await user.click(lakeToggle)
+    expect(getProps()).toMatchObject({ showLakeLayer: false })
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    const lakeSearch = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.clear(lakeSearch)
+    await user.type(lakeSearch, '贝加尔湖{Enter}')
+    expect(
+      await screen.findByLabelText('贝加尔湖水域知识卡'),
+    ).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      showLakeLayer: true,
+      selectedWaterbodyId: 'lake-baikal',
+    })
+    expect(screen.getByText('1,642 m')).toBeInTheDocument()
+    expect(screen.getByText(/水位、季节和长期环境变化/)).toBeInTheDocument()
+
+    await user.click(lakeToggle)
+    expect(getProps()).toMatchObject({
+      showLakeLayer: false,
+      selectedWaterbodyId: 'lake-baikal',
+    })
+    expect(screen.getByLabelText('贝加尔湖水域知识卡')).toBeInTheDocument()
+
+    await user.click(lakeToggle)
+    await user.click(screen.getByRole('button', { name: '关闭水域知识卡' }))
+    expect(getProps()).toMatchObject({
+      showLakeLayer: true,
+      selectedWaterbodyId: null,
+    })
   })
 
   it('toggles river and canal layers and keeps all place selection mutually exclusive', async () => {

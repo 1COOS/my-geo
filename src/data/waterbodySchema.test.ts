@@ -20,20 +20,23 @@ function geometryPointCount(geometry: SurfaceGeometry) {
 }
 
 describe('waterbody catalogue', () => {
-  it('contains the reviewed 51-item classification', () => {
-    expect(waterbodies).toHaveLength(51)
+  it('contains the reviewed 71-item classification', () => {
+    expect(waterbodies).toHaveLength(71)
     expect(
       Object.fromEntries(
-        ['ocean', 'sea', 'gulf', 'bay', 'strait', 'trench'].map((kind) => [
-          kind,
-          waterbodies.filter((item) => item.kind === kind).length,
-        ]),
+        ['ocean', 'sea', 'gulf', 'bay', 'lake', 'strait', 'trench'].map(
+          (kind) => [
+            kind,
+            waterbodies.filter((item) => item.kind === kind).length,
+          ],
+        ),
       ),
     ).toEqual({
       ocean: 5,
       sea: 26,
       gulf: 4,
       bay: 2,
+      lake: 20,
       strait: 10,
       trench: 4,
     })
@@ -43,7 +46,7 @@ describe('waterbody catalogue', () => {
     const geometryIds = new Set(
       waterbodyGeometries.map((geometry) => geometry.id),
     )
-    expect(geometryIds.size).toBe(51)
+    expect(geometryIds.size).toBe(71)
     for (const waterbody of waterbodies) {
       expect(geometryIds.has(waterbody.id)).toBe(true)
       expect(waterbody.sourceIds.length).toBeGreaterThan(0)
@@ -57,7 +60,7 @@ describe('waterbody catalogue', () => {
     const surfaces = waterbodyGeometries.filter(
       (geometry) => geometry.kind === 'surface',
     )
-    expect(surfaces).toHaveLength(47)
+    expect(surfaces).toHaveLength(67)
     expect(
       waterbodyGeometries.filter((geometry) => geometry.kind === 'trench'),
     ).toHaveLength(4)
@@ -75,7 +78,9 @@ describe('waterbody catalogue', () => {
           ? 600
           : waterbody.kind === 'strait'
             ? 100
-            : 300
+            : waterbody.kind === 'lake'
+              ? 120
+              : 300
       const lowPoints = geometryPointCount(surface.lowDetailGeometry)
       expect(lowPoints).toBeLessThanOrEqual(maximumPoints)
       expect(geometryPointCount(surface.geometry)).toBeGreaterThanOrEqual(
@@ -89,7 +94,7 @@ describe('waterbody catalogue', () => {
         }
       }
     }
-    expect(lowDetailPointCount).toBeLessThanOrEqual(8_000)
+    expect(lowDetailPointCount).toBeLessThanOrEqual(11_000)
   })
 
   it('replaces rectangular estimates and records the two reviewed gaps', () => {
@@ -101,6 +106,12 @@ describe('waterbody catalogue', () => {
     )
     const bohai = waterbodyGeometries.find(
       (geometry) => geometry.id === 'bohai-sea',
+    )
+    const baikal = waterbodyGeometries.find(
+      (geometry) => geometry.id === 'lake-baikal',
+    )
+    const eyre = waterbodyGeometries.find(
+      (geometry) => geometry.id === 'lake-eyre',
     )
     const mariana = waterbodyGeometries.find(
       (geometry) => geometry.id === 'mariana-trench',
@@ -133,6 +144,14 @@ describe('waterbody catalogue', () => {
       bohai?.kind === 'surface' &&
         bohai.provenance.naturalEarthRecords.map((record) => record.neId),
     ).toEqual([1159117171])
+    expect(
+      baikal?.kind === 'surface' &&
+        baikal.provenance.naturalEarthRecords.map((record) => record.neId),
+    ).toEqual([1159113127])
+    expect(
+      eyre?.kind === 'surface' &&
+        eyre.provenance.naturalEarthRecords.map((record) => record.neId),
+    ).toEqual([1159126091, 1159126189])
     expect(
       mariana?.kind === 'trench' && mariana.points.length,
     ).toBeLessThanOrEqual(24)

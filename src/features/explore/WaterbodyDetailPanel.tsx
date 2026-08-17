@@ -25,7 +25,9 @@ export function WaterbodyDetailPanel({
       onClose={onClose}
       footer={
         <p className="prototype-note">
-          示意范围仅用于地理学习，不代表领海、专属经济区、管辖权或法定边界。
+          {waterbody.kind === 'lake'
+            ? '湖泊面积与岸线会随水位、季节和长期环境变化而改变，图层为学习示意。'
+            : '示意范围仅用于地理学习，不代表领海、专属经济区、管辖权或法定边界。'}
         </p>
       }
     >
@@ -73,7 +75,9 @@ export function WaterbodyDetailPanel({
       </section>
 
       <section className="country-detail-section">
-        <p className="country-detail-label">相邻陆地与岛屿</p>
+        <p className="country-detail-label">
+          {waterbody.kind === 'lake' ? '湖岸地区' : '相邻陆地与岛屿'}
+        </p>
         <div className="waterbody-tag-list">
           {waterbody.adjacentLandmasses.map((landmass) => (
             <span key={landmass}>{landmass}</span>

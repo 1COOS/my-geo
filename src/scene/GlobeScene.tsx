@@ -60,12 +60,15 @@ import {
   getCountryCodeForLayer,
   getGlobeViewOffset,
   getLinearFeatureIdForLayer,
+  getMapLabelPlacement,
   getOverviewCameraPosition,
   getVisibleLayerCities,
   getVisibleLayerWaterbodies,
   getVisibleLinearFeatures,
   getWaterbodyIdForLayer,
+  getWaterbodyLabelState,
   getWaterbodyMarker,
+  getWaterbodyPolygonState,
   OVERVIEW_CAMERA_DISTANCE,
   shouldApplyCameraTargetRequest,
   type CityMarker,
@@ -111,6 +114,7 @@ export type GlobeSceneProps = {
   showCapitals: boolean
   showCities: boolean
   showOceanLayer: boolean
+  showLakeLayer: boolean
   showWaterwayLayer: boolean
   showRiverAndCanalLayer: boolean
   showMountainLayer: boolean
@@ -226,6 +230,7 @@ type LabelGroup =
   | 'capital'
   | 'city'
   | 'ocean'
+  | 'lake'
   | 'waterway'
   | 'river'
   | 'canal'
@@ -239,6 +244,10 @@ function getLabelGroup(item: MapLabel): LabelGroup {
   if (item.type === 'linearFeature') return item.feature.kind
   if (item.type === 'mountainRange') return 'mountain'
   return item.type
+}
+
+function getWaterbodyLayerForScene(value: object | undefined) {
+  return getWaterbody(getWaterbodyIdForLayer('polygon', value))?.layer
 }
 
 function overlaps(left: LabelRect, right: LabelRect) {
@@ -430,9 +439,11 @@ function World({
       )
       .filter((marker): marker is GlobePointMarker => marker !== null)
   }, [labelItems])
+  const selectedWaterbody = getWaterbody(selectedWaterbodyId)
   const selectedWaterbodyGeometry = getWaterbodyGeometry(selectedWaterbodyId)
   const selectedSurfaceFeature = useMemo(
     () =>
+      selectedWaterbody?.layer !== 'lake' &&
       selectedWaterbodyGeometry?.kind === 'surface'
         ? {
             type: 'Feature' as const,
@@ -443,7 +454,29 @@ function World({
                 : selectedWaterbodyGeometry.geometry,
           }
         : null,
-    [quality, selectedWaterbodyGeometry],
+    [quality, selectedWaterbody, selectedWaterbodyGeometry],
+  )
+  const visibleLakeSurfaceFeatures = useMemo(
+    () =>
+      labelItems.flatMap((item) => {
+        if (item.type !== 'waterbody' || item.waterbody.layer !== 'lake') {
+          return []
+        }
+        const geometry = getWaterbodyGeometry(item.waterbody.id)
+        return geometry?.kind === 'surface'
+          ? [
+              {
+                type: 'Feature' as const,
+                properties: { waterbodyId: geometry.id },
+                geometry:
+                  quality === 'low'
+                    ? geometry.lowDetailGeometry
+                    : geometry.geometry,
+              },
+            ]
+          : []
+      }),
+    [labelItems, quality],
   )
   const selectedTrenchPath = useMemo(() => {
     if (selectedWaterbodyGeometry?.kind !== 'trench') return null
@@ -607,9 +640,10 @@ function World({
     () => [
       ...countryBoundaries.features,
       ...visibleDesertFeatures,
+      ...visibleLakeSurfaceFeatures,
       ...(selectedSurfaceFeature ? [selectedSurfaceFeature] : []),
     ],
-    [selectedSurfaceFeature, visibleDesertFeatures],
+    [selectedSurfaceFeature, visibleDesertFeatures, visibleLakeSurfaceFeatures],
   )
 
   const syncPointOfView = useCallback(() => {
@@ -843,6 +877,7 @@ function World({
       capital: 0,
       city: 0,
       ocean: 0,
+      lake: 0,
       waterway: 0,
       river: 0,
       canal: 0,
@@ -927,6 +962,17 @@ function World({
           y = Math.max(height / 2 + 12, y - 48)
         }
       }
+      const labelPlacement = getMapLabelPlacement({
+        x,
+        y,
+        labelWidth: width,
+        labelHeight: height,
+        viewportWidth: size.width,
+        viewportHeight: size.height,
+        isLake: item.type === 'waterbody' && item.waterbody.layer === 'lake',
+      })
+      x = labelPlacement.x
+      y = labelPlacement.y
       const rect = {
         left: x - width / 2 - 5,
         top: y - height / 2 - 5,
@@ -942,6 +988,16 @@ function World({
 
       element.hidden = false
       element.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`
+      if (item.type === 'waterbody' && item.waterbody.layer === 'lake') {
+        element.style.setProperty(
+          '--lake-label-leader-length',
+          `${labelPlacement.leaderLength.toFixed(2)}px`,
+        )
+        element.style.setProperty(
+          '--lake-label-leader-angle',
+          `${labelPlacement.leaderAngleDegrees.toFixed(2)}deg`,
+        )
+      }
       nextVisibleIds.add(item.id)
       acceptedRects.push(rect)
       visibleCount += 1
@@ -1224,7 +1280,18 @@ function World({
         polygonsData={polygonsData}
         polygonGeoJsonGeometry="geometry"
         polygonCapColor={(value) => {
-          if (getWaterbodyIdForLayer('polygon', value)) return '#24d4ff55'
+          const waterbodyLayer = getWaterbodyLayerForScene(value)
+          const waterbodyState = getWaterbodyPolygonState(
+            value,
+            selectedWaterbodyId,
+            hoveredWaterbodyId,
+          )
+          if (waterbodyLayer === 'lake') {
+            if (waterbodyState === 'selected') return '#7fffd4a8'
+            if (waterbodyState === 'hovered') return '#5fe9c58c'
+            return '#42cfaa40'
+          }
+          if (waterbodyLayer) return '#24d4ff55'
           const desertState = getDesertPolygonState(
             value,
             selectedDesertId,
@@ -1239,7 +1306,16 @@ function World({
           return '#176593'
         }}
         polygonSideColor={(value) => {
-          if (getWaterbodyIdForLayer('polygon', value)) return '#086e8f44'
+          const waterbodyLayer = getWaterbodyLayerForScene(value)
+          const waterbodyState = getWaterbodyPolygonState(
+            value,
+            selectedWaterbodyId,
+            hoveredWaterbodyId,
+          )
+          if (waterbodyLayer === 'lake') {
+            return waterbodyState === 'ordinary' ? '#0c755d30' : '#0c755d66'
+          }
+          if (waterbodyLayer) return '#086e8f44'
           const desertState = getDesertPolygonState(
             value,
             selectedDesertId,
@@ -1252,7 +1328,18 @@ function World({
             : '#0a3552'
         }}
         polygonStrokeColor={(value) => {
-          if (getWaterbodyIdForLayer('polygon', value)) return '#83ecff'
+          const waterbodyLayer = getWaterbodyLayerForScene(value)
+          const waterbodyState = getWaterbodyPolygonState(
+            value,
+            selectedWaterbodyId,
+            hoveredWaterbodyId,
+          )
+          if (waterbodyLayer === 'lake') {
+            if (waterbodyState === 'selected') return '#e1fff6'
+            if (waterbodyState === 'hovered') return '#baffeb'
+            return '#8ef2d5'
+          }
+          if (waterbodyLayer) return '#83ecff'
           const desertState = getDesertPolygonState(
             value,
             selectedDesertId,
@@ -1267,7 +1354,18 @@ function World({
           return '#6cb4d4'
         }}
         polygonAltitude={(value) => {
-          if (getWaterbodyIdForLayer('polygon', value)) return 0.034
+          const waterbodyLayer = getWaterbodyLayerForScene(value)
+          const waterbodyState = getWaterbodyPolygonState(
+            value,
+            selectedWaterbodyId,
+            hoveredWaterbodyId,
+          )
+          if (waterbodyLayer === 'lake') {
+            if (waterbodyState === 'selected') return 0.038
+            if (waterbodyState === 'hovered') return 0.026
+            return 0.012
+          }
+          if (waterbodyLayer) return 0.034
           const desertState = getDesertPolygonState(
             value,
             selectedDesertId,
@@ -1292,7 +1390,11 @@ function World({
           if (waterbodyMarker) {
             if (waterbodyMarker.waterbodyId === selectedWaterbodyId) return 0.62
             if (waterbodyMarker.waterbodyId === hoveredWaterbodyId) return 0.54
-            return waterbodyMarker.layer === 'ocean' ? 0.4 : 0.34
+            return waterbodyMarker.layer === 'ocean'
+              ? 0.4
+              : waterbodyMarker.layer === 'lake'
+                ? 0.36
+                : 0.34
           }
           const landmarkMarker = getLandmarkMarker(value)
           if (landmarkMarker?.landmarkId === selectedLandmarkId) return 0.6
@@ -1310,8 +1412,12 @@ function World({
             if (waterbodyMarker.waterbodyId === selectedWaterbodyId)
               return '#ffffff'
             if (waterbodyMarker.waterbodyId === hoveredWaterbodyId)
-              return '#d9bcff'
-            return waterbodyMarker.layer === 'ocean' ? '#31e4ff' : '#aa7cff'
+              return waterbodyMarker.layer === 'lake' ? '#b9ffec' : '#d9bcff'
+            return waterbodyMarker.layer === 'ocean'
+              ? '#31e4ff'
+              : waterbodyMarker.layer === 'lake'
+                ? '#53e6bd'
+                : '#aa7cff'
           }
           const landmarkMarker = getLandmarkMarker(value)
           if (landmarkMarker?.landmarkId === selectedLandmarkId)
@@ -1525,6 +1631,7 @@ export function GlobeScene(props: GlobeSceneProps) {
     () =>
       getVisibleLayerWaterbodies(waterbodies, {
         showOceanLayer: props.showOceanLayer,
+        showLakeLayer: props.showLakeLayer,
         showWaterwayLayer: props.showWaterwayLayer,
         selectedWaterbodyId: props.selectedWaterbodyId,
         hoveredWaterbodyId: props.hoveredWaterbodyId,
@@ -1533,6 +1640,7 @@ export function GlobeScene(props: GlobeSceneProps) {
       props.hoveredWaterbodyId,
       props.selectedWaterbodyId,
       props.showOceanLayer,
+      props.showLakeLayer,
       props.showWaterwayLayer,
     ],
   )
@@ -1786,7 +1894,11 @@ export function GlobeScene(props: GlobeSceneProps) {
             type="button"
             key={waterbody.id}
             hidden
-            className={`city-label waterbody-label is-${waterbody.layer}`}
+            className={`city-label waterbody-label is-${waterbody.layer} is-${getWaterbodyLabelState(
+              waterbody.id,
+              props.selectedWaterbodyId,
+              props.hoveredWaterbodyId,
+            )}`}
             data-map-label-id={waterbody.id}
             data-waterbody-id={waterbody.id}
             aria-label={`定位到${waterbody.name.zh}${waterbodyKindLabels[waterbody.kind]}`}

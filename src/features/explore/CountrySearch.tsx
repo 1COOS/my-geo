@@ -213,7 +213,7 @@ export function CountrySearch({
                       <img src={result.country.flagAsset} alt="" />
                     ) : (
                       <span
-                        className={`place-result-icon is-${result.type}${result.type === 'linearFeature' ? ` is-${result.feature.kind}` : ''}`}
+                        className={`place-result-icon is-${result.type}${result.type === 'linearFeature' ? ` is-${result.feature.kind}` : ''}${result.type === 'waterbody' ? ` is-${result.waterbody.layer}` : ''}`}
                         aria-hidden="true"
                       />
                     )}
@@ -223,13 +223,15 @@ export function CountrySearch({
                         {name.en}
                         {result.type === 'city'
                           ? ` · ${result.country.name.zh}`
-                          : result.type === 'mountainRange'
-                            ? ` · 最高峰：${result.range.highestPeak.name.zh}`
-                            : result.type === 'desert'
-                              ? ` · ${result.desert.region}`
-                              : result.type === 'landmark'
-                                ? ` · ${landmarkCategoryLabels[result.landmark.category]} · ${result.landmark.location.zh}`
-                                : ''}
+                          : result.type === 'waterbody'
+                            ? ` · ${result.waterbody.region}`
+                            : result.type === 'mountainRange'
+                              ? ` · 最高峰：${result.range.highestPeak.name.zh}`
+                              : result.type === 'desert'
+                                ? ` · ${result.desert.region}`
+                                : result.type === 'landmark'
+                                  ? ` · ${landmarkCategoryLabels[result.landmark.category]} · ${result.landmark.location.zh}`
+                                  : ''}
                       </small>
                     </span>
                     <code>{badge}</code>

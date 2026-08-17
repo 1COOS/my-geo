@@ -28,6 +28,9 @@ type SurfaceDefinition = {
   countries?: string[]
   aliases?: string[]
   priority?: number
+  areaSquareKilometers?: number
+  lengthKilometers?: number
+  maxDepthMeters?: number
 }
 
 type TrenchDefinition = Omit<SurfaceDefinition, 'kind' | 'bounds'> & {
@@ -569,6 +572,340 @@ const definitions: Definition[] = [
     '南美洲大陆与火地岛之间',
     ['南美洲', '火地岛'],
   ),
+  surface(
+    'lake-superior',
+    '苏必利尔湖',
+    'Lake Superior',
+    'lake',
+    [47.7, -87.5],
+    [-92.2, 46.3, -84.3, 49.1],
+    '北美洲五大湖西北部',
+    ['加拿大地盾', '美国北部'],
+    {
+      countries: ['CA', 'US'],
+      aliases: ['Superior'],
+      priority: 1,
+      areaSquareKilometers: 82100,
+      maxDepthMeters: 406,
+    },
+  ),
+  surface(
+    'lake-michigan',
+    '密歇根湖',
+    'Lake Michigan',
+    'lake',
+    [44, -87],
+    [-88.2, 41.6, -84.7, 46.2],
+    '北美洲五大湖中部',
+    ['美国中北部'],
+    {
+      countries: ['US'],
+      aliases: ['Michigan'],
+      priority: 2,
+      areaSquareKilometers: 58000,
+      maxDepthMeters: 281,
+    },
+  ),
+  surface(
+    'lake-huron',
+    '休伦湖',
+    'Lake Huron',
+    'lake',
+    [44.8, -82.4],
+    [-84.8, 43, -79.7, 46.5],
+    '北美洲五大湖中部',
+    ['加拿大安大略省', '美国密歇根州'],
+    {
+      countries: ['CA', 'US'],
+      aliases: ['Huron'],
+      priority: 3,
+      areaSquareKilometers: 59600,
+      maxDepthMeters: 229,
+    },
+  ),
+  surface(
+    'lake-erie',
+    '伊利湖',
+    'Lake Erie',
+    'lake',
+    [42.2, -81.2],
+    [-83.5, 41.3, -78.8, 42.9],
+    '北美洲五大湖东南部',
+    ['加拿大安大略省', '美国东北部'],
+    {
+      countries: ['CA', 'US'],
+      aliases: ['Erie'],
+      priority: 4,
+      areaSquareKilometers: 25700,
+      maxDepthMeters: 64,
+    },
+  ),
+  surface(
+    'lake-ontario',
+    '安大略湖',
+    'Lake Ontario',
+    'lake',
+    [43.7, -77.9],
+    [-79.9, 43.1, -76, 44.3],
+    '北美洲五大湖东部',
+    ['加拿大安大略省', '美国纽约州'],
+    {
+      countries: ['CA', 'US'],
+      aliases: ['Ontario'],
+      priority: 5,
+      areaSquareKilometers: 18960,
+      maxDepthMeters: 244,
+    },
+  ),
+  surface(
+    'great-bear-lake',
+    '大熊湖',
+    'Great Bear Lake',
+    'lake',
+    [66, -121.3],
+    [-124.2, 64.8, -117.5, 67.1],
+    '加拿大西北地区',
+    ['加拿大地盾', '北极圈地区'],
+    {
+      countries: ['CA'],
+      aliases: ['Great Bear'],
+      priority: 12,
+      areaSquareKilometers: 31153,
+      maxDepthMeters: 446,
+    },
+  ),
+  surface(
+    'great-slave-lake',
+    '大奴湖',
+    'Great Slave Lake',
+    'lake',
+    [61.7, -113.5],
+    [-117, 60.8, -108.6, 63.1],
+    '加拿大西北地区',
+    ['加拿大地盾', '麦肯齐河流域'],
+    {
+      countries: ['CA'],
+      aliases: ['Great Slave'],
+      priority: 13,
+      areaSquareKilometers: 27200,
+      maxDepthMeters: 614,
+    },
+  ),
+  surface(
+    'lake-victoria',
+    '维多利亚湖',
+    'Lake Victoria',
+    'lake',
+    [-1.1, 33],
+    [31.5, -3.1, 34.9, 0.5],
+    '东非高原',
+    ['东非高原', '尼罗河上游流域'],
+    {
+      countries: ['TZ', 'UG', 'KE'],
+      aliases: ['Victoria', 'Nyanza'],
+      priority: 6,
+      areaSquareKilometers: 68800,
+      maxDepthMeters: 84,
+    },
+  ),
+  surface(
+    'lake-tanganyika',
+    '坦噶尼喀湖',
+    'Lake Tanganyika',
+    'lake',
+    [-6.1, 29.5],
+    [28.8, -8.9, 31.2, -3.3],
+    '东非大裂谷西支',
+    ['东非大裂谷', '刚果盆地东缘'],
+    {
+      countries: ['TZ', 'CD', 'BI', 'ZM'],
+      aliases: ['Tanganyika'],
+      priority: 7,
+      areaSquareKilometers: 32900,
+      maxDepthMeters: 1470,
+    },
+  ),
+  surface(
+    'lake-malawi',
+    '马拉维湖',
+    'Lake Malawi',
+    'lake',
+    [-12.2, 34.5],
+    [33.8, -14.5, 35.9, -9.4],
+    '东非大裂谷南部',
+    ['东非大裂谷', '莫桑比克高原'],
+    {
+      countries: ['MW', 'MZ', 'TZ'],
+      aliases: ['Lake Nyasa', '尼亚萨湖'],
+      priority: 8,
+      areaSquareKilometers: 29600,
+      maxDepthMeters: 706,
+    },
+  ),
+  surface(
+    'lake-chad',
+    '乍得湖',
+    'Lake Chad',
+    'lake',
+    [13.2, 14.2],
+    [13, 12.5, 15.6, 14.7],
+    '非洲萨赫勒地区',
+    ['萨赫勒', '乍得盆地'],
+    {
+      countries: ['TD', 'NG', 'NE', 'CM'],
+      aliases: ['Chad'],
+      priority: 14,
+    },
+  ),
+  surface(
+    'lake-turkana',
+    '图尔卡纳湖',
+    'Lake Turkana',
+    'lake',
+    [3.6, 36.1],
+    [35.7, 2.4, 36.8, 4.8],
+    '东非大裂谷北部',
+    ['东非大裂谷', '肯尼亚北部荒漠'],
+    {
+      countries: ['KE', 'ET'],
+      aliases: ['Lake Rudolf', '鲁道夫湖'],
+      priority: 16,
+      areaSquareKilometers: 6405,
+      maxDepthMeters: 109,
+    },
+  ),
+  surface(
+    'lake-baikal',
+    '贝加尔湖',
+    'Lake Baikal',
+    'lake',
+    [53.5, 108.1],
+    [103.7, 51.3, 109.9, 55.9],
+    '俄罗斯西伯利亚南部',
+    ['西伯利亚', '贝加尔裂谷'],
+    {
+      countries: ['RU'],
+      aliases: ['Baikal'],
+      priority: 9,
+      areaSquareKilometers: 31722,
+      maxDepthMeters: 1642,
+    },
+  ),
+  surface(
+    'lake-balkhash',
+    '巴尔喀什湖',
+    'Lake Balkhash',
+    'lake',
+    [46.2, 74.6],
+    [73.2, 44.8, 79.2, 47.4],
+    '哈萨克斯坦东南部',
+    ['哈萨克草原', '巴尔喀什—阿拉科尔盆地'],
+    {
+      countries: ['KZ'],
+      aliases: ['Balkhash', 'Balqash'],
+      priority: 15,
+      areaSquareKilometers: 16400,
+      maxDepthMeters: 26,
+    },
+  ),
+  surface(
+    'qinghai-lake',
+    '青海湖',
+    'Qinghai Lake',
+    'lake',
+    [36.9, 100.2],
+    [99.5, 36.4, 100.9, 37.3],
+    '中国青藏高原东北部',
+    ['青藏高原', '青海湖盆地'],
+    {
+      countries: ['CN'],
+      aliases: ['Qinghai Hu', 'Koko Nor'],
+      priority: 10,
+      areaSquareKilometers: 4543,
+      maxDepthMeters: 33,
+    },
+  ),
+  surface(
+    'tonle-sap',
+    '洞里萨湖',
+    'Tonle Sap',
+    'lake',
+    [12.9, 104.1],
+    [103.4, 12.2, 104.7, 13.7],
+    '柬埔寨中部平原',
+    ['湄公河平原', '洞里萨盆地'],
+    {
+      countries: ['KH'],
+      aliases: ['Tonlé Sap'],
+      priority: 11,
+    },
+  ),
+  surface(
+    'dead-sea',
+    '死海',
+    'Dead Sea',
+    'lake',
+    [31.5, 35.5],
+    [35.3, 30.9, 35.7, 32],
+    '约旦裂谷南部',
+    ['约旦裂谷', '犹地亚山地'],
+    {
+      countries: ['JO', 'IL', 'PS'],
+      aliases: ['Salt Sea', '盐海'],
+      priority: 17,
+      areaSquareKilometers: 605,
+      maxDepthMeters: 304,
+    },
+  ),
+  surface(
+    'lake-titicaca',
+    '的的喀喀湖',
+    'Lake Titicaca',
+    'lake',
+    [-15.8, -69.4],
+    [-70.1, -17, -68.6, -15.2],
+    '安第斯山脉阿尔蒂普拉诺高原',
+    ['安第斯山脉', '阿尔蒂普拉诺高原'],
+    {
+      countries: ['PE', 'BO'],
+      aliases: ['Titicaca'],
+      priority: 18,
+      areaSquareKilometers: 8372,
+      maxDepthMeters: 281,
+    },
+  ),
+  surface(
+    'lake-ladoga',
+    '拉多加湖',
+    'Lake Ladoga',
+    'lake',
+    [61, 31.5],
+    [29.5, 59.8, 33, 61.8],
+    '俄罗斯欧洲部分西北部',
+    ['东欧平原', '芬诺斯坎迪亚'],
+    {
+      countries: ['RU'],
+      aliases: ['Ladoga'],
+      priority: 19,
+      areaSquareKilometers: 17700,
+      maxDepthMeters: 230,
+    },
+  ),
+  surface(
+    'lake-eyre',
+    '艾尔湖',
+    'Kati Thanda–Lake Eyre',
+    'lake',
+    [-28.4, 137.4],
+    [136.5, -29.2, 138.3, -27.5],
+    '澳大利亚中部内流盆地',
+    ['澳大利亚内陆', '艾尔湖盆地'],
+    {
+      countries: ['AU'],
+      aliases: ['Lake Eyre', 'Kati Thanda'],
+      priority: 20,
+    },
+  ),
   trench(
     'mariana-trench',
     '马里亚纳海沟',
@@ -632,6 +969,7 @@ const kindLabels: Record<WaterbodyKind, string> = {
   sea: '海',
   gulf: '海湾',
   bay: '海湾',
+  lake: '湖泊',
   strait: '海峡',
   trench: '海沟',
 }
@@ -641,15 +979,18 @@ const kindFacts: Record<WaterbodyKind, string> = {
   sea: '海通常比大洋更靠近大陆或岛屿，并与相邻大洋保持水体交换。',
   gulf: '海湾是海水深入陆地形成的水域，开口通常连接更大的海或洋。',
   bay: '海湾是海岸线向陆地凹入形成的水域，大小和形态差异很大。',
+  lake: '湖泊是被陆地环绕的内陆水体，水量、盐度和形成原因差异很大。',
   strait: '海峡是连接两片较大水域、同时分隔两块陆地的狭长水道。',
   trench: '海沟是海底狭长而深的凹地，许多形成于板块俯冲带附近。',
 }
 
 function buildWaterbody(definition: Definition): Waterbody {
   const layer =
-    definition.kind === 'strait' || definition.kind === 'trench'
-      ? 'waterway'
-      : 'ocean'
+    definition.kind === 'lake'
+      ? 'lake'
+      : definition.kind === 'strait' || definition.kind === 'trench'
+        ? 'waterway'
+        : 'ocean'
   return {
     id: definition.id,
     name: { zh: definition.zh, en: definition.en },
@@ -658,24 +999,37 @@ function buildWaterbody(definition: Definition): Waterbody {
     layer,
     center: { latitude: definition.center[0], longitude: definition.center[1] },
     cameraDistance:
-      definition.kind === 'ocean' ? 350 : definition.kind === 'sea' ? 250 : 215,
+      definition.kind === 'ocean'
+        ? 350
+        : definition.kind === 'sea'
+          ? 250
+          : definition.kind === 'lake'
+            ? 205
+            : 215,
     region: definition.region,
     adjacentCountryCodes: definition.countries ?? [],
     adjacentLandmasses: definition.land,
+    areaSquareKilometers: definition.areaSquareKilometers,
+    lengthKilometers: definition.lengthKilometers,
+    maxDepthMeters: definition.maxDepthMeters,
     summary: `${definition.zh}位于${definition.region}，属于${kindLabels[definition.kind]}。图层使用来源对齐的简化示意范围帮助理解它在全球的位置。`,
     facts: [
       kindFacts[definition.kind],
-      `${definition.zh}位于${definition.region}，与${definition.land.join('、')}等陆地或岛屿区域相邻。`,
+      definition.kind === 'lake'
+        ? `${definition.zh}位于${definition.region}，湖岸与${definition.land.join('、')}等地区相邻。`
+        : `${definition.zh}位于${definition.region}，与${definition.land.join('、')}等陆地或岛屿区域相邻。`,
     ],
     sourceIds:
       definition.kind === 'trench'
         ? ['gebco-gazetteer', 'noaa-ocean', 'britannica-ocean']
-        : [
-            'natural-earth-marine',
-            'marine-regions',
-            'iho-oceans-seas',
-            'britannica-ocean',
-          ],
+        : definition.kind === 'lake'
+          ? ['natural-earth-lakes', 'britannica-lake']
+          : [
+              'natural-earth-marine',
+              'marine-regions',
+              'iho-oceans-seas',
+              'britannica-ocean',
+            ],
     labelPriority: definition.priority ?? 30,
   }
 }

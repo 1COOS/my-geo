@@ -10,12 +10,17 @@ import {
   getCountryCodeForLayer,
   getGlobeViewOffset,
   getOverviewCameraPosition,
+  getMapLabelPlacement,
   getVisibleLayerCities,
   getVisibleLayerWaterbodies,
   getVisibleLinearFeatures,
   getLinearFeatureIdForLayer,
   getWaterbodyIdForLayer,
+  getWaterbodyLabelState,
+  getWaterbodyPolygonState,
   GLOBE_VERTICAL_CENTER_RATIO,
+  LAKE_LABEL_VERTICAL_OFFSET,
+  MAP_LABEL_VIEWPORT_MARGIN,
   OVERVIEW_CAMERA_DISTANCE,
   shouldApplyCameraTargetRequest,
   type CityMarker,
@@ -123,13 +128,15 @@ describe('country scene interaction', () => {
     ).toEqual(sample)
   })
 
-  it('filters ocean and waterway layers with selection exceptions', () => {
+  it('filters ocean, lake, and waterway layers with selection exceptions', () => {
     const pacific = waterbodies.find((item) => item.id === 'pacific-ocean')!
+    const baikal = waterbodies.find((item) => item.id === 'lake-baikal')!
     const mariana = waterbodies.find((item) => item.id === 'mariana-trench')!
-    const sample = [pacific, mariana]
+    const sample = [pacific, baikal, mariana]
     expect(
       getVisibleLayerWaterbodies(sample, {
         showOceanLayer: true,
+        showLakeLayer: false,
         showWaterwayLayer: false,
         selectedWaterbodyId: null,
         hoveredWaterbodyId: null,
@@ -138,14 +145,114 @@ describe('country scene interaction', () => {
     expect(
       getVisibleLayerWaterbodies(sample, {
         showOceanLayer: false,
+        showLakeLayer: true,
+        showWaterwayLayer: false,
+        selectedWaterbodyId: null,
+        hoveredWaterbodyId: null,
+      }),
+    ).toEqual([baikal])
+    expect(
+      getVisibleLayerWaterbodies(sample, {
+        showOceanLayer: false,
+        showLakeLayer: false,
         showWaterwayLayer: false,
         selectedWaterbodyId: mariana.id,
         hoveredWaterbodyId: pacific.id,
       }),
-    ).toEqual(sample)
+    ).toEqual([pacific, mariana])
+    expect(
+      getVisibleLayerWaterbodies(sample, {
+        showOceanLayer: false,
+        showLakeLayer: false,
+        showWaterwayLayer: false,
+        selectedWaterbodyId: baikal.id,
+        hoveredWaterbodyId: null,
+      }),
+    ).toEqual([])
+    expect(
+      getVisibleLayerWaterbodies(waterbodies, {
+        showOceanLayer: false,
+        showLakeLayer: true,
+        showWaterwayLayer: false,
+        selectedWaterbodyId: null,
+        hoveredWaterbodyId: null,
+      }).filter((waterbody) => waterbody.layer === 'lake'),
+    ).toHaveLength(20)
     expect(getWaterbodyIdForLayer('path', { waterbodyId: mariana.id })).toBe(
       mariana.id,
     )
+  })
+
+  it('prioritizes selected and hovered waterbody polygons without null collisions', () => {
+    const baikalFeature = { properties: { waterbodyId: 'lake-baikal' } }
+    expect(getWaterbodyPolygonState({}, null, null)).toBeNull()
+    expect(getWaterbodyPolygonState(baikalFeature, 'lake-baikal', null)).toBe(
+      'selected',
+    )
+    expect(getWaterbodyPolygonState(baikalFeature, null, 'lake-baikal')).toBe(
+      'hovered',
+    )
+    expect(getWaterbodyPolygonState(baikalFeature, null, null)).toBe('ordinary')
+  })
+
+  it('moves only lake labels above their real center and points a leader back to it', () => {
+    const lakePlacement = getMapLabelPlacement({
+      x: 320,
+      y: 240,
+      labelWidth: 84,
+      labelHeight: 28,
+      viewportWidth: 640,
+      viewportHeight: 480,
+      isLake: true,
+    })
+    const otherPlacement = getMapLabelPlacement({
+      x: 320,
+      y: 240,
+      labelWidth: 84,
+      labelHeight: 28,
+      viewportWidth: 640,
+      viewportHeight: 480,
+      isLake: false,
+    })
+
+    expect(lakePlacement).toMatchObject({
+      x: 320,
+      y: 240 - LAKE_LABEL_VERTICAL_OFFSET,
+      leaderAngleDegrees: 90,
+    })
+    expect(lakePlacement.leaderLength).toBe(LAKE_LABEL_VERTICAL_OFFSET - 14)
+    expect(otherPlacement).toEqual({
+      x: 320,
+      y: 240,
+      leaderLength: 0,
+      leaderAngleDegrees: 0,
+    })
+  })
+
+  it('keeps offset lake labels inside the visible screen edges', () => {
+    const placement = getMapLabelPlacement({
+      x: 5,
+      y: 38,
+      labelWidth: 84,
+      labelHeight: 28,
+      viewportWidth: 640,
+      viewportHeight: 480,
+      isLake: true,
+    })
+
+    expect(placement.x).toBe(42 + MAP_LABEL_VIEWPORT_MARGIN)
+    expect(placement.y).toBe(14 + MAP_LABEL_VIEWPORT_MARGIN)
+    expect(placement.leaderLength).toBe(0)
+  })
+
+  it('prioritizes selected and hovered lake label states', () => {
+    expect(getWaterbodyLabelState('qinghai-lake', 'qinghai-lake', null)).toBe(
+      'selected',
+    )
+    expect(getWaterbodyLabelState('qinghai-lake', null, 'qinghai-lake')).toBe(
+      'hovered',
+    )
+    expect(getWaterbodyLabelState('qinghai-lake', null, null)).toBe('ordinary')
   })
 
   it('toggles rivers and canals together while preserving selected lines', () => {

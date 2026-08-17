@@ -101,6 +101,7 @@ type LayerControlProps = {
   showCapitals: boolean
   showCities: boolean
   showOceanLayer: boolean
+  showLakeLayer: boolean
   showWaterwayLayer: boolean
   showRiverAndCanalLayer: boolean
   showMountainLayer: boolean
@@ -109,6 +110,7 @@ type LayerControlProps = {
   onToggleCapitals: () => void
   onToggleCities: () => void
   onToggleOceanLayer: () => void
+  onToggleLakeLayer: () => void
   onToggleWaterwayLayer: () => void
   onToggleRiverAndCanalLayer: () => void
   onToggleMountainLayer: () => void
@@ -120,6 +122,7 @@ function LayerControl({
   showCapitals,
   showCities,
   showOceanLayer,
+  showLakeLayer,
   showWaterwayLayer,
   showRiverAndCanalLayer,
   showMountainLayer,
@@ -128,6 +131,7 @@ function LayerControl({
   onToggleCapitals,
   onToggleCities,
   onToggleOceanLayer,
+  onToggleLakeLayer,
   onToggleWaterwayLayer,
   onToggleRiverAndCanalLayer,
   onToggleMountainLayer,
@@ -170,6 +174,17 @@ function LayerControl({
         >
           <span className="layer-toggle-dot" aria-hidden="true" />
           <span>海洋</span>
+        </button>
+        <button
+          type="button"
+          className="layer-toggle is-lake"
+          aria-pressed={showLakeLayer}
+          aria-label="湖泊图层：世界著名淡水与咸水湖泊"
+          title="湖泊：世界著名淡水与咸水湖泊"
+          onClick={onToggleLakeLayer}
+        >
+          <span className="layer-toggle-dot" aria-hidden="true" />
+          <span>湖泊</span>
         </button>
         <button
           type="button"
@@ -249,6 +264,7 @@ export function ExplorePage() {
   const [showCapitals, setShowCapitals] = useState(false)
   const [showCities, setShowCities] = useState(false)
   const [showOceanLayer, setShowOceanLayer] = useState(false)
+  const [showLakeLayer, setShowLakeLayer] = useState(false)
   const [showWaterwayLayer, setShowWaterwayLayer] = useState(false)
   const [showRiverAndCanalLayer, setShowRiverAndCanalLayer] = useState(false)
   const [showMountainLayer, setShowMountainLayer] = useState(false)
@@ -375,6 +391,16 @@ export function ExplorePage() {
       })
     }
   }, [selectedWaterbodyId, showWaterwayLayer])
+  const toggleLakeLayer = useCallback(() => {
+    const nextVisible = !showLakeLayer
+    setShowLakeLayer(nextVisible)
+    if (!nextVisible) {
+      setHoveredWaterbodyId((id) => {
+        const waterbody = getWaterbody(id)
+        return waterbody?.layer === 'lake' ? null : id
+      })
+    }
+  }, [showLakeLayer])
   const toggleRiverAndCanalLayer = useCallback(() => {
     const nextVisible = !showRiverAndCanalLayer
     setShowRiverAndCanalLayer(nextVisible)
@@ -490,6 +516,7 @@ export function ExplorePage() {
       setHoveredDesertId(null)
       setSelectedLandmarkId(null)
       setHoveredLandmarkId(null)
+      if (waterbody.layer === 'lake') setShowLakeLayer(true)
       requestCameraTarget(waterbody.center, waterbody.cameraDistance)
     },
     [requestCameraTarget, selectCountry],
@@ -679,6 +706,7 @@ export function ExplorePage() {
             showCapitals={showCapitals}
             showCities={showCities}
             showOceanLayer={showOceanLayer}
+            showLakeLayer={showLakeLayer}
             showWaterwayLayer={showWaterwayLayer}
             showRiverAndCanalLayer={showRiverAndCanalLayer}
             showMountainLayer={showMountainLayer}
@@ -727,6 +755,7 @@ export function ExplorePage() {
           showCapitals={showCapitals}
           showCities={showCities}
           showOceanLayer={showOceanLayer}
+          showLakeLayer={showLakeLayer}
           showWaterwayLayer={showWaterwayLayer}
           showRiverAndCanalLayer={showRiverAndCanalLayer}
           showMountainLayer={showMountainLayer}
@@ -735,6 +764,7 @@ export function ExplorePage() {
           onToggleCapitals={toggleCapitalLayer}
           onToggleCities={toggleCityLayer}
           onToggleOceanLayer={toggleOceanLayer}
+          onToggleLakeLayer={toggleLakeLayer}
           onToggleWaterwayLayer={toggleWaterwayLayer}
           onToggleRiverAndCanalLayer={toggleRiverAndCanalLayer}
           onToggleMountainLayer={toggleMountainLayer}

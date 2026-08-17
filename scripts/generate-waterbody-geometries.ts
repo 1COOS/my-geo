@@ -7,9 +7,12 @@ import prettier from 'prettier'
 import * as shapefile from 'shapefile'
 
 import {
+  NATURAL_EARTH_LAKES_ARCHIVE_SHA256,
+  NATURAL_EARTH_LAKES_ARCHIVE_URL,
   NATURAL_EARTH_MARINE_ARCHIVE_SHA256,
   NATURAL_EARTH_MARINE_ARCHIVE_URL,
   waterbodyGeometryDefinitions,
+  type NaturalEarthWaterbodyDataset,
   type WaterbodyGeometryDefinition,
   type WaterbodyPosition,
 } from './waterbody-geometry-content'
@@ -47,6 +50,7 @@ const outputPath = path.join(
   'src/data/generated/waterbody-geometries.json',
 )
 const archiveOverrideEnvironmentVariable = 'MY_GEO_WATERBODY_ARCHIVE'
+const lakeArchiveOverrideEnvironmentVariable = 'MY_GEO_LAKE_ARCHIVE'
 
 function toRadians(value: number) {
   return (value * Math.PI) / 180
@@ -276,19 +280,24 @@ function combineGeometries(geometries: SurfaceGeometry[]): SurfaceGeometry {
   }
 }
 
-async function readNaturalEarthGeometries(archiveBytes: Uint8Array) {
+async function readNaturalEarthGeometries(
+  archiveBytes: Uint8Array,
+  basename: string,
+  expectedVersion: string,
+) {
   const files = unzipSync(archiveBytes)
-  const basename = 'ne_10m_geography_marine_polys'
   const shp = files[`${basename}.shp`]
   const dbf = files[`${basename}.dbf`]
   const version = files[`${basename}.VERSION.txt`]
   if (!shp || !dbf || !version) {
     throw new Error(
-      'Natural Earth marine archive is missing SHP, DBF or version',
+      `Natural Earth ${basename} archive is missing SHP, DBF or version`,
     )
   }
-  if (new TextDecoder().decode(version).trim() !== '5.1.0') {
-    throw new Error('Natural Earth marine archive is not version 5.1.0')
+  if (new TextDecoder().decode(version).trim() !== expectedVersion) {
+    throw new Error(
+      `Natural Earth ${basename} archive is not version ${expectedVersion}`,
+    )
   }
 
   const source = await shapefile.open(shp, dbf)
@@ -309,30 +318,71 @@ async function readNaturalEarthGeometries(archiveBytes: Uint8Array) {
   return geometriesByRecord
 }
 
-export async function generateWaterbodyGeometryCatalogFromArchive(
+function verifyArchive(
   archiveBytes: Uint8Array,
+  expectedSha256: string,
+  label: string,
 ) {
   const archiveSha256 = createHash('sha256').update(archiveBytes).digest('hex')
-  if (archiveSha256 !== NATURAL_EARTH_MARINE_ARCHIVE_SHA256) {
+  if (archiveSha256 !== expectedSha256) {
     throw new Error(
-      `Natural Earth marine SHA-256 mismatch: received ${archiveSha256}`,
+      `Natural Earth ${label} SHA-256 mismatch: received ${archiveSha256}`,
     )
   }
-  const geometriesByRecord = await readNaturalEarthGeometries(archiveBytes)
+  return archiveSha256
+}
 
-  return buildWaterbodyGeometryCatalog(archiveSha256, geometriesByRecord)
+export async function generateWaterbodyGeometryCatalogFromArchives(
+  marineArchiveBytes: Uint8Array,
+  lakeArchiveBytes: Uint8Array,
+) {
+  const marineArchiveSha256 = verifyArchive(
+    marineArchiveBytes,
+    NATURAL_EARTH_MARINE_ARCHIVE_SHA256,
+    'marine',
+  )
+  const lakeArchiveSha256 = verifyArchive(
+    lakeArchiveBytes,
+    NATURAL_EARTH_LAKES_ARCHIVE_SHA256,
+    'lakes',
+  )
+  const [marineGeometries, lakeGeometries] = await Promise.all([
+    readNaturalEarthGeometries(
+      marineArchiveBytes,
+      'ne_10m_geography_marine_polys',
+      '5.1.0',
+    ),
+    readNaturalEarthGeometries(lakeArchiveBytes, 'ne_10m_lakes', '5.0.0'),
+  ])
+
+  return buildWaterbodyGeometryCatalog({
+    marine: {
+      archiveSha256: marineArchiveSha256,
+      geometriesByRecord: marineGeometries,
+    },
+    lakes: {
+      archiveSha256: lakeArchiveSha256,
+      geometriesByRecord: lakeGeometries,
+    },
+  })
 }
 
 export function buildWaterbodyGeometryCatalog(
-  archiveSha256: string,
-  geometriesByRecord: ReadonlyMap<number, SurfaceGeometry>,
+  sources: Record<
+    NaturalEarthWaterbodyDataset,
+    {
+      archiveSha256: string
+      geometriesByRecord: ReadonlyMap<number, SurfaceGeometry>
+    }
+  >,
 ) {
   const geometries = waterbodyGeometryDefinitions.map((definition) => {
+    const source = sources[definition.dataset]
     const sourceGeometries = definition.naturalEarthNeIds.map((neId) => {
-      const geometry = geometriesByRecord.get(neId)
+      const geometry = source.geometriesByRecord.get(neId)
       if (!geometry) {
         throw new Error(
-          `Missing Natural Earth marine record ${neId} for ${definition.id}`,
+          `Missing Natural Earth ${definition.dataset} record ${neId} for ${definition.id}`,
         )
       }
       return geometry
@@ -356,7 +406,7 @@ export function buildWaterbodyGeometryCatalog(
       geometry,
       lowDetailGeometry,
       provenance: {
-        archiveSha256,
+        archiveSha256: source.archiveSha256,
         naturalEarthRecords: definition.naturalEarthNeIds.map((neId) => ({
           neId,
         })),
@@ -377,7 +427,7 @@ export function buildWaterbodyGeometryCatalog(
       total + countWaterbodyGeometryPoints(geometry.lowDetailGeometry),
     0,
   )
-  if (lowDetailPointCount > 8_000) {
+  if (lowDetailPointCount > 11_000) {
     throw new Error(
       `Waterbody low-detail geometry budget exceeded: ${lowDetailPointCount}`,
     )
@@ -385,22 +435,39 @@ export function buildWaterbodyGeometryCatalog(
   return geometries
 }
 
-async function loadArchive() {
-  const archiveOverride = process.env[archiveOverrideEnvironmentVariable]
+async function loadArchive(
+  url: string,
+  archiveOverrideEnvironmentVariableName: string,
+  label: string,
+) {
+  const archiveOverride = process.env[archiveOverrideEnvironmentVariableName]
   if (archiveOverride) return new Uint8Array(await readFile(archiveOverride))
-  const response = await fetch(NATURAL_EARTH_MARINE_ARCHIVE_URL)
+  const response = await fetch(url)
   if (!response.ok) {
     throw new Error(
-      `Unable to download Natural Earth marine polygons: HTTP ${response.status}`,
+      `Unable to download Natural Earth ${label} polygons: HTTP ${response.status}`,
     )
   }
   return new Uint8Array(await response.arrayBuffer())
 }
 
 export async function generateWaterbodyGeometries() {
-  const archiveBytes = await loadArchive()
-  const geometries =
-    await generateWaterbodyGeometryCatalogFromArchive(archiveBytes)
+  const [marineArchiveBytes, lakeArchiveBytes] = await Promise.all([
+    loadArchive(
+      NATURAL_EARTH_MARINE_ARCHIVE_URL,
+      archiveOverrideEnvironmentVariable,
+      'marine',
+    ),
+    loadArchive(
+      NATURAL_EARTH_LAKES_ARCHIVE_URL,
+      lakeArchiveOverrideEnvironmentVariable,
+      'lakes',
+    ),
+  ])
+  const geometries = await generateWaterbodyGeometryCatalogFromArchives(
+    marineArchiveBytes,
+    lakeArchiveBytes,
+  )
   const formatted = await prettier.format(JSON.stringify(geometries), {
     parser: 'json',
   })

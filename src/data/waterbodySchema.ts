@@ -11,11 +11,12 @@ export const waterbodyKindSchema = z.enum([
   'sea',
   'gulf',
   'bay',
+  'lake',
   'strait',
   'trench',
 ])
 
-export const waterbodyLayerSchema = z.enum(['ocean', 'waterway'])
+export const waterbodyLayerSchema = z.enum(['ocean', 'lake', 'waterway'])
 
 const measurementSchema = z.number().positive().optional()
 
@@ -97,7 +98,7 @@ export const waterbodyGeometrySchema = z.discriminatedUnion('kind', [
 
 export const waterbodyCatalogSchema = z
   .array(waterbodySchema)
-  .length(51)
+  .length(71)
   .superRefine((waterbodies, context) => {
     const ids = new Set<string>()
     for (const waterbody of waterbodies) {
@@ -117,6 +118,12 @@ export const waterbodyCatalogSchema = z
           message: `Unexpected ocean-layer kind on ${waterbody.id}`,
         })
       }
+      if (waterbody.layer === 'lake' && waterbody.kind !== 'lake') {
+        context.addIssue({
+          code: 'custom',
+          message: `Unexpected lake-layer kind on ${waterbody.id}`,
+        })
+      }
       if (
         waterbody.layer === 'waterway' &&
         !['strait', 'trench'].includes(waterbody.kind)
@@ -131,7 +138,7 @@ export const waterbodyCatalogSchema = z
 
 export const waterbodyGeometryCatalogSchema = z
   .array(waterbodyGeometrySchema)
-  .length(51)
+  .length(71)
   .superRefine((geometries, context) => {
     const ids = new Set<string>()
     for (const geometry of geometries) {

@@ -98,6 +98,23 @@ describe('CountrySearch', () => {
     })
   })
 
+  it('shows lakes with their layer badge and region', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
+
+    render(<CountrySearch onSelect={onSelect} />)
+
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.type(search, '贝加尔湖')
+    expect(screen.getByText(/俄罗斯西伯利亚南部/)).toBeInTheDocument()
+    expect(screen.getByText('湖泊')).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    expect(onSelect.mock.calls[0]?.[0]).toMatchObject({
+      type: 'waterbody',
+      waterbody: { id: 'lake-baikal', layer: 'lake' },
+    })
+  })
+
   it('shows landmarks with their category and location', async () => {
     const user = userEvent.setup()
     const onSelect = vi.fn<(result: PlaceSearchResult) => void>()

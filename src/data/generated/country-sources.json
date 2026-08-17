@@ -65,6 +65,23 @@
     "license": "Copyrighted reference material; linked, not copied"
   },
   {
+    "id": "natural-earth-lakes",
+    "name": "Natural Earth lake polygons",
+    "publisher": "Natural Earth contributors",
+    "version": "Natural Earth 5.0.0 1:10m; SHA-256 0803a06f9c3cb4671d89b68c48b142aad9366ba40f665245e12a913fbc61722a",
+    "accessedAt": "2026-08-17",
+    "url": "https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-lakes/",
+    "license": "Public domain lake polygons; selected and simplified by My Geo"
+  },
+  {
+    "id": "britannica-lake",
+    "name": "Lake overview",
+    "publisher": "Encyclopaedia Britannica",
+    "accessedAt": "2026-08-17",
+    "url": "https://www.britannica.com/science/lake",
+    "license": "Copyrighted reference material; linked, not copied"
+  },
+  {
     "id": "natural-earth-rivers",
     "name": "Natural Earth rivers and lake centerlines",
     "publisher": "Natural Earth contributors",

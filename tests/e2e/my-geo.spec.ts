@@ -104,7 +104,7 @@ async function expectLayerToolbarSingleLine(page: Page) {
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(layout.buttonCount).toBe(8)
+  expect(layout.buttonCount).toBe(9)
   expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
   expect(layout.rowSpread).toBeLessThan(2)
 }
@@ -577,6 +577,98 @@ test('toggles waterbody layers, searches a sea, and replaces its selected range'
 
   await page.getByRole('button', { name: '画质：平衡' }).click()
   await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
+})
+
+test('shows the lake layer and opens the Lake Baikal knowledge card', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const lakeToggle = layerControl.getByRole('button', {
+    name: '湖泊图层：世界著名淡水与咸水湖泊',
+  })
+  await expect(lakeToggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.locator('.waterbody-label.is-lake')).toHaveCount(0)
+
+  const search = await openCountrySearch(page)
+  await search.fill('贝加尔湖')
+  await search.press('Enter')
+
+  const card = page.getByRole('complementary', {
+    name: '贝加尔湖水域知识卡',
+  })
+  await expect(card).toBeVisible()
+  await expect(card.getByText('31,722 km²')).toBeVisible()
+  await expect(card.getByText('1,642 m')).toBeVisible()
+  await expect(card.getByText(/水位、季节和长期环境变化/)).toBeVisible()
+  await expect(lakeToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.waterbody-label.is-lake')).toHaveCount(20)
+  await expect
+    .poll(() => page.locator('.waterbody-label.is-lake:not([hidden])').count())
+    .toBeGreaterThan(0)
+  await expect(page.locator('[data-waterbody-id="lake-baikal"]')).toBeVisible()
+
+  await lakeToggle.focus()
+  await expect(lakeToggle).toBeFocused()
+  await lakeToggle.press('Enter')
+  await expect(lakeToggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.locator('.waterbody-label.is-lake')).toHaveCount(0)
+  await expect(card).toBeVisible()
+
+  await lakeToggle.press('Enter')
+  await expect(lakeToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.waterbody-label.is-lake')).toHaveCount(20)
+  await expect(page.locator('[data-waterbody-id="lake-baikal"]')).toBeVisible()
+
+  await card.getByRole('button', { name: '关闭水域知识卡' }).click()
+  await expect(card).toHaveCount(0)
+  await expect(lakeToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.waterbody-label.is-lake')).toHaveCount(20)
+  await page.getByRole('button', { name: '自动旋转：开' }).click()
+  await expect(page.getByRole('button', { name: '自动旋转：关' })).toBeVisible()
+
+  for (const lake of [
+    { id: 'qinghai-lake', name: '青海湖' },
+    { id: 'dead-sea', name: '死海' },
+    { id: 'tonle-sap', name: '洞里萨湖' },
+  ]) {
+    await selectPlace(page, lake.name)
+
+    const lakeCard = page.getByRole('complementary', {
+      name: `${lake.name}水域知识卡`,
+    })
+    const lakeLabel = page.locator(
+      `[data-waterbody-id="${lake.id}"].waterbody-label.is-lake`,
+    )
+    await expect(lakeCard).toBeVisible()
+    await expect(lakeLabel).toBeVisible()
+    await expect(lakeLabel).toHaveClass(/is-selected/)
+    const leader = await lakeLabel.evaluate((element) => {
+      const labelStyle = getComputedStyle(element)
+      const leaderStyle = getComputedStyle(element, '::after')
+      return {
+        length: Number.parseFloat(
+          labelStyle.getPropertyValue('--lake-label-leader-length'),
+        ),
+        width: Number.parseFloat(leaderStyle.width),
+        content: leaderStyle.content,
+      }
+    })
+    expect(leader.length).toBeGreaterThan(10)
+    expect(leader.width).toBeGreaterThan(10)
+    expect(leader.content).not.toBe('none')
+
+    await lakeCard.getByRole('button', { name: '关闭水域知识卡' }).click()
+    await expect(lakeCard).toHaveCount(0)
+    await lakeLabel.click()
+    await expect(lakeCard).toBeVisible()
+  }
 })
 
 test('shows river and canal paths and keeps linear feature selection exclusive', async ({
@@ -1127,7 +1219,7 @@ test('keeps the layer panel inside an iPad landscape safe area', async ({
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(toolbarLayout.buttonCount).toBe(8)
+  expect(toolbarLayout.buttonCount).toBe(9)
   expect(toolbarLayout.scrollWidth).toBeLessThanOrEqual(
     toolbarLayout.clientWidth + 1,
   )

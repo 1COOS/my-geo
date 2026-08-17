@@ -5,23 +5,25 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildWaterbodyGeometryCatalog,
-  generateWaterbodyGeometryCatalogFromArchive,
+  generateWaterbodyGeometryCatalogFromArchives,
 } from './generate-waterbody-geometries'
 import {
+  NATURAL_EARTH_LAKES_ARCHIVE_SHA256,
   NATURAL_EARTH_MARINE_ARCHIVE_SHA256,
   waterbodyGeometryDefinitions,
 } from './waterbody-geometry-content'
 
 const archivePath = process.env.MY_GEO_WATERBODY_ARCHIVE
+const lakeArchivePath = process.env.MY_GEO_LAKE_ARCHIVE
 
 describe('waterbody geometry source contract', () => {
-  it('declares 44 sourced objects and two reviewed supplements', () => {
-    expect(waterbodyGeometryDefinitions).toHaveLength(47)
+  it('declares 65 sourced objects and two reviewed supplements', () => {
+    expect(waterbodyGeometryDefinitions).toHaveLength(67)
     expect(
       waterbodyGeometryDefinitions.filter(
         (definition) => definition.naturalEarthNeIds.length > 0,
       ),
-    ).toHaveLength(45)
+    ).toHaveLength(65)
     expect(
       waterbodyGeometryDefinitions
         .filter((definition) => definition.reviewedOutline)
@@ -30,26 +32,39 @@ describe('waterbody geometry source contract', () => {
     expect(
       new Set(waterbodyGeometryDefinitions.map((definition) => definition.id))
         .size,
-    ).toBe(47)
+    ).toBe(67)
   })
 
   it('fails closed when a reviewed Natural Earth record is missing', () => {
     expect(() =>
-      buildWaterbodyGeometryCatalog(
-        NATURAL_EARTH_MARINE_ARCHIVE_SHA256,
-        new Map(),
-      ),
+      buildWaterbodyGeometryCatalog({
+        marine: {
+          archiveSha256: NATURAL_EARTH_MARINE_ARCHIVE_SHA256,
+          geometriesByRecord: new Map(),
+        },
+        lakes: {
+          archiveSha256: NATURAL_EARTH_LAKES_ARCHIVE_SHA256,
+          geometriesByRecord: new Map(),
+        },
+      }),
     ).toThrow(/Missing Natural Earth marine record/)
   })
 })
 
-describe.skipIf(!archivePath)(
+describe.skipIf(!archivePath || !lakeArchivePath)(
   'waterbody geometry generator reproducibility',
   () => {
     it('produces byte-equivalent data for the same pinned input', async () => {
-      const bytes = new Uint8Array(await readFile(archivePath!))
-      const first = await generateWaterbodyGeometryCatalogFromArchive(bytes)
-      const second = await generateWaterbodyGeometryCatalogFromArchive(bytes)
+      const marineBytes = new Uint8Array(await readFile(archivePath!))
+      const lakeBytes = new Uint8Array(await readFile(lakeArchivePath!))
+      const first = await generateWaterbodyGeometryCatalogFromArchives(
+        marineBytes,
+        lakeBytes,
+      )
+      const second = await generateWaterbodyGeometryCatalogFromArchives(
+        marineBytes,
+        lakeBytes,
+      )
       const committed = JSON.parse(
         await readFile(
           path.resolve(
@@ -65,10 +80,11 @@ describe.skipIf(!archivePath)(
     })
 
     it('rejects bytes that do not match the pinned archive', async () => {
-      const bytes = new Uint8Array(await readFile(archivePath!))
-      bytes[0] ^= 0xff
+      const marineBytes = new Uint8Array(await readFile(archivePath!))
+      const lakeBytes = new Uint8Array(await readFile(lakeArchivePath!))
+      lakeBytes[0] ^= 0xff
       await expect(
-        generateWaterbodyGeometryCatalogFromArchive(bytes),
+        generateWaterbodyGeometryCatalogFromArchives(marineBytes, lakeBytes),
       ).rejects.toThrow(/SHA-256 mismatch/)
     })
   },

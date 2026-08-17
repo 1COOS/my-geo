@@ -86,6 +86,19 @@ describe('searchCountries', () => {
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
+        'Baikal',
+      )[0],
+    ).toMatchObject({
+      type: 'waterbody',
+      waterbody: { id: 'lake-baikal', layer: 'lake' },
+    })
+    expect(
+      searchPlaces(
+        countries,
+        cities,
+        waterbodies,
+        linearGeoFeatures,
+        mountainRanges,
         'CN',
       )[0],
     ).toMatchObject({

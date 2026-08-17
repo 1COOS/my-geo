@@ -523,6 +523,44 @@ a:focus-visible,
   transform: rotate(45deg);
 }
 
+.waterbody-label.is-lake {
+  --lake-label-leader-length: 0px;
+  --lake-label-leader-angle: 90deg;
+
+  color: #d9fff3;
+  background: rgb(7 55 48 / 86%);
+  border-color: rgb(83 230 189 / 42%);
+}
+
+.waterbody-label.is-lake::after {
+  position: absolute;
+  top: calc(100% + 1px);
+  left: 50%;
+  width: var(--lake-label-leader-length);
+  height: 1px;
+  pointer-events: none;
+  content: '';
+  background: rgb(107 237 201 / 58%);
+  box-shadow: 0 0 0.28rem rgb(83 230 189 / 34%);
+  transform: rotate(var(--lake-label-leader-angle));
+  transform-origin: 0 50%;
+}
+
+.waterbody-label.is-lake:is(.is-selected, .is-hovered)::after {
+  height: 1.5px;
+  background: rgb(218 255 244 / 92%);
+  box-shadow: 0 0 0.4rem rgb(126 255 219 / 72%);
+}
+
+.waterbody-label.is-lake > span {
+  width: 0.56rem;
+  height: 0.38rem;
+  background: #53e6bd;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.15rem rgb(83 230 189 / 15%);
+}
+
 .linear-feature-label {
   color: #c9fbff;
   background: rgb(3 42 49 / 86%);
@@ -757,6 +795,12 @@ a:focus-visible,
   border-color: rgb(170 124 255 / 24%);
 }
 
+.layer-toggle[aria-pressed='true'].is-lake {
+  color: #d9fff3;
+  background: rgb(83 230 189 / 11%);
+  border-color: rgb(83 230 189 / 27%);
+}
+
 .layer-toggle[aria-pressed='true'].is-river {
   color: #d5fcff;
   background: rgb(54 220 237 / 12%);
@@ -809,6 +853,17 @@ a:focus-visible,
   border-radius: 0.08rem;
   box-shadow: 0 0 0 0.16rem rgb(170 124 255 / 16%);
   transform: rotate(45deg);
+}
+
+.layer-toggle.is-lake .layer-toggle-dot {
+  width: 0.58rem;
+  height: 0.38rem;
+  border-radius: 50%;
+}
+
+.layer-toggle.is-lake[aria-pressed='true'] .layer-toggle-dot {
+  background: #53e6bd;
+  box-shadow: 0 0 0 0.16rem rgb(83 230 189 / 16%);
 }
 
 .layer-toggle.is-river .layer-toggle-dot {
@@ -1040,6 +1095,14 @@ a:focus-visible,
 .place-result-icon.is-waterbody {
   background: transparent;
   border: 2px solid #31e4ff;
+}
+
+.place-result-icon.is-waterbody.is-lake {
+  width: 1.12rem;
+  height: 0.72rem;
+  background: rgb(83 230 189 / 18%);
+  border-color: #53e6bd;
+  border-radius: 50%;
 }
 
 .place-result-icon.is-mountainRange {
@@ -1536,6 +1599,17 @@ a:focus-visible,
     0 0 0 0.55rem rgb(170 124 255 / 11%),
     0 0 2rem rgb(170 124 255 / 25%);
   transform: rotate(45deg);
+}
+
+.waterbody-detail-symbol.is-lake {
+  width: 3.35rem;
+  height: 2.45rem;
+  margin-left: 0.1rem;
+  border-color: #53e6bd;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 0.55rem rgb(83 230 189 / 10%),
+    0 0 2rem rgb(83 230 189 / 24%);
 }
 
 .waterbody-summary {
