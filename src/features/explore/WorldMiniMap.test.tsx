@@ -137,7 +137,7 @@ describe('WorldMiniMap', () => {
 
     expect(screen.getByTestId('world-mini-map-climate')).toHaveAttribute(
       'href',
-      '/climate/highlights/low/temperate-monsoon.png',
+      '/climate/highlights-v2/low/temperate-monsoon.png',
     )
     expect(screen.getByTestId('world-mini-map-climate')).toHaveAttribute(
       'data-climate-highlight-id',
@@ -215,7 +215,7 @@ describe('WorldMiniMap', () => {
         showGeographyLearningLayer={false}
         showClimateLayer={false}
         selectedClimateTypeId={null}
-        climateRasterUrl="/climate/climate-types-2048.png"
+        climateRasterUrl="/climate/climate-types-2048-v2.png"
         climateBoundaryRasterUrl={null}
         selectedClimatePosition={null}
         onSelectGeographyTopic={onSelectGeographyTopic}
@@ -234,7 +234,7 @@ describe('WorldMiniMap', () => {
         showGeographyLearningLayer
         showClimateLayer={false}
         selectedClimateTypeId={null}
-        climateRasterUrl="/climate/climate-types-2048.png"
+        climateRasterUrl="/climate/climate-types-2048-v2.png"
         climateBoundaryRasterUrl={null}
         selectedClimatePosition={null}
         onSelectGeographyTopic={onSelectGeographyTopic}

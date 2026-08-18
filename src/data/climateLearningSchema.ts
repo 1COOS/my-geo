@@ -26,8 +26,8 @@ export const climateTypeIds = [
   'highland-mountain',
 ] as const
 
-export const climateOceanColor = '#071d31' as const
-export const climateOceanRgb = [7, 29, 49] as const
+export const climateOceanColor = '#1685cc' as const
+export const climateOceanRgb = [22, 133, 204] as const
 
 export const climateTypeIdSchema = z.enum(climateTypeIds)
 export type ClimateTypeId = z.infer<typeof climateTypeIdSchema>
@@ -156,10 +156,10 @@ export const climateLayerManifestSchema = z.object({
   ),
   assets: z.object({
     balanced: balancedClimateRasterAssetSchema.extend({
-      url: z.literal('/climate/climate-types-2048.png'),
+      url: z.literal('/climate/climate-types-2048-v2.png'),
     }),
     low: lowClimateRasterAssetSchema.extend({
-      url: z.literal('/climate/climate-types-1024.png'),
+      url: z.literal('/climate/climate-types-1024-v2.png'),
     }),
   }),
   highlightAssets: z.object({

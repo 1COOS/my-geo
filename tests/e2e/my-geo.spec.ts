@@ -995,7 +995,7 @@ test('renders and classifies the synchronized world climate layer', async ({
   const scene = page.getByTestId('globe-scene')
   await expect(climateImage).toHaveAttribute(
     'href',
-    '/climate/climate-types-2048.png',
+    '/climate/climate-types-2048-v2.png',
   )
   await expect(scene).not.toHaveAttribute('data-climate-highlight-id')
   await expect(page.getByTestId('world-mini-map-climate-boundary')).toHaveCount(
@@ -1018,7 +1018,7 @@ test('renders and classifies the synchronized world climate layer', async ({
   await expect(page.getByTestId('world-mini-map-climate-marker')).toBeVisible()
   await expect(climateImage).toHaveAttribute(
     'href',
-    '/climate/highlights/balanced/temperate-monsoon.png',
+    '/climate/highlights-v2/balanced/temperate-monsoon.png',
   )
   await expect(scene).toHaveAttribute(
     'data-climate-highlight-id',
@@ -1039,7 +1039,7 @@ test('renders and classifies the synchronized world climate layer', async ({
   await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
   await expect(climateImage).toHaveAttribute(
     'href',
-    '/climate/highlights/low/temperate-monsoon.png',
+    '/climate/highlights-v2/low/temperate-monsoon.png',
   )
   await expect(climateBoundary).toHaveAttribute(
     'href',
@@ -1049,7 +1049,7 @@ test('renders and classifies the synchronized world climate layer', async ({
   await card.getByRole('button', { name: '查看13类气候图例' }).click()
   await expect(climateImage).toHaveAttribute(
     'href',
-    '/climate/climate-types-1024.png',
+    '/climate/climate-types-1024-v2.png',
   )
   await expect(scene).not.toHaveAttribute('data-climate-highlight-id')
   await expect(climateBoundary).toHaveCount(0)
@@ -1058,7 +1058,7 @@ test('renders and classifies the synchronized world climate layer', async ({
   await card.getByRole('button', { name: '热带雨林气候' }).click()
   await expect(climateImage).toHaveAttribute(
     'href',
-    '/climate/highlights/low/tropical-rainforest.png',
+    '/climate/highlights-v2/low/tropical-rainforest.png',
   )
   await expect(scene).toHaveAttribute(
     'data-climate-highlight-id',
@@ -1086,7 +1086,7 @@ test('renders and classifies the synchronized world climate layer', async ({
   await expect(card.getByRole('heading', { name: '地中海气候' })).toBeVisible()
   await expect(climateImage).toHaveAttribute(
     'href',
-    '/climate/highlights/low/mediterranean.png',
+    '/climate/highlights-v2/low/mediterranean.png',
   )
   await expect(scene).toHaveAttribute(
     'data-climate-highlight-id',
@@ -1519,14 +1519,14 @@ test('shows the fallback instead of crashing without WebGL', async ({
   const fallbackClimateImage = page.getByTestId('world-mini-map-climate')
   await expect(fallbackClimateImage).toHaveAttribute(
     'href',
-    '/climate/climate-types-2048.png',
+    '/climate/climate-types-2048-v2.png',
   )
   const climateTypeSearch = await openCountrySearch(page)
   await climateTypeSearch.fill('热带雨林气候')
   await climateTypeSearch.press('Enter')
   await expect(fallbackClimateImage).toHaveAttribute(
     'href',
-    '/climate/highlights/balanced/tropical-rainforest.png',
+    '/climate/highlights-v2/balanced/tropical-rainforest.png',
   )
   await expect(
     page.getByTestId('world-mini-map-climate-boundary'),

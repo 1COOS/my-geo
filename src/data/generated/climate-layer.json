@@ -33,205 +33,205 @@
   ],
   "assets": {
     "balanced": {
-      "url": "/climate/climate-types-2048.png",
+      "url": "/climate/climate-types-2048-v2.png",
       "width": 2048,
       "height": 1024,
-      "bytes": 69066,
-      "sha256": "b427a1efe46f645704cb21bf70c4f91eb253f775e6b19b1654cab81d3ffbf2c0"
+      "bytes": 69065,
+      "sha256": "a6ec31d68bc9e9b83c4b0b4c38deb13df6053700dc6deb9f9fc70d12f266828f"
     },
     "low": {
-      "url": "/climate/climate-types-1024.png",
+      "url": "/climate/climate-types-1024-v2.png",
       "width": 1024,
       "height": 512,
-      "bytes": 25282,
-      "sha256": "a54f610a45c2465a755c51ec5c69d93c515a089f6e27ef434235a77158e2714b"
+      "bytes": 25280,
+      "sha256": "6b5865d1ca9a8e1d5f205f43e537597363cab2795a598ba40815181dcf020769"
     }
   },
   "highlightAssets": {
     "balanced": {
       "tropical-rainforest": {
-        "url": "/climate/highlights/balanced/tropical-rainforest.png",
+        "url": "/climate/highlights-v2/balanced/tropical-rainforest.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 70814,
-        "sha256": "adc5111b788b0558aca774a8f3a4f838cfce48f344abe2cdbd52d4f922136681"
+        "bytes": 70813,
+        "sha256": "e068aff5f496931b3d570456b3ea1b9576142eb826d3fdd23f076a10bee1424f"
       },
       "tropical-monsoon": {
-        "url": "/climate/highlights/balanced/tropical-monsoon.png",
+        "url": "/climate/highlights-v2/balanced/tropical-monsoon.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 70829,
-        "sha256": "eaf97faecaa66a7bb7ce5216b906aa8ee9d48f045c828ce9537145ea9b61d0a1"
+        "bytes": 70828,
+        "sha256": "12172f352afcbe81cded61d5035da7561c6057ada8f2e5495316a3e54d70d4a6"
       },
       "tropical-savanna": {
-        "url": "/climate/highlights/balanced/tropical-savanna.png",
+        "url": "/climate/highlights-v2/balanced/tropical-savanna.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 72088,
-        "sha256": "f27d830875feb1af9e761c8a96e3b0b3bd720343d0917a0dce8818d48989d777"
+        "bytes": 72087,
+        "sha256": "c399a88eccc89a2be0ba216e73a596009e1bc5dee067cd2c5b2b8af549e871c6"
       },
       "tropical-desert": {
-        "url": "/climate/highlights/balanced/tropical-desert.png",
+        "url": "/climate/highlights-v2/balanced/tropical-desert.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 71578,
-        "sha256": "22bf28a3253c7137dea682f18a5b95e7521e9d7620725f7f62102690ab48e3ad"
+        "bytes": 71577,
+        "sha256": "f938f17d8fb53d7e2990c9c6ea045f7419d5c25d42030b9ea937b52637972dbe"
       },
       "subtropical-monsoon-humid": {
-        "url": "/climate/highlights/balanced/subtropical-monsoon-humid.png",
+        "url": "/climate/highlights-v2/balanced/subtropical-monsoon-humid.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 71725,
-        "sha256": "dc5a72404423c2d0361df6af4c4820047c32aebf86d84202a3e3e020772dd3ea"
+        "bytes": 71724,
+        "sha256": "e77278d413053812d29b753d0262a88490d85a2b10be7db423bc22c0fa87145b"
       },
       "mediterranean": {
-        "url": "/climate/highlights/balanced/mediterranean.png",
+        "url": "/climate/highlights-v2/balanced/mediterranean.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 70054,
-        "sha256": "48260907453e6f28bde79b583267de985ea59d1af1da04e27a7d5895f415c015"
+        "bytes": 70053,
+        "sha256": "0d7c25beff9a9a1b1f769d8a7fe2f391a422f8c671d1a74c711e7e97b5f98dd4"
       },
       "temperate-oceanic": {
-        "url": "/climate/highlights/balanced/temperate-oceanic.png",
+        "url": "/climate/highlights-v2/balanced/temperate-oceanic.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 70632,
-        "sha256": "539fb990019fc2417f37ad30bffb48cdc4c477ddee7db8ba19b4af5077ec758e"
+        "bytes": 70631,
+        "sha256": "dba9ede7eb962c636080a1beb339938f1382d053cfd197d0243f1cbef99bb4c5"
       },
       "temperate-monsoon": {
-        "url": "/climate/highlights/balanced/temperate-monsoon.png",
+        "url": "/climate/highlights-v2/balanced/temperate-monsoon.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 69693,
-        "sha256": "272d6596b042d5fd7f3c1947affd5adf862b04b086aa0f8036c5b62bd65bb5e4"
+        "bytes": 69691,
+        "sha256": "1ae615f3ce9a12ad95c094f46d0d49de2498d3e420926ba3b116108e84a65eaa"
       },
       "temperate-continental": {
-        "url": "/climate/highlights/balanced/temperate-continental.png",
+        "url": "/climate/highlights-v2/balanced/temperate-continental.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 73198,
-        "sha256": "ce8d2f51402529a1b3caf3321f4c47c6a3f8c0cf500f25cc147c529e8152965d"
+        "bytes": 73197,
+        "sha256": "2c6d7dc89979f87386215cf5ffa1a7144c7a12f34d68593492d7658fe583f494"
       },
       "subarctic-coniferous": {
-        "url": "/climate/highlights/balanced/subarctic-coniferous.png",
+        "url": "/climate/highlights-v2/balanced/subarctic-coniferous.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 73312,
-        "sha256": "dad3eb44c0ad851e468c649419425fdbb3a01d3002b87816d0ec0b1727bda66e"
+        "bytes": 73311,
+        "sha256": "06ff7095d8632bae397eb54848265d778ea87e0f8c3e9b622ede6373076c8dbf"
       },
       "tundra": {
-        "url": "/climate/highlights/balanced/tundra.png",
+        "url": "/climate/highlights-v2/balanced/tundra.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 73827,
-        "sha256": "ddc27f8e25133fd15a6e80914b57e207a1e53c020ca57ecfc5cc43d781434190"
+        "bytes": 73825,
+        "sha256": "6aed61fb35b4004b44a289ff2e9a65ecb94124c738aa2de368fcdba497a22c79"
       },
       "ice-cap": {
-        "url": "/climate/highlights/balanced/ice-cap.png",
+        "url": "/climate/highlights-v2/balanced/ice-cap.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 71430,
-        "sha256": "eaf7175b142f7febc8a4ec889276905883ffdcfd48eb0ca077d7761c27afead6"
+        "bytes": 71428,
+        "sha256": "e4e0ff3390eef2d5a739e2d4ecfc6b4b7b64fc8ce055ff9818f803077e511375"
       },
       "highland-mountain": {
-        "url": "/climate/highlights/balanced/highland-mountain.png",
+        "url": "/climate/highlights-v2/balanced/highland-mountain.png",
         "width": 2048,
         "height": 1024,
-        "bytes": 69951,
-        "sha256": "b38c61f0499033755fab734e07131f18e7d7bac93e485fa490a3f44c830fa5ed"
+        "bytes": 69950,
+        "sha256": "145510b49375941b04c7630f1d7adbeec487c52d1c32a29c11c556d3e8e231b6"
       }
     },
     "low": {
       "tropical-rainforest": {
-        "url": "/climate/highlights/low/tropical-rainforest.png",
+        "url": "/climate/highlights-v2/low/tropical-rainforest.png",
         "width": 1024,
         "height": 512,
-        "bytes": 25773,
-        "sha256": "d0eb9eac8fae88110a06d96158f386784445bdd16e389b9ec26960462556a4ad"
+        "bytes": 25771,
+        "sha256": "51c4f9d1b4c974ffbe173e854a95b3b32be66e0df290b209df0a655124294be5"
       },
       "tropical-monsoon": {
-        "url": "/climate/highlights/low/tropical-monsoon.png",
+        "url": "/climate/highlights-v2/low/tropical-monsoon.png",
         "width": 1024,
         "height": 512,
-        "bytes": 25770,
-        "sha256": "ed2086a924aee8221e84e965f586a60ccb5b3ca023cbdc147e9352b989611509"
+        "bytes": 25768,
+        "sha256": "bf7261b941a651aa99f4da84b8802cd1dc7503ce695b030b0c414e1bd92dee5b"
       },
       "tropical-savanna": {
-        "url": "/climate/highlights/low/tropical-savanna.png",
+        "url": "/climate/highlights-v2/low/tropical-savanna.png",
         "width": 1024,
         "height": 512,
-        "bytes": 26350,
-        "sha256": "0c4192fa021282a1f3daa19b887e11a96ab0f2406c27e257db1028833d016a01"
+        "bytes": 26349,
+        "sha256": "73676ddaefd9a5f1521acd769109f3dd55f2f597fa6f6387ca2cc2aab9f5bba3"
       },
       "tropical-desert": {
-        "url": "/climate/highlights/low/tropical-desert.png",
+        "url": "/climate/highlights-v2/low/tropical-desert.png",
         "width": 1024,
         "height": 512,
-        "bytes": 26242,
-        "sha256": "ad0baf7286946e4538e39129363e162fd4002e144c1b88c32b61c7a73c8ebd49"
+        "bytes": 26240,
+        "sha256": "4eedb8fdba537dd8132d12291f5432ba28e9a03b40b9b3dc407570b59b163a7d"
       },
       "subtropical-monsoon-humid": {
-        "url": "/climate/highlights/low/subtropical-monsoon-humid.png",
+        "url": "/climate/highlights-v2/low/subtropical-monsoon-humid.png",
         "width": 1024,
         "height": 512,
-        "bytes": 26069,
-        "sha256": "381ffc147984c06f79c8bd38c612b2f20f675e055e0af539cf752eb98dc73406"
+        "bytes": 26068,
+        "sha256": "ca14d18a9033b0778276f354fcd1e40b3df786279716548765c0823fed8d4311"
       },
       "mediterranean": {
-        "url": "/climate/highlights/low/mediterranean.png",
+        "url": "/climate/highlights-v2/low/mediterranean.png",
         "width": 1024,
         "height": 512,
-        "bytes": 25537,
-        "sha256": "910e71e1f18f8eca436af52d4c234f46827c564dcd6856109263c8770cecf316"
+        "bytes": 25536,
+        "sha256": "f7b73a436583f4846d20554b8dae9a23a29def90dc41294b418be45b39af6a04"
       },
       "temperate-oceanic": {
-        "url": "/climate/highlights/low/temperate-oceanic.png",
+        "url": "/climate/highlights-v2/low/temperate-oceanic.png",
         "width": 1024,
         "height": 512,
         "bytes": 25659,
-        "sha256": "2bf5ebf72c1f523be7df45456f17b99354d80d0088dc15494b0c9e106112ea55"
+        "sha256": "f6f44e5c8e16b2f1fd940d13784a6c1f436268d31cf60b009abf653102fe3bac"
       },
       "temperate-monsoon": {
-        "url": "/climate/highlights/low/temperate-monsoon.png",
+        "url": "/climate/highlights-v2/low/temperate-monsoon.png",
         "width": 1024,
         "height": 512,
-        "bytes": 25508,
-        "sha256": "5cc500fd3a3d457250056b77f673c5208b745bcf1333c386f2ba0d27b3bdf4a9"
+        "bytes": 25506,
+        "sha256": "51ec55a131298a68ec5063a37aac29994358b41e2aee07396164a07d5393d627"
       },
       "temperate-continental": {
-        "url": "/climate/highlights/low/temperate-continental.png",
+        "url": "/climate/highlights-v2/low/temperate-continental.png",
         "width": 1024,
         "height": 512,
-        "bytes": 26631,
-        "sha256": "f78dcdad5d4e426ca32a8519784ba8d0077227116da03e1fd3ae9b8ca424c113"
+        "bytes": 26630,
+        "sha256": "0ec1abe5070e9b6fe246b2f90e9285ae374f851c700aaafa9f5138646cac320c"
       },
       "subarctic-coniferous": {
-        "url": "/climate/highlights/low/subarctic-coniferous.png",
+        "url": "/climate/highlights-v2/low/subarctic-coniferous.png",
         "width": 1024,
         "height": 512,
-        "bytes": 26712,
-        "sha256": "6cdd2574f763932dd1d1a60c9e156c6a296bdbd7e4d5ee7cfe689f9e5453cb09"
+        "bytes": 26709,
+        "sha256": "e6f9b6ecc943c556e03747081c70a4397010f5484a2be47ec5a97cd2c91df1ee"
       },
       "tundra": {
-        "url": "/climate/highlights/low/tundra.png",
+        "url": "/climate/highlights-v2/low/tundra.png",
         "width": 1024,
         "height": 512,
-        "bytes": 26582,
-        "sha256": "96a15f6861f88f20266984a429579f0e0b0296ebd64f886011a78341856d8776"
+        "bytes": 26579,
+        "sha256": "ba84583664b5e8d0bc90f6d839073e2641620e8010574b67e45d720fe6f71af2"
       },
       "ice-cap": {
-        "url": "/climate/highlights/low/ice-cap.png",
+        "url": "/climate/highlights-v2/low/ice-cap.png",
         "width": 1024,
         "height": 512,
-        "bytes": 26151,
-        "sha256": "f9b59a232c5107640f7c60b2463584a6ea1f1bee28a62dc658f49c6c13260e1e"
+        "bytes": 26149,
+        "sha256": "0d40e69b4ca9d794ef8c0ed8ba30fd13ab17280f3e1611ac138177b45aa70249"
       },
       "highland-mountain": {
-        "url": "/climate/highlights/low/highland-mountain.png",
+        "url": "/climate/highlights-v2/low/highland-mountain.png",
         "width": 1024,
         "height": 512,
-        "bytes": 25753,
-        "sha256": "588db08b9824e14b6b6273d4cd09fa13074436e44d9b898c6880a7bf9d2e071d"
+        "bytes": 25751,
+        "sha256": "8b289dd27fe47b2446ce32fad19b3f61a224f5dd7bf35a74d16bfc7cc5f54bb7"
       }
     }
   },

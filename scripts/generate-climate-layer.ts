@@ -29,15 +29,15 @@ const manifestPath = path.join(
 
 const outputDefinitions = {
   balanced: {
-    url: '/climate/climate-types-2048.png' as const,
-    filename: 'climate-types-2048.png',
+    url: '/climate/climate-types-2048-v2.png' as const,
+    filename: 'climate-types-2048-v2.png',
     width: 2048 as const,
     height: 1024 as const,
     boundaryWidth: 3 as const,
   },
   low: {
-    url: '/climate/climate-types-1024.png' as const,
-    filename: 'climate-types-1024.png',
+    url: '/climate/climate-types-1024-v2.png' as const,
+    filename: 'climate-types-1024-v2.png',
     width: 1024 as const,
     height: 512 as const,
     boundaryWidth: 2 as const,
@@ -413,8 +413,8 @@ export async function generateClimateAssetsFromArchive(
       const highlights = Object.fromEntries(
         climateTypeIds.map((climateTypeId) => {
           const highlightDefinition = {
-            url: `/climate/highlights/${quality}/${climateTypeId}.png`,
-            filename: `highlights/${quality}/${climateTypeId}.png`,
+            url: `/climate/highlights-v2/${quality}/${climateTypeId}.png`,
+            filename: `highlights-v2/${quality}/${climateTypeId}.png`,
             width: definition.width,
             height: definition.height,
           }

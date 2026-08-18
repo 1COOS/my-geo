@@ -49,7 +49,7 @@ describe('ExplorePage', () => {
         const height = quality === 'balanced' ? 1024 : 512
         const raster = {
           url: climateTypeId
-            ? `/climate/highlights/${quality}/${climateTypeId}.png`
+            ? `/climate/highlights-v2/${quality}/${climateTypeId}.png`
             : `/climate/climate-types-${width}.png`,
           width,
           height,

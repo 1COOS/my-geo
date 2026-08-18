@@ -88,9 +88,9 @@ describe('climate raster contract', () => {
     )
     expect(
       getClimateDisplayRasterAsset('balanced', 'tropical-rainforest').url,
-    ).toBe('/climate/highlights/balanced/tropical-rainforest.png')
+    ).toBe('/climate/highlights-v2/balanced/tropical-rainforest.png')
     expect(getClimateDisplayRasterAsset('low', 'temperate-monsoon').url).toBe(
-      '/climate/highlights/low/temperate-monsoon.png',
+      '/climate/highlights-v2/low/temperate-monsoon.png',
     )
     expect(
       getClimateBoundaryRasterAsset('balanced', 'tropical-rainforest')?.url,
@@ -131,7 +131,7 @@ describe('climate raster contract', () => {
       await expect(
         loadClimateDisplayAssets('balanced', 'tundra'),
       ).resolves.toMatchObject({
-        raster: { url: '/climate/highlights/balanced/tundra.png' },
+        raster: { url: '/climate/highlights-v2/balanced/tundra.png' },
         boundary: {
           url: '/climate/highlight-boundaries/balanced/tundra.png',
         },
@@ -156,7 +156,7 @@ describe('climate raster contract', () => {
       await expect(
         loadClimateDisplayAssets('low', 'temperate-oceanic'),
       ).resolves.toMatchObject({
-        raster: { url: '/climate/highlights/low/temperate-oceanic.png' },
+        raster: { url: '/climate/highlights-v2/low/temperate-oceanic.png' },
         boundary: null,
       })
     } finally {
