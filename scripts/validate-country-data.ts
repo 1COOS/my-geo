@@ -1,8 +1,12 @@
+import { createHash } from 'node:crypto'
 import { access, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { geoContains } from 'd3-geo'
 
+import { climateSources, climateTypes } from '../src/data/climateLearning'
+import { climateTypeIds } from '../src/data/climateLearningSchema'
+import { climateLayerManifest } from '../src/data/climateRaster'
 import {
   countryBoundariesSchema,
   countryCatalogSchema,
@@ -508,6 +512,45 @@ for (const landmark of landmarks) {
   }
 }
 
+if (climateTypes.length !== 13 || climateSources.length < 2) {
+  throw new Error('Expected 13 sourced climate types')
+}
+const climateSourceIds = new Set(climateSources.map((source) => source.id))
+const climateColors = new Set<string>()
+for (const climateType of climateTypes) {
+  if (climateColors.has(climateType.color)) {
+    throw new Error(`Duplicate climate color ${climateType.color}`)
+  }
+  climateColors.add(climateType.color)
+  for (const climateSourceId of climateType.sourceIds) {
+    if (!climateSourceIds.has(climateSourceId)) {
+      throw new Error(
+        `Unknown climate source ${climateSourceId} on ${climateType.id}`,
+      )
+    }
+  }
+}
+const climateRasterAssets = [
+  ...Object.values(climateLayerManifest.assets),
+  ...(['balanced', 'low'] as const).flatMap((quality) =>
+    climateTypeIds.flatMap((climateTypeId) => [
+      climateLayerManifest.highlightAssets[quality][climateTypeId],
+      climateLayerManifest.highlightBoundaryAssets[quality][climateTypeId],
+    ]),
+  ),
+]
+for (const asset of climateRasterAssets) {
+  const assetPath = path.join(projectRoot, 'public', asset.url)
+  const bytes = await readFile(assetPath)
+  if (bytes.byteLength !== asset.bytes) {
+    throw new Error(`Climate asset size mismatch for ${asset.url}`)
+  }
+  const sha256 = createHash('sha256').update(bytes).digest('hex')
+  if (sha256 !== asset.sha256) {
+    throw new Error(`Climate asset SHA-256 mismatch for ${asset.url}`)
+  }
+}
+
 for (const country of countries) {
   await access(path.join(projectRoot, `public${country.flagAsset}`))
   if (country.hasGeometry !== boundaryCodes.has(country.code)) {
@@ -584,5 +627,5 @@ for (const country of countries) {
 }
 
 console.log(
-  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${landmarks.length} landmarks, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local flags.`,
+  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${landmarks.length} landmarks, ${climateTypes.length} climate types, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local assets.`,
 )

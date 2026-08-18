@@ -837,6 +837,12 @@ a:focus-visible,
   border-color: rgb(210 145 255 / 30%);
 }
 
+.layer-toggle[aria-pressed='true'].is-climate {
+  color: #e9f7c8;
+  background: rgb(165 184 63 / 12%);
+  border-color: rgb(165 184 63 / 30%);
+}
+
 .layer-toggle-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -881,6 +887,24 @@ a:focus-visible,
       transparent 57%
     ),
     linear-gradient(transparent 43%, currentcolor 44% 56%, transparent 57%);
+}
+
+.layer-toggle.is-climate .layer-toggle-dot {
+  width: 0.62rem;
+  height: 0.62rem;
+  background: conic-gradient(
+    #156c36 0 20%,
+    #e7b34f 20% 40%,
+    #4f9ed6 40% 60%,
+    #b78ac6 60% 80%,
+    #dcecf2 80%
+  );
+  border: 1px solid rgb(255 255 255 / 28%);
+  box-shadow: none;
+}
+
+.layer-toggle.is-climate[aria-pressed='true'] .layer-toggle-dot {
+  box-shadow: 0 0 0.45rem rgb(165 184 63 / 55%);
 }
 
 .layer-toggle.is-ocean[aria-pressed='true'] .layer-toggle-dot {
@@ -1276,6 +1300,16 @@ a:focus-visible,
   fill: #071d31;
 }
 
+.world-mini-map-climate {
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.world-mini-map-climate-boundary {
+  pointer-events: none;
+  filter: drop-shadow(0 0 0.7px #fff) drop-shadow(0 0 1.8px #ffe89a);
+}
+
 .world-mini-map-grid line {
   stroke: rgb(109 192 228 / 8%);
   stroke-width: 0.65;
@@ -1363,6 +1397,11 @@ a:focus-visible,
     stroke 140ms ease;
 }
 
+.world-mini-map-countries.is-climate-visible path {
+  fill: rgb(8 43 57 / 12%);
+  stroke: rgb(225 247 255 / 58%);
+}
+
 .world-mini-map-countries path:hover {
   fill: #287ba0;
   stroke: #a3e9ff;
@@ -1419,6 +1458,18 @@ a:focus-visible,
   opacity: 0;
   pointer-events: none;
   vector-effect: non-scaling-stroke;
+}
+
+.world-mini-map-climate-marker circle {
+  fill: #071426;
+  stroke: #fff;
+  stroke-width: 1.6;
+}
+
+.world-mini-map-climate-marker path {
+  fill: #fff;
+  stroke: #071426;
+  stroke-width: 0.6;
 }
 
 .world-mini-map-canvas:focus .world-mini-map-keyboard-cursor {
@@ -1774,6 +1825,212 @@ a:focus-visible,
 .geography-tip-grid {
   display: grid;
   gap: 0.75rem;
+}
+
+.climate-learning-heading {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 2.3rem;
+}
+
+.climate-learning-heading p,
+.climate-learning-heading h2,
+.climate-learning-heading span {
+  margin: 0;
+}
+
+.climate-learning-heading p {
+  color: #9ed7e8;
+  font-size: 0.64rem;
+  font-weight: 760;
+  letter-spacing: 0.13em;
+}
+
+.climate-learning-heading h2 {
+  margin-top: 0.24rem;
+  color: #fff;
+  font-size: clamp(1.28rem, 2.4vw, 1.72rem);
+}
+
+.climate-learning-heading span {
+  color: #99afbb;
+  font-size: 0.74rem;
+}
+
+.climate-learning-heading > i {
+  flex: none;
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 2px solid rgb(255 255 255 / 72%);
+  border-radius: 50%;
+  box-shadow: 0 0 1.2rem rgb(255 255 255 / 18%);
+}
+
+.climate-current-reading {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.75rem 0.82rem;
+  margin-top: 0.9rem;
+  background: rgb(15 58 72 / 55%);
+  border: 1px solid rgb(137 222 241 / 18%);
+  border-radius: 0.85rem;
+}
+
+.climate-current-reading span,
+.climate-current-reading small {
+  color: #9dc5d2;
+  font-size: 0.7rem;
+}
+
+.climate-current-reading strong {
+  color: #fff;
+  font-size: 0.96rem;
+}
+
+.climate-type-content,
+.climate-overview-content {
+  margin-top: 0.9rem;
+}
+
+.climate-type-content p,
+.climate-overview-content p,
+.climate-fact-grid dd,
+.climate-example-list li,
+.climate-common-mistake p {
+  color: #c9dce6;
+  font-size: 0.77rem;
+  line-height: 1.68;
+}
+
+.climate-type-summary {
+  margin: 0 0 0.8rem;
+  color: #edfaff !important;
+  font-size: 0.84rem !important;
+}
+
+.climate-overview-link {
+  padding: 0;
+  margin: 0 0 0.5rem;
+  color: #91e4f5;
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.climate-overview-link:hover,
+.climate-overview-link:focus-visible {
+  color: #fff;
+  outline: none;
+  text-decoration: underline;
+}
+
+.climate-fact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.climate-fact-grid > div {
+  padding: 0.68rem;
+  background: rgb(45 102 120 / 15%);
+  border: 1px solid rgb(139 215 236 / 12%);
+  border-radius: 0.75rem;
+}
+
+.climate-fact-grid dt {
+  color: #8fe3f4;
+  font-size: 0.68rem;
+  font-weight: 760;
+}
+
+.climate-fact-grid dd {
+  margin: 0.2rem 0 0;
+}
+
+.climate-example-list,
+.climate-common-mistake {
+  padding: 0.72rem;
+  margin-top: 0.65rem;
+  border-radius: 0.75rem;
+}
+
+.climate-example-list {
+  background: rgb(112 152 72 / 10%);
+  border: 1px solid rgb(177 215 126 / 15%);
+}
+
+.climate-example-list h3,
+.climate-common-mistake strong {
+  margin: 0;
+  color: #e8f5bd;
+  font-size: 0.73rem;
+}
+
+.climate-example-list ul {
+  padding-left: 1.1rem;
+  margin: 0.35rem 0 0;
+}
+
+.climate-common-mistake {
+  background: rgb(190 128 70 / 10%);
+  border: 1px solid rgb(229 172 111 / 17%);
+}
+
+.climate-common-mistake p {
+  margin: 0.28rem 0 0;
+}
+
+.climate-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.38rem;
+  margin-top: 0.8rem;
+}
+
+.climate-legend button {
+  display: flex;
+  gap: 0.48rem;
+  align-items: center;
+  min-height: 2.15rem;
+  padding: 0.42rem 0.5rem;
+  color: #dcecf2;
+  font: inherit;
+  font-size: 0.68rem;
+  text-align: left;
+  cursor: pointer;
+  background: rgb(46 96 112 / 14%);
+  border: 1px solid rgb(154 211 226 / 12%);
+  border-radius: 0.65rem;
+}
+
+.climate-legend button:hover,
+.climate-legend button:focus-visible {
+  color: #fff;
+  background: rgb(70 139 158 / 22%);
+  border-color: rgb(154 225 242 / 35%);
+  outline: none;
+}
+
+.climate-legend i {
+  flex: none;
+  width: 0.76rem;
+  height: 0.76rem;
+  border: 1px solid rgb(255 255 255 / 40%);
+  border-radius: 0.2rem;
+}
+
+.climate-learning-source {
+  padding-top: 0.7rem;
+  margin-top: 0.75rem;
+  color: #75919e;
+  font-size: 0.62rem;
+  line-height: 1.5;
+  border-top: 1px solid rgb(145 210 228 / 10%);
 }
 
 .hero-copy {
@@ -3011,6 +3268,10 @@ a:focus-visible,
   .country-detail-heading h2 {
     font-size: 1.42rem;
   }
+
+  .climate-fact-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 430px) {
@@ -3074,6 +3335,11 @@ a:focus-visible,
 
   .landscape-runtime.is-touch-device .layer-toggle-dot {
     display: none;
+  }
+
+  .landscape-runtime.is-touch-device .climate-fact-grid,
+  .landscape-runtime.is-touch-device .climate-legend {
+    grid-template-columns: 1fr;
   }
 
   .landscape-runtime.is-touch-device .country-search-popover {

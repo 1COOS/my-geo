@@ -62,7 +62,20 @@ export type WaterbodyMarker = {
   name: string
 }
 
-export type GlobePointMarker = CityMarker | WaterbodyMarker | LandmarkMarker
+export type ClimateMarker = {
+  markerType: 'climate'
+  lat: number
+  lng: number
+  name: string
+}
+
+export type GlobePointMarker =
+  CityMarker | WaterbodyMarker | LandmarkMarker | ClimateMarker
+
+export function getClimateMarker(value: unknown) {
+  const marker = value as ClimateMarker | undefined
+  return marker?.markerType === 'climate' ? marker : null
+}
 
 export type CityLayerVisibility = {
   showCapitals: boolean

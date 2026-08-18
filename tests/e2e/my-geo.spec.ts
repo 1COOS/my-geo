@@ -104,7 +104,7 @@ async function expectLayerToolbarSingleLine(page: Page) {
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(layout.buttonCount).toBe(10)
+  expect(layout.buttonCount).toBe(11)
   expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
   expect(layout.rowSpread).toBeLessThan(2)
 }
@@ -291,6 +291,9 @@ test('keeps phone landscape controls separated and country details usable', asyn
   await search.press('Enter')
   const card = page.getByLabel('中国国家知识卡')
   await expect(card).toBeVisible()
+  await expect
+    .poll(async () => (await card.boundingBox())?.y ?? Number.POSITIVE_INFINITY)
+    .toBeLessThanOrEqual(13)
   const cardBox = await card.boundingBox()
   expect(cardBox).not.toBeNull()
   expect(cardBox!.y).toBeGreaterThanOrEqual(11)
@@ -966,6 +969,139 @@ test('shows synchronized geography reference lines and opens curriculum knowledg
   await expect(card.getByRole('heading', { name: '半球划分' })).toBeVisible()
 })
 
+test('renders and classifies the synchronized world climate layer', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/')
+
+  const { fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const toggle = page.getByRole('button', {
+    name: '世界气候类型教学图层',
+  })
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+
+  const card = page.getByRole('complementary', {
+    name: '世界气候类型知识卡',
+  })
+  await expect(card).toBeVisible()
+  await expect(card.getByLabel('13类世界气候图例')).toBeVisible()
+  const climateImage = page.getByTestId('world-mini-map-climate')
+  const scene = page.getByTestId('globe-scene')
+  await expect(climateImage).toHaveAttribute(
+    'href',
+    '/climate/climate-types-2048.png',
+  )
+  await expect(scene).not.toHaveAttribute('data-climate-highlight-id')
+  await expect(page.getByTestId('world-mini-map-climate-boundary')).toHaveCount(
+    0,
+  )
+
+  const map = page.getByTestId('world-mini-map')
+  const mapBox = await map.boundingBox()
+  expect(mapBox).not.toBeNull()
+  await page.mouse.click(
+    mapBox!.x + mapBox!.width * ((116.4 + 180) / 360),
+    mapBox!.y + mapBox!.height * ((90 - 39.9) / 180),
+  )
+  await expect(
+    card.getByRole('heading', { name: '温带季风气候' }),
+  ).toBeVisible()
+  await expect(card.locator('.climate-current-reading')).toContainText(
+    /\d+\.\d°N · \d+\.\d°E/,
+  )
+  await expect(page.getByTestId('world-mini-map-climate-marker')).toBeVisible()
+  await expect(climateImage).toHaveAttribute(
+    'href',
+    '/climate/highlights/balanced/temperate-monsoon.png',
+  )
+  await expect(scene).toHaveAttribute(
+    'data-climate-highlight-id',
+    'temperate-monsoon',
+  )
+  const climateBoundary = page.getByTestId('world-mini-map-climate-boundary')
+  await expect(climateBoundary).toHaveAttribute(
+    'href',
+    '/climate/highlight-boundaries/balanced/temperate-monsoon.png',
+  )
+  await expect(climateBoundary).toHaveCSS('filter', /drop-shadow/)
+  await expect(scene).toHaveAttribute(
+    'data-climate-boundary-id',
+    'temperate-monsoon',
+  )
+
+  await page.getByRole('button', { name: '画质：平衡' }).click()
+  await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
+  await expect(climateImage).toHaveAttribute(
+    'href',
+    '/climate/highlights/low/temperate-monsoon.png',
+  )
+  await expect(climateBoundary).toHaveAttribute(
+    'href',
+    '/climate/highlight-boundaries/low/temperate-monsoon.png',
+  )
+
+  await card.getByRole('button', { name: '查看13类气候图例' }).click()
+  await expect(climateImage).toHaveAttribute(
+    'href',
+    '/climate/climate-types-1024.png',
+  )
+  await expect(scene).not.toHaveAttribute('data-climate-highlight-id')
+  await expect(climateBoundary).toHaveCount(0)
+  await expect(scene).not.toHaveAttribute('data-climate-boundary-id')
+
+  await card.getByRole('button', { name: '热带雨林气候' }).click()
+  await expect(climateImage).toHaveAttribute(
+    'href',
+    '/climate/highlights/low/tropical-rainforest.png',
+  )
+  await expect(scene).toHaveAttribute(
+    'data-climate-highlight-id',
+    'tropical-rainforest',
+  )
+  await expect(climateBoundary).toHaveAttribute(
+    'href',
+    '/climate/highlight-boundaries/low/tropical-rainforest.png',
+  )
+
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(card).toBeVisible()
+  await expect(scene).not.toHaveAttribute('data-climate-highlight-id')
+  await expect(page.getByTestId('world-mini-map-climate-boundary')).toHaveCount(
+    0,
+  )
+  await expect(scene).not.toHaveAttribute('data-climate-boundary-id')
+
+  const search = await openCountrySearch(page)
+  await search.fill('地中海气候')
+  await expect(page.getByText('气候知识', { exact: true })).toBeVisible()
+  await search.press('Enter')
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(card.getByRole('heading', { name: '地中海气候' })).toBeVisible()
+  await expect(climateImage).toHaveAttribute(
+    'href',
+    '/climate/highlights/low/mediterranean.png',
+  )
+  await expect(scene).toHaveAttribute(
+    'data-climate-highlight-id',
+    'mediterranean',
+  )
+  await expect(climateBoundary).toHaveAttribute(
+    'href',
+    '/climate/highlight-boundaries/low/mediterranean.png',
+  )
+  await expect(scene).toHaveAttribute(
+    'data-climate-boundary-id',
+    'mediterranean',
+  )
+})
+
 for (const viewport of [
   { name: 'phone landscape', width: 844, height: 390 },
   { name: 'iPad landscape', width: 1194, height: 834 },
@@ -1005,6 +1141,22 @@ for (const viewport of [
     expect(cardBox!.y).toBeGreaterThanOrEqual(0)
     expect(cardBox!.x + cardBox!.width).toBeLessThanOrEqual(viewport.width + 1)
     expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(
+      viewport.height + 1,
+    )
+
+    await page.getByRole('button', { name: '世界气候类型教学图层' }).click()
+    const climateCard = page.getByRole('complementary', {
+      name: '世界气候类型知识卡',
+    })
+    await expect(climateCard).toBeVisible()
+    const climateCardBox = await climateCard.boundingBox()
+    expect(climateCardBox).not.toBeNull()
+    expect(climateCardBox!.x).toBeGreaterThanOrEqual(0)
+    expect(climateCardBox!.y).toBeGreaterThanOrEqual(0)
+    expect(climateCardBox!.x + climateCardBox!.width).toBeLessThanOrEqual(
+      viewport.width + 1,
+    )
+    expect(climateCardBox!.y + climateCardBox!.height).toBeLessThanOrEqual(
       viewport.height + 1,
     )
   })
@@ -1314,7 +1466,7 @@ test('keeps the layer panel inside an iPad landscape safe area', async ({
       rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
     }
   })
-  expect(toolbarLayout.buttonCount).toBe(10)
+  expect(toolbarLayout.buttonCount).toBe(11)
   expect(toolbarLayout.scrollWidth).toBeLessThanOrEqual(
     toolbarLayout.clientWidth + 1,
   )
@@ -1347,7 +1499,7 @@ test('shows the fallback instead of crashing without WebGL', async ({
 
   await expect(page.getByTestId('webgl-fallback')).toBeVisible()
   await expect(page.getByTestId('globe-scene')).toHaveCount(0)
-  await expect(page.getByTestId('world-mini-map')).toHaveCount(0)
+  await expect(page.getByTestId('world-mini-map')).toBeVisible()
   const search = await openCountrySearch(page)
   await search.fill('中国')
   await search.press('Enter')
@@ -1358,6 +1510,30 @@ test('shows the fallback instead of crashing without WebGL', async ({
   await expect(
     page.getByRole('complementary', { name: '喜马拉雅山脉知识卡' }),
   ).toBeVisible()
+  const climateSearch = await openCountrySearch(page)
+  await climateSearch.fill('世界气候类型')
+  await climateSearch.press('Enter')
+  await expect(
+    page.getByRole('complementary', { name: '世界气候类型知识卡' }),
+  ).toBeVisible()
+  const fallbackClimateImage = page.getByTestId('world-mini-map-climate')
+  await expect(fallbackClimateImage).toHaveAttribute(
+    'href',
+    '/climate/climate-types-2048.png',
+  )
+  const climateTypeSearch = await openCountrySearch(page)
+  await climateTypeSearch.fill('热带雨林气候')
+  await climateTypeSearch.press('Enter')
+  await expect(fallbackClimateImage).toHaveAttribute(
+    'href',
+    '/climate/highlights/balanced/tropical-rainforest.png',
+  )
+  await expect(
+    page.getByTestId('world-mini-map-climate-boundary'),
+  ).toHaveAttribute(
+    'href',
+    '/climate/highlight-boundaries/balanced/tropical-rainforest.png',
+  )
   await expect(page.getByRole('region', { name: '地球图层控制' })).toHaveCount(
     0,
   )

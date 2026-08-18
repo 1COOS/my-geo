@@ -2,6 +2,8 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { createRef } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ClimateTypeId } from '../../data/climateLearningSchema'
+import { getClimateDisplayRasterAsset } from '../../data/climateRaster'
 import type { WorldMiniMapNavigation } from '../../shared/types/geo'
 import { WorldMiniMap, type WorldMiniMapHandle } from './WorldMiniMap'
 
@@ -9,11 +11,20 @@ function renderMiniMap(overrides?: {
   expanded?: boolean
   selectedCountryCode?: string | null
   showGeographyLearningLayer?: boolean
+  showClimateLayer?: boolean
+  quality?: 'balanced' | 'low'
+  selectedClimateTypeId?: ClimateTypeId | null
+  climateRasterUrl?: string
+  climateBoundaryRasterUrl?: string | null
+  selectedClimatePosition?: { latitude: number; longitude: number } | null
 }) {
   const onNavigate = vi.fn<(navigation: WorldMiniMapNavigation) => void>()
   const onExpandedChange = vi.fn()
   const onSelectGeographyTopic = vi.fn()
+  const onSelectClimatePosition = vi.fn()
   const ref = createRef<WorldMiniMapHandle>()
+  const quality = overrides?.quality ?? 'balanced'
+  const selectedClimateTypeId = overrides?.selectedClimateTypeId ?? null
   render(
     <WorldMiniMap
       ref={ref}
@@ -22,12 +33,27 @@ function renderMiniMap(overrides?: {
       showGeographyLearningLayer={
         overrides?.showGeographyLearningLayer ?? false
       }
+      showClimateLayer={overrides?.showClimateLayer ?? false}
+      selectedClimateTypeId={selectedClimateTypeId}
+      climateRasterUrl={
+        overrides?.climateRasterUrl ??
+        getClimateDisplayRasterAsset(quality, selectedClimateTypeId).url
+      }
+      climateBoundaryRasterUrl={overrides?.climateBoundaryRasterUrl ?? null}
+      selectedClimatePosition={overrides?.selectedClimatePosition ?? null}
       onSelectGeographyTopic={onSelectGeographyTopic}
+      onSelectClimatePosition={onSelectClimatePosition}
       onExpandedChange={onExpandedChange}
       onNavigate={onNavigate}
     />,
   )
-  return { onNavigate, onExpandedChange, onSelectGeographyTopic, ref }
+  return {
+    onNavigate,
+    onExpandedChange,
+    onSelectGeographyTopic,
+    onSelectClimatePosition,
+    ref,
+  }
 }
 
 describe('WorldMiniMap', () => {
@@ -87,6 +113,51 @@ describe('WorldMiniMap', () => {
     expect(screen.getByText('48.8°N · 2.3°E')).toBeInTheDocument()
   })
 
+  it('renders the selected quality climate raster and prioritizes climate clicks', () => {
+    const { onNavigate, onSelectClimatePosition } = renderMiniMap({
+      showClimateLayer: true,
+      quality: 'low',
+      selectedClimateTypeId: 'temperate-monsoon',
+      climateBoundaryRasterUrl:
+        '/climate/highlight-boundaries/low/temperate-monsoon.png',
+      selectedClimatePosition: { latitude: 39.9, longitude: 116.4 },
+    })
+    const map = screen.getByTestId('world-mini-map')
+    vi.spyOn(map, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      right: 360,
+      bottom: 180,
+      left: 0,
+      width: 360,
+      height: 180,
+      toJSON: () => ({}),
+    })
+
+    expect(screen.getByTestId('world-mini-map-climate')).toHaveAttribute(
+      'href',
+      '/climate/highlights/low/temperate-monsoon.png',
+    )
+    expect(screen.getByTestId('world-mini-map-climate')).toHaveAttribute(
+      'data-climate-highlight-id',
+      'temperate-monsoon',
+    )
+    expect(
+      screen.getByTestId('world-mini-map-climate-boundary'),
+    ).toHaveAttribute(
+      'href',
+      '/climate/highlight-boundaries/low/temperate-monsoon.png',
+    )
+    expect(screen.getByTestId('world-mini-map-climate-marker')).toBeVisible()
+    fireEvent.click(document.querySelector('[data-country-code="CN"]')!, {
+      clientX: 296,
+      clientY: 50,
+    })
+    expect(onSelectClimatePosition).toHaveBeenCalled()
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+
   it('supports keyboard positioning and mobile collapse', () => {
     const { onNavigate, onExpandedChange } = renderMiniMap()
     const map = screen.getByTestId('world-mini-map')
@@ -142,7 +213,13 @@ describe('WorldMiniMap', () => {
         expanded
         selectedCountryCode={null}
         showGeographyLearningLayer={false}
+        showClimateLayer={false}
+        selectedClimateTypeId={null}
+        climateRasterUrl="/climate/climate-types-2048.png"
+        climateBoundaryRasterUrl={null}
+        selectedClimatePosition={null}
         onSelectGeographyTopic={onSelectGeographyTopic}
+        onSelectClimatePosition={vi.fn()}
         onExpandedChange={onExpandedChange}
         onNavigate={onNavigate}
       />,
@@ -155,7 +232,13 @@ describe('WorldMiniMap', () => {
         expanded
         selectedCountryCode={null}
         showGeographyLearningLayer
+        showClimateLayer={false}
+        selectedClimateTypeId={null}
+        climateRasterUrl="/climate/climate-types-2048.png"
+        climateBoundaryRasterUrl={null}
+        selectedClimatePosition={null}
         onSelectGeographyTopic={onSelectGeographyTopic}
+        onSelectClimatePosition={vi.fn()}
         onExpandedChange={onExpandedChange}
         onNavigate={onNavigate}
       />,

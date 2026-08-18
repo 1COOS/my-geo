@@ -1,0 +1,443 @@
+{
+  "period": "1991–2020",
+  "source": {
+    "archiveName": "koppen_geiger_tif.zip",
+    "archiveBytes": 130618411,
+    "archiveMd5": "7fc2f5a15d4f5fe0ce59c9a9b502aa09",
+    "rasterPath": "1991_2020/koppen_geiger_0p1.tif",
+    "rasterWidth": 3600,
+    "rasterHeight": 1800
+  },
+  "palette": [
+    { "id": "tropical-rainforest", "color": "#156c36", "rgb": [21, 108, 54] },
+    { "id": "tropical-monsoon", "color": "#2e9b57", "rgb": [46, 155, 87] },
+    { "id": "tropical-savanna", "color": "#a5b83f", "rgb": [165, 184, 63] },
+    { "id": "tropical-desert", "color": "#e7b34f", "rgb": [231, 179, 79] },
+    {
+      "id": "subtropical-monsoon-humid",
+      "color": "#68c3a3",
+      "rgb": [104, 195, 163]
+    },
+    { "id": "mediterranean", "color": "#d98a4a", "rgb": [217, 138, 74] },
+    { "id": "temperate-oceanic", "color": "#4f9ed6", "rgb": [79, 158, 214] },
+    { "id": "temperate-monsoon", "color": "#6f7fd8", "rgb": [111, 127, 216] },
+    {
+      "id": "temperate-continental",
+      "color": "#b78ac6",
+      "rgb": [183, 138, 198]
+    },
+    { "id": "subarctic-coniferous", "color": "#5b718f", "rgb": [91, 113, 143] },
+    { "id": "tundra", "color": "#9aafa8", "rgb": [154, 175, 168] },
+    { "id": "ice-cap", "color": "#dcecf2", "rgb": [220, 236, 242] },
+    { "id": "highland-mountain", "color": "#8b6f5a", "rgb": [139, 111, 90] }
+  ],
+  "assets": {
+    "balanced": {
+      "url": "/climate/climate-types-2048.png",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 69066,
+      "sha256": "b427a1efe46f645704cb21bf70c4f91eb253f775e6b19b1654cab81d3ffbf2c0"
+    },
+    "low": {
+      "url": "/climate/climate-types-1024.png",
+      "width": 1024,
+      "height": 512,
+      "bytes": 25282,
+      "sha256": "a54f610a45c2465a755c51ec5c69d93c515a089f6e27ef434235a77158e2714b"
+    }
+  },
+  "highlightAssets": {
+    "balanced": {
+      "tropical-rainforest": {
+        "url": "/climate/highlights/balanced/tropical-rainforest.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 70814,
+        "sha256": "adc5111b788b0558aca774a8f3a4f838cfce48f344abe2cdbd52d4f922136681"
+      },
+      "tropical-monsoon": {
+        "url": "/climate/highlights/balanced/tropical-monsoon.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 70829,
+        "sha256": "eaf97faecaa66a7bb7ce5216b906aa8ee9d48f045c828ce9537145ea9b61d0a1"
+      },
+      "tropical-savanna": {
+        "url": "/climate/highlights/balanced/tropical-savanna.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 72088,
+        "sha256": "f27d830875feb1af9e761c8a96e3b0b3bd720343d0917a0dce8818d48989d777"
+      },
+      "tropical-desert": {
+        "url": "/climate/highlights/balanced/tropical-desert.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 71578,
+        "sha256": "22bf28a3253c7137dea682f18a5b95e7521e9d7620725f7f62102690ab48e3ad"
+      },
+      "subtropical-monsoon-humid": {
+        "url": "/climate/highlights/balanced/subtropical-monsoon-humid.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 71725,
+        "sha256": "dc5a72404423c2d0361df6af4c4820047c32aebf86d84202a3e3e020772dd3ea"
+      },
+      "mediterranean": {
+        "url": "/climate/highlights/balanced/mediterranean.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 70054,
+        "sha256": "48260907453e6f28bde79b583267de985ea59d1af1da04e27a7d5895f415c015"
+      },
+      "temperate-oceanic": {
+        "url": "/climate/highlights/balanced/temperate-oceanic.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 70632,
+        "sha256": "539fb990019fc2417f37ad30bffb48cdc4c477ddee7db8ba19b4af5077ec758e"
+      },
+      "temperate-monsoon": {
+        "url": "/climate/highlights/balanced/temperate-monsoon.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 69693,
+        "sha256": "272d6596b042d5fd7f3c1947affd5adf862b04b086aa0f8036c5b62bd65bb5e4"
+      },
+      "temperate-continental": {
+        "url": "/climate/highlights/balanced/temperate-continental.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 73198,
+        "sha256": "ce8d2f51402529a1b3caf3321f4c47c6a3f8c0cf500f25cc147c529e8152965d"
+      },
+      "subarctic-coniferous": {
+        "url": "/climate/highlights/balanced/subarctic-coniferous.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 73312,
+        "sha256": "dad3eb44c0ad851e468c649419425fdbb3a01d3002b87816d0ec0b1727bda66e"
+      },
+      "tundra": {
+        "url": "/climate/highlights/balanced/tundra.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 73827,
+        "sha256": "ddc27f8e25133fd15a6e80914b57e207a1e53c020ca57ecfc5cc43d781434190"
+      },
+      "ice-cap": {
+        "url": "/climate/highlights/balanced/ice-cap.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 71430,
+        "sha256": "eaf7175b142f7febc8a4ec889276905883ffdcfd48eb0ca077d7761c27afead6"
+      },
+      "highland-mountain": {
+        "url": "/climate/highlights/balanced/highland-mountain.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 69951,
+        "sha256": "b38c61f0499033755fab734e07131f18e7d7bac93e485fa490a3f44c830fa5ed"
+      }
+    },
+    "low": {
+      "tropical-rainforest": {
+        "url": "/climate/highlights/low/tropical-rainforest.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 25773,
+        "sha256": "d0eb9eac8fae88110a06d96158f386784445bdd16e389b9ec26960462556a4ad"
+      },
+      "tropical-monsoon": {
+        "url": "/climate/highlights/low/tropical-monsoon.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 25770,
+        "sha256": "ed2086a924aee8221e84e965f586a60ccb5b3ca023cbdc147e9352b989611509"
+      },
+      "tropical-savanna": {
+        "url": "/climate/highlights/low/tropical-savanna.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 26350,
+        "sha256": "0c4192fa021282a1f3daa19b887e11a96ab0f2406c27e257db1028833d016a01"
+      },
+      "tropical-desert": {
+        "url": "/climate/highlights/low/tropical-desert.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 26242,
+        "sha256": "ad0baf7286946e4538e39129363e162fd4002e144c1b88c32b61c7a73c8ebd49"
+      },
+      "subtropical-monsoon-humid": {
+        "url": "/climate/highlights/low/subtropical-monsoon-humid.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 26069,
+        "sha256": "381ffc147984c06f79c8bd38c612b2f20f675e055e0af539cf752eb98dc73406"
+      },
+      "mediterranean": {
+        "url": "/climate/highlights/low/mediterranean.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 25537,
+        "sha256": "910e71e1f18f8eca436af52d4c234f46827c564dcd6856109263c8770cecf316"
+      },
+      "temperate-oceanic": {
+        "url": "/climate/highlights/low/temperate-oceanic.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 25659,
+        "sha256": "2bf5ebf72c1f523be7df45456f17b99354d80d0088dc15494b0c9e106112ea55"
+      },
+      "temperate-monsoon": {
+        "url": "/climate/highlights/low/temperate-monsoon.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 25508,
+        "sha256": "5cc500fd3a3d457250056b77f673c5208b745bcf1333c386f2ba0d27b3bdf4a9"
+      },
+      "temperate-continental": {
+        "url": "/climate/highlights/low/temperate-continental.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 26631,
+        "sha256": "f78dcdad5d4e426ca32a8519784ba8d0077227116da03e1fd3ae9b8ca424c113"
+      },
+      "subarctic-coniferous": {
+        "url": "/climate/highlights/low/subarctic-coniferous.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 26712,
+        "sha256": "6cdd2574f763932dd1d1a60c9e156c6a296bdbd7e4d5ee7cfe689f9e5453cb09"
+      },
+      "tundra": {
+        "url": "/climate/highlights/low/tundra.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 26582,
+        "sha256": "96a15f6861f88f20266984a429579f0e0b0296ebd64f886011a78341856d8776"
+      },
+      "ice-cap": {
+        "url": "/climate/highlights/low/ice-cap.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 26151,
+        "sha256": "f9b59a232c5107640f7c60b2463584a6ea1f1bee28a62dc658f49c6c13260e1e"
+      },
+      "highland-mountain": {
+        "url": "/climate/highlights/low/highland-mountain.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 25753,
+        "sha256": "588db08b9824e14b6b6273d4cd09fa13074436e44d9b898c6880a7bf9d2e071d"
+      }
+    }
+  },
+  "highlightBoundaryAssets": {
+    "balanced": {
+      "tropical-rainforest": {
+        "url": "/climate/highlight-boundaries/balanced/tropical-rainforest.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 14585,
+        "sha256": "8c9858213b72293c5d8d7f657ced9cdf7e158db6ada302b2a86ff440047a2d4f"
+      },
+      "tropical-monsoon": {
+        "url": "/climate/highlight-boundaries/balanced/tropical-monsoon.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 14327,
+        "sha256": "60d31fd205235ec3561005fc6fbcb5aaa5e1ccc0785245fb3b3eeb6ba74c74a1"
+      },
+      "tropical-savanna": {
+        "url": "/climate/highlight-boundaries/balanced/tropical-savanna.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 18393,
+        "sha256": "8d879b0edb372654f85db215a74c6cdd132015f45201554cc4b76ebf17ae84ca"
+      },
+      "tropical-desert": {
+        "url": "/climate/highlight-boundaries/balanced/tropical-desert.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 16236,
+        "sha256": "cb625074027944f8b9db9ef518b37a744aa634d85d774eaf34c9215d3919cc77"
+      },
+      "subtropical-monsoon-humid": {
+        "url": "/climate/highlight-boundaries/balanced/subtropical-monsoon-humid.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 17103,
+        "sha256": "9f38e0fb6a69fa7300c5abcfedfb5b68d7012bdd38d75cef5fabaa74881fb582"
+      },
+      "mediterranean": {
+        "url": "/climate/highlight-boundaries/balanced/mediterranean.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 11850,
+        "sha256": "24b3d8d0e3688684e653127aaac59fec05d3cb06dc870d88983fa2e3d8a419a1"
+      },
+      "temperate-oceanic": {
+        "url": "/climate/highlight-boundaries/balanced/temperate-oceanic.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 14002,
+        "sha256": "559adfd4adc458bf71ab52fa7ee5f1839216e1e7442871a490fe8a7a0b4de862"
+      },
+      "temperate-monsoon": {
+        "url": "/climate/highlight-boundaries/balanced/temperate-monsoon.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 10087,
+        "sha256": "b4251a509c6350f45185b04839022c524bb6b6feff59086162b458aa814c42b0"
+      },
+      "temperate-continental": {
+        "url": "/climate/highlight-boundaries/balanced/temperate-continental.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 21015,
+        "sha256": "56816a1eb4ff25fa632671e07cc9f10e5a3ef207ba4831fb0bf40372b2983aac"
+      },
+      "subarctic-coniferous": {
+        "url": "/climate/highlight-boundaries/balanced/subarctic-coniferous.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 20276,
+        "sha256": "4f1acbf6c368241e2e89051c0958ec96ddb9111fb137e9f6983103965f7fe390"
+      },
+      "tundra": {
+        "url": "/climate/highlight-boundaries/balanced/tundra.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 21468,
+        "sha256": "6ec92c3e746a83e0b83a3ef3bb9268a26c6f24be585ee44eea9ef996c6ff1edc"
+      },
+      "ice-cap": {
+        "url": "/climate/highlight-boundaries/balanced/ice-cap.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 14008,
+        "sha256": "4e7d971d1d19b8bf08e7a0ced7fdddb71bebe0f9c5278b2eeeef6c375c80e1f7"
+      },
+      "highland-mountain": {
+        "url": "/climate/highlight-boundaries/balanced/highland-mountain.png",
+        "width": 2048,
+        "height": 1024,
+        "bytes": 12650,
+        "sha256": "21e251c5e8d7d49fee9cad55e872c493c37a36f6693fdac74dd28ca758f0b5b7"
+      }
+    },
+    "low": {
+      "tropical-rainforest": {
+        "url": "/climate/highlight-boundaries/low/tropical-rainforest.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 4333,
+        "sha256": "4f01ddbf58030846ab457bde69537e5d13007825d69bc36ea5ce2d54ce0258a6"
+      },
+      "tropical-monsoon": {
+        "url": "/climate/highlight-boundaries/low/tropical-monsoon.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 4225,
+        "sha256": "bb5e3f6dd6b38f4be35991ee8593834051518d0454c09765f077dda4936032c0"
+      },
+      "tropical-savanna": {
+        "url": "/climate/highlight-boundaries/low/tropical-savanna.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 5858,
+        "sha256": "152fc1c153644305209164965631ea52cd2c3a564bd0f21d65940efe3affa446"
+      },
+      "tropical-desert": {
+        "url": "/climate/highlight-boundaries/low/tropical-desert.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 5128,
+        "sha256": "f6a5ff1b1eca177260d60ba14b69985f698d3da0f0c6bafb0b82bbb58e4c43b0"
+      },
+      "subtropical-monsoon-humid": {
+        "url": "/climate/highlight-boundaries/low/subtropical-monsoon-humid.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 5110,
+        "sha256": "d52243412f845617455b60c04fdbd47a905a3b02c29d88ff2896e952fef70dae"
+      },
+      "mediterranean": {
+        "url": "/climate/highlight-boundaries/low/mediterranean.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 3350,
+        "sha256": "8b56bbc454779bc4bb9fb280a379a82a29bfa6fb12923dad64f3fdab62bb3238"
+      },
+      "temperate-oceanic": {
+        "url": "/climate/highlight-boundaries/low/temperate-oceanic.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 4051,
+        "sha256": "67e5821d08933eed27a39debab3852f5c4e853c6e5c1168140d80c44a3d716ed"
+      },
+      "temperate-monsoon": {
+        "url": "/climate/highlight-boundaries/low/temperate-monsoon.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 2810,
+        "sha256": "d831d15a8dcb2278d9dc727a7395b18b6dec304cefb3add0a5204d8c9d5c167b"
+      },
+      "temperate-continental": {
+        "url": "/climate/highlight-boundaries/low/temperate-continental.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 6547,
+        "sha256": "a1956310f9a35d38d1b9584cb6398e7dcec5e86b82008538ebd12b101b72bdab"
+      },
+      "subarctic-coniferous": {
+        "url": "/climate/highlight-boundaries/low/subarctic-coniferous.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 6233,
+        "sha256": "d40feb9a0095ba2b29b66904db88eb9a04dfeff6e95d4c2e5871dd80af4023c3"
+      },
+      "tundra": {
+        "url": "/climate/highlight-boundaries/low/tundra.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 6678,
+        "sha256": "b97ac6eae094822e65a5d74dc4820068520fb80315e139b47dcc887ca2f51aa5"
+      },
+      "ice-cap": {
+        "url": "/climate/highlight-boundaries/low/ice-cap.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 4454,
+        "sha256": "12def3a8218453ad7313830209b5a2486c001fc775ab6535b1275a7aa4412e85"
+      },
+      "highland-mountain": {
+        "url": "/climate/highlight-boundaries/low/highland-mountain.png",
+        "width": 1024,
+        "height": 512,
+        "bytes": 3832,
+        "sha256": "d7bc6f14a28ca0662ef4ccf57ed25c4afe361c59c7396ecf59e460af84f0d9e1"
+      }
+    }
+  },
+  "anchors": {
+    "manaus": "tropical-rainforest",
+    "mumbai": "tropical-monsoon",
+    "nairobi": "tropical-savanna",
+    "cairo": "tropical-desert",
+    "shanghai": "subtropical-monsoon-humid",
+    "beijing": "temperate-monsoon",
+    "london": "temperate-oceanic",
+    "rome": "mediterranean",
+    "moscow": "temperate-continental",
+    "yakutsk": "subarctic-coniferous",
+    "utqiagvik": "tundra",
+    "antarcticInterior": "ice-cap",
+    "lhasa": "highland-mountain",
+    "quito": "highland-mountain",
+    "addisAbaba": "highland-mountain"
+  }
+}

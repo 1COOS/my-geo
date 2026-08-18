@@ -1,5 +1,6 @@
 import type { City } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
+import type { ClimateType } from '../../data/climateLearningSchema'
 import type { Desert } from '../../data/desertSchema'
 import type {
   GeographyTopic,
@@ -23,6 +24,15 @@ export type PlaceSearchResult =
       topic: GeographyTopic
       referenceLine?: ReferenceLine
     }
+  | {
+      type: 'climateTopic'
+      topic: {
+        id: 'world-climate-types'
+        name: { zh: string; en: string }
+        aliases: string[]
+      }
+    }
+  | { type: 'climateType'; climateType: ClimateType }
 
 export function normalizeCountrySearch(value: string) {
   return value
@@ -52,6 +62,12 @@ export function searchPlaces(
   landmarks: Landmark[] = [],
   geographyTopics: GeographyTopic[] = [],
   referenceLines: ReferenceLine[] = [],
+  climateTopic?: {
+    id: 'world-climate-types'
+    name: { zh: string; en: string }
+    aliases: string[]
+  },
+  climateTypes: ClimateType[] = [],
 ): PlaceSearchResult[] {
   const normalizedQuery = normalizeCountrySearch(query)
   if (!normalizedQuery) {
@@ -245,6 +261,34 @@ export function searchPlaces(
           name: referenceLine.name.zh,
         })
       }
+    }
+  }
+
+  if (climateTopic) {
+    const score = matchScore(
+      [climateTopic.name.zh, climateTopic.name.en, ...climateTopic.aliases],
+      normalizedQuery,
+    )
+    if (score < 10) {
+      scored.push({
+        result: { type: 'climateTopic', topic: climateTopic },
+        score: score + 0.04,
+        name: climateTopic.name.zh,
+      })
+    }
+  }
+
+  for (const climateType of climateTypes) {
+    const score = matchScore(
+      [climateType.name.zh, climateType.name.en, ...climateType.aliases],
+      normalizedQuery,
+    )
+    if (score < 10) {
+      scored.push({
+        result: { type: 'climateType', climateType },
+        score: score + 0.03,
+        name: climateType.name.zh,
+      })
     }
   }
 

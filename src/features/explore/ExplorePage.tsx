@@ -11,6 +11,17 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { getClimateType } from '../../data/climateLearning'
+import {
+  classifyClimatePosition,
+  getClimateRasterAsset,
+  loadClimateDisplayAssets,
+  preloadClimateRaster,
+} from '../../data/climateRaster'
+import type {
+  ClimateKnowledgeSelection,
+  ClimateTypeId,
+} from '../../data/climateLearningSchema'
 import { getCitiesForCountry, getCity, getCountry } from '../../data/countries'
 import { getDesert } from '../../data/deserts'
 import {
@@ -45,6 +56,7 @@ import { getCanalCameraDistance } from '../../scene/linearFeatureSceneInteractio
 import { LANDMARK_CAMERA_DISTANCE } from '../../scene/landmarkSceneInteraction'
 import { CountryDetailPanel } from './CountryDetailPanel'
 import { CountrySearch } from './CountrySearch'
+import { ClimateLearningPanel } from './ClimateLearningPanel'
 import type { PlaceSearchResult } from './countrySearchUtils'
 import { DesertDetailPanel } from './DesertDetailPanel'
 import { GeographyLearningPanel } from './GeographyLearningPanel'
@@ -117,6 +129,7 @@ type LayerControlProps = {
   showDesertLayer: boolean
   showLandmarkLayer: boolean
   showGeographyLearningLayer: boolean
+  showClimateLayer: boolean
   onToggleCapitals: () => void
   onToggleCities: () => void
   onToggleOceanLayer: () => void
@@ -127,6 +140,7 @@ type LayerControlProps = {
   onToggleDesertLayer: () => void
   onToggleLandmarkLayer: () => void
   onToggleGeographyLearningLayer: () => void
+  onToggleClimateLayer: () => void
 }
 
 function LayerControl({
@@ -140,6 +154,7 @@ function LayerControl({
   showDesertLayer,
   showLandmarkLayer,
   showGeographyLearningLayer,
+  showClimateLayer,
   onToggleCapitals,
   onToggleCities,
   onToggleOceanLayer,
@@ -150,6 +165,7 @@ function LayerControl({
   onToggleDesertLayer,
   onToggleLandmarkLayer,
   onToggleGeographyLearningLayer,
+  onToggleClimateLayer,
 }: LayerControlProps) {
   return (
     <section className="layer-control" aria-label="地球图层控制">
@@ -188,6 +204,17 @@ function LayerControl({
         >
           <span className="layer-toggle-dot" aria-hidden="true" />
           <span>经纬</span>
+        </button>
+        <button
+          type="button"
+          className="layer-toggle is-climate"
+          aria-pressed={showClimateLayer}
+          aria-label="世界气候类型教学图层"
+          title="气候：世界13类气候类型"
+          onClick={onToggleClimateLayer}
+        >
+          <span className="layer-toggle-dot" aria-hidden="true" />
+          <span>气候</span>
         </button>
         <button
           type="button"
@@ -280,6 +307,7 @@ export function ExplorePage() {
   const reducedMotion = useReducedMotion() ?? false
   const searchDialogId = useId()
   const cameraRequestIdRef = useRef(0)
+  const climateRequestIdRef = useRef(0)
   const currentViewCenterRef = useRef<GeoPosition>(getCountry('CN')!.center)
   const miniMapRef = useRef<WorldMiniMapHandle>(null)
   const controlDeckRef = useRef<HTMLDivElement>(null)
@@ -297,6 +325,9 @@ export function ExplorePage() {
   const [showLandmarkLayer, setShowLandmarkLayer] = useState(false)
   const [showGeographyLearningLayer, setShowGeographyLearningLayer] =
     useState(false)
+  const [showClimateLayer, setShowClimateLayer] = useState(false)
+  const [climateSelection, setClimateSelection] =
+    useState<ClimateKnowledgeSelection | null>(null)
   const [selectedGeographyTopicId, setSelectedGeographyTopicId] =
     useState<GeographyTopicId | null>(null)
   const [selectedReferenceLineId, setSelectedReferenceLineId] =
@@ -382,6 +413,49 @@ export function ExplorePage() {
   const selectedLandmark = getLandmark(selectedLandmarkId)
   const selectedGeographyTopic = getGeographyTopic(selectedGeographyTopicId)
   const selectedReferenceLine = getReferenceLine(selectedReferenceLineId)
+  const selectedClimateType =
+    climateSelection?.kind === 'type'
+      ? getClimateType(climateSelection.climateTypeId)
+      : null
+  const selectedClimateTypeId = selectedClimateType?.id ?? null
+  const selectedClimatePosition =
+    climateSelection?.classification?.position ?? null
+  const climateDisplayKey = `${quality}:${showClimateLayer ? (selectedClimateTypeId ?? 'overview') : 'hidden'}`
+  const baseClimateRasterUrl = getClimateRasterAsset(quality).url
+  const [loadedClimateDisplay, setLoadedClimateDisplay] = useState<{
+    key: string
+    rasterUrl: string
+    boundaryUrl: string | null
+  }>({
+    key: 'balanced:hidden',
+    rasterUrl: getClimateRasterAsset('balanced').url,
+    boundaryUrl: null,
+  })
+  const climateRasterUrl =
+    loadedClimateDisplay.key === climateDisplayKey
+      ? loadedClimateDisplay.rasterUrl
+      : baseClimateRasterUrl
+  const climateBoundaryRasterUrl =
+    loadedClimateDisplay.key === climateDisplayKey
+      ? loadedClimateDisplay.boundaryUrl
+      : null
+  useEffect(() => {
+    let active = true
+    const climateTypeId = showClimateLayer ? selectedClimateTypeId : null
+    void loadClimateDisplayAssets(quality, climateTypeId).then(
+      ({ raster, boundary }) => {
+        if (!active) return
+        setLoadedClimateDisplay({
+          key: climateDisplayKey,
+          rasterUrl: raster.url,
+          boundaryUrl: boundary?.url ?? null,
+        })
+      },
+    )
+    return () => {
+      active = false
+    }
+  }, [climateDisplayKey, quality, selectedClimateTypeId, showClimateLayer])
   const visibleCountryCities = getCitiesForCountry(selectedCountryCode)
   const clearPlaceSelection = useCallback(() => {
     setSelectedCityId(null)
@@ -483,10 +557,21 @@ export function ExplorePage() {
     setShowGeographyLearningLayer(nextVisible)
     if (!nextVisible) return
     clearPlaceSelection()
+    setClimateSelection(null)
     setCommittedViewCenter(currentViewCenterRef.current)
     setSelectedGeographyTopicId('grid-reading')
     setSelectedReferenceLineId(null)
   }, [clearPlaceSelection, showGeographyLearningLayer])
+  const toggleClimateLayer = useCallback(() => {
+    const nextVisible = !showClimateLayer
+    setShowClimateLayer(nextVisible)
+    if (!nextVisible) return
+    clearPlaceSelection()
+    setSelectedGeographyTopicId(null)
+    setSelectedReferenceLineId(null)
+    setClimateSelection({ kind: 'overview' })
+    void preloadClimateRaster(quality).catch(() => undefined)
+  }, [clearPlaceSelection, quality, showClimateLayer])
   const requestCameraTarget = useCallback(
     (position: GeoPosition, distance = OVERVIEW_CAMERA_DISTANCE) => {
       cameraRequestIdRef.current += 1
@@ -504,6 +589,7 @@ export function ExplorePage() {
       referenceLineId: ReferenceLineId | null = null,
     ) => {
       clearPlaceSelection()
+      setClimateSelection(null)
       setCommittedViewCenter(currentViewCenterRef.current)
       setShowGeographyLearningLayer(true)
       setSelectedGeographyTopicId(topicId)
@@ -517,6 +603,77 @@ export function ExplorePage() {
       }
     },
     [clearPlaceSelection, requestCameraTarget],
+  )
+  const selectClimateType = useCallback((climateTypeId: ClimateTypeId) => {
+    setClimateSelection((current) => ({
+      kind: 'type',
+      climateTypeId,
+      classification:
+        current?.classification?.climateTypeId === climateTypeId
+          ? current.classification
+          : undefined,
+    }))
+  }, [])
+  const openClimateOverview = useCallback(() => {
+    clearPlaceSelection()
+    setSelectedGeographyTopicId(null)
+    setSelectedReferenceLineId(null)
+    setShowClimateLayer(true)
+    setClimateSelection({ kind: 'overview' })
+    void preloadClimateRaster(quality).catch(() => undefined)
+  }, [clearPlaceSelection, quality])
+  const navigateToClimateType = useCallback(
+    (climateTypeId: ClimateTypeId) => {
+      const climateType = getClimateType(climateTypeId)
+      if (!climateType) return
+      clearPlaceSelection()
+      setSelectedGeographyTopicId(null)
+      setSelectedReferenceLineId(null)
+      setShowClimateLayer(true)
+      setClimateSelection({ kind: 'type', climateTypeId })
+      void preloadClimateRaster(quality).catch(() => undefined)
+      requestCameraTarget(
+        climateType.representativePosition,
+        climateType.cameraDistance,
+      )
+    },
+    [clearPlaceSelection, quality, requestCameraTarget],
+  )
+  const selectClimateAtPosition = useCallback(
+    (position: GeoPosition, moveCamera: boolean) => {
+      climateRequestIdRef.current += 1
+      const requestId = climateRequestIdRef.current
+      clearPlaceSelection()
+      setSelectedGeographyTopicId(null)
+      setSelectedReferenceLineId(null)
+      setShowClimateLayer(true)
+      if (moveCamera) requestCameraTarget(position)
+      void classifyClimatePosition(position, quality)
+        .then((classification) => {
+          if (requestId !== climateRequestIdRef.current) return
+          setClimateSelection(
+            classification.climateTypeId
+              ? {
+                  kind: 'type',
+                  climateTypeId: classification.climateTypeId,
+                  classification,
+                }
+              : { kind: 'overview', classification },
+          )
+        })
+        .catch(() => {
+          if (requestId !== climateRequestIdRef.current) return
+          setClimateSelection({
+            kind: 'overview',
+            classification: {
+              position,
+              climateTypeId: null,
+              period: '1991–2020',
+            },
+          })
+        })
+    },
+    [clearPlaceSelection, quality, requestCameraTarget],
   )
   const navigateToCountry = useCallback(
     (countryCode: string) => {
@@ -537,6 +694,7 @@ export function ExplorePage() {
       setHoveredLandmarkId(null)
       setSelectedGeographyTopicId(null)
       setSelectedReferenceLineId(null)
+      setClimateSelection(null)
       selectCountry(countryCode)
       requestCameraTarget(country.center)
     },
@@ -560,6 +718,7 @@ export function ExplorePage() {
       setHoveredLandmarkId(null)
       setSelectedGeographyTopicId(null)
       setSelectedReferenceLineId(null)
+      setClimateSelection(null)
       setSelectedCityId(city.id)
       requestCameraTarget(
         { latitude: city.latitude, longitude: city.longitude },
@@ -572,6 +731,7 @@ export function ExplorePage() {
     clearPlaceSelection()
     setSelectedGeographyTopicId(null)
     setSelectedReferenceLineId(null)
+    setClimateSelection(null)
   }, [clearPlaceSelection])
   const navigateToWaterbody = useCallback(
     (waterbodyId: string) => {
@@ -592,6 +752,7 @@ export function ExplorePage() {
       setHoveredLandmarkId(null)
       setSelectedGeographyTopicId(null)
       setSelectedReferenceLineId(null)
+      setClimateSelection(null)
       if (waterbody.layer === 'lake') setShowLakeLayer(true)
       requestCameraTarget(waterbody.center, waterbody.cameraDistance)
     },
@@ -615,6 +776,7 @@ export function ExplorePage() {
       setHoveredLandmarkId(null)
       setSelectedGeographyTopicId(null)
       setSelectedReferenceLineId(null)
+      setClimateSelection(null)
       setSelectedLinearFeatureId(feature.id)
       const geometry = getLinearGeoFeatureGeometry(feature.id)?.geometry
       const cameraDistance =
@@ -645,6 +807,7 @@ export function ExplorePage() {
       setHoveredLandmarkId(null)
       setSelectedGeographyTopicId(null)
       setSelectedReferenceLineId(null)
+      setClimateSelection(null)
       requestCameraTarget(range.cameraPosition, range.cameraDistance)
     },
     [requestCameraTarget, selectCountry],
@@ -670,6 +833,7 @@ export function ExplorePage() {
       setHoveredLandmarkId(null)
       setSelectedGeographyTopicId(null)
       setSelectedReferenceLineId(null)
+      setClimateSelection(null)
       requestCameraTarget(desert.center, desert.cameraDistance)
     },
     [requestCameraTarget, selectCountry],
@@ -695,6 +859,7 @@ export function ExplorePage() {
       setHoveredLandmarkId(null)
       setSelectedGeographyTopicId(null)
       setSelectedReferenceLineId(null)
+      setClimateSelection(null)
       requestCameraTarget(landmark.position, LANDMARK_CAMERA_DISTANCE)
     },
     [requestCameraTarget, selectCountry],
@@ -712,7 +877,11 @@ export function ExplorePage() {
       else if (result.type === 'desert') navigateToDesert(result.desert.id)
       else if (result.type === 'landmark')
         navigateToLandmark(result.landmark.id)
-      else openGeographyTopic(result.topic.id, result.referenceLine?.id ?? null)
+      else if (result.type === 'geographyTopic')
+        openGeographyTopic(result.topic.id, result.referenceLine?.id ?? null)
+      else if (result.type === 'climateType')
+        navigateToClimateType(result.climateType.id)
+      else openClimateOverview()
     },
     [
       navigateToCity,
@@ -722,6 +891,8 @@ export function ExplorePage() {
       navigateToLandmark,
       navigateToMountainRange,
       navigateToWaterbody,
+      navigateToClimateType,
+      openClimateOverview,
       openGeographyTopic,
     ],
   )
@@ -763,7 +934,8 @@ export function ExplorePage() {
     hoveredDesertId === null &&
     selectedLandmarkId === null &&
     hoveredLandmarkId === null &&
-    selectedGeographyTopicId === null
+    selectedGeographyTopicId === null &&
+    climateSelection === null
 
   return (
     <main
@@ -774,7 +946,8 @@ export function ExplorePage() {
         selectedMountainRange ||
         selectedDesert ||
         selectedLandmark ||
-        selectedGeographyTopic
+        selectedGeographyTopic ||
+        climateSelection
           ? 'explore-shell has-country-detail'
           : 'explore-shell'
       }
@@ -805,6 +978,11 @@ export function ExplorePage() {
             showDesertLayer={showDesertLayer}
             showLandmarkLayer={showLandmarkLayer}
             showGeographyLearningLayer={showGeographyLearningLayer}
+            showClimateLayer={showClimateLayer}
+            selectedClimateTypeId={selectedClimateTypeId}
+            climateRasterUrl={climateRasterUrl}
+            climateBoundaryRasterUrl={climateBoundaryRasterUrl}
+            selectedClimatePosition={selectedClimatePosition}
             selectedGeographyTopicId={selectedGeographyTopicId}
             selectedReferenceLineId={selectedReferenceLineId}
             selectedCountryCode={selectedCountryCode}
@@ -836,6 +1014,9 @@ export function ExplorePage() {
             onSelectLandmark={navigateToLandmark}
             onHoverLandmark={setHoveredLandmarkId}
             onSelectGeographyTopic={openGeographyTopic}
+            onSelectClimatePosition={(position) =>
+              selectClimateAtPosition(position, false)
+            }
             onViewCenterChange={handleViewCenterChange}
             onViewCenterCommit={handleViewCenterCommit}
           />
@@ -858,6 +1039,7 @@ export function ExplorePage() {
           showDesertLayer={showDesertLayer}
           showLandmarkLayer={showLandmarkLayer}
           showGeographyLearningLayer={showGeographyLearningLayer}
+          showClimateLayer={showClimateLayer}
           onToggleCapitals={toggleCapitalLayer}
           onToggleCities={toggleCityLayer}
           onToggleOceanLayer={toggleOceanLayer}
@@ -868,20 +1050,27 @@ export function ExplorePage() {
           onToggleDesertLayer={toggleDesertLayer}
           onToggleLandmarkLayer={toggleLandmarkLayer}
           onToggleGeographyLearningLayer={toggleGeographyLearningLayer}
+          onToggleClimateLayer={toggleClimateLayer}
         />
       ) : null}
 
-      {webGLAvailable ? (
-        <WorldMiniMap
-          ref={miniMapRef}
-          expanded={miniMapExpanded}
-          selectedCountryCode={selectedCountryCode}
-          showGeographyLearningLayer={showGeographyLearningLayer}
-          onSelectGeographyTopic={openGeographyTopic}
-          onExpandedChange={setMiniMapExpanded}
-          onNavigate={handleMiniMapNavigation}
-        />
-      ) : null}
+      <WorldMiniMap
+        ref={miniMapRef}
+        expanded={miniMapExpanded}
+        selectedCountryCode={selectedCountryCode}
+        showGeographyLearningLayer={showGeographyLearningLayer}
+        showClimateLayer={showClimateLayer}
+        selectedClimateTypeId={selectedClimateTypeId}
+        climateRasterUrl={climateRasterUrl}
+        climateBoundaryRasterUrl={climateBoundaryRasterUrl}
+        selectedClimatePosition={selectedClimatePosition}
+        onSelectGeographyTopic={openGeographyTopic}
+        onSelectClimatePosition={(position) =>
+          selectClimateAtPosition(position, true)
+        }
+        onExpandedChange={setMiniMapExpanded}
+        onNavigate={handleMiniMapNavigation}
+      />
 
       <div className="control-deck">
         <div ref={controlDeckRef} className="control-deck-content">
@@ -903,6 +1092,8 @@ export function ExplorePage() {
                   selectedLandmark?.id ??
                   selectedReferenceLine?.id ??
                   selectedGeographyTopic?.id ??
+                  selectedClimateType?.id ??
+                  (climateSelection ? 'climate-overview' : null) ??
                   'no-selection'
                 }
                 selectedLabel={
@@ -914,7 +1105,9 @@ export function ExplorePage() {
                   selectedDesert?.name.zh ??
                   selectedLandmark?.name.zh ??
                   selectedReferenceLine?.name.zh ??
-                  selectedGeographyTopic?.name.zh
+                  selectedGeographyTopic?.name.zh ??
+                  selectedClimateType?.name.zh ??
+                  (climateSelection ? '世界气候类型' : undefined)
                 }
                 onSelect={navigateToSearchResult}
                 autoFocus
@@ -1025,6 +1218,14 @@ export function ExplorePage() {
             setSelectedGeographyTopicId(null)
             setSelectedReferenceLineId(null)
           }}
+        />
+      ) : null}
+      {climateSelection ? (
+        <ClimateLearningPanel
+          selection={climateSelection}
+          onSelectType={selectClimateType}
+          onShowOverview={() => setClimateSelection({ kind: 'overview' })}
+          onClose={() => setClimateSelection(null)}
         />
       ) : null}
     </main>

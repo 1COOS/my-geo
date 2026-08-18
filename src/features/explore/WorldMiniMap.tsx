@@ -11,6 +11,7 @@ import {
 
 import { countryBoundaries, getCountry } from '../../data/countries'
 import { geographyReferenceLines } from '../../data/geographyLearning'
+import type { ClimateTypeId } from '../../data/climateLearningSchema'
 import type {
   GeographyTopicId,
   ReferenceLineId,
@@ -39,12 +40,18 @@ type WorldMiniMapProps = {
   expanded: boolean
   selectedCountryCode: string | null
   showGeographyLearningLayer: boolean
+  showClimateLayer: boolean
+  selectedClimateTypeId: ClimateTypeId | null
+  climateRasterUrl: string
+  climateBoundaryRasterUrl: string | null
+  selectedClimatePosition: GeoPosition | null
   onSelectGeographyTopic: (
     topicId: GeographyTopicId,
     referenceLineId?: ReferenceLineId | null,
   ) => void
   onExpandedChange: (expanded: boolean) => void
   onNavigate: (navigation: WorldMiniMapNavigation) => void
+  onSelectClimatePosition: (position: GeoPosition) => void
 }
 
 export type WorldMiniMapHandle = {
@@ -59,9 +66,15 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
       expanded,
       selectedCountryCode,
       showGeographyLearningLayer,
+      showClimateLayer,
+      selectedClimateTypeId,
+      climateRasterUrl,
+      climateBoundaryRasterUrl,
+      selectedClimatePosition,
       onSelectGeographyTopic,
       onExpandedChange,
       onNavigate,
+      onSelectClimatePosition,
     },
     ref,
   ) {
@@ -88,6 +101,9 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
       [],
     )
     const keyboardCursorPoint = projectGeoPosition(keyboardCursor)
+    const selectedClimatePoint = selectedClimatePosition
+      ? projectGeoPosition(selectedClimatePosition)
+      : null
 
     const updateViewCenter = useCallback((position: GeoPosition) => {
       viewCenterRef.current = position
@@ -122,6 +138,10 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
 
     const navigateAtPosition = useCallback(
       (position: GeoPosition, knownCountryCode?: string | null) => {
+        if (showClimateLayer) {
+          onSelectClimatePosition(position)
+          return
+        }
         const countryCode = knownCountryCode ?? findCountryAtPosition(position)
         if (countryCode) {
           onNavigate({ kind: 'country', countryCode })
@@ -129,7 +149,7 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
         }
         onNavigate({ kind: 'coordinate', position })
       },
-      [onNavigate],
+      [onNavigate, onSelectClimatePosition, showClimateLayer],
     )
 
     const handleMapClick = (event: MouseEvent<SVGSVGElement>) => {
@@ -220,7 +240,11 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
             data-testid="world-mini-map"
             viewBox={`0 0 ${MINI_MAP_WIDTH} ${MINI_MAP_HEIGHT}`}
             role="application"
-            aria-label="平面世界地图。点击国家或海洋进行定位；键盘方向键移动光标，Enter 定位，Home 返回当前视角。"
+            aria-label={
+              showClimateLayer
+                ? '平面世界气候图。点击任意位置判读气候；键盘方向键移动光标，Enter 判读，Home 返回当前视角。'
+                : '平面世界地图。点击国家或海洋进行定位；键盘方向键移动光标，Enter 定位，Home 返回当前视角。'
+            }
             tabIndex={0}
             onClick={handleMapClick}
             onKeyDown={handleMapKeyDown}
@@ -230,6 +254,34 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
               width={MINI_MAP_WIDTH}
               height={MINI_MAP_HEIGHT}
             />
+            {showClimateLayer ? (
+              <>
+                <image
+                  className="world-mini-map-climate"
+                  data-testid="world-mini-map-climate"
+                  data-climate-highlight-id={selectedClimateTypeId ?? undefined}
+                  href={climateRasterUrl}
+                  width={MINI_MAP_WIDTH}
+                  height={MINI_MAP_HEIGHT}
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                />
+                {climateBoundaryRasterUrl ? (
+                  <image
+                    className="world-mini-map-climate-boundary"
+                    data-testid="world-mini-map-climate-boundary"
+                    data-climate-highlight-id={
+                      selectedClimateTypeId ?? undefined
+                    }
+                    href={climateBoundaryRasterUrl}
+                    width={MINI_MAP_WIDTH}
+                    height={MINI_MAP_HEIGHT}
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                  />
+                ) : null}
+              </>
+            ) : null}
             <g aria-hidden="true" className="world-mini-map-grid">
               {[60, 120, 180, 240, 300].map((x) => (
                 <line key={`x-${x}`} x1={x} x2={x} y1={0} y2={180} />
@@ -299,7 +351,9 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
                 </g>
               </g>
             ) : null}
-            <g className="world-mini-map-countries">
+            <g
+              className={`world-mini-map-countries${showClimateLayer ? 'is-climate-visible' : ''}`}
+            >
               {boundaryPaths.map(({ code, path }) => {
                 const country = getCountry(code)
                 return (
@@ -391,6 +445,17 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
                 r="5.5"
                 aria-hidden="true"
               />
+            ) : null}
+            {selectedClimatePoint ? (
+              <g
+                className="world-mini-map-climate-marker"
+                data-testid="world-mini-map-climate-marker"
+                transform={`translate(${selectedClimatePoint.x} ${selectedClimatePoint.y})`}
+                aria-hidden="true"
+              >
+                <circle r="4.5" />
+                <path d="M0-10 3-4 0-1-3-4Z" />
+              </g>
             ) : null}
           </svg>
 

@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { cities, countries } from '../../data/countries'
+import { climateLearningTopic, climateTypes } from '../../data/climateLearning'
 import { deserts } from '../../data/deserts'
 import {
   geographyReferenceLines,
@@ -31,6 +32,9 @@ function resultId(result: PlaceSearchResult) {
   if (result.type === 'landmark') return `landmark-${result.landmark.id}`
   if (result.type === 'geographyTopic')
     return `geography-${result.referenceLine?.id ?? result.topic.id}`
+  if (result.type === 'climateTopic') return `climate-${result.topic.id}`
+  if (result.type === 'climateType')
+    return `climate-type-${result.climateType.id}`
   return `waterbody-${result.waterbody.id}`
 }
 
@@ -60,6 +64,8 @@ export function CountrySearch({
         landmarks,
         geographyTopics,
         geographyReferenceLines,
+        climateLearningTopic,
+        climateTypes,
       ),
     [query],
   )
@@ -86,7 +92,11 @@ export function CountrySearch({
                   ? result.desert.name.zh
                   : result.type === 'landmark'
                     ? result.landmark.name.zh
-                    : (result.referenceLine?.name.zh ?? result.topic.name.zh),
+                    : result.type === 'geographyTopic'
+                      ? (result.referenceLine?.name.zh ?? result.topic.name.zh)
+                      : result.type === 'climateType'
+                        ? result.climateType.name.zh
+                        : result.topic.name.zh,
     )
     setOpen(false)
     setActiveIndex(0)
@@ -189,8 +199,12 @@ export function CountrySearch({
                             ? result.desert.name
                             : result.type === 'landmark'
                               ? result.landmark.name
-                              : (result.referenceLine?.name ??
-                                result.topic.name)
+                              : result.type === 'geographyTopic'
+                                ? (result.referenceLine?.name ??
+                                  result.topic.name)
+                                : result.type === 'climateType'
+                                  ? result.climateType.name
+                                  : result.topic.name
               const badge =
                 result.type === 'country'
                   ? result.country.code
@@ -208,9 +222,11 @@ export function CountrySearch({
                             ? '沙漠'
                             : result.type === 'landmark'
                               ? '古迹'
-                              : result.referenceLine
-                                ? '参考线'
-                                : '地理知识'
+                              : result.type === 'geographyTopic'
+                                ? result.referenceLine
+                                  ? '参考线'
+                                  : '地理知识'
+                                : '气候知识'
               return (
                 <li
                   id={`${listboxId}-${id}`}
@@ -250,7 +266,11 @@ export function CountrySearch({
                                   ? ` · ${landmarkCategoryLabels[result.landmark.category]} · ${result.landmark.location.zh}`
                                   : result.type === 'geographyTopic'
                                     ? ` · ${result.topic.name.zh}`
-                                    : ''}
+                                    : result.type === 'climateType'
+                                      ? ' · 世界气候类型'
+                                      : result.type === 'climateTopic'
+                                        ? ' · 13类气候总览'
+                                        : ''}
                       </small>
                     </span>
                     <code>{badge}</code>

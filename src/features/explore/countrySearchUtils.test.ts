@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { cities, countries } from '../../data/countries'
+import { climateLearningTopic, climateTypes } from '../../data/climateLearning'
 import { deserts } from '../../data/deserts'
 import { linearGeoFeatures } from '../../data/linearGeoFeatures'
 import { landmarks } from '../../data/landmarks'
@@ -236,5 +237,44 @@ describe('searchCountries', () => {
           result.type === 'landmark' && result.landmark.id === 'angkor-wat',
       ),
     ).toBe(true)
+  })
+
+  it('finds the climate overview and all 13 climate type cards', () => {
+    const argumentsBeforeClimate = [
+      countries,
+      cities,
+      waterbodies,
+      linearGeoFeatures,
+      mountainRanges,
+    ] as const
+    expect(
+      searchPlaces(
+        ...argumentsBeforeClimate,
+        '世界气候类型',
+        8,
+        deserts,
+        landmarks,
+        [],
+        [],
+        climateLearningTopic,
+        climateTypes,
+      )[0],
+    ).toMatchObject({ type: 'climateTopic' })
+    expect(
+      searchPlaces(
+        ...argumentsBeforeClimate,
+        '夏干冬雨',
+        8,
+        deserts,
+        landmarks,
+        [],
+        [],
+        climateLearningTopic,
+        climateTypes,
+      )[0],
+    ).toMatchObject({
+      type: 'climateType',
+      climateType: { id: 'mediterranean' },
+    })
   })
 })

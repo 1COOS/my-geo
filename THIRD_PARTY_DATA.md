@@ -29,6 +29,18 @@ Reference sites retain their own copyright. My Geo stores short original Chinese
 
 My Geo 使用中国大陆初中地理常用的近似值：回归线约 23.5°，极圈约 66.5°；东西半球以 20°W 和 160°E 组成的经线圈划分。0°和180°经线用于判读东西经，不作为东西半球界线。所有说明均为仓库原创总结，没有复制教材正文；参考链接不构成运行时依赖。
 
+## 世界气候类型
+
+- Scientific source: Beck et al. (2023), _High-resolution (1 km) Köppen-Geiger maps for 1901–2099 based on constrained CMIP6 projections_, Figshare dataset version 2, <https://doi.org/10.6084/m9.figshare.21789074.v2>.
+- License: CC BY 4.0 according to the canonical Figshare metadata. The GloH2O project page contains an inconsistent legacy license link; My Geo therefore records and follows the Figshare dataset license.
+- Pinned input: `koppen_geiger_tif.zip`, 130,618,411 bytes, official MD5 `7fc2f5a15d4f5fe0ce59c9a9b502aa09`; fixed member `1991_2020/koppen_geiger_0p1.tif` (3600×1800, 0.1°).
+- Accessed: 2026-08-18. The pinned version includes the January 2026 correction described by the publisher.
+- Use: 1991–2020 historical Köppen–Geiger land classification, converted at build time into two deterministic offline PNG rasters for balanced and low-quality rendering.
+
+Köppen–Geiger classes do not map one-to-one to the 13 climate names commonly used in mainland Chinese junior-secondary geography. My Geo applies a documented, repository-owned conversion and deliberately simplified teaching masks for the East Asian temperate monsoon region and major highland/mountain regions. The masks are original generalized outlines and do not copy a textbook map. They prioritize the curriculum concepts of broad distribution and controlling factors over scientific micro-boundaries.
+
+The displayed climate layer is a teaching generalization, not a weather forecast, legal boundary, ecological survey or local planning dataset. Mountain valleys, coasts, islands and transition zones can differ at finer scales. The runtime is fully offline and never contacts Figshare, GloH2O or an educational API.
+
 ## Adjacent regions
 
 Border codes outside the 195-country catalogue are not treated as sovereign countries. The local data contract classifies Hong Kong, Macao, Gibraltar, French Guiana, Western Sahara and Kosovo as non-interactive adjacent-region labels. This classification is a product presentation rule and does not replace a public-release map-compliance review.

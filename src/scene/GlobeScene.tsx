@@ -13,7 +13,12 @@ import {
 import {
   Color,
   MeshStandardMaterial,
+  NearestFilter,
   PerspectiveCamera,
+  RepeatWrapping,
+  SRGBColorSpace,
+  Texture,
+  TextureLoader,
   Vector2,
   Vector3,
 } from 'three'
@@ -26,6 +31,7 @@ import {
   getCountry,
 } from '../data/countries'
 import { deserts, getDesert, getDesertGeometry } from '../data/deserts'
+import type { ClimateTypeId } from '../data/climateLearningSchema'
 import type { Desert } from '../data/desertSchema'
 import {
   geographyReferenceLines,
@@ -59,11 +65,12 @@ import {
 } from '../data/mountainRanges'
 import type { MountainRange } from '../data/mountainRangeSchema'
 import type { Waterbody } from '../data/waterbodySchema'
-import type { CameraTarget, GlobeView } from '../shared/types/geo'
+import type { CameraTarget, GeoPosition, GlobeView } from '../shared/types/geo'
 import {
   getBoundaryCode,
   getCameraFlightDuration,
   getCityLabelBudget,
+  getClimateMarker,
   getCityIdForLayer,
   getCityMarker,
   getCountryCodeForLayer,
@@ -135,6 +142,11 @@ export type GlobeSceneProps = {
   showDesertLayer: boolean
   showLandmarkLayer: boolean
   showGeographyLearningLayer: boolean
+  showClimateLayer: boolean
+  selectedClimateTypeId: ClimateTypeId | null
+  climateRasterUrl: string
+  climateBoundaryRasterUrl: string | null
+  selectedClimatePosition: GeoPosition | null
   selectedGeographyTopicId: GeographyTopicId | null
   selectedReferenceLineId: ReferenceLineId | null
   selectedCountryCode: string | null
@@ -169,6 +181,7 @@ export type GlobeSceneProps = {
     topicId: GeographyTopicId,
     referenceLineId?: ReferenceLineId | null,
   ) => void
+  onSelectClimatePosition: (position: GeoPosition) => void
   onViewCenterChange: (view: GlobeView) => void
   onViewCenterCommit: (view: GlobeView) => void
 }
@@ -181,6 +194,36 @@ type WorldProps = GlobeSceneProps & {
   onControlsInteractionEnd: () => void
   selectedLinearFeatureOverlayRef: RefObject<SVGSVGElement | null>
   selectedMountainPeakRef: RefObject<HTMLButtonElement | null>
+}
+
+function resetClimateBoundaryMaterial(material: MeshStandardMaterial) {
+  material.emissiveMap = null
+  material.emissive.set('#061f33')
+  material.emissiveIntensity = 0.22
+  material.needsUpdate = true
+}
+
+function applyClimateBoundaryMaterial(
+  material: MeshStandardMaterial,
+  texture: Texture,
+  quality: 'balanced' | 'low',
+) {
+  texture.colorSpace = SRGBColorSpace
+  texture.magFilter = NearestFilter
+  texture.wrapS = RepeatWrapping
+  texture.needsUpdate = true
+  material.emissiveMap = texture
+  material.emissive.set('#fff4bd')
+  material.emissiveIntensity = quality === 'balanced' ? 2.6 : 2
+  material.needsUpdate = true
+}
+
+function releaseClimateBoundaryTexture(
+  material: MeshStandardMaterial,
+  texture: Texture,
+) {
+  if (material.emissiveMap === texture) material.emissiveMap = null
+  texture.dispose()
 }
 
 type MapLabel =
@@ -240,6 +283,33 @@ type MapLabel =
       longitude: number
       label: string
     }
+
+type GlobeLayerObject = {
+  parent?: GlobeLayerObject | null
+  __globeObjType?: string
+}
+
+function getGlobeLayerType(object: unknown) {
+  let current = object as GlobeLayerObject | null | undefined
+  while (current) {
+    if (current.__globeObjType) return current.__globeObjType
+    current = current.parent
+  }
+  return null
+}
+
+function getGlobeClickPoint(event: unknown) {
+  const globeEvent = event as {
+    point?: Vector3
+    intersections?: Array<{ object: unknown; point: Vector3 }>
+  }
+  if (globeEvent.point) return globeEvent.point
+  return (
+    globeEvent.intersections?.find(
+      (intersection) => getGlobeLayerType(intersection.object) !== 'atmosphere',
+    )?.point ?? null
+  )
+}
 
 const INITIAL_CAMERA_POSITION: [number, number, number] = [
   0,
@@ -370,6 +440,10 @@ function World({
   selectedLandmarkId,
   hoveredLandmarkId,
   showGeographyLearningLayer,
+  showClimateLayer,
+  climateRasterUrl,
+  climateBoundaryRasterUrl,
+  selectedClimatePosition,
   selectedReferenceLineId,
   showRiverAndCanalLayer,
   showMountainLayer,
@@ -389,6 +463,7 @@ function World({
   onSelectLandmark,
   onHoverLandmark,
   onSelectGeographyTopic,
+  onSelectClimatePosition,
   onViewCenterChange,
   onViewCenterCommit,
   labelItems,
@@ -418,14 +493,46 @@ function World({
   const globeMaterial = useMemo(
     () =>
       new MeshStandardMaterial({
-        color: new Color('#1685cc'),
-        emissive: new Color('#073454'),
-        emissiveIntensity: 0.32,
+        color: new Color('#ffffff'),
+        emissive: new Color('#061f33'),
+        emissiveIntensity: 0.22,
         roughness: 0.74,
         metalness: 0.04,
       }),
     [],
   )
+  useEffect(() => {
+    let active = true
+    let loadedTexture: Texture | null = null
+    resetClimateBoundaryMaterial(globeMaterial)
+    if (!showClimateLayer || !climateBoundaryRasterUrl) {
+      return () => {
+        active = false
+      }
+    }
+    new TextureLoader().load(
+      climateBoundaryRasterUrl,
+      (texture) => {
+        if (!active) {
+          texture.dispose()
+          return
+        }
+        loadedTexture = texture
+        applyClimateBoundaryMaterial(globeMaterial, texture, quality)
+      },
+      undefined,
+      () => {
+        if (active) resetClimateBoundaryMaterial(globeMaterial)
+      },
+    )
+    return () => {
+      active = false
+      if (loadedTexture) {
+        releaseClimateBoundaryTexture(globeMaterial, loadedTexture)
+      }
+      resetClimateBoundaryMaterial(globeMaterial)
+    }
+  }, [climateBoundaryRasterUrl, globeMaterial, quality, showClimateLayer])
   useEffect(() => {
     const canvas = gl.domElement
     const handlePointerMove = (event: PointerEvent) => {
@@ -452,40 +559,48 @@ function World({
     }
   }, [gl, onControlsInteractionEnd, onControlsInteractionStart])
   const pointMarkers = useMemo<GlobePointMarker[]>(() => {
-    return labelItems
-      .map((item) =>
-        item.type === 'city'
-          ? ({
-              markerType: 'city',
-              cityId: item.city.id,
-              countryCode: item.city.countryCode,
-              lat: item.city.latitude,
-              lng: item.city.longitude,
-              name: item.city.name.zh,
-              isCapital: item.city.isCapital,
-            } satisfies CityMarker)
-          : item.type === 'waterbody'
-            ? ({
-                markerType: 'waterbody',
-                waterbodyId: item.waterbody.id,
-                layer: item.waterbody.layer,
-                kind: item.waterbody.kind,
-                lat: item.waterbody.center.latitude,
-                lng: item.waterbody.center.longitude,
-                name: item.waterbody.name.zh,
-              } satisfies WaterbodyMarker)
-            : item.type === 'landmark'
-              ? ({
-                  markerType: 'landmark',
-                  landmarkId: item.landmark.id,
-                  lat: item.landmark.position.latitude,
-                  lng: item.landmark.position.longitude,
-                  name: item.landmark.name.zh,
-                } satisfies LandmarkMarker)
-              : null,
-      )
-      .filter((marker): marker is GlobePointMarker => marker !== null)
-  }, [labelItems])
+    const markers: GlobePointMarker[] = []
+    for (const item of labelItems) {
+      if (item.type === 'city') {
+        markers.push({
+          markerType: 'city',
+          cityId: item.city.id,
+          countryCode: item.city.countryCode,
+          lat: item.city.latitude,
+          lng: item.city.longitude,
+          name: item.city.name.zh,
+          isCapital: item.city.isCapital,
+        } satisfies CityMarker)
+      } else if (item.type === 'waterbody') {
+        markers.push({
+          markerType: 'waterbody',
+          waterbodyId: item.waterbody.id,
+          layer: item.waterbody.layer,
+          kind: item.waterbody.kind,
+          lat: item.waterbody.center.latitude,
+          lng: item.waterbody.center.longitude,
+          name: item.waterbody.name.zh,
+        } satisfies WaterbodyMarker)
+      } else if (item.type === 'landmark') {
+        markers.push({
+          markerType: 'landmark',
+          landmarkId: item.landmark.id,
+          lat: item.landmark.position.latitude,
+          lng: item.landmark.position.longitude,
+          name: item.landmark.name.zh,
+        } satisfies LandmarkMarker)
+      }
+    }
+    if (selectedClimatePosition) {
+      markers.push({
+        markerType: 'climate',
+        lat: selectedClimatePosition.latitude,
+        lng: selectedClimatePosition.longitude,
+        name: '气候判读点',
+      })
+    }
+    return markers
+  }, [labelItems, selectedClimatePosition])
   const selectedWaterbody = getWaterbody(selectedWaterbodyId)
   const selectedWaterbodyGeometry = getWaterbodyGeometry(selectedWaterbodyId)
   const selectedSurfaceFeature = useMemo(
@@ -1299,7 +1414,12 @@ function World({
     layoutSelectedMountainPeak,
   ])
 
-  useEffect(() => () => globeMaterial.dispose(), [globeMaterial])
+  useEffect(
+    () => () => {
+      globeMaterial.dispose()
+    },
+    [globeMaterial],
+  )
 
   useEffect(
     () => () => {
@@ -1343,6 +1463,9 @@ function World({
         ref={globeRef}
         rendererSize={rendererSize}
         globeMaterial={globeMaterial}
+        globeImageUrl={
+          showClimateLayer ? climateRasterUrl : '/climate/globe-base.svg'
+        }
         showGlobe
         showGraticules
         showAtmosphere
@@ -1375,7 +1498,7 @@ function World({
           const countryCode = getBoundaryCode(value)
           if (countryCode === selectedCountryCode) return '#f2c75c'
           if (countryCode === hoveredCountryCode) return '#68d7ff'
-          return '#176593'
+          return showClimateLayer ? '#17659324' : '#176593'
         }}
         polygonSideColor={(value) => {
           const waterbodyLayer = getWaterbodyLayerForScene(value)
@@ -1397,7 +1520,9 @@ function World({
           if (desertState) return '#73451688'
           return getBoundaryCode(value) === selectedCountryCode
             ? '#b88927'
-            : '#0a3552'
+            : showClimateLayer
+              ? '#0a355226'
+              : '#0a3552'
         }}
         polygonStrokeColor={(value) => {
           const waterbodyLayer = getWaterbodyLayerForScene(value)
@@ -1449,7 +1574,7 @@ function World({
           const countryCode = getBoundaryCode(value)
           if (countryCode === selectedCountryCode) return 0.027
           if (countryCode === hoveredCountryCode) return 0.017
-          return 0.006
+          return showClimateLayer ? 0.002 : 0.006
         }}
         polygonCapCurvatureResolution={quality === 'balanced' ? 2 : 4}
         polygonsTransitionDuration={reducedMotion ? 0 : 260}
@@ -1458,6 +1583,7 @@ function World({
         pointLng="lng"
         pointAltitude={0.018}
         pointRadius={(value) => {
+          if (getClimateMarker(value)) return 0.54
           const waterbodyMarker = getWaterbodyMarker(value)
           if (waterbodyMarker) {
             if (waterbodyMarker.waterbodyId === selectedWaterbodyId) return 0.62
@@ -1479,6 +1605,7 @@ function World({
           return marker.countryCode === selectedCountryCode ? 0.46 : 0.34
         }}
         pointColor={(value) => {
+          if (getClimateMarker(value)) return '#ffffff'
           const waterbodyMarker = getWaterbodyMarker(value)
           if (waterbodyMarker) {
             if (waterbodyMarker.waterbodyId === selectedWaterbodyId)
@@ -1550,7 +1677,7 @@ function World({
               : getCountryCodeForLayer(layer, value),
           )
         }}
-        onClick={(layer, value) => {
+        onClick={(layer, value, event) => {
           const waterbodyId = getWaterbodyIdForLayer(layer, value)
           if (waterbodyId) {
             onSelectWaterbody(waterbodyId)
@@ -1586,6 +1713,19 @@ function World({
           if (cityId) {
             onSelectCity(cityId)
             return
+          }
+          if (showClimateLayer) {
+            const point = getGlobeClickPoint(event)
+            if (point) {
+              const coordinate = globeRef.current?.toGeoCoords(point)
+              if (coordinate) {
+                onSelectClimatePosition({
+                  latitude: coordinate.lat,
+                  longitude: coordinate.lng,
+                })
+                return
+              }
+            }
           }
           const countryCode = getCountryCodeForLayer(layer, value)
           if (countryCode) onSelectCountry(countryCode)
@@ -1855,6 +1995,16 @@ export function GlobeScene(props: GlobeSceneProps) {
     <div
       className="globe-canvas"
       data-testid="globe-scene"
+      data-climate-highlight-id={
+        props.showClimateLayer
+          ? (props.selectedClimateTypeId ?? undefined)
+          : undefined
+      }
+      data-climate-boundary-id={
+        props.showClimateLayer && props.climateBoundaryRasterUrl
+          ? (props.selectedClimateTypeId ?? undefined)
+          : undefined
+      }
       data-controls-interacting={controlsInteracting ? 'true' : 'false'}
       role="application"
       aria-label="交互式 3D 地球。拖动旋转，滚轮缩放，方向键移动视角。"

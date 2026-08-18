@@ -1,5 +1,5 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,6 +8,22 @@ import type { GeoPosition } from '../../shared/types/geo'
 import { ExplorePage } from './ExplorePage'
 
 const globePropsMock = vi.fn()
+const climateRasterMocks = vi.hoisted(() => ({
+  classify: vi.fn(),
+  display: vi.fn(),
+  preload: vi.fn(() => Promise.resolve()),
+}))
+
+vi.mock('../../data/climateRaster', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../data/climateRaster')>()
+  return {
+    ...actual,
+    classifyClimatePosition: climateRasterMocks.classify,
+    loadClimateDisplayAssets: climateRasterMocks.display,
+    preloadClimateRaster: climateRasterMocks.preload,
+  }
+})
 
 vi.mock('../../scene/GlobeScene', () => ({
   GlobeScene: (props: unknown) => {
@@ -26,6 +42,38 @@ describe('ExplorePage', () => {
   beforeEach(() => {
     supportsWebGLMock.mockReturnValue(true)
     globePropsMock.mockClear()
+    climateRasterMocks.display.mockReset()
+    climateRasterMocks.display.mockImplementation(
+      (quality: 'balanced' | 'low', climateTypeId: string | null) => {
+        const width = quality === 'balanced' ? 2048 : 1024
+        const height = quality === 'balanced' ? 1024 : 512
+        const raster = {
+          url: climateTypeId
+            ? `/climate/highlights/${quality}/${climateTypeId}.png`
+            : `/climate/climate-types-${width}.png`,
+          width,
+          height,
+          bytes: 1,
+          sha256: '0'.repeat(64),
+        }
+        return Promise.resolve({
+          raster,
+          boundary: climateTypeId
+            ? {
+                ...raster,
+                url: `/climate/highlight-boundaries/${quality}/${climateTypeId}.png`,
+              }
+            : null,
+        })
+      },
+    )
+    climateRasterMocks.preload.mockClear()
+    climateRasterMocks.classify.mockReset()
+    climateRasterMocks.classify.mockResolvedValue({
+      position: { latitude: 39.9, longitude: 116.4 },
+      climateTypeId: 'temperate-monsoon',
+      period: '1991–2020',
+    })
   })
 
   it('shows the globe and control deck without page chrome or an open search field', async () => {
@@ -66,6 +114,9 @@ describe('ExplorePage', () => {
       'aria-pressed',
       'false',
     )
+    expect(
+      screen.getByRole('button', { name: '世界气候类型教学图层' }),
+    ).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByRole('button', { name: '海洋' })).toHaveAttribute(
       'aria-pressed',
       'false',
@@ -602,6 +653,112 @@ describe('ExplorePage', () => {
     expect(screen.getByLabelText('经纬网知识卡')).toBeInTheDocument()
   })
 
+  it('opens the climate overview, keeps the card after hiding, and classifies globe clicks', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        showClimateLayer: boolean
+        selectedClimateTypeId: string | null
+        climateBoundaryRasterUrl: string | null
+        selectedClimatePosition: GeoPosition | null
+        onSelectClimatePosition: (position: GeoPosition) => void
+      }
+    const toggle = screen.getByRole('button', {
+      name: '世界气候类型教学图层',
+    })
+
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('世界气候类型知识卡')).toBeInTheDocument()
+    expect(screen.getByLabelText('13类世界气候图例')).toBeInTheDocument()
+    expect(getProps().showClimateLayer).toBe(true)
+    expect(getProps().selectedClimateTypeId).toBeNull()
+
+    act(() =>
+      getProps().onSelectClimatePosition({
+        latitude: 39.9,
+        longitude: 116.4,
+      }),
+    )
+    expect(
+      await screen.findByRole('heading', { name: '温带季风气候' }),
+    ).toBeInTheDocument()
+    expect(getProps().selectedClimatePosition).toEqual({
+      latitude: 39.9,
+      longitude: 116.4,
+    })
+    expect(getProps().selectedClimateTypeId).toBe('temperate-monsoon')
+    await waitFor(() =>
+      expect(getProps().climateBoundaryRasterUrl).toBe(
+        '/climate/highlight-boundaries/balanced/temperate-monsoon.png',
+      ),
+    )
+
+    await user.click(screen.getByRole('button', { name: '查看13类气候图例' }))
+    expect(getProps().selectedClimateTypeId).toBeNull()
+    await waitFor(() => expect(getProps().climateBoundaryRasterUrl).toBeNull())
+
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByLabelText('世界气候类型知识卡')).toBeInTheDocument()
+  })
+
+  it('searches climate knowledge, activates the layer, and lets a country replace the card', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    const getProps = () =>
+      globePropsMock.mock.lastCall![0] as {
+        showClimateLayer: boolean
+        selectedClimateTypeId: string | null
+        climateBoundaryRasterUrl: string | null
+        cameraTarget: { position: GeoPosition }
+      }
+
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    await user.type(
+      screen.getByRole('combobox', { name: '搜索地点' }),
+      '热带雨林气候{Enter}',
+    )
+    expect(screen.getByLabelText('世界气候类型知识卡')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: '热带雨林气候' }),
+    ).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      showClimateLayer: true,
+      selectedClimateTypeId: 'tropical-rainforest',
+      cameraTarget: { position: { latitude: -3.1, longitude: -60 } },
+    })
+    await waitFor(() =>
+      expect(getProps().climateBoundaryRasterUrl).toBe(
+        '/climate/highlight-boundaries/balanced/tropical-rainforest.png',
+      ),
+    )
+
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    await user.clear(screen.getByRole('combobox', { name: '搜索地点' }))
+    await user.type(
+      screen.getByRole('combobox', { name: '搜索地点' }),
+      '中国{Enter}',
+    )
+    expect(
+      screen.queryByLabelText('世界气候类型知识卡'),
+    ).not.toBeInTheDocument()
+    expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
+    expect(getProps().showClimateLayer).toBe(true)
+    expect(getProps().selectedClimateTypeId).toBeNull()
+    await waitFor(() => expect(getProps().climateBoundaryRasterUrl).toBeNull())
+    await user.click(screen.getByRole('button', { name: '关闭国家知识卡' }))
+  })
+
   it('searches a reference line, activates its layer, and replaces it with a country card', async () => {
     const user = userEvent.setup()
     render(
@@ -620,8 +777,10 @@ describe('ExplorePage', () => {
     await user.click(screen.getByRole('button', { name: '搜索地点' }))
     await user.type(
       screen.getByRole('combobox', { name: '搜索地点' }),
-      '北回归线{Enter}',
+      '北回归线',
     )
+    await screen.findByRole('option', { name: /北回归线/ })
+    await user.keyboard('{Enter}')
 
     expect(screen.getByLabelText('经纬网知识卡')).toBeInTheDocument()
     expect(screen.getAllByText('北回归线 23.5°N').length).toBeGreaterThan(0)
