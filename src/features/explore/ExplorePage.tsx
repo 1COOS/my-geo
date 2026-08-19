@@ -700,6 +700,22 @@ export function ExplorePage() {
     },
     [requestCameraTarget, selectCountry],
   )
+  const requestedCountryCode = useMemo(
+    () =>
+      new URLSearchParams(window.location.search).get('country')?.toUpperCase(),
+    [],
+  )
+  const handledCountryDeepLinkRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (
+      !requestedCountryCode ||
+      handledCountryDeepLinkRef.current === requestedCountryCode
+    ) {
+      return
+    }
+    handledCountryDeepLinkRef.current = requestedCountryCode
+    navigateToCountry(requestedCountryCode)
+  }, [navigateToCountry, requestedCountryCode])
   const navigateToCity = useCallback(
     (cityId: string) => {
       const city = getCity(cityId)

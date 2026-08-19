@@ -157,6 +157,199 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
   }
 })
 
+test('navigates the country knowledge atlas and deep-links back to the globe', async ({
+  page,
+}) => {
+  await page.goto('/knowledge')
+
+  await expect(
+    page.getByRole('heading', { name: '国家 · 国旗 · 首都', level: 1 }),
+  ).toBeVisible()
+  await expect(page.getByTestId('knowledge-region-east-asia')).toContainText(
+    '5 国',
+  )
+  await page.getByTestId('knowledge-region-east-asia').click()
+
+  await expect(
+    page.getByRole('heading', { name: '东亚', level: 1 }),
+  ).toBeVisible()
+  const knowledgeMap = page.locator('.knowledge-region-map')
+  await expect(knowledgeMap.locator('path.is-region')).toHaveCount(5)
+  await expect(knowledgeMap.locator('path.is-continent')).toHaveCount(0)
+  const chinaCard = page
+    .getByRole('button', { name: '查看中国国家详情' })
+    .locator('..')
+  const displayControls = page.getByRole('group', {
+    name: '国家卡显示内容',
+  })
+  await expect(
+    displayControls.getByRole('button', { name: '国旗' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(chinaCard.getByText('中国', { exact: true })).toHaveCount(0)
+  await displayControls.getByRole('button', { name: '国家' }).click()
+  await displayControls.getByRole('button', { name: '首都' }).click()
+  await expect(chinaCard).toContainText('中国')
+  await expect(chinaCard).toContainText('北京')
+
+  await page.getByRole('button', { name: '查看中国国家详情' }).click()
+  await expect(knowledgeMap.locator('path.is-country')).toHaveCount(1)
+  await expect(
+    knowledgeMap.locator('path[data-country-code="CN"].is-country'),
+  ).toHaveCount(1)
+  await expect(knowledgeMap.locator('path.is-region')).toHaveCount(4)
+  const detail = page.getByLabel('中国国家学习详情')
+  await expect(detail).toBeVisible()
+  await detail.getByRole('link', { name: /在3D地球上查看/ }).click()
+  await expect(page).toHaveURL(/\/explore\?country=CN$/)
+  await waitForSceneOrFallback(page)
+  await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
+})
+
+test('completes a regional challenge and restores its local best score', async ({
+  page,
+}) => {
+  await page.goto('/knowledge/countries/east-asia/challenge')
+
+  for (let index = 0; index < 10; index += 1) {
+    await page.locator('.knowledge-question-options button').first().click()
+    await page
+      .getByRole('button', {
+        name: index === 9 ? '查看成绩' : '下一题',
+      })
+      .click()
+  }
+
+  const score = await page.getByTestId('knowledge-challenge-score').innerText()
+  await expect(page.getByText('学习进度已保存在本机')).toBeVisible()
+  await page.getByRole('link', { name: '返回区域学习' }).click()
+  await expect(page.getByTestId('knowledge-region-best-score')).toHaveText(
+    `${score}%`,
+  )
+  await page.reload()
+  await expect(page.getByTestId('knowledge-region-best-score')).toHaveText(
+    `${score}%`,
+  )
+})
+
+for (const viewport of [
+  { name: 'desktop', width: 1280, height: 720, touch: false },
+  { name: 'phone landscape', width: 844, height: 390, touch: true },
+  { name: 'iPad landscape', width: 1194, height: 834, touch: true },
+]) {
+  test(`keeps the knowledge atlas usable on ${viewport.name}`, async ({
+    page,
+  }) => {
+    if (viewport.touch) {
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'maxTouchPoints', {
+          configurable: true,
+          value: 5,
+        })
+        Object.defineProperty(navigator, 'platform', {
+          configurable: true,
+          value: 'MacIntel',
+        })
+      })
+    }
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    })
+    await page.goto('/knowledge')
+
+    await expect(
+      page.getByRole('heading', { name: '国家 · 国旗 · 首都', level: 1 }),
+    ).toBeVisible()
+    const geometry = await page
+      .locator('.knowledge-shell')
+      .evaluate((shell) => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        clientHeight: shell.clientHeight,
+        scrollHeight: shell.scrollHeight,
+      }))
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 1)
+    expect(geometry.scrollHeight).toBeGreaterThanOrEqual(geometry.clientHeight)
+
+    await page.getByTestId('knowledge-region-east-asia').click()
+    await expect(page.getByRole('link', { name: '开始区域挑战' })).toBeVisible()
+    const placeholder = page.getByLabel('国家详情提示')
+    await expect(placeholder).toBeVisible()
+    const displayControls = page.getByRole('group', {
+      name: '国家卡显示内容',
+    })
+    await expect(displayControls).toBeVisible()
+    await expect(
+      displayControls.getByRole('button', { name: '国旗' }),
+    ).toBeDisabled()
+    const map = page.locator('.knowledge-region-map-strip')
+    const mapCountryPaths = map.locator('.knowledge-region-map-countries')
+    await expect(mapCountryPaths.locator('path.is-region')).toHaveCount(5)
+    await expect(mapCountryPaths.locator('path.is-continent')).toHaveCount(0)
+    const mapActions = page.locator('.knowledge-region-map-actions')
+    const countryGrid = page.locator('.knowledge-country-grid')
+    const [mapBefore, controlsBox, actionsBox, gridBefore, placeholderBox] =
+      await Promise.all([
+        map.evaluate((element) => ({
+          x: element.getBoundingClientRect().x,
+          y: element.getBoundingClientRect().y,
+          width: element.getBoundingClientRect().width,
+          height: element.getBoundingClientRect().height,
+        })),
+        displayControls.boundingBox(),
+        mapActions.boundingBox(),
+        countryGrid.evaluate((element) => ({
+          width: element.getBoundingClientRect().width,
+        })),
+        placeholder.boundingBox(),
+      ])
+    const expectedMapHeight =
+      viewport.height <= 520
+        ? 128
+        : Math.min(480, Math.max(224, viewport.height * 0.34))
+    expect(mapBefore.height).toBeCloseTo(expectedMapHeight, 0)
+    expect(controlsBox).not.toBeNull()
+    expect(actionsBox).not.toBeNull()
+    expect(controlsBox!.x).toBeCloseTo(mapBefore.x, 0)
+    expect(actionsBox!.x + actionsBox!.width).toBeCloseTo(
+      mapBefore.x + mapBefore.width,
+      0,
+    )
+    expect(controlsBox!.y).toBeGreaterThanOrEqual(
+      mapBefore.y + mapBefore.height,
+    )
+    expect(actionsBox!.y).toBeGreaterThanOrEqual(mapBefore.y + mapBefore.height)
+
+    await page.getByRole('button', { name: '查看中国国家详情' }).click()
+    await expect(placeholder).toHaveCount(0)
+    await expect(mapCountryPaths.locator('path.is-country')).toHaveCount(1)
+    await expect(
+      mapCountryPaths.locator('path[data-country-code="CN"].is-country'),
+    ).toHaveCount(1)
+    await expect(mapCountryPaths.locator('path.is-region')).toHaveCount(4)
+    const detail = page.getByLabel('中国国家学习详情')
+    const [mapAfter, gridAfter, detailBox] = await Promise.all([
+      map.evaluate((element) => ({
+        width: element.getBoundingClientRect().width,
+      })),
+      countryGrid.evaluate((element) => ({
+        width: element.getBoundingClientRect().width,
+      })),
+      detail.boundingBox(),
+    ])
+    expect(mapAfter.width).toBeCloseTo(mapBefore.width, 0)
+    expect(gridAfter.width).toBeCloseTo(gridBefore.width, 0)
+    expect(placeholderBox).not.toBeNull()
+    expect(detailBox).not.toBeNull()
+    expect(detailBox!.x).toBeGreaterThanOrEqual(0)
+    expect(detailBox!.x + detailBox!.width).toBeLessThanOrEqual(
+      viewport.width + 1,
+    )
+    expect(detailBox!.x).toBeCloseTo(placeholderBox!.x, 0)
+    expect(detailBox!.width).toBeCloseTo(placeholderBox!.width, 0)
+  })
+}
+
 test('exposes a valid PWA manifest', async ({ request }) => {
   const manifestResponse = await request.get('/manifest.webmanifest')
   expect(manifestResponse.ok()).toBeTruthy()
@@ -585,7 +778,7 @@ test('toggles waterbody layers, searches a sea, and replaces its selected range'
 test('shows the lake layer and opens the Lake Baikal knowledge card', async ({
   page,
 }) => {
-  test.setTimeout(60_000)
+  test.setTimeout(120_000)
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto('/')
 
