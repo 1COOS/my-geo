@@ -23,11 +23,6 @@ export function LinearGeoFeatureDetailPanel({
       closeLabel={`关闭${linearGeoFeatureKindLabels[feature.kind]}知识卡`}
       identity={feature.id}
       onClose={onClose}
-      footer={
-        <p className="prototype-note">
-          线路为教育性简化中心线，不代表航道保证、行政边界、水权或实时水文状态。
-        </p>
-      }
     >
       <div className="waterbody-detail-heading linear-feature-heading">
         <span

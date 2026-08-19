@@ -52,7 +52,7 @@ function LandscapePrompt() {
             <path d="m42 10 5 9-10 2" />
           </svg>
         </div>
-        <p className="landscape-prompt-eyebrow">MY GEO</p>
+        <p className="landscape-prompt-eyebrow">横屏浏览</p>
         <h1 id="landscape-prompt-title">{t('landscapeTitle')}</h1>
         <p id="landscape-prompt-description">{t('landscapeDescription')}</p>
         <p id="landscape-prompt-hint" className="landscape-prompt-hint">

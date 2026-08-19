@@ -1,0 +1,13 @@
+diff --git a/dist/r3f-globe.mjs b/dist/r3f-globe.mjs
+index 520e64c38c4457c49bafa31c1e5a0d468eccda2b..7b5d2d3ab2f7201e55dd4b3d6350b240cecb6223 100644
+--- a/dist/r3f-globe.mjs
++++ b/dist/r3f-globe.mjs
+@@ -145,5 +145,7 @@ function fromThree(ThreeComponent) {
+     }, []);
+     useEffect(function () {
+       // invoke destructor on unmount, if it exists
+-      return threeObj._destructor instanceof Function ? threeObj._destructor : undefined;
++      return threeObj._destructor instanceof Function ? function () {
++        return threeObj._destructor();
++      } : undefined;
+    }, [threeObj]);

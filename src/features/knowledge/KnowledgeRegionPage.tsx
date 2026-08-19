@@ -85,7 +85,13 @@ export function KnowledgeRegionPage() {
   }
 
   return (
-    <main className="knowledge-shell knowledge-region-shell">
+    <main
+      className={
+        selectedCountry
+          ? 'knowledge-shell knowledge-region-shell has-country-selection'
+          : 'knowledge-shell knowledge-region-shell'
+      }
+    >
       <div className="knowledge-region-content">
         <section
           className="knowledge-region-study"

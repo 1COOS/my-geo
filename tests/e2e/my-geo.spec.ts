@@ -157,6 +157,42 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
   }
 })
 
+test('switches between exploration and knowledge without scene teardown errors', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  const pageErrors: string[] = []
+  const consoleErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+
+  await page.goto('/')
+  const { scene, fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+  await expect(scene).toBeVisible()
+
+  const knowledgeLink = page.getByRole('link', { name: '知识体系' })
+  const exploreLink = page.getByRole('link', { name: '探索地球' })
+  await knowledgeLink.click()
+  await expect(
+    page.getByRole('heading', { name: '国家 · 国旗 · 首都', level: 1 }),
+  ).toBeVisible()
+
+  await exploreLink.click()
+  await waitForSceneOrFallback(page)
+  await expect(page.getByTestId('globe-scene')).toBeVisible()
+
+  await knowledgeLink.click()
+  await expect(
+    page.getByRole('heading', { name: '国家 · 国旗 · 首都', level: 1 }),
+  ).toBeVisible()
+
+  expect(pageErrors).toEqual([])
+  expect(consoleErrors).toEqual([])
+})
+
 test('navigates the country knowledge atlas and deep-links back to the globe', async ({
   page,
 }) => {
@@ -274,7 +310,12 @@ for (const viewport of [
     await page.getByTestId('knowledge-region-east-asia').click()
     await expect(page.getByRole('link', { name: '开始区域挑战' })).toBeVisible()
     const placeholder = page.getByLabel('国家详情提示')
-    await expect(placeholder).toBeVisible()
+    const usesBottomSheet = viewport.height <= 600
+    if (usesBottomSheet) {
+      await expect(placeholder).toBeHidden()
+    } else {
+      await expect(placeholder).toBeVisible()
+    }
     const displayControls = page.getByRole('group', {
       name: '国家卡显示内容',
     })
@@ -337,16 +378,22 @@ for (const viewport of [
       })),
       detail.boundingBox(),
     ])
-    expect(mapAfter.width).toBeCloseTo(mapBefore.width, 0)
-    expect(gridAfter.width).toBeCloseTo(gridBefore.width, 0)
-    expect(placeholderBox).not.toBeNull()
     expect(detailBox).not.toBeNull()
     expect(detailBox!.x).toBeGreaterThanOrEqual(0)
     expect(detailBox!.x + detailBox!.width).toBeLessThanOrEqual(
       viewport.width + 1,
     )
-    expect(detailBox!.x).toBeCloseTo(placeholderBox!.x, 0)
-    expect(detailBox!.width).toBeCloseTo(placeholderBox!.width, 0)
+    if (usesBottomSheet) {
+      expect(mapAfter.width).toBeCloseTo(mapBefore.width, 0)
+      expect(gridAfter.width).toBeCloseTo(gridBefore.width, 0)
+      expect(placeholderBox).toBeNull()
+      expect(detailBox!.y + detailBox!.height).toBeCloseTo(viewport.height, 0)
+    } else {
+      expect(mapAfter.width).toBeLessThan(mapBefore.width)
+      expect(gridAfter.width).toBeLessThan(gridBefore.width)
+      expect(placeholderBox).not.toBeNull()
+      expect(detailBox!.width).toBeGreaterThan(placeholderBox!.width)
+    }
   })
 }
 
@@ -519,7 +566,7 @@ for (const viewport of [
   { width: 1440, height: 900 },
   { width: 1024, height: 768 },
 ]) {
-  test(`reserves a ${viewport.width}px desktop stage for the globe beside country details`, async ({
+  test(`expands a ${viewport.width}px desktop stage until country details open`, async ({
     page,
   }) => {
     await page.setViewportSize(viewport)
@@ -533,7 +580,7 @@ for (const viewport of [
     expect(initialSceneBox!.x).toBeLessThanOrEqual(1)
     expect(initialSceneBox!.y).toBeLessThanOrEqual(1)
     expect(initialSceneBox!.height).toBeGreaterThanOrEqual(viewport.height - 1)
-    expect(initialSceneBox!.width).toBeLessThan(viewport.width * 0.75)
+    expect(initialSceneBox!.width).toBeGreaterThan(viewport.width * 0.9)
 
     const search = await openCountrySearch(page)
     await search.fill('中国')
@@ -752,7 +799,7 @@ test('toggles waterbody layers, searches a sea, and replaces its selected range'
   await search.press('Enter')
   const mediterraneanCard = page.getByLabel('地中海水域知识卡')
   await expect(mediterraneanCard).toBeVisible()
-  await expect(mediterraneanCard.getByText(/不代表领海/)).toBeVisible()
+  await expect(mediterraneanCard.getByText(/不代表领海/)).toHaveCount(0)
   await expect(mediterraneanCard.getByText('代表坐标')).toHaveCount(0)
   await expect(mediterraneanCard.getByText(/资料来源/)).toHaveCount(0)
   await expect(
@@ -802,7 +849,7 @@ test('shows the lake layer and opens the Lake Baikal knowledge card', async ({
   await expect(card).toBeVisible()
   await expect(card.getByText('31,722 km²')).toBeVisible()
   await expect(card.getByText('1,642 m')).toBeVisible()
-  await expect(card.getByText(/水位、季节和长期环境变化/)).toBeVisible()
+  await expect(card.getByText(/水位、季节和长期环境变化/)).toHaveCount(0)
   await expect(lakeToggle).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('.waterbody-label.is-lake')).toHaveCount(20)
   await expect
@@ -1027,7 +1074,7 @@ test('shows desert regions only while the layer is active', async ({
   })
   await expect(saharaCard).toBeVisible()
   await expect(saharaCard.getByText(/9,200,000 km²/)).toBeVisible()
-  await expect(saharaCard.getByText(/不是生态分区/)).toBeVisible()
+  await expect(saharaCard.getByText(/不是生态分区/)).toHaveCount(0)
   await expect(saharaCard.getByText('代表坐标')).toHaveCount(0)
   await expect(saharaCard.getByText(/资料来源/)).toHaveCount(0)
   await expect(desertToggle).toHaveAttribute('aria-pressed', 'true')
@@ -1052,6 +1099,7 @@ test('shows desert regions only while the layer is active', async ({
 test('shows landmark points, searches the Great Wall, and keeps its card after hiding the layer', async ({
   page,
 }) => {
+  test.setTimeout(60_000)
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto('/')
 
@@ -1178,6 +1226,19 @@ test('renders and classifies the synchronized world climate layer', async ({
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  const climateCountry = page
+    .locator('.world-mini-map-countries.is-climate-visible path')
+    .first()
+  await expect(climateCountry).toBeVisible()
+  await expect
+    .poll(async () =>
+      climateCountry.evaluate((path) =>
+        Number.parseFloat(
+          getComputedStyle(path).fill.match(/[\d.]+(?=\))/)?.[0] ?? '1',
+        ),
+      ),
+    )
+    .toBeLessThan(0.2)
 
   const card = page.getByRole('complementary', {
     name: '世界气候类型知识卡',

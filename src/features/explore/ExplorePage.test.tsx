@@ -386,7 +386,7 @@ describe('ExplorePage', () => {
       selectedWaterbodyId: 'pacific-ocean',
       selectedCountryCode: null,
     })
-    expect(screen.getByText(/不代表领海/)).toBeInTheDocument()
+    expect(screen.queryByText(/不代表领海/)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '搜索地点' }))
     const bohaiSearch = screen.getByRole('combobox', { name: '搜索地点' })
@@ -410,7 +410,9 @@ describe('ExplorePage', () => {
       selectedWaterbodyId: 'lake-baikal',
     })
     expect(screen.getByText('1,642 m')).toBeInTheDocument()
-    expect(screen.getByText(/水位、季节和长期环境变化/)).toBeInTheDocument()
+    expect(
+      screen.queryByText(/水位、季节和长期环境变化/),
+    ).not.toBeInTheDocument()
 
     await user.click(lakeToggle)
     expect(getProps()).toMatchObject({

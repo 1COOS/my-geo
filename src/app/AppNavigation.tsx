@@ -43,10 +43,6 @@ export function AppNavigation() {
         <BookIcon />
         <span>知识</span>
       </NavLink>
-      <div className="app-navigation-future" aria-hidden="true">
-        <span />
-        <span />
-      </div>
     </nav>
   )
 }

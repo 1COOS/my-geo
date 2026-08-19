@@ -22,11 +22,6 @@ export function MountainRangeDetailPanel({
       closeLabel={`关闭${range.name.zh}知识卡`}
       identity={range.id}
       onClose={onClose}
-      footer={
-        <p className="prototype-note">
-          山脊线与峰顶标记为教育性示意，不是地形高程模型、登山路线、完整山界或行政与主权边界。
-        </p>
-      }
     >
       <div className="waterbody-detail-heading mountain-range-heading">
         <span className="mountain-range-symbol" aria-hidden="true" />

@@ -1,11 +1,31 @@
 @import 'tailwindcss';
 
 :root {
+  --atlas-canvas: #081216;
+  --atlas-canvas-deep: #050c0f;
+  --atlas-panel: #102126;
+  --atlas-panel-raised: #152a30;
+  --atlas-panel-muted: #0d1a1e;
+  --atlas-border: #2b444a;
+  --atlas-border-soft: rgb(124 157 164 / 18%);
+  --atlas-text: #edf3f2;
+  --atlas-text-secondary: #9baaad;
+  --atlas-text-muted: #718589;
+  --atlas-accent: #79c8d4;
+  --atlas-accent-soft: rgb(121 200 212 / 13%);
+  --atlas-progress: #b5cd7d;
+  --atlas-warning: #d8b86f;
+  --atlas-danger: #d87c75;
+  --atlas-focus: #f1ce63;
+  --atlas-shadow: 0 12px 32px rgb(0 0 0 / 28%);
+  --atlas-radius-control: 0.25rem;
+  --atlas-radius-compact: 0.375rem;
+  --atlas-radius-panel: 0.625rem;
   font-family:
-    Inter, ui-rounded, 'SF Pro Rounded', 'PingFang SC', 'Microsoft YaHei',
-    system-ui, sans-serif;
-  color: #f7fbff;
-  background: #030812;
+    Inter, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', system-ui,
+    sans-serif;
+  color: var(--atlas-text);
+  background: var(--atlas-canvas-deep);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   color-scheme: dark;
@@ -193,8 +213,8 @@ a {
 button:focus-visible,
 a:focus-visible,
 [role='application']:focus-visible {
-  outline: 3px solid #f7d672;
-  outline-offset: 4px;
+  outline: 3px solid var(--atlas-focus);
+  outline-offset: 3px;
 }
 
 .app-shell {
@@ -4732,6 +4752,12 @@ a:focus-visible,
   }
 }
 
+@media (min-width: 1081px) {
+  .knowledge-region-shell:not(.has-country-selection) .knowledge-country-grid {
+    grid-template-columns: repeat(5, minmax(10rem, 1fr));
+  }
+}
+
 @media (max-width: 430px) {
   .control-button > span:last-child {
     position: absolute;
@@ -4951,5 +4977,1627 @@ a:focus-visible,
   .layer-control {
     left: max(4rem, env(safe-area-inset-left));
     max-width: calc(100% - var(--scene-reserve) - 4rem);
+  }
+}
+
+/* Modern atlas visual system */
+
+body {
+  color: var(--atlas-text);
+  background: var(--atlas-canvas-deep);
+}
+
+button,
+a {
+  transition-duration: 160ms;
+}
+
+.landscape-prompt {
+  color: var(--atlas-text);
+  background: var(--atlas-canvas);
+}
+
+.landscape-prompt::before,
+.landscape-prompt::after {
+  display: none;
+}
+
+.landscape-prompt-card {
+  width: min(29rem, 100%);
+  padding: 1.5rem;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+  box-shadow: var(--atlas-shadow);
+}
+
+.landscape-prompt-device {
+  stroke: var(--atlas-text);
+  filter: none;
+}
+
+.landscape-prompt-arrow {
+  stroke: var(--atlas-accent);
+}
+
+.landscape-prompt-eyebrow {
+  color: var(--atlas-accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.landscape-prompt h1 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.landscape-prompt-card > p:not(.landscape-prompt-eyebrow) {
+  color: var(--atlas-text-secondary);
+}
+
+.landscape-prompt-card > .landscape-prompt-hint {
+  color: var(--atlas-text-muted);
+}
+
+.app-navigation {
+  width: 3.55rem;
+  padding: 0.35rem 0.3rem;
+  gap: 0.25rem;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+  box-shadow: var(--atlas-shadow);
+  backdrop-filter: none;
+}
+
+.app-navigation-brand {
+  min-height: 2.5rem;
+  margin: 0 0 0.35rem;
+  color: var(--atlas-canvas-deep);
+  background: var(--atlas-accent);
+  border-radius: var(--atlas-radius-control);
+  box-shadow: none;
+}
+
+.app-navigation-brand span {
+  font-weight: 600;
+}
+
+.app-navigation-link {
+  position: relative;
+  min-height: 3rem;
+  padding: 0.4rem 0.15rem;
+  color: var(--atlas-text-muted);
+  border: 0;
+  border-radius: var(--atlas-radius-control);
+}
+
+.app-navigation-link::before {
+  position: absolute;
+  top: 0.45rem;
+  bottom: 0.45rem;
+  left: -0.3rem;
+  width: 2px;
+  content: '';
+  background: transparent;
+}
+
+.app-navigation-link:hover,
+.app-navigation-link:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: transparent;
+}
+
+.app-navigation-link.is-active {
+  color: var(--atlas-text);
+  background: var(--atlas-panel-raised);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.app-navigation-link.is-active::before {
+  background: var(--atlas-accent);
+}
+
+.app-navigation-link span {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.app-navigation-future {
+  display: none;
+}
+
+.app-route-loading,
+.scene-loading {
+  color: var(--atlas-accent);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  background: var(--atlas-canvas-deep);
+}
+
+.knowledge-shell {
+  color: var(--atlas-text);
+  background: var(--atlas-canvas);
+  scrollbar-color: var(--atlas-border) transparent;
+}
+
+.knowledge-shell::before,
+.knowledge-background-orbit {
+  display: none;
+}
+
+.knowledge-topic-grid {
+  gap: 0;
+  overflow: hidden;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+}
+
+.knowledge-topic-card {
+  min-height: 6.25rem;
+  padding: 0.9rem 1rem;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--atlas-border-soft);
+  border-radius: 0;
+}
+
+.knowledge-topic-card:last-child {
+  border-right: 0;
+}
+
+.knowledge-topic-card.is-active {
+  position: relative;
+  background: var(--atlas-panel-raised);
+  border-color: var(--atlas-border-soft);
+  box-shadow: none;
+}
+
+.knowledge-topic-card.is-active::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  content: '';
+  background: var(--atlas-accent);
+}
+
+.knowledge-topic-card.is-locked {
+  opacity: 0.54;
+}
+
+.knowledge-topic-card.is-locked span,
+.knowledge-topic-stats strong {
+  color: var(--atlas-progress);
+}
+
+.knowledge-topic-card h1,
+.knowledge-topic-card h3 {
+  color: var(--atlas-text);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.knowledge-topic-card p,
+.knowledge-topic-stats span {
+  color: var(--atlas-text-secondary);
+}
+
+.knowledge-topic-stats i {
+  background: var(--atlas-border);
+}
+
+.knowledge-continent-tabs {
+  display: flex;
+  gap: 1.4rem;
+  padding: 0 0.2rem;
+  margin: 1rem 0 0.85rem;
+  border-bottom: 1px solid var(--atlas-border);
+}
+
+.knowledge-continent-tabs button {
+  position: relative;
+  min-height: 2.9rem;
+  padding: 0.55rem 0.15rem 0.7rem;
+  color: var(--atlas-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.knowledge-continent-tabs button::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  content: '';
+  background: transparent;
+}
+
+.knowledge-continent-tabs button:hover,
+.knowledge-continent-tabs button:focus-visible {
+  color: var(--atlas-text);
+  border-color: transparent;
+}
+
+.knowledge-continent-tabs button[aria-selected='true'] {
+  color: var(--atlas-text);
+  background: transparent;
+  border-color: transparent;
+}
+
+.knowledge-continent-tabs button[aria-selected='true']::after {
+  background: var(--atlas-accent);
+}
+
+.knowledge-continent-tabs strong {
+  font-weight: 600;
+}
+
+.knowledge-continent-tabs span {
+  color: var(--atlas-text-muted);
+}
+
+.knowledge-region-workspace {
+  gap: 0.8rem;
+}
+
+.knowledge-map-card,
+.knowledge-region-map-strip {
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+}
+
+.knowledge-map-card > div > span,
+.knowledge-region-map-strip > div > span,
+.knowledge-region-map-identity span {
+  color: var(--atlas-accent);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.knowledge-map-card > div > strong,
+.knowledge-region-map-strip > div > strong,
+.knowledge-region-map-identity h1 {
+  color: var(--atlas-text);
+  font-weight: 600;
+}
+
+.knowledge-map-card > div > small,
+.knowledge-region-map-identity a {
+  color: var(--atlas-text-secondary);
+}
+
+.knowledge-region-map-grid line {
+  stroke: rgb(139 170 176 / 10%);
+}
+
+.knowledge-region-map-countries path {
+  fill: rgb(62 92 98 / 58%);
+  stroke: rgb(137 165 170 / 34%);
+}
+
+.knowledge-region-map-countries path.is-continent {
+  fill: rgb(73 122 124 / 58%);
+  stroke: rgb(150 186 187 / 56%);
+}
+
+.knowledge-region-map-countries path.is-region,
+.knowledge-region-map-countries path.is-country {
+  fill: var(--atlas-accent);
+  stroke: var(--atlas-text);
+  filter: none;
+}
+
+.knowledge-region-grid {
+  display: block;
+  overflow: hidden;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+}
+
+.knowledge-region-card {
+  min-height: 6.2rem;
+  padding: 0.8rem 0.9rem;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--atlas-border-soft);
+  border-radius: 0;
+}
+
+.knowledge-region-card:last-child {
+  border-bottom: 0;
+}
+
+.knowledge-region-card::before {
+  width: 2px;
+  opacity: 0.72;
+}
+
+.knowledge-region-card:hover,
+.knowledge-region-card:focus-visible {
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-border-soft);
+  transform: none;
+}
+
+.knowledge-region-card h3 {
+  color: var(--atlas-text);
+  font-weight: 600;
+}
+
+.knowledge-region-card p,
+.knowledge-region-card > strong,
+.knowledge-region-progress span {
+  color: var(--atlas-text-secondary);
+}
+
+.knowledge-region-progress i,
+.knowledge-challenge-header i {
+  height: 0.18rem;
+  background: var(--atlas-border-soft);
+  border-radius: 0;
+}
+
+.knowledge-region-progress b,
+.knowledge-challenge-header b {
+  border-radius: 0;
+}
+
+.knowledge-region-shell {
+  --knowledge-detail-column: 0rem;
+}
+
+.knowledge-region-shell.has-country-selection {
+  --knowledge-detail-column: min(24rem, 29vw);
+}
+
+.knowledge-region-map-actions > div {
+  background: var(--atlas-panel);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+  backdrop-filter: none;
+}
+
+.knowledge-region-map-actions strong {
+  color: var(--atlas-progress);
+  font-weight: 600;
+}
+
+.knowledge-region-map-actions span {
+  color: var(--atlas-text-muted);
+}
+
+.knowledge-region-map-actions > a,
+.knowledge-view-on-globe,
+.knowledge-challenge-result button {
+  color: var(--atlas-canvas-deep);
+  background: var(--atlas-progress);
+  border: 1px solid var(--atlas-progress);
+  border-radius: var(--atlas-radius-control);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.knowledge-country-display-controls {
+  overflow: hidden;
+  gap: 0;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.knowledge-country-display-controls button {
+  min-height: 2.75rem;
+  color: var(--atlas-text-secondary);
+  background: var(--atlas-panel-muted);
+  border: 0;
+  border-right: 1px solid var(--atlas-border);
+  border-radius: 0;
+  font-weight: 500;
+}
+
+.knowledge-country-display-controls button:last-child {
+  border-right: 0;
+}
+
+.knowledge-country-display-controls button:hover:not(:disabled),
+.knowledge-country-display-controls button:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-border);
+}
+
+.knowledge-country-display-controls button[aria-pressed='true'] {
+  color: var(--atlas-text);
+  background: var(--atlas-panel-raised);
+  border-color: var(--atlas-border);
+  box-shadow: inset 0 -2px var(--atlas-accent);
+}
+
+.knowledge-country-card {
+  min-height: 6.4rem;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.knowledge-country-open {
+  min-height: 6.4rem;
+  color: var(--atlas-text);
+}
+
+.knowledge-country-open:hover,
+.knowledge-country-open:focus-visible {
+  background: var(--atlas-accent-soft);
+}
+
+.knowledge-country-open img,
+.knowledge-country-detail-heading > img {
+  border-radius: 0.2rem;
+  box-shadow: none;
+}
+
+.knowledge-country-name strong,
+.knowledge-country-card-capital strong {
+  color: var(--atlas-text);
+  font-weight: 600;
+}
+
+.knowledge-country-name small,
+.knowledge-country-card-capital small {
+  color: var(--atlas-text-muted);
+}
+
+.knowledge-country-card[data-field-count='3'] .knowledge-country-card-capital,
+.knowledge-country-card[data-field-count='2'][data-show-flag='false']
+  .knowledge-country-card-capital {
+  border-top-color: var(--atlas-border-soft);
+}
+
+.knowledge-country-detail {
+  color: var(--atlas-text);
+  background: var(--atlas-panel);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+  box-shadow: var(--atlas-shadow);
+  backdrop-filter: none;
+}
+
+.knowledge-country-detail-placeholder {
+  top: auto;
+  right: max(1.1rem, env(safe-area-inset-right));
+  bottom: max(1.1rem, env(safe-area-inset-bottom));
+  width: min(18rem, 24vw);
+  height: auto;
+  min-height: 0;
+  padding: 0.7rem;
+  background:
+    linear-gradient(var(--atlas-border-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--atlas-border-soft) 1px, transparent 1px),
+    var(--atlas-panel);
+  background-size: 4rem 4rem;
+  pointer-events: none;
+}
+
+.knowledge-country-detail-placeholder > div {
+  padding: 1rem;
+  background: var(--atlas-panel);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.knowledge-country-detail-placeholder h2,
+.knowledge-country-detail-heading h2 {
+  color: var(--atlas-text);
+  font-weight: 600;
+}
+
+.knowledge-country-detail-placeholder p,
+.knowledge-country-detail-heading p {
+  color: var(--atlas-text-secondary);
+}
+
+.knowledge-country-detail-close {
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--atlas-text-secondary);
+  background: transparent;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.knowledge-country-detail-heading span {
+  color: var(--atlas-accent);
+}
+
+.knowledge-country-facts {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.knowledge-country-facts > div {
+  padding: 0.65rem 0.7rem;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--atlas-border-soft);
+  border-bottom: 1px solid var(--atlas-border-soft);
+  border-radius: 0;
+}
+
+.knowledge-country-facts > div:nth-child(2n) {
+  border-right: 0;
+}
+
+.knowledge-country-facts > div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.knowledge-country-facts dt,
+.knowledge-country-detail h3 {
+  color: var(--atlas-text-muted);
+  font-weight: 500;
+}
+
+.knowledge-country-facts dd {
+  color: var(--atlas-text);
+  font-weight: 500;
+}
+
+.knowledge-country-detail section {
+  border-top-color: var(--atlas-border-soft);
+}
+
+.knowledge-country-highlights li {
+  color: var(--atlas-text-secondary);
+  background: var(--atlas-panel-muted);
+  border-left-color: var(--atlas-accent);
+}
+
+.knowledge-country-neighbours button {
+  color: var(--atlas-text-secondary);
+  background: transparent;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.knowledge-country-neighbours button:hover,
+.knowledge-country-neighbours button:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+}
+
+.knowledge-challenge-shell {
+  background: var(--atlas-canvas);
+}
+
+.knowledge-challenge-header {
+  color: var(--atlas-text-secondary);
+  border-bottom: 1px solid var(--atlas-border);
+}
+
+.knowledge-challenge-header > a {
+  color: var(--atlas-accent);
+}
+
+.knowledge-challenge-header > strong {
+  color: var(--atlas-text);
+  font-weight: 600;
+}
+
+.knowledge-question-card,
+.knowledge-challenge-result {
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+  box-shadow: none;
+}
+
+.knowledge-question-card > p,
+.knowledge-challenge-result > span {
+  color: var(--atlas-accent);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.knowledge-question-card > h1,
+.knowledge-challenge-result h1 {
+  color: var(--atlas-text);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.knowledge-question-flag {
+  border-radius: var(--atlas-radius-control);
+  box-shadow: none;
+}
+
+.knowledge-question-options {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.knowledge-question-options button {
+  min-height: 3.6rem;
+  color: var(--atlas-text);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--atlas-border-soft);
+  border-radius: 0;
+}
+
+.knowledge-question-options button:last-child {
+  border-bottom: 0;
+}
+
+.knowledge-question-options button:not(:disabled):hover,
+.knowledge-question-options button:not(:disabled):focus-visible {
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-border-soft);
+}
+
+.knowledge-question-options button.is-correct {
+  color: var(--atlas-text);
+  background: rgb(181 205 125 / 14%);
+  border-left: 3px solid var(--atlas-progress);
+}
+
+.knowledge-question-options button.is-correct::after {
+  margin-left: auto;
+  color: var(--atlas-progress);
+  content: '正确';
+}
+
+.knowledge-question-options button.is-wrong {
+  color: var(--atlas-text);
+  background: rgb(216 124 117 / 12%);
+  border-left: 3px solid var(--atlas-danger);
+}
+
+.knowledge-question-options button.is-wrong::after {
+  margin-left: auto;
+  color: var(--atlas-danger);
+  content: '已选择';
+}
+
+.knowledge-question-options button > span {
+  color: var(--atlas-text-secondary);
+  background: var(--atlas-panel-raised);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.knowledge-question-feedback {
+  border-top-color: var(--atlas-border);
+}
+
+.knowledge-question-feedback p,
+.knowledge-challenge-result > p,
+.knowledge-challenge-result > small,
+.knowledge-result-score span {
+  color: var(--atlas-text-secondary);
+}
+
+.knowledge-question-feedback button {
+  color: var(--atlas-canvas-deep);
+  background: var(--atlas-progress);
+  border-radius: var(--atlas-radius-control);
+  font-weight: 600;
+}
+
+.knowledge-result-score strong,
+.knowledge-challenge-result > span.is-passed {
+  color: var(--atlas-progress);
+}
+
+.knowledge-challenge-result a {
+  color: var(--atlas-accent);
+  background: transparent;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.explore-shell {
+  --detail-column: 0rem;
+  background: var(--atlas-canvas-deep);
+}
+
+.explore-shell.has-country-detail {
+  --detail-column: clamp(20rem, 28vw, 24rem);
+}
+
+.explore-shell::before {
+  background: linear-gradient(90deg, rgb(5 12 15 / 44%), transparent 36%);
+}
+
+.space-glow {
+  display: none;
+}
+
+.globe-canvas,
+.fallback-stage,
+.scene-loading {
+  background: var(--atlas-canvas-deep);
+}
+
+.layer-control {
+  gap: 0;
+  padding: 0.25rem;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+  box-shadow: var(--atlas-shadow);
+  backdrop-filter: none;
+}
+
+.layer-control-heading {
+  min-height: 2.2rem;
+  padding: 0 0.7rem 0 0.45rem;
+  color: var(--atlas-text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border-right: 1px solid var(--atlas-border);
+}
+
+.layer-control-icon {
+  color: var(--atlas-accent);
+}
+
+.layer-control-options {
+  gap: 0;
+}
+
+.layer-toggle {
+  min-height: 2.2rem;
+  padding: 0.38rem 0.52rem;
+  color: var(--atlas-text-secondary);
+  font-weight: 500;
+  background: transparent;
+  border: 0;
+  border-radius: var(--atlas-radius-control);
+}
+
+.layer-toggle:hover,
+.layer-toggle:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: transparent;
+}
+
+.layer-toggle[aria-pressed='true'].is-capital,
+.layer-toggle[aria-pressed='true'].is-city,
+.layer-toggle[aria-pressed='true'].is-ocean,
+.layer-toggle[aria-pressed='true'].is-waterway,
+.layer-toggle[aria-pressed='true'].is-lake,
+.layer-toggle[aria-pressed='true'].is-river,
+.layer-toggle[aria-pressed='true'].is-mountain,
+.layer-toggle[aria-pressed='true'].is-desert,
+.layer-toggle[aria-pressed='true'].is-landmark,
+.layer-toggle[aria-pressed='true'].is-geography,
+.layer-toggle[aria-pressed='true'].is-climate {
+  color: var(--atlas-text);
+  background: var(--atlas-panel-raised);
+  border-color: transparent;
+  box-shadow: inset 0 -2px var(--atlas-accent);
+}
+
+.layer-toggle-dot,
+.layer-toggle.is-capital[aria-pressed='true'] .layer-toggle-dot,
+.layer-toggle.is-city[aria-pressed='true'] .layer-toggle-dot,
+.layer-toggle.is-ocean[aria-pressed='true'] .layer-toggle-dot,
+.layer-toggle.is-waterway[aria-pressed='true'] .layer-toggle-dot,
+.layer-toggle.is-lake[aria-pressed='true'] .layer-toggle-dot,
+.layer-toggle.is-river[aria-pressed='true'] .layer-toggle-dot,
+.layer-toggle.is-mountain[aria-pressed='true'] .layer-toggle-dot,
+.layer-toggle.is-desert[aria-pressed='true'] .layer-toggle-dot,
+.layer-toggle.is-landmark[aria-pressed='true'] .layer-toggle-dot,
+.layer-toggle.is-climate[aria-pressed='true'] .layer-toggle-dot {
+  box-shadow: none;
+}
+
+.city-label,
+.waterbody-label,
+.linear-feature-label,
+.mountain-range-label,
+.desert-label,
+.landmark-label {
+  min-height: 1.65rem;
+  padding: 0.27rem 0.45rem;
+  color: var(--atlas-text);
+  font-size: 0.66rem;
+  font-weight: 600;
+  background: rgb(13 26 30 / 92%);
+  border-color: var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 24%);
+  backdrop-filter: none;
+}
+
+.city-label > span,
+.waterbody-label > span,
+.linear-feature-label > span,
+.mountain-range-label > span,
+.desert-label > span,
+.landmark-label > span {
+  box-shadow: none;
+}
+
+.city-label:hover,
+.city-label:focus-visible,
+.linear-feature-label.is-canal.is-selected,
+.mountain-range-label.is-selected,
+.desert-label.is-selected,
+.landmark-label.is-selected {
+  color: var(--atlas-text);
+  border-color: var(--atlas-accent);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 28%);
+}
+
+.waterbody-label.is-lake::after,
+.waterbody-label.is-lake:is(.is-selected, .is-hovered)::after {
+  box-shadow: none;
+}
+
+.mountain-peak-marker-shape,
+.mountain-range-symbol,
+.mountain-peak-card-icon,
+.desert-symbol,
+.landmark-symbol,
+.linear-feature-symbol,
+.waterbody-detail-symbol,
+.climate-learning-heading > i {
+  filter: none;
+  box-shadow: none;
+}
+
+.mountain-peak-marker-tooltip,
+.country-hover-tooltip,
+.tooltip-content {
+  color: var(--atlas-text);
+  background: var(--atlas-panel-raised);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+  box-shadow: var(--atlas-shadow);
+  backdrop-filter: none;
+}
+
+.tooltip-arrow {
+  fill: var(--atlas-panel-raised);
+}
+
+.country-hover-tooltip {
+  font-weight: 500;
+}
+
+.country-hover-tooltip small,
+.mountain-peak-marker-tooltip small {
+  color: var(--atlas-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.country-search-field {
+  height: 3rem;
+  color: var(--atlas-text-secondary);
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+  box-shadow: var(--atlas-shadow);
+  backdrop-filter: none;
+}
+
+.country-search-field:focus-within {
+  border-color: var(--atlas-accent);
+  box-shadow:
+    var(--atlas-shadow),
+    0 0 0 2px var(--atlas-accent-soft);
+}
+
+.country-search-field input {
+  color: var(--atlas-text);
+  font-weight: 500;
+}
+
+.country-search-field input::placeholder {
+  color: var(--atlas-text-muted);
+}
+
+.country-search-clear {
+  width: 2rem;
+  height: 2rem;
+  color: var(--atlas-text-secondary);
+  background: transparent;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.country-search-popover {
+  padding: 0.35rem;
+  background: var(--atlas-panel);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+  box-shadow: var(--atlas-shadow);
+  backdrop-filter: none;
+}
+
+.country-search-caption {
+  color: var(--atlas-text-muted);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.country-search-popover li > button {
+  min-height: 3rem;
+  color: var(--atlas-text);
+  border-radius: var(--atlas-radius-control);
+}
+
+.country-search-popover li > button:hover,
+.country-search-popover li > button.is-active {
+  background: var(--atlas-accent-soft);
+}
+
+.country-search-popover small,
+.country-search-popover code,
+.country-search-empty {
+  color: var(--atlas-text-secondary);
+}
+
+.world-mini-map-toggle,
+.world-mini-map-card {
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+  box-shadow: var(--atlas-shadow);
+  backdrop-filter: none;
+}
+
+.world-mini-map-header {
+  border-bottom: 1px solid var(--atlas-border-soft);
+}
+
+.world-mini-map-header span {
+  color: var(--atlas-text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.world-mini-map-header output {
+  color: var(--atlas-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.world-mini-map-close,
+.world-mini-map-toggle {
+  color: var(--atlas-text-secondary);
+}
+
+.world-mini-map-canvas {
+  background: var(--atlas-panel-muted);
+  border-radius: 0 0 var(--atlas-radius-compact) var(--atlas-radius-compact);
+}
+
+.world-mini-map-grid line {
+  stroke: rgb(137 168 174 / 10%);
+}
+
+.world-mini-map-countries path {
+  fill: rgb(48 78 84 / 74%);
+  stroke: rgb(131 162 168 / 34%);
+}
+
+.world-mini-map-countries.is-climate-visible path {
+  fill: rgb(8 18 22 / 6%);
+  stroke: rgb(237 243 242 / 55%);
+}
+
+.world-mini-map-countries path:hover,
+.world-mini-map-countries path.is-selected {
+  fill: rgb(92 145 148 / 82%);
+  stroke: var(--atlas-accent);
+}
+
+.world-mini-map-countries.is-climate-visible path:hover,
+.world-mini-map-countries.is-climate-visible path.is-selected {
+  fill: rgb(121 200 212 / 18%);
+  stroke: var(--atlas-accent);
+}
+
+.control-dock {
+  gap: 0;
+  padding: 0.25rem;
+  overflow: hidden;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+  box-shadow: var(--atlas-shadow);
+  backdrop-filter: none;
+}
+
+.control-button {
+  min-height: 2.75rem;
+  padding: 0.58rem 0.78rem;
+  color: var(--atlas-text-secondary);
+  font-weight: 500;
+  border: 0;
+  border-right: 1px solid var(--atlas-border-soft);
+  border-radius: var(--atlas-radius-control);
+}
+
+.control-button:last-child {
+  border-right: 0;
+}
+
+.control-button:hover:not(:disabled),
+.search-control[aria-expanded='true'] {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-border-soft);
+  transform: none;
+}
+
+.country-detail {
+  color: var(--atlas-text);
+  background: var(--atlas-panel);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+  box-shadow: var(--atlas-shadow);
+  backdrop-filter: none;
+}
+
+.country-detail-close {
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--atlas-text-secondary);
+  background: var(--atlas-panel);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.country-detail-close:hover,
+.country-detail-close:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+}
+
+.country-detail-heading p,
+.city-detail-heading p,
+.waterbody-detail-heading p,
+.geography-learning-heading p,
+.climate-learning-heading p {
+  color: var(--atlas-accent);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.country-detail-heading h2,
+.city-detail-heading h2,
+.waterbody-detail-heading h2,
+.geography-learning-heading h2,
+.climate-learning-heading h2 {
+  color: var(--atlas-text);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.country-detail-heading span,
+.country-detail-official,
+.city-detail-heading span,
+.waterbody-detail-heading span,
+.geography-learning-heading span,
+.climate-learning-heading span {
+  color: var(--atlas-text-secondary);
+}
+
+.country-detail-flag,
+.city-detail-heading img {
+  border-color: var(--atlas-border);
+  border-radius: 0.2rem;
+  box-shadow: none;
+}
+
+.country-detail-section {
+  padding-top: 0.8rem;
+  margin-top: 0.8rem;
+  border-top: 1px solid var(--atlas-border-soft);
+}
+
+.country-detail-label {
+  color: var(--atlas-text-muted);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.waterbody-summary,
+.geography-line-callout p,
+.geography-topic-content > p,
+.geography-topic-content li,
+.geography-tip-grid li,
+.climate-type-content p,
+.climate-overview-content p,
+.climate-fact-grid dd,
+.climate-example-list li,
+.climate-common-mistake p {
+  color: var(--atlas-text-secondary);
+}
+
+.detail-facts-grid,
+.city-detail-facts,
+.climate-fact-grid {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.detail-facts-grid > div,
+.city-detail-facts > div,
+.climate-fact-grid > div {
+  padding: 0.65rem 0.7rem;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--atlas-border-soft);
+  border-bottom: 1px solid var(--atlas-border-soft);
+  border-radius: 0;
+}
+
+.detail-facts-grid > div:nth-child(2n),
+.city-detail-facts > div:nth-child(2n),
+.climate-fact-grid > div:nth-child(2n) {
+  border-right: 0;
+}
+
+.detail-facts-grid dt,
+.city-detail-facts dt,
+.climate-fact-grid dt {
+  color: var(--atlas-text-muted);
+  font-weight: 500;
+}
+
+.detail-facts-grid dd,
+.city-detail-facts dd,
+.climate-fact-grid dd {
+  color: var(--atlas-text);
+}
+
+.detail-facts-grid strong,
+.city-detail-facts strong,
+.climate-fact-grid strong {
+  font-weight: 600;
+}
+
+.country-data-list,
+.city-list,
+.fun-fact-list,
+.city-reason-list {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.country-data-list li,
+.city-list li,
+.fun-fact-list li,
+.city-reason-list li {
+  border-bottom: 1px solid var(--atlas-border-soft);
+}
+
+.country-data-list li:last-child,
+.city-list li:last-child,
+.fun-fact-list li:last-child,
+.city-reason-list li:last-child {
+  border-bottom: 0;
+}
+
+.city-list button {
+  min-height: 2.75rem;
+  color: var(--atlas-text);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.city-list button:hover,
+.city-list button:focus-visible {
+  background: var(--atlas-accent-soft);
+  border-color: transparent;
+  transform: none;
+}
+
+.city-list small,
+.city-list em,
+.city-detail-facts dd small {
+  color: var(--atlas-text-secondary);
+}
+
+.city-dot,
+.city-dot.is-capital {
+  box-shadow: none;
+}
+
+.city-detail-back {
+  min-height: 2.75rem;
+  color: var(--atlas-accent);
+  background: transparent;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+  font-weight: 500;
+}
+
+.city-detail-back:hover,
+.city-detail-back:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-accent);
+}
+
+.country-border-list,
+.country-region-list,
+.waterbody-tag-list {
+  gap: 0.3rem;
+}
+
+.country-border-list button,
+.country-region-list > span,
+.waterbody-tag-list span {
+  min-height: 2.35rem;
+  color: var(--atlas-text-secondary);
+  background: transparent;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.country-border-list button:hover,
+.country-border-list button:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-accent);
+}
+
+.country-border-group > span,
+.country-region-list small {
+  color: var(--atlas-text-muted);
+}
+
+.fun-fact-list li {
+  padding: 0.62rem 0.7rem;
+  background: transparent;
+  border-radius: 0;
+}
+
+.fun-fact-list li > span,
+.desert-fact-list li > span,
+.landmark-fact-list li > span {
+  color: var(--atlas-canvas-deep);
+  background: var(--atlas-progress);
+  border-radius: var(--atlas-radius-control);
+}
+
+.fun-fact-list p {
+  color: var(--atlas-text-secondary);
+}
+
+.detail-expand-toggle {
+  min-height: 2.75rem;
+  margin-top: 0.35rem;
+  color: var(--atlas-accent);
+  background: transparent;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+  font-weight: 500;
+}
+
+.detail-expand-toggle:hover,
+.detail-expand-toggle:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-accent);
+}
+
+.prototype-note,
+.climate-learning-source {
+  display: none;
+}
+
+.mountain-peak-card,
+.geography-current-reading,
+.geography-line-callout,
+.climate-current-reading,
+.climate-example-list,
+.climate-common-mistake {
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.mountain-peak-card strong,
+.mountain-peak-card b,
+.climate-current-reading strong,
+.climate-type-summary {
+  color: var(--atlas-text) !important;
+}
+
+.mountain-peak-card div span,
+.climate-current-reading span,
+.climate-current-reading small,
+.geography-current-reading span {
+  color: var(--atlas-text-secondary);
+}
+
+.geography-learning-orbit,
+.geography-learning-orbit::before,
+.geography-learning-orbit::after {
+  box-shadow: none;
+}
+
+.geography-topic-nav {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.geography-topic-nav button {
+  min-height: 2.75rem;
+  color: var(--atlas-text-secondary);
+  background: var(--atlas-panel-muted);
+  border: 0;
+  border-right: 1px solid var(--atlas-border);
+  border-radius: 0;
+}
+
+.geography-topic-nav button:last-child {
+  border-right: 0;
+}
+
+.geography-topic-nav button.is-active {
+  color: var(--atlas-text);
+  background: var(--atlas-panel-raised);
+  box-shadow: inset 0 -2px var(--atlas-accent);
+}
+
+.geography-reference-diagram rect {
+  fill: var(--atlas-panel-muted);
+  stroke: var(--atlas-border);
+}
+
+.geography-reference-diagram text {
+  fill: var(--atlas-text-secondary);
+  stroke: var(--atlas-panel-muted);
+  font-weight: 500;
+}
+
+.geography-reference-list {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.geography-reference-list button {
+  min-height: 2.75rem;
+  color: var(--atlas-text);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--atlas-border-soft);
+  border-radius: 0;
+}
+
+.geography-reference-list button.is-active {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-left: 2px solid var(--atlas-accent);
+}
+
+.geography-reference-list small {
+  color: var(--atlas-text-muted);
+}
+
+.climate-overview-link {
+  min-height: 2.75rem;
+  color: var(--atlas-accent);
+}
+
+.climate-legend {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.climate-legend button {
+  min-height: 2.75rem;
+  color: var(--atlas-text-secondary);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--atlas-border-soft);
+  border-radius: 0;
+}
+
+.climate-legend button:hover,
+.climate-legend button:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-border-soft);
+}
+
+.hero-copy {
+  width: min(30rem, 38vw);
+}
+
+.eyebrow {
+  color: var(--atlas-accent);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.hero-copy h1 {
+  color: var(--atlas-text);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  text-shadow: none;
+}
+
+.hero-description,
+.interaction-hint,
+.reduced-motion-note {
+  color: var(--atlas-text-secondary);
+}
+
+.interaction-hint span {
+  color: var(--atlas-warning);
+}
+
+.fallback-card {
+  color: var(--atlas-text);
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+  box-shadow: var(--atlas-shadow);
+}
+
+.fallback-card h1 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.fallback-card > p:last-child {
+  color: var(--atlas-text-secondary);
+}
+
+.fallback-orbit {
+  background: var(--atlas-panel-raised);
+  border: 1px solid var(--atlas-border);
+  box-shadow: none;
+}
+
+@media (max-height: 520px) {
+  .app-navigation {
+    width: 3.2rem;
+    border-radius: var(--atlas-radius-compact);
+  }
+
+  .app-navigation-brand,
+  .app-navigation-link {
+    border-radius: var(--atlas-radius-control);
+  }
+
+  .knowledge-topic-grid {
+    gap: 0;
+  }
+
+  .knowledge-topic-card {
+    border-right: 1px solid var(--atlas-border-soft);
+  }
+
+  .knowledge-region-card {
+    border-radius: 0;
+  }
+
+  .knowledge-country-display-controls button,
+  .knowledge-region-map-actions > a,
+  .knowledge-region-map-actions > div {
+    min-height: 2.75rem;
+  }
+
+  .layer-control {
+    border-radius: var(--atlas-radius-compact);
+  }
+
+  .control-dock {
+    border-radius: var(--atlas-radius-compact);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .knowledge-region-content {
+    padding-right: 0;
+  }
+
+  .knowledge-country-detail-placeholder {
+    display: none;
+  }
+
+  .knowledge-country-detail:not(.knowledge-country-detail-placeholder) {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 3.9rem;
+    width: auto;
+    max-height: 63dvh;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--atlas-radius-panel) var(--atlas-radius-panel) 0 0;
+  }
+
+  .landscape-runtime.is-touch-device .layer-control {
+    padding: 0.2rem;
+    border-radius: var(--atlas-radius-compact);
+  }
+
+  .landscape-runtime.is-touch-device .layer-control-options {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .landscape-runtime.is-touch-device .layer-toggle {
+    min-height: 2.75rem;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.62rem;
+  }
+
+  .landscape-runtime.is-touch-device .control-dock {
+    border-radius: var(--atlas-radius-compact);
+  }
+
+  .landscape-runtime.is-touch-device .control-button {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail {
+    background: var(--atlas-panel);
+    border-color: var(--atlas-border);
+    border-radius: var(--atlas-radius-panel);
+  }
+}
+
+@media (max-width: 760px) {
+  .knowledge-topic-grid {
+    display: block;
+  }
+
+  .knowledge-topic-card {
+    border-right: 0;
+    border-bottom: 1px solid var(--atlas-border-soft);
+  }
+
+  .knowledge-topic-card:last-child {
+    border-bottom: 0;
+  }
+
+  .knowledge-continent-tabs {
+    gap: 0.9rem;
+    overflow-x: auto;
+  }
+
+  .knowledge-region-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-country-grid {
+    grid-template-columns: repeat(2, minmax(8.5rem, 1fr));
   }
 }

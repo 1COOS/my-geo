@@ -352,7 +352,11 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
               </g>
             ) : null}
             <g
-              className={`world-mini-map-countries${showClimateLayer ? 'is-climate-visible' : ''}`}
+              className={
+                showClimateLayer
+                  ? 'world-mini-map-countries is-climate-visible'
+                  : 'world-mini-map-countries'
+              }
             >
               {boundaryPaths.map(({ code, path }) => {
                 const country = getCountry(code)

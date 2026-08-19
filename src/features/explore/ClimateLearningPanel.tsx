@@ -38,16 +38,10 @@ export function ClimateLearningPanel({
           : 'climate-overview'
       }
       onClose={onClose}
-      footer={
-        <footer className="climate-learning-source">
-          数据底图：Beck et al. Köppen–Geiger V3 v2；教学分类：My Geo
-          原创归并与审核掩膜。
-        </footer>
-      }
     >
       <header className="climate-learning-heading">
         <div>
-          <p>CLIMATE ATLAS · {climatePeriod}</p>
+          <p>世界气候 · {climatePeriod}</p>
           <h2>{climateType?.name.zh ?? climateLearningTopic.name.zh}</h2>
           <span>{climateType?.name.en ?? climateLearningTopic.name.en}</span>
         </div>

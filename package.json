@@ -75,5 +75,8 @@
     "world-atlas": "2.0.2",
     "world-cities-json": "1.0.1",
     "world-countries": "5.1.0"
+  },
+  "patchedDependencies": {
+    "r3f-globe@1.6.0": "patches/r3f-globe@1.6.0.patch"
   }
 }

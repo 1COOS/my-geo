@@ -20,11 +20,6 @@ export function LandmarkDetailPanel({
       closeLabel={`关闭${landmark.name.zh}古迹知识卡`}
       identity={landmark.id}
       onClose={onClose}
-      footer={
-        <p className="prototype-note">
-          年代为代表性建造或使用阶段，复杂遗址可能跨越多个时期。
-        </p>
-      }
     >
       <div className="waterbody-detail-heading landmark-heading">
         <span className="landmark-symbol" aria-hidden="true" />

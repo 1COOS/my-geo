@@ -50,18 +50,13 @@ export function GeographyLearningPanel({
       closeLabel="关闭经纬网知识卡"
       identity={`${topicId}:${referenceLineId ?? 'overview'}`}
       onClose={onClose}
-      footer={
-        <p className="prototype-note">
-          教学示意采用初中地理常用近似值，不用于测量、导航或法律边界判定。
-        </p>
-      }
     >
       <div className="geography-learning-heading">
         <div className="geography-learning-orbit" aria-hidden="true">
           <span />
         </div>
         <div>
-          <p>EARTH GRID · 初中地理</p>
+          <p>经纬网 · 初中地理</p>
           <h2>{topic.name.zh}</h2>
           <span>{topic.name.en}</span>
         </div>

@@ -22,11 +22,6 @@ export function DesertDetailPanel({
       closeLabel={`关闭${desert.name.zh}知识卡`}
       identity={desert.id}
       onClose={onClose}
-      footer={
-        <p className="prototype-note">
-          沙漠轮廓为地理学习示意，表示大致自然区域，不是生态分区、土地利用、行政或主权边界。
-        </p>
-      }
     >
       <div className="waterbody-detail-heading desert-heading">
         <span className="desert-symbol" aria-hidden="true" />

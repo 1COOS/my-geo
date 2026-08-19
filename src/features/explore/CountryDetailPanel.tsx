@@ -49,11 +49,6 @@ export function CountryDetailPanel({
       closeLabel={selectedCity ? '关闭城市知识卡' : '关闭国家知识卡'}
       identity={`${country.code}:${selectedCity?.id ?? 'country'}`}
       onClose={onClose}
-      footer={
-        <p className="prototype-note">
-          原型地图 · 公开发布前需重新评估地图合规
-        </p>
-      }
     >
       {selectedCity ? (
         <CityDetailView
