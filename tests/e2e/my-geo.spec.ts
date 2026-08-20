@@ -16,6 +16,36 @@ async function waitForSceneOrFallback(page: Page) {
   return { scene, fallback }
 }
 
+async function installFullscreenApiMock(page: Page) {
+  await page.addInitScript(() => {
+    let fullscreenElement: Element | null = null
+    Object.defineProperty(document, 'fullscreenEnabled', {
+      configurable: true,
+      value: true,
+    })
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: () => fullscreenElement,
+    })
+    Object.defineProperty(Element.prototype, 'requestFullscreen', {
+      configurable: true,
+      value() {
+        fullscreenElement = document.documentElement
+        document.dispatchEvent(new Event('fullscreenchange'))
+        return Promise.resolve()
+      },
+    })
+    Object.defineProperty(document, 'exitFullscreen', {
+      configurable: true,
+      value() {
+        fullscreenElement = null
+        document.dispatchEvent(new Event('fullscreenchange'))
+        return Promise.resolve()
+      },
+    })
+  })
+}
+
 async function selectPlace(page: Page, query: string) {
   const search = await openCountrySearch(page)
   await search.fill(query)
@@ -500,15 +530,112 @@ test('exposes a valid PWA manifest', async ({ request }) => {
   const manifest = (await manifestResponse.json()) as {
     name: string
     display: string
+    display_override: string[]
     orientation: string
     icons: Array<{ src: string }>
   }
 
   expect(manifest.name).toContain('My Geo')
   expect(manifest.display).toBe('standalone')
+  expect(manifest.display_override).toEqual(['fullscreen', 'standalone'])
   expect(manifest.orientation).toBe('landscape')
   expect(manifest.icons).toHaveLength(3)
 })
+
+test('keeps the global fullscreen control active across app routes', async ({
+  page,
+}) => {
+  await installFullscreenApiMock(page)
+  await page.goto('/explore')
+
+  await page.getByRole('button', { name: '进入全屏' }).click()
+  const exitFullscreen = page.getByRole('button', { name: '退出全屏' })
+  await expect(exitFullscreen).toHaveAttribute('aria-pressed', 'true')
+
+  await page.getByRole('link', { name: '知识体系' }).click()
+  await expect(page).toHaveURL(/\/knowledge$/)
+  await expect(exitFullscreen).toBeVisible()
+
+  for (const path of [
+    '/knowledge/countries/east-asia',
+    '/knowledge/countries/east-asia/challenge',
+  ]) {
+    await page.evaluate((nextPath) => {
+      window.history.pushState({}, '', nextPath)
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    }, path)
+    await expect(page).toHaveURL(new RegExp(`${path}$`))
+    await expect(exitFullscreen).toBeVisible()
+  }
+
+  await page.evaluate(() => document.exitFullscreen())
+  const enterFullscreen = page.getByRole('button', { name: '进入全屏' })
+  await expect(enterFullscreen).toHaveAttribute('aria-pressed', 'false')
+
+  await enterFullscreen.click()
+  await expect(exitFullscreen).toBeVisible()
+})
+
+for (const viewport of [
+  { name: '1440 desktop', width: 1440, height: 900, touch: false },
+  { name: 'iPad landscape', width: 1194, height: 834, touch: true },
+  { name: 'phone landscape', width: 844, height: 390, touch: true },
+]) {
+  test(`keeps the global fullscreen control inside navigation on ${viewport.name}`, async ({
+    page,
+  }) => {
+    await installFullscreenApiMock(page)
+    if (viewport.touch) {
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'maxTouchPoints', {
+          configurable: true,
+          value: 5,
+        })
+        Object.defineProperty(navigator, 'platform', {
+          configurable: true,
+          value: 'MacIntel',
+        })
+      })
+    }
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    })
+    await page.goto('/explore')
+
+    const navigation = page.getByRole('navigation', {
+      name: 'My Geo 主导航',
+    })
+    await expect(page.getByRole('button', { name: '进入全屏' })).toBeVisible()
+    const layout = await navigation.evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      const items = Array.from(
+        element.querySelectorAll<HTMLElement>('.app-navigation-link'),
+        (item) => {
+          const itemBox = item.getBoundingClientRect()
+          return { top: itemBox.top, bottom: itemBox.bottom }
+        },
+      )
+      return {
+        top: box.top,
+        bottom: box.bottom,
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+        items,
+      }
+    })
+
+    expect(layout.top).toBeGreaterThanOrEqual(5)
+    expect(layout.bottom).toBeLessThanOrEqual(viewport.height - 5)
+    expect(layout.scrollHeight).toBeLessThanOrEqual(layout.clientHeight + 1)
+    expect(layout.items).toHaveLength(3)
+    for (let index = 1; index < layout.items.length; index += 1) {
+      expect(layout.items[index].top).toBeGreaterThanOrEqual(
+        layout.items[index - 1].bottom,
+      )
+    }
+  })
+}
 
 test('asks touch phones and iPads to rotate before loading the app', async ({
   page,
@@ -538,6 +665,7 @@ test('asks touch phones and iPads to rotate before loading the app', async ({
     ).toBeVisible()
     await expect(page.getByTestId('globe-scene')).toHaveCount(0)
     await expect(page.getByTestId('webgl-fallback')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '进入全屏' })).toHaveCount(0)
   }
 })
 

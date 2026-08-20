@@ -23,6 +23,7 @@ export default defineConfig({
         theme_color: '#071426',
         background_color: '#040b16',
         display: 'standalone',
+        display_override: ['fullscreen', 'standalone'],
         orientation: 'landscape',
         lang: 'zh-CN',
         start_url: '/',
