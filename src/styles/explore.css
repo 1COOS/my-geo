@@ -1391,8 +1391,12 @@
 
 .world-mini-map-countries path:hover,
 .world-mini-map-countries path.is-selected {
-  fill: rgb(92 145 148 / 82%);
-  stroke: var(--atlas-accent);
+  fill: var(--atlas-map-highlight-fill);
+  stroke: var(--atlas-map-highlight-stroke);
+}
+
+.world-mini-map-countries path.is-selected {
+  stroke-width: var(--atlas-map-highlight-stroke-width);
 }
 
 .world-mini-map-countries.is-climate-visible path:hover,

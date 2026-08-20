@@ -726,15 +726,17 @@
   stroke: rgb(137 165 170 / 34%);
 }
 
-.knowledge-region-map-countries path.is-continent {
-  fill: rgb(73 122 124 / 58%);
-  stroke: rgb(150 186 187 / 56%);
+.knowledge-region-map-countries path.is-continent,
+.knowledge-region-map-countries path.is-region {
+  fill: var(--atlas-map-highlight-fill);
+  stroke: var(--atlas-map-highlight-stroke);
+  stroke-width: var(--atlas-map-highlight-stroke-width);
+  filter: none;
 }
 
-.knowledge-region-map-countries path.is-region,
 .knowledge-region-map-countries path.is-country {
-  fill: var(--atlas-accent);
-  stroke: var(--atlas-text);
+  fill: var(--atlas-country-selection-fill);
+  stroke: var(--atlas-country-selection-stroke);
   filter: none;
 }
 

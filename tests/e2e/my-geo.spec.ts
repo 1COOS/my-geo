@@ -114,6 +114,20 @@ function parseMiniMapTransform(transform: string | null) {
   return match ? { x: Number(match[1]), y: Number(match[2]) } : null
 }
 
+async function readMapHighlightStyle(page: Page, selector: string) {
+  const target = page.locator(selector).first()
+  await expect(target).toBeAttached({ timeout: 15_000 })
+  return target.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return {
+      fill: style.fill,
+      stroke: style.stroke,
+      strokeWidth: style.strokeWidth,
+      filter: style.filter,
+    }
+  })
+}
+
 test('loads the responsive My Geo exploration shell', async ({ page }) => {
   await page.goto('/')
 
@@ -240,6 +254,88 @@ test('navigates the country knowledge atlas and deep-links back to the globe', a
   await waitForSceneOrFallback(page)
   await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
 })
+
+for (const viewport of [
+  { name: '1440 desktop', width: 1440, height: 900, touch: false },
+  { name: 'phone landscape', width: 844, height: 390, touch: true },
+  { name: 'iPad landscape', width: 1194, height: 834, touch: true },
+]) {
+  test(`uses the mini-map selection as the knowledge-map highlight standard on ${viewport.name}`, async ({
+    page,
+  }) => {
+    if (viewport.touch) {
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'maxTouchPoints', {
+          configurable: true,
+          value: 5,
+        })
+        Object.defineProperty(navigator, 'platform', {
+          configurable: true,
+          value: 'MacIntel',
+        })
+      })
+    }
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    })
+
+    await page.goto('/explore?country=CN')
+    const standardHighlight = await readMapHighlightStyle(
+      page,
+      '.world-mini-map-countries path[data-country-code="CN"].is-selected',
+    )
+    expect(standardHighlight).toEqual({
+      fill: 'rgba(92, 145, 148, 0.82)',
+      stroke: 'rgb(121, 200, 212)',
+      strokeWidth: '1.15px',
+      filter: 'none',
+    })
+
+    await page.goto('/knowledge?continent=asia')
+    expect(
+      await readMapHighlightStyle(
+        page,
+        '.knowledge-region-map-countries path[data-country-code="CN"].is-continent',
+      ),
+    ).toEqual(standardHighlight)
+
+    await page.getByRole('tab', { name: /欧洲/ }).click()
+    expect(
+      await readMapHighlightStyle(
+        page,
+        '.knowledge-region-map-countries path[data-country-code="FR"].is-continent',
+      ),
+    ).toEqual(standardHighlight)
+
+    await page.goto('/knowledge/countries/east-asia')
+    expect(
+      await readMapHighlightStyle(
+        page,
+        '.knowledge-region-map-countries path[data-country-code="CN"].is-region',
+      ),
+    ).toEqual(standardHighlight)
+
+    await page.getByRole('button', { name: '查看中国国家详情' }).click()
+    expect(
+      await readMapHighlightStyle(
+        page,
+        '.knowledge-region-map-countries path[data-country-code="JP"].is-region',
+      ),
+    ).toEqual(standardHighlight)
+
+    const selectedCountryHighlight = await readMapHighlightStyle(
+      page,
+      '.knowledge-region-map-countries path[data-country-code="CN"].is-country',
+    )
+    expect(selectedCountryHighlight).toEqual({
+      fill: 'rgb(242, 199, 92)',
+      stroke: 'rgb(255, 241, 168)',
+      strokeWidth: '1.45px',
+      filter: 'none',
+    })
+  })
+}
 
 test('completes a regional challenge and restores its local best score', async ({
   page,
