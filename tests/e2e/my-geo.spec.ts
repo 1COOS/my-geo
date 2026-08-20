@@ -2091,6 +2091,57 @@ test('keeps capital labels synchronized during automatic rotation', async ({
     .toBe(true)
 })
 
+test('keeps a selected city label synchronized throughout a fast drag', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { scene, fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  await page.getByRole('button', { name: '自动旋转：开' }).click()
+  await page.getByRole('button', { name: '画质：平衡' }).click()
+  await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
+  await selectPlace(page, '中国')
+  await page
+    .getByLabel('中国国家知识卡')
+    .getByRole('button', { name: '探索城市上海' })
+    .click()
+
+  const label = page.locator('[data-city-id="cn-shanghai"]')
+  await expect(label).toBeVisible()
+  await page.waitForTimeout(1_300)
+
+  const canvasBox = await scene.locator('canvas').boundingBox()
+  expect(canvasBox).not.toBeNull()
+  await page.mouse.move(
+    canvasBox!.x + canvasBox!.width * 0.5,
+    canvasBox!.y + canvasBox!.height * 0.48,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    canvasBox!.x + canvasBox!.width * 0.52,
+    canvasBox!.y + canvasBox!.height * 0.49,
+    { steps: 2 },
+  )
+  await expect(scene).toHaveAttribute('data-controls-interacting', 'true')
+  const firstDragTransform = await label.getAttribute('style')
+
+  await page.mouse.move(
+    canvasBox!.x + canvasBox!.width * 0.57,
+    canvasBox!.y + canvasBox!.height * 0.51,
+    { steps: 12 },
+  )
+  await expect
+    .poll(() => label.getAttribute('style'))
+    .not.toBe(firstDragTransform)
+  await expect(label).toBeVisible()
+  await expect(scene).toHaveAttribute('data-controls-interacting', 'true')
+  await page.mouse.up()
+})
+
 test('does not replay a stale city camera target after dragging', async ({
   page,
 }) => {

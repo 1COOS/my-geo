@@ -74,7 +74,7 @@ import {
   getDesertPolygonState,
 } from './desertSceneInteraction'
 import { getReferenceLineIdForLayer } from './geographyLearningScene'
-import { advanceLabelLayoutFrame } from './globeFrameScheduling'
+import { shouldLayoutGlobeLabelsThisFrame } from './globeFrameScheduling'
 import { GlobeCameraControls } from './GlobeCameraControls'
 import { GlobeDomOverlay } from './GlobeDomOverlay'
 import {
@@ -386,7 +386,6 @@ function World({
   const labelElementsRef = useRef(new Map<string, HTMLElement>())
   const visibleLabelIdsRef = useRef(new Set<string>())
   const labelWorldPositionRef = useRef(new Vector3())
-  const labelFrameAccumulatorRef = useRef(0)
   const flyToTargetRef = useRef<(target: CameraTarget) => void>(() => undefined)
   const { camera, gl, size } = useThree()
   const rendererSize = useMemo(
@@ -1058,14 +1057,9 @@ function World({
       }
     }
 
-    const labelFrame = advanceLabelLayoutFrame(
-      labelFrameAccumulatorRef.current,
-      delta,
-      quality,
-      autoRotate || labelLayoutPendingRef.current,
-    )
-    labelFrameAccumulatorRef.current = labelFrame.accumulatedSeconds
-    if (labelFrame.shouldLayout) {
+    if (
+      shouldLayoutGlobeLabelsThisFrame(quality, labelLayoutPendingRef.current)
+    ) {
       labelLayoutPendingRef.current = false
       layoutCityLabels()
       layoutSelectedLinearFeatureOverlay()
