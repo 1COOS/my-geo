@@ -695,17 +695,14 @@
 
 .country-detail-flag {
   width: 3.7rem;
-  height: 2.6rem;
-  object-fit: cover;
-  border: 1px solid rgb(255 255 255 / 15%);
   border-radius: 0.65rem;
   box-shadow: 0 10px 25px rgb(0 0 0 / 22%);
 }
 
-.country-detail-heading p,
-.country-detail-heading h2,
-.country-detail-heading span,
-.country-detail-heading small {
+.country-detail-heading > div p,
+.country-detail-heading > div h2,
+.country-detail-heading > div span,
+.country-detail-heading > div small {
   margin: 0;
 }
 
@@ -714,21 +711,21 @@
   display: block;
 }
 
-.country-detail-heading p {
+.country-detail-heading > div p {
   color: #68d8ff;
   font-size: 0.58rem;
   font-weight: 750;
   letter-spacing: 0.1em;
 }
 
-.country-detail-heading h2 {
+.country-detail-heading > div h2 {
   margin-top: 0.08rem;
   font-size: clamp(1.45rem, 2vw, 1.75rem);
   line-height: 1.08;
   letter-spacing: -0.04em;
 }
 
-.country-detail-heading span {
+.country-detail-heading > div span {
   display: block;
   margin-top: 0.16rem;
   overflow: hidden;
@@ -786,34 +783,31 @@
   padding-right: 3rem;
 }
 
-.city-detail-heading img {
+.city-detail-heading .country-flag-frame {
   width: 3.5rem;
-  height: 2.45rem;
-  object-fit: cover;
-  border: 1px solid rgb(255 255 255 / 15%);
   border-radius: 0.55rem;
 }
 
-.city-detail-heading p,
-.city-detail-heading h2,
-.city-detail-heading span {
+.city-detail-heading > div p,
+.city-detail-heading > div h2,
+.city-detail-heading > div span {
   margin: 0;
 }
 
-.city-detail-heading p {
+.city-detail-heading > div p {
   color: #67d9ff;
   font-size: 0.58rem;
   font-weight: 760;
   letter-spacing: 0.1em;
 }
 
-.city-detail-heading h2 {
+.city-detail-heading > div h2 {
   margin-top: 0.08rem;
   font-size: clamp(1.4rem, 2vw, 1.7rem);
   line-height: 1.08;
 }
 
-.city-detail-heading span {
+.city-detail-heading > div span {
   display: block;
   margin-top: 0.16rem;
   overflow: hidden;
@@ -964,10 +958,8 @@
     transform 160ms ease;
 }
 
-.country-border-list img {
+.country-border-list .country-flag-frame {
   width: 1.05rem;
-  height: 0.75rem;
-  object-fit: cover;
   border-radius: 0.12rem;
 }
 
@@ -1087,8 +1079,8 @@
   background: var(--atlas-accent-soft);
 }
 
-.country-detail-heading p,
-.city-detail-heading p,
+.country-detail-heading > div p,
+.city-detail-heading > div p,
 .waterbody-detail-heading p,
 .geography-learning-heading p,
 .climate-learning-heading p {
@@ -1097,8 +1089,8 @@
   letter-spacing: 0.04em;
 }
 
-.country-detail-heading h2,
-.city-detail-heading h2,
+.country-detail-heading > div h2,
+.city-detail-heading > div h2,
 .waterbody-detail-heading h2,
 .geography-learning-heading h2,
 .climate-learning-heading h2 {
@@ -1107,9 +1099,9 @@
   letter-spacing: -0.025em;
 }
 
-.country-detail-heading span,
+.country-detail-heading > div span,
 .country-detail-official,
-.city-detail-heading span,
+.city-detail-heading > div span,
 .waterbody-detail-heading span,
 .geography-learning-heading span,
 .climate-learning-heading span {
@@ -1117,8 +1109,7 @@
 }
 
 .country-detail-flag,
-.city-detail-heading img {
-  border-color: var(--atlas-border);
+.city-detail-heading .country-flag-frame {
   border-radius: 0.2rem;
   box-shadow: none;
 }

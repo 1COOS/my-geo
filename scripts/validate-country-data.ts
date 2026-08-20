@@ -50,6 +50,9 @@ import {
 } from './country-content'
 
 const projectRoot = path.resolve(import.meta.dirname, '..')
+const svgViewBoxPattern = /\bviewBox\s*=\s*["']([^"']+)["']/i
+const unsafeSvgContentPattern =
+  /<script\b|<image\b|\b(?:href|xlink:href|src)\s*=\s*["']https?:/i
 
 async function readJson(filePath: string): Promise<unknown> {
   return JSON.parse(await readFile(filePath, 'utf8')) as unknown
@@ -552,7 +555,26 @@ for (const asset of climateRasterAssets) {
 }
 
 for (const country of countries) {
-  await access(path.join(projectRoot, `public${country.flagAsset}`))
+  const flagPath = path.join(projectRoot, `public${country.flagAsset}`)
+  await access(flagPath)
+  const flagSvg = await readFile(flagPath, 'utf8')
+  const viewBoxMatch = flagSvg.match(svgViewBoxPattern)
+  const viewBox = viewBoxMatch?.[1]
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number)
+  if (
+    !viewBox ||
+    viewBox.length !== 4 ||
+    viewBox.some((value) => !Number.isFinite(value)) ||
+    viewBox[2] <= 0 ||
+    viewBox[3] <= 0
+  ) {
+    throw new Error(`Invalid flag SVG viewBox for ${country.code}`)
+  }
+  if (unsafeSvgContentPattern.test(flagSvg)) {
+    throw new Error(`Unsafe external content in flag SVG for ${country.code}`)
+  }
   if (country.hasGeometry !== boundaryCodes.has(country.code)) {
     throw new Error(`Geometry availability mismatch for ${country.code}`)
   }

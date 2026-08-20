@@ -14,6 +14,7 @@ import {
 } from '../../data/linearGeoFeatures'
 import { mountainRanges } from '../../data/mountainRanges'
 import { waterbodies, waterbodyKindLabels } from '../../data/waterbodies'
+import { CountryFlag } from '../../shared/components/CountryFlag'
 import { searchPlaces, type PlaceSearchResult } from './countrySearchUtils'
 
 type CountrySearchProps = {
@@ -243,14 +244,14 @@ export function CountrySearch({
                     onClick={() => chooseResult(result)}
                   >
                     {result.type === 'country' ? (
-                      <img src={result.country.flagAsset} alt="" />
+                      <CountryFlag src={result.country.flagAsset} alt="" />
                     ) : (
                       <span
                         className={`place-result-icon is-${result.type}${result.type === 'linearFeature' ? ` is-${result.feature.kind}` : ''}${result.type === 'waterbody' ? ` is-${result.waterbody.layer}` : ''}`}
                         aria-hidden="true"
                       />
                     )}
-                    <span>
+                    <span className="country-search-result-copy">
                       <strong>{name.zh}</strong>
                       <small>
                         {name.en}

@@ -188,9 +188,8 @@
     padding: 0.58rem;
   }
 
-  .knowledge-country-open img {
+  .knowledge-country-open .country-flag-frame {
     width: 3.4rem;
-    height: 2.25rem;
   }
 
   .knowledge-country-card {
@@ -199,9 +198,8 @@
 
   .knowledge-country-card[data-field-count='1'][data-show-flag='true']
     .knowledge-country-open
-    img {
+    .country-flag-frame {
     width: 4.5rem;
-    height: 3rem;
   }
 
   .knowledge-country-controls-row {
@@ -263,8 +261,7 @@
   }
 
   .knowledge-question-flag {
-    width: 8rem;
-    max-height: 4.5rem;
+    width: 6.75rem;
     margin-bottom: 0.55rem;
   }
 
@@ -439,7 +436,6 @@
 
   .landscape-runtime.is-touch-device .country-detail-flag {
     width: 3.2rem;
-    height: 2.2rem;
   }
 
   .landscape-runtime.is-touch-device .country-detail-heading h2 {
@@ -678,7 +674,6 @@
 
   .country-detail-flag {
     width: 3.45rem;
-    height: 2.4rem;
   }
 
   .country-detail-heading h2 {

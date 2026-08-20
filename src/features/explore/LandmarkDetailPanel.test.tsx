@@ -23,6 +23,11 @@ describe('LandmarkDetailPanel', () => {
     expect(screen.getByText('公元前7世纪至明代')).toBeInTheDocument()
     expect(screen.queryByText(/40\.4319/)).not.toBeInTheDocument()
     expect(screen.queryByText(/资料来源/)).not.toBeInTheDocument()
+    const flag = screen
+      .getByRole('button', { name: '探索中国' })
+      .querySelector('img')
+    expect(flag).toHaveClass('country-flag-image')
+    expect(flag?.parentElement).toHaveClass('country-flag-frame')
 
     await userEvent.click(screen.getByRole('button', { name: '探索中国' }))
     expect(onSelectCountry).toHaveBeenCalledWith('CN')

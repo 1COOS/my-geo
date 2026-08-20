@@ -30,9 +30,11 @@ describe('CountrySearch', () => {
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, 'Vatican')
-    expect(
-      screen.getAllByRole('option', { name: /梵蒂冈/ }).length,
-    ).toBeGreaterThan(0)
+    const vaticanOption = screen.getAllByRole('option', { name: /梵蒂冈/ })[0]
+    expect(vaticanOption).toBeDefined()
+    const flag = vaticanOption.querySelector('img')
+    expect(flag).toHaveClass('country-flag-image')
+    expect(flag?.parentElement).toHaveClass('country-flag-frame')
     await user.clear(search)
     await user.type(search, 'va')
     await user.keyboard('{Enter}')

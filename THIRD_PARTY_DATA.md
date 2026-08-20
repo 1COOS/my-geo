@@ -94,9 +94,17 @@ Natural Earth provides broad range polygons rather than crest lines. My Geo ther
 
 ## Flags
 
-- Source: `flag-icons@7.5.0`
-- Project: <https://github.com/lipis/flag-icons>
-- License: MIT
-- Use: copied 4:3 SVG flags for the 195-country catalogue.
+- Source: `hampusborgos/country-flags` pinned at commit
+  `c09927e63705529bbf59ca6684cd9b23225dddad`
+- Project: <https://github.com/hampusborgos/country-flags>
+- License: Public domain (`PD` in the source package metadata)
+- Use: copied native-aspect-ratio SVG flags for the 195-country catalogue.
+- Build optimization: `svgo@4.0.2` (MIT), with deterministic precision chosen
+  from source size and `viewBox` scale while preserving each native `viewBox`.
+
+The source project derives its SVGs from Wikimedia Commons and official flag
+construction references. My Geo pins the exact source revision, copies only the
+195 catalogue flags during `bun run data:generate`, and validates that shipped
+SVGs contain a valid `viewBox` without scripts or external image references.
 
 Flag designs may also be subject to jurisdiction-specific laws and usage rules beyond the source-code license.

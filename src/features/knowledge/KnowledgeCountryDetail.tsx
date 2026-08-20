@@ -6,6 +6,7 @@ import {
   getKnowledgeRegion,
   type KnowledgeRegionId,
 } from '../../data/knowledgeRegions'
+import { CountryFlag } from '../../shared/components/CountryFlag'
 
 type KnowledgeCountryDetailProps = {
   country: Country
@@ -43,7 +44,7 @@ export function KnowledgeCountryDetail({
         ×
       </button>
       <div className="knowledge-country-detail-heading">
-        <img src={country.flagAsset} alt={`${country.name.zh}国旗`} />
+        <CountryFlag src={country.flagAsset} alt={`${country.name.zh}国旗`} />
         <div>
           <span>{country.officialName.zh}</span>
           <h2>{country.name.zh}</h2>
@@ -109,7 +110,7 @@ export function KnowledgeCountryDetail({
                   type="button"
                   onClick={() => onSelectCountry(countryCode)}
                 >
-                  <img src={neighbour.flagAsset} alt="" />
+                  <CountryFlag src={neighbour.flagAsset} alt="" />
                   <span>{neighbour.name.zh}</span>
                 </button>
               ) : null

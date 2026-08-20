@@ -6,6 +6,7 @@ import {
   saveKnowledgeChallengeResult,
   type PersistenceStatus,
 } from '../../storage/database'
+import { CountryFlag } from '../../shared/components/CountryFlag'
 import {
   createKnowledgeChallenge,
   getChallengeScore,
@@ -131,7 +132,7 @@ export function KnowledgeChallengePage() {
         <p>区域即时挑战</p>
         <h1>{question.prompt}</h1>
         {question.subjectFlagAsset ? (
-          <img
+          <CountryFlag
             className="knowledge-question-flag"
             src={question.subjectFlagAsset}
             alt="待识别的国旗"
@@ -156,9 +157,11 @@ export function KnowledgeChallengePage() {
                 disabled={selectedOptionId !== null}
                 onClick={() => selectOption(option.id)}
               >
-                <span>{index + 1}</span>
+                <span className="knowledge-question-option-index">
+                  {index + 1}
+                </span>
                 {option.flagAsset ? (
-                  <img src={option.flagAsset} alt="" />
+                  <CountryFlag src={option.flagAsset} alt="" />
                 ) : null}
                 <strong>{option.label}</strong>
               </button>

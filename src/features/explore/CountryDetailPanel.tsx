@@ -1,6 +1,7 @@
 import { countriesByCode } from '../../data/countries'
 import type { City, CitySelectionReason } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
+import { CountryFlag } from '../../shared/components/CountryFlag'
 import { DetailPanelShell } from './DetailPanelShell'
 import { ExpandableItems } from './ExpandableItems'
 
@@ -84,7 +85,7 @@ function CountryDetailView({
   return (
     <>
       <div className="country-detail-heading">
-        <img
+        <CountryFlag
           className="country-detail-flag"
           src={country.flagAsset}
           alt={`${country.name.zh}国旗`}
@@ -251,7 +252,7 @@ function CountryDetailView({
                         onClick={() => onSelectCountry(countryCode)}
                         aria-label={`探索邻国${borderCountry.name.zh}`}
                       >
-                        <img src={borderCountry.flagAsset} alt="" />
+                        <CountryFlag src={borderCountry.flagAsset} alt="" />
                         <span>{borderCountry.name.zh}</span>
                       </button>
                     ) : null
@@ -309,7 +310,7 @@ function CityDetailView({ country, city, onBack }: CityDetailViewProps) {
       </button>
 
       <div className="city-detail-heading">
-        <img src={country.flagAsset} alt={`${country.name.zh}国旗`} />
+        <CountryFlag src={country.flagAsset} alt={`${country.name.zh}国旗`} />
         <div>
           <p>{city.isCapital ? '国家首都' : '主要城市'}</p>
           <h2>{city.name.zh}</h2>

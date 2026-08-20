@@ -539,10 +539,8 @@
   background: #ffc85c;
 }
 
-.country-hover-tooltip img {
+.country-hover-tooltip .country-flag-frame {
   width: 1.45rem;
-  height: 1.05rem;
-  object-fit: cover;
   border-radius: 0.16rem;
 }
 
@@ -579,11 +577,8 @@
   list-style: none;
 }
 
-.country-search-popover img {
+.country-search-popover .country-flag-frame {
   width: 2.25rem;
-  height: 1.55rem;
-  object-fit: cover;
-  border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 0.28rem;
 }
 
@@ -635,7 +630,7 @@
   transform: rotate(45deg);
 }
 
-.country-search-popover button > span {
+.country-search-result-copy {
   display: flex;
   min-width: 0;
   flex-direction: column;

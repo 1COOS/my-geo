@@ -70,6 +70,12 @@ describe('CountryDetailPanel', () => {
       'src',
       '/flags/cn.svg',
     )
+    const flag = screen.getByAltText('中国国旗')
+    expect(flag).toHaveClass('country-flag-image')
+    expect(flag.parentElement).toHaveClass(
+      'country-flag-frame',
+      'country-detail-flag',
+    )
     expect(screen.getByText(/中华人民共和国/)).toBeInTheDocument()
     expect(screen.getAllByText('北京').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('约 14.1亿 人')).toBeInTheDocument()
@@ -117,6 +123,11 @@ describe('CountryDetailPanel', () => {
     )
 
     expect(onSelectCountry).toHaveBeenCalledWith('IT')
+    const neighbourFlag = screen
+      .getByRole('button', { name: '探索邻国意大利' })
+      .querySelector('img')
+    expect(neighbourFlag).toHaveClass('country-flag-image')
+    expect(neighbourFlag?.parentElement).toHaveClass('country-flag-frame')
   })
 
   it('keeps adjacent regions as non-interactive labels', () => {

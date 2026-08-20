@@ -14,6 +14,7 @@ import {
   knowledgeContinents,
   knowledgeRegionByCountryCode,
 } from '../../data/knowledgeRegions'
+import { CountryFlag } from '../../shared/components/CountryFlag'
 import { KnowledgeCountryDetail } from './KnowledgeCountryDetail'
 import { KnowledgeRegionMap } from './KnowledgeRegionMap'
 import { useKnowledgeProgress } from './useKnowledgeProgress'
@@ -177,7 +178,7 @@ export function KnowledgeRegionPage() {
                   aria-label={`查看${country.name.zh}国家详情`}
                 >
                   {showFlag ? (
-                    <img
+                    <CountryFlag
                       src={country.flagAsset}
                       alt={`${country.name.zh}国旗`}
                     />

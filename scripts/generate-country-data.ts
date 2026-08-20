@@ -1,7 +1,8 @@
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import prettier from 'prettier'
+import { optimize } from 'svgo'
 import { feature } from 'topojson-client'
 import type { GeometryCollection, Topology } from 'topojson-specification'
 import countriesSource from 'world-countries'
@@ -61,6 +62,37 @@ type BoundaryGeometry = {
 }
 
 const projectRoot = path.resolve(import.meta.dirname, '..')
+const flagViewBoxPattern = /\bviewBox\s*=\s*["']([^"']+)["']/i
+
+function optimizeFlagSvg(svg: string, sourcePath: string) {
+  const sourceViewBox = svg.match(flagViewBoxPattern)?.[1]
+  const viewBox = sourceViewBox
+    ? sourceViewBox
+        .trim()
+        .split(/[\s,]+/)
+        .map(Number)
+    : undefined
+  const useWholeUnitPrecision =
+    Buffer.byteLength(svg) > 40_000 &&
+    viewBox?.length === 4 &&
+    viewBox[2] >= 500 &&
+    viewBox[3] >= 300
+
+  const optimized = optimize(svg, {
+    path: sourcePath,
+    multipass: true,
+    plugins: [
+      {
+        name: 'preset-default',
+        params: { floatPrecision: useWholeUnitPrecision ? 0 : 1 },
+      },
+    ],
+  }).data
+
+  return sourceViewBox
+    ? optimized.replace(flagViewBoxPattern, `viewBox="${sourceViewBox}"`)
+    : optimized
+}
 const generatedDirectory = path.join(projectRoot, 'src/data/generated')
 const flagsDirectory = path.join(projectRoot, 'public/flags')
 
@@ -540,15 +572,18 @@ const waterbodyGeometries = await generateWaterbodyGeometries()
 const desertGeometries = await generateDesertGeometries()
 
 await Promise.all(
-  countries.map((country) =>
-    cp(
-      path.join(
-        projectRoot,
-        `node_modules/flag-icons/flags/4x3/${country.code.toLowerCase()}.svg`,
-      ),
-      path.join(flagsDirectory, `${country.code.toLowerCase()}.svg`),
-    ),
-  ),
+  countries.map(async (country) => {
+    const code = country.code.toLowerCase()
+    const sourcePath = path.join(
+      projectRoot,
+      `node_modules/svg-country-flags/svg/${code}.svg`,
+    )
+    const svg = await readFile(sourcePath, 'utf8')
+    await writeFile(
+      path.join(flagsDirectory, `${code}.svg`),
+      optimizeFlagSvg(svg, sourcePath),
+    )
+  }),
 )
 
 console.log(

@@ -9,6 +9,7 @@ import {
 } from '../data/linearGeoFeatures'
 import { getMountainRange } from '../data/mountainRanges'
 import { getWaterbody, waterbodyKindLabels } from '../data/waterbodies'
+import { CountryFlag } from '../shared/components/CountryFlag'
 import { getWaterbodyLabelState } from './countrySceneInteraction'
 import type { GlobeWorldProps } from './GlobeScene'
 import type { GlobeLabelData } from './useGlobeLabelData'
@@ -397,7 +398,7 @@ export function GlobeDomOverlay({
             </>
           ) : hoveredCountry ? (
             <>
-              <img src={hoveredCountry.flagAsset} alt="" />
+              <CountryFlag src={hoveredCountry.flagAsset} alt="" />
               <span>{hoveredCountry.name.zh}</span>
               <small>{hoveredCountry.code}</small>
             </>

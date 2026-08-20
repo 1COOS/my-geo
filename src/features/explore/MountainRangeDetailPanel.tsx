@@ -1,5 +1,6 @@
 import { countriesByCode } from '../../data/countries'
 import type { MountainRange } from '../../data/mountainRangeSchema'
+import { CountryFlag } from '../../shared/components/CountryFlag'
 import { DetailPanelShell } from './DetailPanelShell'
 import { ExpandableItems } from './ExpandableItems'
 
@@ -84,7 +85,7 @@ export function MountainRangeDetailPanel({
                     type="button"
                     onClick={() => onSelectCountry(countryCode)}
                   >
-                    <img src={country.flagAsset} alt="" />
+                    <CountryFlag src={country.flagAsset} alt="" />
                     <span>{country.name.zh}</span>
                   </button>
                 ) : null

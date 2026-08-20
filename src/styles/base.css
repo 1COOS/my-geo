@@ -6,6 +6,8 @@
   --atlas-panel-muted: #0d1a1e;
   --atlas-border: #2b444a;
   --atlas-border-soft: rgb(124 157 164 / 18%);
+  --atlas-flag-outline: rgb(244 248 248 / 76%);
+  --atlas-flag-shadow: rgb(0 0 0 / 52%);
   --atlas-text: #edf3f2;
   --atlas-text-secondary: #9baaad;
   --atlas-text-muted: #718589;
@@ -58,6 +60,32 @@ a {
 img,
 svg {
   display: block;
+}
+
+.country-flag-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 3 / 2;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.country-flag-image {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 1px var(--atlas-flag-outline),
+    0 1px 3px var(--atlas-flag-shadow);
+  object-fit: contain;
+  object-position: center;
 }
 
 html,

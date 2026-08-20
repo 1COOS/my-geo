@@ -1,6 +1,7 @@
 import { countriesByCode } from '../../data/countries'
 import { landmarkCategoryLabels } from '../../data/landmarks'
 import type { Landmark } from '../../data/landmarkSchema'
+import { CountryFlag } from '../../shared/components/CountryFlag'
 import { DetailPanelShell } from './DetailPanelShell'
 
 export function LandmarkDetailPanel({
@@ -69,7 +70,7 @@ export function LandmarkDetailPanel({
               onClick={() => onSelectCountry(country.code)}
               aria-label={`探索${country.name.zh}`}
             >
-              <img src={country.flagAsset} alt="" />
+              <CountryFlag src={country.flagAsset} alt="" />
               <span>{country.name.zh}</span>
             </button>
           </div>

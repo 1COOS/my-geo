@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 async function openCountrySearch(page: Page) {
   const trigger = page.getByRole('button', { name: '搜索地点' })
@@ -7,6 +7,64 @@ async function openCountrySearch(page: Page) {
   const search = page.getByRole('combobox', { name: '搜索地点' })
   await expect(search).toBeFocused()
   return search
+}
+
+async function expectFramedFlag(
+  frame: Locator,
+  expectedNaturalAspectRatio?: number,
+) {
+  await expect(frame).toBeVisible()
+  const metrics = await frame.evaluate((element) => {
+    const image = element.querySelector('img')
+    if (!image) throw new Error('Flag frame is missing its image')
+    const frameBox = element.getBoundingClientRect()
+    const imageBox = image.getBoundingClientRect()
+    const style = getComputedStyle(image)
+    return {
+      frameAspectRatio: frameBox.width / frameBox.height,
+      frameHeight: frameBox.height,
+      frameWidth: frameBox.width,
+      imageAspectRatio: imageBox.width / imageBox.height,
+      imageHeight: imageBox.height,
+      imageWidth: imageBox.width,
+      centerDeltaX: Math.abs(
+        imageBox.x + imageBox.width / 2 - (frameBox.x + frameBox.width / 2),
+      ),
+      centerDeltaY: Math.abs(
+        imageBox.y + imageBox.height / 2 - (frameBox.y + frameBox.height / 2),
+      ),
+      naturalAspectRatio: image.naturalWidth / image.naturalHeight,
+      borderBottomWidth: style.borderBottomWidth,
+      borderLeftWidth: style.borderLeftWidth,
+      borderRightWidth: style.borderRightWidth,
+      borderTopWidth: style.borderTopWidth,
+      boxShadow: style.boxShadow,
+      objectFit: style.objectFit,
+      objectPosition: style.objectPosition,
+    }
+  })
+
+  expect(metrics.frameAspectRatio).toBeCloseTo(3 / 2, 2)
+  expect(metrics.imageAspectRatio).toBeCloseTo(metrics.naturalAspectRatio, 2)
+  expect(metrics.imageWidth).toBeLessThanOrEqual(metrics.frameWidth + 0.5)
+  expect(metrics.imageHeight).toBeLessThanOrEqual(metrics.frameHeight + 0.5)
+  expect(metrics.centerDeltaX).toBeLessThanOrEqual(0.75)
+  expect(metrics.centerDeltaY).toBeLessThanOrEqual(0.75)
+  expect(metrics.borderBottomWidth).toBe('0px')
+  expect(metrics.borderLeftWidth).toBe('0px')
+  expect(metrics.borderRightWidth).toBe('0px')
+  expect(metrics.borderTopWidth).toBe('0px')
+  expect(metrics.boxShadow).not.toBe('none')
+  expect(metrics.boxShadow).toContain('rgba(244, 248, 248, 0.76)')
+  expect(metrics.boxShadow).toContain('rgba(0, 0, 0, 0.52)')
+  expect(metrics.objectFit).toBe('contain')
+  expect(metrics.objectPosition).toBe('50% 50%')
+  if (expectedNaturalAspectRatio !== undefined) {
+    expect(metrics.naturalAspectRatio).toBeCloseTo(
+      expectedNaturalAspectRatio,
+      2,
+    )
+  }
 }
 
 async function waitForSceneOrFallback(page: Page) {
@@ -283,6 +341,133 @@ test('navigates the country knowledge atlas and deep-links back to the globe', a
   await expect(page).toHaveURL(/\/explore\?country=CN$/)
   await waitForSceneOrFallback(page)
   await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
+})
+
+for (const viewport of [
+  { name: '1440 desktop', width: 1440, height: 900, touch: false },
+  { name: 'phone landscape', width: 844, height: 390, touch: true },
+  { name: 'iPad landscape', width: 1194, height: 834, touch: true },
+]) {
+  test(`keeps native flag proportions inside 3:2 slots on ${viewport.name}`, async ({
+    page,
+  }) => {
+    if (viewport.touch) {
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'maxTouchPoints', {
+          configurable: true,
+          value: 5,
+        })
+        Object.defineProperty(navigator, 'platform', {
+          configurable: true,
+          value: 'MacIntel',
+        })
+      })
+    }
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    })
+
+    for (const flagCase of [
+      {
+        route: '/knowledge/countries/west-europe',
+        alt: '德国国旗',
+        naturalAspectRatio: 5 / 3,
+      },
+      {
+        route: '/knowledge/countries/west-europe',
+        alt: '瑞士国旗',
+        naturalAspectRatio: 1,
+      },
+      {
+        route: '/knowledge/countries/west-asia',
+        alt: '卡塔尔国旗',
+        naturalAspectRatio: 28 / 11,
+      },
+      {
+        route: '/knowledge/countries/south-asia',
+        alt: '尼泊尔国旗',
+        naturalAspectRatio: 71.571 / 87.246,
+      },
+    ]) {
+      await page.goto(flagCase.route)
+      await expectFramedFlag(
+        page.getByAltText(flagCase.alt).locator('..'),
+        flagCase.naturalAspectRatio,
+      )
+    }
+  })
+}
+
+test('uses the contained flag contract across learning and exploration surfaces', async ({
+  page,
+}) => {
+  await page.goto('/knowledge/countries/east-asia')
+  await expectFramedFlag(page.getByAltText('中国国旗').locator('..'))
+
+  await page.getByRole('button', { name: '查看中国国家详情' }).click()
+  await expectFramedFlag(
+    page.locator('.knowledge-country-detail-heading .country-flag-frame'),
+  )
+  await expectFramedFlag(
+    page.locator('.knowledge-country-neighbours .country-flag-frame').first(),
+  )
+
+  await page.goto('/knowledge/countries/east-asia/challenge')
+  await expectFramedFlag(page.locator('.knowledge-question-flag'))
+  await page.locator('.knowledge-question-options button').first().click()
+  await page.getByRole('button', { name: '下一题' }).click()
+  await expectFramedFlag(
+    page.locator('.knowledge-question-options .country-flag-frame').first(),
+  )
+
+  await page.goto('/explore?country=CH')
+  await waitForSceneOrFallback(page)
+  await expectFramedFlag(page.locator('.country-detail-flag'))
+  await expectFramedFlag(
+    page.locator('.country-border-list .country-flag-frame').first(),
+  )
+
+  const search = await openCountrySearch(page)
+  await search.fill('卡塔尔')
+  await expectFramedFlag(
+    page.locator('.country-search-popover .country-flag-frame').first(),
+    28 / 11,
+  )
+
+  await search.fill('撒哈拉沙漠')
+  await search.press('Enter')
+  const desertCard = page.getByRole('complementary', {
+    name: '撒哈拉沙漠知识卡',
+  })
+  await expect(desertCard).toBeVisible()
+  await expectFramedFlag(
+    desertCard.locator('.country-border-list .country-flag-frame').first(),
+  )
+})
+
+test('frames the flag in a globe country hover tooltip', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const { scene, fallback } = await waitForSceneOrFallback(page)
+  if (await fallback.isVisible()) return
+
+  const search = await openCountrySearch(page)
+  await search.fill('德国')
+  await search.press('Enter')
+  await page.waitForTimeout(1_200)
+
+  const sceneBox = await scene.boundingBox()
+  expect(sceneBox).not.toBeNull()
+  await page.mouse.move(
+    sceneBox!.x + sceneBox!.width / 2,
+    sceneBox!.y + sceneBox!.height / 2,
+  )
+
+  const tooltip = page.getByRole('tooltip')
+  await expect(tooltip).toBeVisible({ timeout: 10_000 })
+  await expectFramedFlag(tooltip.locator('.country-flag-frame'))
 })
 
 for (const viewport of [
@@ -1068,6 +1253,9 @@ test('toggles adaptive capital and city labels and opens a selected city', async
 
   const cityCard = page.getByLabel('上海城市知识卡')
   await expect(cityCard).toBeVisible()
+  await expectFramedFlag(
+    cityCard.locator('.city-detail-heading .country-flag-frame'),
+  )
   await expect(page.locator('[data-city-id="cn-shanghai"]')).toBeVisible()
   await expect(cityCard.getByRole('heading', { name: '上海' })).toBeVisible()
   await expect(cityCard.getByText('世界知名')).toBeVisible()

@@ -100,9 +100,11 @@ describe('knowledge pages', () => {
     expect(flagControl).toHaveAttribute('aria-pressed', 'true')
     expect(flagControl).toBeDisabled()
     expect(capitalControl).toHaveAttribute('aria-pressed', 'false')
-    expect(
-      within(chinaCard).getByRole('img', { name: '中国国旗' }),
-    ).toBeVisible()
+    const chinaFlag = within(chinaCard).getByRole('img', {
+      name: '中国国旗',
+    })
+    expect(chinaFlag).toHaveClass('country-flag-image')
+    expect(chinaFlag.parentElement).toHaveClass('country-flag-frame')
     expect(within(chinaCard).queryByText('中国')).toBeNull()
     expect(within(chinaCard).queryByText('北京')).toBeNull()
 
@@ -160,6 +162,12 @@ describe('knowledge pages', () => {
     )
 
     expect(screen.getByText('1 / 10')).toBeVisible()
+    const questionFlag = screen.getByAltText('待识别的国旗')
+    expect(questionFlag).toHaveClass('country-flag-image')
+    expect(questionFlag.parentElement).toHaveClass(
+      'country-flag-frame',
+      'knowledge-question-flag',
+    )
     const optionButtons = screen
       .getByRole('heading', { level: 1 })
       .parentElement!.querySelectorAll<HTMLButtonElement>(
