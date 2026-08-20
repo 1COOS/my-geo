@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import './i18n'
@@ -126,6 +126,59 @@ describe('LandscapeGuard', () => {
 
     expect(screen.getByTestId('guarded-app')).toBeInTheDocument()
     expect(screen.queryByTestId('landscape-prompt')).not.toBeInTheDocument()
+  })
+
+  it('blocks touch context menus except on native editing controls', () => {
+    const media = createMediaQueryHarness({
+      '(orientation: portrait)': false,
+      '(pointer: coarse)': true,
+    })
+    vi.stubGlobal('matchMedia', media.matchMedia)
+    setTouchPoints(5)
+
+    render(
+      <LandscapeGuard>
+        <button type="button">普通按钮</button>
+        <input aria-label="可编辑输入框" />
+      </LandscapeGuard>,
+    )
+
+    const buttonEvent = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+    })
+    const inputEvent = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+    })
+
+    fireEvent(screen.getByRole('button', { name: '普通按钮' }), buttonEvent)
+    fireEvent(screen.getByRole('textbox', { name: '可编辑输入框' }), inputEvent)
+
+    expect(buttonEvent.defaultPrevented).toBe(true)
+    expect(inputEvent.defaultPrevented).toBe(false)
+  })
+
+  it('preserves context menus on desktop devices', () => {
+    const media = createMediaQueryHarness({
+      '(orientation: portrait)': false,
+      '(pointer: coarse)': false,
+    })
+    vi.stubGlobal('matchMedia', media.matchMedia)
+
+    render(
+      <LandscapeGuard>
+        <button type="button">桌面按钮</button>
+      </LandscapeGuard>,
+    )
+
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+    })
+    fireEvent(screen.getByRole('button', { name: '桌面按钮' }), event)
+
+    expect(event.defaultPrevented).toBe(false)
   })
 })
 

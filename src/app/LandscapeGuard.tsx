@@ -2,6 +2,7 @@ import { type PropsWithChildren, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { readLandscapeState, tryLockLandscape } from './landscapePlatform'
+import { shouldPreventTouchContextMenu } from './touchContextMenu'
 
 type OrientationMediaQuery = MediaQueryList & {
   addListener?: (listener: (event: MediaQueryListEvent) => void) => void
@@ -122,6 +123,16 @@ export function LandscapeGuard({ children }: PropsWithChildren) {
         .filter(Boolean)
         .join(' ')}
       data-testid="landscape-runtime"
+      onContextMenuCapture={(event) => {
+        if (
+          shouldPreventTouchContextMenu(
+            event.target,
+            landscapeState.isTouchDevice,
+          )
+        ) {
+          event.preventDefault()
+        }
+      }}
     >
       {hasEnteredLandscape ? (
         <div

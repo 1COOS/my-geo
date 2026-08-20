@@ -11,6 +11,36 @@
   user-select: none;
 }
 
+.landscape-runtime.is-touch-device {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.landscape-runtime.is-touch-device img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.landscape-runtime.is-touch-device [contenteditable='false'] {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.landscape-runtime.is-touch-device
+  :is(
+    input,
+    textarea,
+    select,
+    [contenteditable=''],
+    [contenteditable='true'],
+    [contenteditable='plaintext-only'],
+    [data-allow-context-menu],
+    [data-allow-context-menu] *
+  ) {
+  -webkit-touch-callout: default;
+  user-select: text;
+}
+
 .landscape-prompt-visual {
   position: relative;
   width: 8.5rem;

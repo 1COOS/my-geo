@@ -475,6 +475,82 @@ test('enters landscape automatically and preserves the mounted experience', asyn
   await expect(scene.or(fallback)).toBeVisible({ timeout: 15_000 })
 })
 
+test('suppresses touch context menus while preserving search editing', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    })
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      value: 'MacIntel',
+    })
+  })
+
+  for (const viewport of [
+    { width: 844, height: 390 },
+    { width: 1194, height: 834 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+
+    const trigger = page.getByRole('button', { name: '搜索地点' })
+    const blockedResult = await trigger.evaluate((element) => {
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+      })
+      return {
+        dispatched: element.dispatchEvent(event),
+        defaultPrevented: event.defaultPrevented,
+      }
+    })
+    expect(blockedResult).toEqual({
+      dispatched: false,
+      defaultPrevented: true,
+    })
+
+    const runtime = page.getByTestId('landscape-runtime')
+    await expect(runtime).toHaveClass(/is-touch-device/)
+    expect(
+      await runtime.evaluate((element) => getComputedStyle(element).userSelect),
+    ).toBe('none')
+
+    const search = await openCountrySearch(page)
+    const allowedResult = await search.evaluate((element) => {
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+      })
+      return {
+        dispatched: element.dispatchEvent(event),
+        defaultPrevented: event.defaultPrevented,
+        userSelect: getComputedStyle(element).userSelect,
+      }
+    })
+    expect(allowedResult).toEqual({
+      dispatched: true,
+      defaultPrevented: false,
+      userSelect: 'text',
+    })
+
+    await search.fill('中国')
+    await search.selectText()
+    expect(
+      await search.evaluate((element) => {
+        const input = element as HTMLInputElement
+        return {
+          value: input.value,
+          selectionStart: input.selectionStart,
+          selectionEnd: input.selectionEnd,
+        }
+      }),
+    ).toEqual({ value: '中国', selectionStart: 0, selectionEnd: 2 })
+  }
+})
+
 test('keeps phone landscape controls separated and country details usable', async ({
   page,
 }) => {
