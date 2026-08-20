@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ClimateTypeId } from '../../data/climateLearningSchema'
 import { getClimateDisplayRasterAsset } from '../../data/climateRaster'
+import { countryBoundaries } from '../../data/geometryData'
 import type { WorldMiniMapNavigation } from '../../shared/types/geo'
 import { WorldMiniMap, type WorldMiniMapHandle } from './WorldMiniMap'
 
@@ -27,6 +28,7 @@ function renderMiniMap(overrides?: {
   const selectedClimateTypeId = overrides?.selectedClimateTypeId ?? null
   render(
     <WorldMiniMap
+      countryBoundaries={countryBoundaries}
       ref={ref}
       expanded={overrides?.expanded ?? true}
       selectedCountryCode={overrides?.selectedCountryCode ?? null}
@@ -209,6 +211,7 @@ describe('WorldMiniMap', () => {
     const onSelectGeographyTopic = vi.fn()
     const { rerender } = render(
       <WorldMiniMap
+        countryBoundaries={countryBoundaries}
         ref={ref}
         expanded
         selectedCountryCode={null}
@@ -228,6 +231,7 @@ describe('WorldMiniMap', () => {
     ref.current!.setViewCenter({ latitude: -66.5, longitude: 160 })
     rerender(
       <WorldMiniMap
+        countryBoundaries={countryBoundaries}
         ref={ref}
         expanded
         selectedCountryCode={null}

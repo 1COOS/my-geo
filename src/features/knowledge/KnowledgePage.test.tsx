@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
@@ -34,6 +34,7 @@ describe('knowledge pages', () => {
       '195个国家23个地区',
     )
     expect(screen.getByTestId('knowledge-region-east-asia')).toBeVisible()
+    await waitFor(() => expect(getMapCountryPath('CN')).toBeInTheDocument())
     expect(getMapCountryPath('CN')).toHaveClass('is-continent')
     expect(getMapCountryPath('IN')).toHaveClass('is-continent')
     expect(getMapCountryPath('FR')).not.toHaveClass('is-continent')
@@ -69,6 +70,7 @@ describe('knowledge pages', () => {
     expect(
       screen.getAllByRole('button', { name: /查看.*国家详情/ }),
     ).toHaveLength(5)
+    await waitFor(() => expect(getMapCountryPath('CN')).toBeInTheDocument())
     expect(document.querySelectorAll('path.is-region')).toHaveLength(5)
     expect(document.querySelectorAll('path.is-continent')).toHaveLength(0)
     expect(getMapCountryPath('CN')).toHaveClass('is-region')

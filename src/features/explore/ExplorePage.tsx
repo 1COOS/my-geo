@@ -1,4 +1,3 @@
-import { useReducedMotion } from 'motion/react'
 import {
   lazy,
   Suspense,
@@ -6,6 +5,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from 'react'
@@ -18,10 +18,7 @@ import {
   loadClimateDisplayAssets,
   preloadClimateRaster,
 } from '../../data/climateRaster'
-import type {
-  ClimateKnowledgeSelection,
-  ClimateTypeId,
-} from '../../data/climateLearningSchema'
+import type { ClimateTypeId } from '../../data/climateLearningSchema'
 import { getCitiesForCountry, getCity, getCountry } from '../../data/countries'
 import { getDesert } from '../../data/deserts'
 import {
@@ -34,14 +31,21 @@ import type {
 } from '../../data/geographyLearningSchema'
 import { getLandmark } from '../../data/landmarks'
 import {
-  getLinearGeoFeature,
-  getLinearGeoFeatureGeometry,
-} from '../../data/linearGeoFeatures'
+  loadCountryBoundaries,
+  loadDesertGeometries,
+  loadLinearFeatureGeometries,
+  loadMountainGeometries,
+  loadWaterbodyGeometries,
+  prefetchGeometryAssets,
+} from '../../data/geometryResources'
+import { getLinearGeoFeature } from '../../data/linearGeoFeatures'
 import { getMountainRange } from '../../data/mountainRanges'
 import { getWaterbody } from '../../data/waterbodies'
 import { ControlButton } from '../../shared/components/ControlButton'
 import { WebGLFallback } from '../../shared/components/WebGLFallback'
 import { supportsWebGL } from '../../shared/lib/webgl'
+import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
+import { usePrefersReducedMotion } from '../../shared/hooks/usePrefersReducedMotion'
 import type {
   CameraTarget,
   GeoPosition,
@@ -52,7 +56,6 @@ import {
   CITY_CAMERA_DISTANCE,
   OVERVIEW_CAMERA_DISTANCE,
 } from '../../scene/countrySceneInteraction'
-import { getCanalCameraDistance } from '../../scene/linearFeatureSceneInteraction'
 import { LANDMARK_CAMERA_DISTANCE } from '../../scene/landmarkSceneInteraction'
 import { CountryDetailPanel } from './CountryDetailPanel'
 import { CountrySearch } from './CountrySearch'
@@ -64,6 +67,12 @@ import { LinearGeoFeatureDetailPanel } from './LinearGeoFeatureDetailPanel'
 import { LandmarkDetailPanel } from './LandmarkDetailPanel'
 import { MountainRangeDetailPanel } from './MountainRangeDetailPanel'
 import { WaterbodyDetailPanel } from './WaterbodyDetailPanel'
+import {
+  exploreReducer,
+  getSelectedCountryCode,
+  initialExploreState,
+  type ExploreHover,
+} from './exploreState'
 import { useExperienceStore } from './useExperienceStore'
 import { WorldMiniMap, type WorldMiniMapHandle } from './WorldMiniMap'
 
@@ -304,7 +313,7 @@ function LayerControl({
 
 export function ExplorePage() {
   const { t } = useTranslation()
-  const reducedMotion = useReducedMotion() ?? false
+  const reducedMotion = usePrefersReducedMotion()
   const searchDialogId = useId()
   const cameraRequestIdRef = useRef(0)
   const climateRequestIdRef = useRef(0)
@@ -312,54 +321,12 @@ export function ExplorePage() {
   const miniMapRef = useRef<WorldMiniMapHandle>(null)
   const controlDeckRef = useRef<HTMLDivElement>(null)
   const searchButtonRef = useRef<HTMLButtonElement>(null)
+  const [exploreState, dispatch] = useReducer(
+    exploreReducer,
+    initialExploreState,
+  )
   const [miniMapExpanded, setMiniMapExpanded] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [showCapitals, setShowCapitals] = useState(false)
-  const [showCities, setShowCities] = useState(false)
-  const [showOceanLayer, setShowOceanLayer] = useState(false)
-  const [showLakeLayer, setShowLakeLayer] = useState(false)
-  const [showWaterwayLayer, setShowWaterwayLayer] = useState(false)
-  const [showRiverAndCanalLayer, setShowRiverAndCanalLayer] = useState(false)
-  const [showMountainLayer, setShowMountainLayer] = useState(false)
-  const [showDesertLayer, setShowDesertLayer] = useState(false)
-  const [showLandmarkLayer, setShowLandmarkLayer] = useState(false)
-  const [showGeographyLearningLayer, setShowGeographyLearningLayer] =
-    useState(false)
-  const [showClimateLayer, setShowClimateLayer] = useState(false)
-  const [climateSelection, setClimateSelection] =
-    useState<ClimateKnowledgeSelection | null>(null)
-  const [selectedGeographyTopicId, setSelectedGeographyTopicId] =
-    useState<GeographyTopicId | null>(null)
-  const [selectedReferenceLineId, setSelectedReferenceLineId] =
-    useState<ReferenceLineId | null>(null)
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null)
-  const [hoveredCityId, setHoveredCityId] = useState<string | null>(null)
-  const [selectedWaterbodyId, setSelectedWaterbodyId] = useState<string | null>(
-    null,
-  )
-  const [hoveredWaterbodyId, setHoveredWaterbodyId] = useState<string | null>(
-    null,
-  )
-  const [selectedLinearFeatureId, setSelectedLinearFeatureId] = useState<
-    string | null
-  >(null)
-  const [hoveredLinearFeatureId, setHoveredLinearFeatureId] = useState<
-    string | null
-  >(null)
-  const [selectedMountainRangeId, setSelectedMountainRangeId] = useState<
-    string | null
-  >(null)
-  const [hoveredMountainRangeId, setHoveredMountainRangeId] = useState<
-    string | null
-  >(null)
-  const [selectedDesertId, setSelectedDesertId] = useState<string | null>(null)
-  const [hoveredDesertId, setHoveredDesertId] = useState<string | null>(null)
-  const [selectedLandmarkId, setSelectedLandmarkId] = useState<string | null>(
-    null,
-  )
-  const [hoveredLandmarkId, setHoveredLandmarkId] = useState<string | null>(
-    null,
-  )
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(() => ({
     requestId: 0,
     position: getCountry('CN')!.center,
@@ -372,18 +339,101 @@ export function ExplorePage() {
   const {
     autoRotate,
     quality,
-    selectedCountryCode,
-    hoveredCountryCode,
+    persistenceStatus,
     hydrate,
     toggleAutoRotate,
     toggleQuality,
-    selectCountry,
-    hoverCountry,
   } = useExperienceStore()
+
+  const {
+    capitals: showCapitals,
+    cities: showCities,
+    ocean: showOceanLayer,
+    lake: showLakeLayer,
+    waterway: showWaterwayLayer,
+    riverAndCanal: showRiverAndCanalLayer,
+    mountain: showMountainLayer,
+    desert: showDesertLayer,
+    landmark: showLandmarkLayer,
+    geography: showGeographyLearningLayer,
+    climate: showClimateLayer,
+  } = exploreState.layers
+  const selection = exploreState.selection
+  const hover = exploreState.hover
+  const selectedCountryCode = getSelectedCountryCode(selection)
+  const selectedCityId = selection?.kind === 'city' ? selection.cityId : null
+  const selectedWaterbodyId =
+    selection?.kind === 'waterbody' ? selection.waterbodyId : null
+  const selectedLinearFeatureId =
+    selection?.kind === 'linearFeature' ? selection.featureId : null
+  const selectedMountainRangeId =
+    selection?.kind === 'mountainRange' ? selection.rangeId : null
+  const selectedDesertId =
+    selection?.kind === 'desert' ? selection.desertId : null
+  const selectedLandmarkId =
+    selection?.kind === 'landmark' ? selection.landmarkId : null
+  const selectedGeographyTopicId =
+    selection?.kind === 'geography' ? selection.topicId : null
+  const selectedReferenceLineId =
+    selection?.kind === 'geography' ? selection.referenceLineId : null
+  const climateSelection =
+    selection?.kind === 'climate' ? selection.value : null
+  const hoveredCountryCode =
+    hover?.kind === 'country' ? hover.countryCode : null
+  const hoveredCityId = hover?.kind === 'city' ? hover.cityId : null
+  const hoveredWaterbodyId =
+    hover?.kind === 'waterbody' ? hover.waterbodyId : null
+  const hoveredLinearFeatureId =
+    hover?.kind === 'linearFeature' ? hover.featureId : null
+  const hoveredMountainRangeId =
+    hover?.kind === 'mountainRange' ? hover.rangeId : null
+  const hoveredDesertId = hover?.kind === 'desert' ? hover.desertId : null
+  const hoveredLandmarkId = hover?.kind === 'landmark' ? hover.landmarkId : null
+  const countryBoundaryResource = useGeometryResource(loadCountryBoundaries)
+  const waterbodyGeometryResource = useGeometryResource(
+    loadWaterbodyGeometries,
+    showOceanLayer ||
+      showLakeLayer ||
+      showWaterwayLayer ||
+      selectedWaterbodyId !== null,
+  )
+  const linearGeometryResource = useGeometryResource(
+    loadLinearFeatureGeometries,
+    showRiverAndCanalLayer || selectedLinearFeatureId !== null,
+  )
+  const mountainGeometryResource = useGeometryResource(
+    loadMountainGeometries,
+    showMountainLayer || selectedMountainRangeId !== null,
+  )
+  const desertGeometryResource = useGeometryResource(
+    loadDesertGeometries,
+    showDesertLayer || selectedDesertId !== null,
+  )
 
   useEffect(() => {
     void hydrate()
   }, [hydrate])
+
+  useEffect(() => {
+    let timeoutId: number | null = null
+    let idleId: number | null = null
+    const prefetch = () => void prefetchGeometryAssets()
+    const runtimeWindow = window as Window & {
+      requestIdleCallback?: typeof window.requestIdleCallback
+      cancelIdleCallback?: typeof window.cancelIdleCallback
+    }
+    if (runtimeWindow.requestIdleCallback) {
+      idleId = runtimeWindow.requestIdleCallback(prefetch, { timeout: 4_000 })
+    } else {
+      timeoutId = globalThis.setTimeout(prefetch, 1_500)
+    }
+    return () => {
+      if (idleId !== null && runtimeWindow.cancelIdleCallback) {
+        runtimeWindow.cancelIdleCallback(idleId)
+      }
+      if (timeoutId !== null) globalThis.clearTimeout(timeoutId)
+    }
+  }, [])
 
   const closeSearch = useCallback(() => {
     setSearchOpen(false)
@@ -457,121 +507,56 @@ export function ExplorePage() {
     }
   }, [climateDisplayKey, quality, selectedClimateTypeId, showClimateLayer])
   const visibleCountryCities = getCitiesForCountry(selectedCountryCode)
-  const clearPlaceSelection = useCallback(() => {
-    setSelectedCityId(null)
-    setHoveredCityId(null)
-    selectCountry(null)
-    setSelectedWaterbodyId(null)
-    setHoveredWaterbodyId(null)
-    setSelectedLinearFeatureId(null)
-    setHoveredLinearFeatureId(null)
-    setSelectedMountainRangeId(null)
-    setHoveredMountainRangeId(null)
-    setSelectedDesertId(null)
-    setHoveredDesertId(null)
-    setSelectedLandmarkId(null)
-    setHoveredLandmarkId(null)
-  }, [selectCountry])
   const toggleCapitalLayer = useCallback(() => {
-    const nextVisible = !showCapitals
-    setShowCapitals(nextVisible)
-    if (nextVisible) return
-    setHoveredCityId((cityId) => {
-      const city = getCity(cityId)
-      return city?.isCapital && city.id !== selectedCityId ? null : cityId
-    })
-  }, [selectedCityId, showCapitals])
+    dispatch({ type: 'toggleLayer', layer: 'capitals' })
+  }, [])
   const toggleCityLayer = useCallback(() => {
-    const nextVisible = !showCities
-    setShowCities(nextVisible)
-    if (nextVisible) return
-    setHoveredCityId((cityId) => {
-      const city = getCity(cityId)
-      return city && !city.isCapital && city.id !== selectedCityId
-        ? null
-        : cityId
-    })
-  }, [selectedCityId, showCities])
+    dispatch({ type: 'toggleLayer', layer: 'cities' })
+  }, [])
   const toggleOceanLayer = useCallback(() => {
-    const nextVisible = !showOceanLayer
-    setShowOceanLayer(nextVisible)
-    if (!nextVisible) {
-      setHoveredWaterbodyId((id) => {
-        const waterbody = getWaterbody(id)
-        return waterbody?.layer === 'ocean' && id !== selectedWaterbodyId
-          ? null
-          : id
-      })
-    }
-  }, [selectedWaterbodyId, showOceanLayer])
+    dispatch({ type: 'toggleLayer', layer: 'ocean' })
+  }, [])
   const toggleWaterwayLayer = useCallback(() => {
-    const nextVisible = !showWaterwayLayer
-    setShowWaterwayLayer(nextVisible)
-    if (!nextVisible) {
-      setHoveredWaterbodyId((id) => {
-        const waterbody = getWaterbody(id)
-        return waterbody?.layer === 'waterway' && id !== selectedWaterbodyId
-          ? null
-          : id
-      })
-    }
-  }, [selectedWaterbodyId, showWaterwayLayer])
+    dispatch({ type: 'toggleLayer', layer: 'waterway' })
+  }, [])
   const toggleLakeLayer = useCallback(() => {
-    const nextVisible = !showLakeLayer
-    setShowLakeLayer(nextVisible)
-    if (!nextVisible) {
-      setHoveredWaterbodyId((id) => {
-        const waterbody = getWaterbody(id)
-        return waterbody?.layer === 'lake' ? null : id
-      })
-    }
-  }, [showLakeLayer])
+    dispatch({ type: 'toggleLayer', layer: 'lake' })
+  }, [])
   const toggleRiverAndCanalLayer = useCallback(() => {
-    const nextVisible = !showRiverAndCanalLayer
-    setShowRiverAndCanalLayer(nextVisible)
-    if (!nextVisible) {
-      setHoveredLinearFeatureId((id) => {
-        return id && id !== selectedLinearFeatureId ? null : id
-      })
-    }
-  }, [selectedLinearFeatureId, showRiverAndCanalLayer])
+    dispatch({ type: 'toggleLayer', layer: 'riverAndCanal' })
+  }, [])
   const toggleMountainLayer = useCallback(() => {
-    const nextVisible = !showMountainLayer
-    setShowMountainLayer(nextVisible)
-    if (!nextVisible && hoveredMountainRangeId !== selectedMountainRangeId) {
-      setHoveredMountainRangeId(null)
-    }
-  }, [hoveredMountainRangeId, selectedMountainRangeId, showMountainLayer])
+    dispatch({ type: 'toggleLayer', layer: 'mountain' })
+  }, [])
   const toggleDesertLayer = useCallback(() => {
-    const nextVisible = !showDesertLayer
-    setShowDesertLayer(nextVisible)
-    if (!nextVisible) setHoveredDesertId(null)
-  }, [showDesertLayer])
+    dispatch({ type: 'toggleLayer', layer: 'desert' })
+  }, [])
   const toggleLandmarkLayer = useCallback(() => {
-    const nextVisible = !showLandmarkLayer
-    setShowLandmarkLayer(nextVisible)
-    if (!nextVisible) setHoveredLandmarkId(null)
-  }, [showLandmarkLayer])
+    dispatch({ type: 'toggleLayer', layer: 'landmark' })
+  }, [])
   const toggleGeographyLearningLayer = useCallback(() => {
-    const nextVisible = !showGeographyLearningLayer
-    setShowGeographyLearningLayer(nextVisible)
-    if (!nextVisible) return
-    clearPlaceSelection()
-    setClimateSelection(null)
+    if (showGeographyLearningLayer) {
+      dispatch({ type: 'toggleLayer', layer: 'geography' })
+      return
+    }
     setCommittedViewCenter(currentViewCenterRef.current)
-    setSelectedGeographyTopicId('grid-reading')
-    setSelectedReferenceLineId(null)
-  }, [clearPlaceSelection, showGeographyLearningLayer])
+    dispatch({
+      type: 'select',
+      selection: {
+        kind: 'geography',
+        topicId: 'grid-reading',
+        referenceLineId: null,
+      },
+    })
+  }, [showGeographyLearningLayer])
   const toggleClimateLayer = useCallback(() => {
-    const nextVisible = !showClimateLayer
-    setShowClimateLayer(nextVisible)
-    if (!nextVisible) return
-    clearPlaceSelection()
-    setSelectedGeographyTopicId(null)
-    setSelectedReferenceLineId(null)
-    setClimateSelection({ kind: 'overview' })
+    if (showClimateLayer) {
+      dispatch({ type: 'toggleLayer', layer: 'climate' })
+      return
+    }
+    dispatch({ type: 'showClimateOverview' })
     void preloadClimateRaster(quality).catch(() => undefined)
-  }, [clearPlaceSelection, quality, showClimateLayer])
+  }, [quality, showClimateLayer])
   const requestCameraTarget = useCallback(
     (position: GeoPosition, distance = OVERVIEW_CAMERA_DISTANCE) => {
       cameraRequestIdRef.current += 1
@@ -588,12 +573,11 @@ export function ExplorePage() {
       topicId: GeographyTopicId,
       referenceLineId: ReferenceLineId | null = null,
     ) => {
-      clearPlaceSelection()
-      setClimateSelection(null)
       setCommittedViewCenter(currentViewCenterRef.current)
-      setShowGeographyLearningLayer(true)
-      setSelectedGeographyTopicId(topicId)
-      setSelectedReferenceLineId(referenceLineId)
+      dispatch({
+        type: 'select',
+        selection: { kind: 'geography', topicId, referenceLineId },
+      })
       const referenceLine = getReferenceLine(referenceLineId)
       if (referenceLine) {
         requestCameraTarget(
@@ -602,103 +586,83 @@ export function ExplorePage() {
         )
       }
     },
-    [clearPlaceSelection, requestCameraTarget],
+    [requestCameraTarget],
   )
   const selectClimateType = useCallback((climateTypeId: ClimateTypeId) => {
-    setClimateSelection((current) => ({
-      kind: 'type',
-      climateTypeId,
-      classification:
-        current?.classification?.climateTypeId === climateTypeId
-          ? current.classification
-          : undefined,
-    }))
+    dispatch({ type: 'selectClimateType', climateTypeId })
   }, [])
   const openClimateOverview = useCallback(() => {
-    clearPlaceSelection()
-    setSelectedGeographyTopicId(null)
-    setSelectedReferenceLineId(null)
-    setShowClimateLayer(true)
-    setClimateSelection({ kind: 'overview' })
+    dispatch({ type: 'showClimateOverview' })
     void preloadClimateRaster(quality).catch(() => undefined)
-  }, [clearPlaceSelection, quality])
+  }, [quality])
   const navigateToClimateType = useCallback(
     (climateTypeId: ClimateTypeId) => {
       const climateType = getClimateType(climateTypeId)
       if (!climateType) return
-      clearPlaceSelection()
-      setSelectedGeographyTopicId(null)
-      setSelectedReferenceLineId(null)
-      setShowClimateLayer(true)
-      setClimateSelection({ kind: 'type', climateTypeId })
+      dispatch({ type: 'selectClimateType', climateTypeId })
       void preloadClimateRaster(quality).catch(() => undefined)
       requestCameraTarget(
         climateType.representativePosition,
         climateType.cameraDistance,
       )
     },
-    [clearPlaceSelection, quality, requestCameraTarget],
+    [quality, requestCameraTarget],
   )
   const selectClimateAtPosition = useCallback(
     (position: GeoPosition, moveCamera: boolean) => {
       climateRequestIdRef.current += 1
       const requestId = climateRequestIdRef.current
-      clearPlaceSelection()
-      setSelectedGeographyTopicId(null)
-      setSelectedReferenceLineId(null)
-      setShowClimateLayer(true)
+      dispatch({ type: 'showClimateOverview' })
       if (moveCamera) requestCameraTarget(position)
       void classifyClimatePosition(position, quality)
         .then((classification) => {
           if (requestId !== climateRequestIdRef.current) return
-          setClimateSelection(
-            classification.climateTypeId
-              ? {
-                  kind: 'type',
-                  climateTypeId: classification.climateTypeId,
-                  classification,
-                }
-              : { kind: 'overview', classification },
-          )
+          dispatch({
+            type: 'select',
+            selection: {
+              kind: 'climate',
+              value: classification.climateTypeId
+                ? {
+                    kind: 'type',
+                    climateTypeId: classification.climateTypeId,
+                    classification,
+                  }
+                : { kind: 'overview', classification },
+            },
+          })
         })
         .catch(() => {
           if (requestId !== climateRequestIdRef.current) return
-          setClimateSelection({
-            kind: 'overview',
-            classification: {
-              position,
-              climateTypeId: null,
-              period: '1991–2020',
+          dispatch({
+            type: 'select',
+            selection: {
+              kind: 'climate',
+              value: {
+                kind: 'overview',
+                classification: {
+                  position,
+                  climateTypeId: null,
+                  period: '1991–2020',
+                },
+              },
             },
           })
         })
     },
-    [clearPlaceSelection, quality, requestCameraTarget],
+    [quality, requestCameraTarget],
   )
   const navigateToCountry = useCallback(
     (countryCode: string) => {
       const country = getCountry(countryCode)
       if (!country) return
       setMiniMapExpanded(false)
-      setSelectedCityId(null)
-      setHoveredCityId(null)
-      setSelectedWaterbodyId(null)
-      setHoveredWaterbodyId(null)
-      setSelectedLinearFeatureId(null)
-      setHoveredLinearFeatureId(null)
-      setSelectedMountainRangeId(null)
-      setHoveredMountainRangeId(null)
-      setSelectedDesertId(null)
-      setHoveredDesertId(null)
-      setSelectedLandmarkId(null)
-      setHoveredLandmarkId(null)
-      setSelectedGeographyTopicId(null)
-      setSelectedReferenceLineId(null)
-      setClimateSelection(null)
-      selectCountry(countryCode)
+      dispatch({
+        type: 'select',
+        selection: { kind: 'country', countryCode },
+      })
       requestCameraTarget(country.center)
     },
-    [requestCameraTarget, selectCountry],
+    [requestCameraTarget],
   )
   const requestedCountryCode = useMemo(
     () =>
@@ -721,164 +685,88 @@ export function ExplorePage() {
       const city = getCity(cityId)
       if (!city) return
       setMiniMapExpanded(false)
-      selectCountry(city.countryCode)
-      setSelectedWaterbodyId(null)
-      setHoveredWaterbodyId(null)
-      setSelectedLinearFeatureId(null)
-      setHoveredLinearFeatureId(null)
-      setSelectedMountainRangeId(null)
-      setHoveredMountainRangeId(null)
-      setSelectedDesertId(null)
-      setHoveredDesertId(null)
-      setSelectedLandmarkId(null)
-      setHoveredLandmarkId(null)
-      setSelectedGeographyTopicId(null)
-      setSelectedReferenceLineId(null)
-      setClimateSelection(null)
-      setSelectedCityId(city.id)
+      dispatch({
+        type: 'select',
+        selection: {
+          kind: 'city',
+          cityId: city.id,
+          countryCode: city.countryCode,
+        },
+      })
       requestCameraTarget(
         { latitude: city.latitude, longitude: city.longitude },
         CITY_CAMERA_DISTANCE,
       )
     },
-    [requestCameraTarget, selectCountry],
+    [requestCameraTarget],
   )
   const clearSelection = useCallback(() => {
-    clearPlaceSelection()
-    setSelectedGeographyTopicId(null)
-    setSelectedReferenceLineId(null)
-    setClimateSelection(null)
-  }, [clearPlaceSelection])
+    dispatch({ type: 'clearSelection' })
+  }, [])
   const navigateToWaterbody = useCallback(
     (waterbodyId: string) => {
       const waterbody = getWaterbody(waterbodyId)
       if (!waterbody) return
       setMiniMapExpanded(false)
-      selectCountry(null)
-      setSelectedCityId(null)
-      setHoveredCityId(null)
-      setSelectedWaterbodyId(waterbody.id)
-      setSelectedLinearFeatureId(null)
-      setHoveredLinearFeatureId(null)
-      setSelectedMountainRangeId(null)
-      setHoveredMountainRangeId(null)
-      setSelectedDesertId(null)
-      setHoveredDesertId(null)
-      setSelectedLandmarkId(null)
-      setHoveredLandmarkId(null)
-      setSelectedGeographyTopicId(null)
-      setSelectedReferenceLineId(null)
-      setClimateSelection(null)
-      if (waterbody.layer === 'lake') setShowLakeLayer(true)
+      dispatch({
+        type: 'select',
+        selection: { kind: 'waterbody', waterbodyId: waterbody.id },
+      })
       requestCameraTarget(waterbody.center, waterbody.cameraDistance)
     },
-    [requestCameraTarget, selectCountry],
+    [requestCameraTarget],
   )
   const navigateToLinearFeature = useCallback(
     (featureId: string) => {
       const feature = getLinearGeoFeature(featureId)
       if (!feature) return
       setMiniMapExpanded(false)
-      selectCountry(null)
-      setSelectedCityId(null)
-      setHoveredCityId(null)
-      setSelectedWaterbodyId(null)
-      setHoveredWaterbodyId(null)
-      setSelectedMountainRangeId(null)
-      setHoveredMountainRangeId(null)
-      setSelectedDesertId(null)
-      setHoveredDesertId(null)
-      setSelectedLandmarkId(null)
-      setHoveredLandmarkId(null)
-      setSelectedGeographyTopicId(null)
-      setSelectedReferenceLineId(null)
-      setClimateSelection(null)
-      setSelectedLinearFeatureId(feature.id)
-      const geometry = getLinearGeoFeatureGeometry(feature.id)?.geometry
-      const cameraDistance =
-        feature.kind === 'canal'
-          ? getCanalCameraDistance(geometry)
-          : feature.cameraDistance
-      requestCameraTarget(feature.cameraPosition, cameraDistance)
+      dispatch({
+        type: 'select',
+        selection: { kind: 'linearFeature', featureId: feature.id },
+      })
+      requestCameraTarget(feature.cameraPosition, feature.cameraDistance)
     },
-    [requestCameraTarget, selectCountry],
+    [requestCameraTarget],
   )
   const navigateToMountainRange = useCallback(
     (rangeId: string) => {
       const range = getMountainRange(rangeId)
       if (!range) return
       setMiniMapExpanded(false)
-      selectCountry(null)
-      setSelectedCityId(null)
-      setHoveredCityId(null)
-      setSelectedWaterbodyId(null)
-      setHoveredWaterbodyId(null)
-      setSelectedLinearFeatureId(null)
-      setHoveredLinearFeatureId(null)
-      setSelectedMountainRangeId(range.id)
-      setHoveredMountainRangeId(null)
-      setSelectedDesertId(null)
-      setHoveredDesertId(null)
-      setSelectedLandmarkId(null)
-      setHoveredLandmarkId(null)
-      setSelectedGeographyTopicId(null)
-      setSelectedReferenceLineId(null)
-      setClimateSelection(null)
+      dispatch({
+        type: 'select',
+        selection: { kind: 'mountainRange', rangeId: range.id },
+      })
       requestCameraTarget(range.cameraPosition, range.cameraDistance)
     },
-    [requestCameraTarget, selectCountry],
+    [requestCameraTarget],
   )
   const navigateToDesert = useCallback(
     (desertId: string) => {
       const desert = getDesert(desertId)
       if (!desert) return
       setMiniMapExpanded(false)
-      selectCountry(null)
-      setSelectedCityId(null)
-      setHoveredCityId(null)
-      setSelectedWaterbodyId(null)
-      setHoveredWaterbodyId(null)
-      setSelectedLinearFeatureId(null)
-      setHoveredLinearFeatureId(null)
-      setSelectedMountainRangeId(null)
-      setHoveredMountainRangeId(null)
-      setShowDesertLayer(true)
-      setSelectedDesertId(desert.id)
-      setHoveredDesertId(null)
-      setSelectedLandmarkId(null)
-      setHoveredLandmarkId(null)
-      setSelectedGeographyTopicId(null)
-      setSelectedReferenceLineId(null)
-      setClimateSelection(null)
+      dispatch({
+        type: 'select',
+        selection: { kind: 'desert', desertId: desert.id },
+      })
       requestCameraTarget(desert.center, desert.cameraDistance)
     },
-    [requestCameraTarget, selectCountry],
+    [requestCameraTarget],
   )
   const navigateToLandmark = useCallback(
     (landmarkId: string) => {
       const landmark = getLandmark(landmarkId)
       if (!landmark) return
       setMiniMapExpanded(false)
-      selectCountry(null)
-      setSelectedCityId(null)
-      setHoveredCityId(null)
-      setSelectedWaterbodyId(null)
-      setHoveredWaterbodyId(null)
-      setSelectedLinearFeatureId(null)
-      setHoveredLinearFeatureId(null)
-      setSelectedMountainRangeId(null)
-      setHoveredMountainRangeId(null)
-      setSelectedDesertId(null)
-      setHoveredDesertId(null)
-      setShowLandmarkLayer(true)
-      setSelectedLandmarkId(landmark.id)
-      setHoveredLandmarkId(null)
-      setSelectedGeographyTopicId(null)
-      setSelectedReferenceLineId(null)
-      setClimateSelection(null)
+      dispatch({
+        type: 'select',
+        selection: { kind: 'landmark', landmarkId: landmark.id },
+      })
       requestCameraTarget(landmark.position, LANDMARK_CAMERA_DISTANCE)
     },
-    [requestCameraTarget, selectCountry],
+    [requestCameraTarget],
   )
   const navigateToSearchResult = useCallback(
     (result: PlaceSearchResult) => {
@@ -934,6 +822,72 @@ export function ExplorePage() {
     setCommittedViewCenter(view.position)
   }, [])
 
+  const setEntityHover = useCallback((nextHover: ExploreHover) => {
+    dispatch({ type: 'hover', hover: nextHover })
+  }, [])
+  const hoverCountry = useCallback(
+    (countryCode: string | null) =>
+      setEntityHover(countryCode ? { kind: 'country', countryCode } : null),
+    [setEntityHover],
+  )
+  const hoverCity = useCallback(
+    (cityId: string | null) =>
+      setEntityHover(cityId ? { kind: 'city', cityId } : null),
+    [setEntityHover],
+  )
+  const hoverWaterbody = useCallback(
+    (waterbodyId: string | null) =>
+      setEntityHover(waterbodyId ? { kind: 'waterbody', waterbodyId } : null),
+    [setEntityHover],
+  )
+  const hoverLinearFeature = useCallback(
+    (featureId: string | null) =>
+      setEntityHover(featureId ? { kind: 'linearFeature', featureId } : null),
+    [setEntityHover],
+  )
+  const hoverMountainRange = useCallback(
+    (rangeId: string | null) =>
+      setEntityHover(rangeId ? { kind: 'mountainRange', rangeId } : null),
+    [setEntityHover],
+  )
+  const hoverDesert = useCallback(
+    (desertId: string | null) =>
+      setEntityHover(desertId ? { kind: 'desert', desertId } : null),
+    [setEntityHover],
+  )
+  const hoverLandmark = useCallback(
+    (landmarkId: string | null) =>
+      setEntityHover(landmarkId ? { kind: 'landmark', landmarkId } : null),
+    [setEntityHover],
+  )
+  const failedGeometryResources = [
+    {
+      label: '世界边界',
+      status: countryBoundaryResource.status,
+      retry: countryBoundaryResource.retry,
+    },
+    {
+      label: '水域几何',
+      status: waterbodyGeometryResource.status,
+      retry: waterbodyGeometryResource.retry,
+    },
+    {
+      label: '河流几何',
+      status: linearGeometryResource.status,
+      retry: linearGeometryResource.retry,
+    },
+    {
+      label: '山脉几何',
+      status: mountainGeometryResource.status,
+      retry: mountainGeometryResource.retry,
+    },
+    {
+      label: '沙漠几何',
+      status: desertGeometryResource.status,
+      retry: desertGeometryResource.retry,
+    },
+  ].filter((resource) => resource.status === 'error')
+
   const effectiveAutoRotate =
     autoRotate &&
     !reducedMotion &&
@@ -968,9 +922,6 @@ export function ExplorePage() {
           : 'explore-shell'
       }
     >
-      <div className="space-glow space-glow-one" aria-hidden="true" />
-      <div className="space-glow space-glow-two" aria-hidden="true" />
-
       {webGLAvailable ? (
         <Suspense
           fallback={
@@ -980,61 +931,79 @@ export function ExplorePage() {
           }
         >
           <GlobeScene
-            autoRotate={effectiveAutoRotate}
-            cameraTarget={cameraTarget}
-            quality={quality}
-            reducedMotion={reducedMotion}
-            showCapitals={showCapitals}
-            showCities={showCities}
-            showOceanLayer={showOceanLayer}
-            showLakeLayer={showLakeLayer}
-            showWaterwayLayer={showWaterwayLayer}
-            showRiverAndCanalLayer={showRiverAndCanalLayer}
-            showMountainLayer={showMountainLayer}
-            showDesertLayer={showDesertLayer}
-            showLandmarkLayer={showLandmarkLayer}
-            showGeographyLearningLayer={showGeographyLearningLayer}
-            showClimateLayer={showClimateLayer}
-            selectedClimateTypeId={selectedClimateTypeId}
-            climateRasterUrl={climateRasterUrl}
-            climateBoundaryRasterUrl={climateBoundaryRasterUrl}
-            selectedClimatePosition={selectedClimatePosition}
-            selectedGeographyTopicId={selectedGeographyTopicId}
-            selectedReferenceLineId={selectedReferenceLineId}
-            selectedCountryCode={selectedCountryCode}
-            selectedCityId={selectedCityId}
-            hoveredCountryCode={hoveredCountryCode}
-            hoveredCityId={hoveredCityId}
-            selectedWaterbodyId={selectedWaterbodyId}
-            hoveredWaterbodyId={hoveredWaterbodyId}
-            selectedLinearFeatureId={selectedLinearFeatureId}
-            hoveredLinearFeatureId={hoveredLinearFeatureId}
-            selectedMountainRangeId={selectedMountainRangeId}
-            hoveredMountainRangeId={hoveredMountainRangeId}
-            selectedDesertId={selectedDesertId}
-            hoveredDesertId={hoveredDesertId}
-            selectedLandmarkId={selectedLandmarkId}
-            hoveredLandmarkId={hoveredLandmarkId}
-            onSelectCountry={navigateToCountry}
-            onSelectCity={navigateToCity}
-            onHoverCountry={hoverCountry}
-            onHoverCity={setHoveredCityId}
-            onSelectWaterbody={navigateToWaterbody}
-            onHoverWaterbody={setHoveredWaterbodyId}
-            onSelectLinearFeature={navigateToLinearFeature}
-            onHoverLinearFeature={setHoveredLinearFeatureId}
-            onSelectMountainRange={navigateToMountainRange}
-            onHoverMountainRange={setHoveredMountainRangeId}
-            onSelectDesert={navigateToDesert}
-            onHoverDesert={setHoveredDesertId}
-            onSelectLandmark={navigateToLandmark}
-            onHoverLandmark={setHoveredLandmarkId}
-            onSelectGeographyTopic={openGeographyTopic}
-            onSelectClimatePosition={(position) =>
-              selectClimateAtPosition(position, false)
-            }
-            onViewCenterChange={handleViewCenterChange}
-            onViewCenterCommit={handleViewCenterCommit}
+            geometry={{
+              countryBoundaries: countryBoundaryResource.data,
+              waterbodyGeometries: waterbodyGeometryResource.data,
+              linearFeatureGeometries: linearGeometryResource.data,
+              mountainGeometries: mountainGeometryResource.data,
+              desertGeometries: desertGeometryResource.data,
+            }}
+            view={{
+              autoRotate: effectiveAutoRotate,
+              cameraTarget,
+              quality,
+              reducedMotion,
+            }}
+            layers={{
+              showCapitals,
+              showCities,
+              showOceanLayer,
+              showLakeLayer,
+              showWaterwayLayer,
+              showRiverAndCanalLayer,
+              showMountainLayer,
+              showDesertLayer,
+              showLandmarkLayer,
+              showGeographyLearningLayer,
+              showClimateLayer,
+            }}
+            climate={{
+              selectedClimateTypeId,
+              climateRasterUrl,
+              climateBoundaryRasterUrl,
+              selectedClimatePosition,
+            }}
+            selection={{
+              selectedGeographyTopicId,
+              selectedReferenceLineId,
+              selectedCountryCode,
+              selectedCityId,
+              selectedWaterbodyId,
+              selectedLinearFeatureId,
+              selectedMountainRangeId,
+              selectedDesertId,
+              selectedLandmarkId,
+            }}
+            hover={{
+              hoveredCountryCode,
+              hoveredCityId,
+              hoveredWaterbodyId,
+              hoveredLinearFeatureId,
+              hoveredMountainRangeId,
+              hoveredDesertId,
+              hoveredLandmarkId,
+            }}
+            events={{
+              onSelectCountry: navigateToCountry,
+              onSelectCity: navigateToCity,
+              onHoverCountry: hoverCountry,
+              onHoverCity: hoverCity,
+              onSelectWaterbody: navigateToWaterbody,
+              onHoverWaterbody: hoverWaterbody,
+              onSelectLinearFeature: navigateToLinearFeature,
+              onHoverLinearFeature: hoverLinearFeature,
+              onSelectMountainRange: navigateToMountainRange,
+              onHoverMountainRange: hoverMountainRange,
+              onSelectDesert: navigateToDesert,
+              onHoverDesert: hoverDesert,
+              onSelectLandmark: navigateToLandmark,
+              onHoverLandmark: hoverLandmark,
+              onSelectGeographyTopic: openGeographyTopic,
+              onSelectClimatePosition: (position) =>
+                selectClimateAtPosition(position, false),
+              onViewCenterChange: handleViewCenterChange,
+              onViewCenterCommit: handleViewCenterCommit,
+            }}
           />
         </Suspense>
       ) : (
@@ -1070,7 +1039,19 @@ export function ExplorePage() {
         />
       ) : null}
 
+      {failedGeometryResources.length > 0 ? (
+        <div className="geometry-resource-status" role="alert">
+          <span>部分地图资源加载失败，基础探索仍可继续。</span>
+          {failedGeometryResources.map((resource) => (
+            <button key={resource.label} type="button" onClick={resource.retry}>
+              重新加载{resource.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <WorldMiniMap
+        countryBoundaries={countryBoundaryResource.data}
         ref={miniMapRef}
         expanded={miniMapExpanded}
         selectedCountryCode={selectedCountryCode}
@@ -1169,6 +1150,17 @@ export function ExplorePage() {
               onClick={() => setSearchOpen((open) => !open)}
             />
           </nav>
+          {persistenceStatus === 'saving' ||
+          persistenceStatus === 'memory-only' ||
+          persistenceStatus === 'error' ? (
+            <output className="experience-persistence-status" role="status">
+              {persistenceStatus === 'saving'
+                ? '正在保存本机偏好…'
+                : persistenceStatus === 'memory-only'
+                  ? '当前偏好仅在本次使用期间保留'
+                  : '本机偏好保存失败，当前设置仍可继续使用'}
+            </output>
+          ) : null}
         </div>
       </div>
 
@@ -1179,7 +1171,7 @@ export function ExplorePage() {
           cities={visibleCountryCities}
           selectedCity={selectedCity}
           onSelectCity={navigateToCity}
-          onBackToCountry={() => setSelectedCityId(null)}
+          onBackToCountry={() => dispatch({ type: 'backToCountry' })}
           onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />
@@ -1231,8 +1223,7 @@ export function ExplorePage() {
           viewCenter={committedViewCenter}
           onSelectTopic={openGeographyTopic}
           onClose={() => {
-            setSelectedGeographyTopicId(null)
-            setSelectedReferenceLineId(null)
+            dispatch({ type: 'clearSelection' })
           }}
         />
       ) : null}
@@ -1240,8 +1231,8 @@ export function ExplorePage() {
         <ClimateLearningPanel
           selection={climateSelection}
           onSelectType={selectClimateType}
-          onShowOverview={() => setClimateSelection({ kind: 'overview' })}
-          onClose={() => setClimateSelection(null)}
+          onShowOverview={() => dispatch({ type: 'showClimateOverview' })}
+          onClose={() => dispatch({ type: 'clearSelection' })}
         />
       ) : null}
     </main>

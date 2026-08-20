@@ -29,7 +29,6 @@ export function KnowledgePage() {
 
   return (
     <main className="knowledge-shell">
-      <div className="knowledge-background-orbit" aria-hidden="true" />
       <section className="knowledge-topics" aria-label="知识主题">
         <div className="knowledge-topic-grid">
           <article className="knowledge-topic-card is-active">

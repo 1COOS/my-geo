@@ -15,7 +15,7 @@ const commonLinearGeoFeatureSchema = z.object({
   kind: linearGeoFeatureKindSchema,
   labelPosition: geoPositionSchema,
   cameraPosition: geoPositionSchema,
-  cameraDistance: z.number().min(180).max(425),
+  cameraDistance: z.number().min(160).max(425),
   region: z.string().min(1),
   countryCodes: z.array(countryCodeSchema).min(1),
   lengthKilometers: z.number().positive(),

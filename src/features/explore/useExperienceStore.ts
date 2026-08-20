@@ -4,41 +4,48 @@ import {
   loadExperiencePreferences,
   saveExperiencePreferences,
   type ExperiencePreferences,
+  type PersistenceStatus,
 } from '../../storage/database'
 
 type ExperienceState = Pick<ExperiencePreferences, 'autoRotate' | 'quality'> & {
   hydrated: boolean
-  selectedCountryCode: string | null
-  hoveredCountryCode: string | null
+  persistenceStatus: PersistenceStatus
   hydrate: () => Promise<void>
   toggleAutoRotate: () => void
   toggleQuality: () => void
-  selectCountry: (countryCode: string | null) => void
-  hoverCountry: (countryCode: string | null) => void
+}
+
+let preferenceWrite = Promise.resolve()
+
+function queuePreferenceWrite(
+  set: (state: Partial<ExperienceState>) => void,
+  preferences: Pick<ExperiencePreferences, 'autoRotate' | 'quality'>,
+) {
+  set({ persistenceStatus: 'saving' })
+  preferenceWrite = preferenceWrite.then(async () => {
+    const result = await saveExperiencePreferences(preferences)
+    set({ persistenceStatus: result.status })
+  })
 }
 
 export const useExperienceStore = create<ExperienceState>((set, get) => ({
   autoRotate: true,
   quality: 'balanced',
   hydrated: false,
-  selectedCountryCode: null,
-  hoveredCountryCode: null,
+  persistenceStatus: 'idle',
   async hydrate() {
-    try {
-      const preferences = await loadExperiencePreferences()
-      set({
-        autoRotate: preferences.autoRotate,
-        quality: preferences.quality,
-        hydrated: true,
-      })
-    } catch {
-      set({ hydrated: true })
-    }
+    const result = await loadExperiencePreferences()
+    set({
+      autoRotate: result.value.autoRotate,
+      quality: result.value.quality,
+      hydrated: true,
+      persistenceStatus: result.status === 'saved' ? 'idle' : result.status,
+    })
   },
   toggleAutoRotate() {
     const next = !get().autoRotate
     set({ autoRotate: next })
-    void saveExperiencePreferences({
+    queuePreferenceWrite(set, {
       autoRotate: next,
       quality: get().quality,
     })
@@ -46,15 +53,9 @@ export const useExperienceStore = create<ExperienceState>((set, get) => ({
   toggleQuality() {
     const next = get().quality === 'balanced' ? 'low' : 'balanced'
     set({ quality: next })
-    void saveExperiencePreferences({
+    queuePreferenceWrite(set, {
       autoRotate: get().autoRotate,
       quality: next,
     })
-  },
-  selectCountry(countryCode) {
-    set({ selectedCountryCode: countryCode })
-  },
-  hoverCountry(countryCode) {
-    set({ hoveredCountryCode: countryCode })
   },
 }))

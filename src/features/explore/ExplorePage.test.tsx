@@ -27,7 +27,16 @@ vi.mock('../../data/climateRaster', async (importOriginal) => {
 
 vi.mock('../../scene/GlobeScene', () => ({
   GlobeScene: (props: unknown) => {
-    globePropsMock(props)
+    const grouped = props as Record<string, Record<string, unknown>>
+    globePropsMock({
+      ...grouped.geometry,
+      ...grouped.view,
+      ...grouped.layers,
+      ...grouped.climate,
+      ...grouped.selection,
+      ...grouped.hover,
+      ...grouped.events,
+    })
     return <div data-testid="mock-globe-scene">3D globe</div>
   },
 }))

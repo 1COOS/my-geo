@@ -1,9 +1,4 @@
-import generatedDesertGeometries from './generated/desert-geometries.json'
-import {
-  desertCatalogSchema,
-  desertGeometryCatalogSchema,
-  type Desert,
-} from './desertSchema'
+import { desertCatalogSchema, type Desert } from './desertSchema'
 
 type Position = [number, number]
 
@@ -390,19 +385,8 @@ export const deserts: Desert[] = desertCatalogSchema.parse(
   })),
 )
 
-export const desertGeometries = desertGeometryCatalogSchema.parse(
-  generatedDesertGeometries,
-)
-
 export const desertsById = new Map(deserts.map((item) => [item.id, item]))
-export const desertGeometriesById = new Map(
-  desertGeometries.map((geometry) => [geometry.id, geometry]),
-)
 
 export function getDesert(id: string | null | undefined) {
   return id ? desertsById.get(id) : undefined
-}
-
-export function getDesertGeometry(id: string | null | undefined) {
-  return id ? desertGeometriesById.get(id) : undefined
 }

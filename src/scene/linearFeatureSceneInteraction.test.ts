@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getLinearGeoFeatureGeometry } from '../data/linearGeoFeatures'
+import { getLinearGeoFeatureGeometry } from '../data/geometryData'
 import {
   getCanalCameraDistance,
   getLinearFeatureAngularSpan,

@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 
 import { getKnowledgeRegion } from '../../data/knowledgeRegions'
-import { saveKnowledgeChallengeResult } from '../../storage/database'
+import {
+  saveKnowledgeChallengeResult,
+  type PersistenceStatus,
+} from '../../storage/database'
 import {
   createKnowledgeChallenge,
   getChallengeScore,
@@ -19,7 +22,8 @@ export function KnowledgeChallengePage() {
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null)
   const [correctAnswers, setCorrectAnswers] = useState(0)
   const [finished, setFinished] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [persistenceStatus, setPersistenceStatus] =
+    useState<PersistenceStatus>('idle')
 
   if (!region) return <Navigate to="/knowledge" replace />
   const question = questions[questionIndex]
@@ -34,6 +38,12 @@ export function KnowledgeChallengePage() {
     }
   }
 
+  const persistScore = async (finalScore: number) => {
+    setPersistenceStatus('saving')
+    const result = await saveKnowledgeChallengeResult(region.id, finalScore)
+    setPersistenceStatus(result.status)
+  }
+
   const moveNext = async () => {
     if (!selectedOptionId) return
     if (questionIndex < questions.length - 1) {
@@ -43,8 +53,7 @@ export function KnowledgeChallengePage() {
     }
     setFinished(true)
     const finalScore = getChallengeScore(correctAnswers, questions.length)
-    await saveKnowledgeChallengeResult(region.id, finalScore)
-    setSaved(true)
+    await persistScore(finalScore)
   }
 
   const restart = () => {
@@ -53,7 +62,7 @@ export function KnowledgeChallengePage() {
     setSelectedOptionId(null)
     setCorrectAnswers(0)
     setFinished(false)
-    setSaved(false)
+    setPersistenceStatus('idle')
   }
 
   if (finished) {
@@ -74,8 +83,21 @@ export function KnowledgeChallengePage() {
               ? '成绩已达到80%，这一区域已经点亮。'
               : '达到80%即可通过，回到区域页复习后再试一次。'}
           </p>
-          <small>{saved ? '学习进度已保存在本机' : '正在保存学习进度…'}</small>
+          <small role="status">
+            {persistenceStatus === 'saved'
+              ? '学习进度已保存在本机'
+              : persistenceStatus === 'memory-only'
+                ? '当前浏览器无法使用本机存储，本次成绩仅在当前页面保留'
+                : persistenceStatus === 'error'
+                  ? '学习进度保存失败，请重新尝试'
+                  : '正在保存学习进度…'}
+          </small>
           <div>
+            {persistenceStatus === 'error' ? (
+              <button type="button" onClick={() => void persistScore(score)}>
+                重新保存
+              </button>
+            ) : null}
             <button type="button" onClick={restart}>
               再挑战一次
             </button>
@@ -152,7 +174,11 @@ export function KnowledgeChallengePage() {
                   ? '回答正确！'
                   : `正确答案是：${question.options.find((option) => option.id === question.correctOptionId)?.label}`}
               </p>
-              <button type="button" onClick={() => void moveNext()}>
+              <button
+                type="button"
+                disabled={persistenceStatus === 'saving'}
+                onClick={() => void moveNext()}
+              >
                 {questionIndex === questions.length - 1 ? '查看成绩' : '下一题'}
               </button>
             </>

@@ -1,0 +1,255 @@
+.landscape-runtime,
+.landscape-app {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: clip;
+}
+
+.landscape-app[aria-hidden='true'] {
+  pointer-events: none;
+  user-select: none;
+}
+
+.landscape-prompt-visual {
+  position: relative;
+  width: 8.5rem;
+  height: 8.5rem;
+  margin: 0 auto 1.25rem;
+}
+
+.landscape-prompt-device,
+.landscape-prompt-arrow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes landscape-device-turn {
+  0%,
+  20% {
+    transform: rotate(0deg) scale(0.94);
+  }
+
+  55%,
+  82% {
+    transform: rotate(90deg) scale(1);
+  }
+
+  100% {
+    transform: rotate(90deg) scale(0.94);
+  }
+}
+
+@keyframes landscape-arrow-pulse {
+  0%,
+  20%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.94);
+  }
+
+  48%,
+  76% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.app-shell {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-navigation-link svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.55;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app-route-loading {
+  display: grid;
+  width: 100%;
+  height: 100dvh;
+  font-size: 0.78rem;
+  place-items: center;
+}
+
+.landscape-prompt {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  min-width: 320px;
+  min-height: 100dvh;
+  padding: calc(1.5rem + env(safe-area-inset-top))
+    calc(1.5rem + env(safe-area-inset-right))
+    calc(1.5rem + env(safe-area-inset-bottom))
+    calc(1.5rem + env(safe-area-inset-left));
+  overflow: hidden;
+  text-align: center;
+  outline: none;
+  place-items: center;
+  color: var(--atlas-text);
+  background: var(--atlas-canvas);
+}
+
+.landscape-prompt-card {
+  position: relative;
+  z-index: 1;
+  width: min(29rem, 100%);
+  padding: 1.5rem;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+  box-shadow: var(--atlas-shadow);
+}
+
+.landscape-prompt-device {
+  stroke-width: 2.5;
+  animation: landscape-device-turn 2.4s ease-in-out infinite;
+  transform-origin: center;
+  stroke: var(--atlas-text);
+  filter: none;
+}
+
+.landscape-prompt-arrow {
+  stroke-width: 3;
+  animation: landscape-arrow-pulse 2.4s ease-in-out infinite;
+  stroke: var(--atlas-accent);
+}
+
+.landscape-prompt-eyebrow {
+  margin: 0 0 0.7rem;
+  color: var(--atlas-accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.landscape-prompt h1 {
+  margin: 0;
+  font-size: clamp(1.9rem, 8vw, 3rem);
+  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.landscape-prompt-card > p:not(.landscape-prompt-eyebrow) {
+  max-width: 28rem;
+  margin: 1rem auto 0;
+  font-size: clamp(0.88rem, 3.6vw, 1rem);
+  line-height: 1.7;
+  color: var(--atlas-text-secondary);
+}
+
+.landscape-prompt-card > .landscape-prompt-hint {
+  margin-top: 0.8rem;
+  font-size: clamp(0.72rem, 3vw, 0.82rem);
+  color: var(--atlas-text-muted);
+}
+
+.app-navigation {
+  position: fixed;
+  z-index: 80;
+  top: max(0.75rem, env(safe-area-inset-top));
+  bottom: auto;
+  left: max(0.75rem, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 3.55rem;
+  padding: 0.35rem 0.3rem;
+  gap: 0.25rem;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+  box-shadow: var(--atlas-shadow);
+  backdrop-filter: none;
+}
+
+.app-navigation-brand {
+  display: grid;
+  place-items: center;
+  min-height: 2.5rem;
+  margin: 0 0 0.35rem;
+  color: var(--atlas-canvas-deep);
+  background: var(--atlas-accent);
+  border-radius: var(--atlas-radius-control);
+  box-shadow: none;
+}
+
+.app-navigation-brand span {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.app-navigation-link {
+  display: grid;
+  gap: 0.2rem;
+  text-align: center;
+  place-items: center;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+  position: relative;
+  min-height: 3rem;
+  padding: 0.4rem 0.15rem;
+  color: var(--atlas-text-muted);
+  border: 0;
+  border-radius: var(--atlas-radius-control);
+}
+
+.app-navigation-link::before {
+  position: absolute;
+  top: 0.45rem;
+  bottom: 0.45rem;
+  left: -0.3rem;
+  width: 2px;
+  content: '';
+  background: transparent;
+}
+
+.app-navigation-link:hover,
+.app-navigation-link:focus-visible {
+  outline-offset: 1px;
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: transparent;
+}
+
+.app-navigation-link.is-active {
+  color: var(--atlas-text);
+  background: var(--atlas-panel-raised);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.app-navigation-link.is-active::before {
+  background: var(--atlas-accent);
+}
+
+.app-navigation-link span {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.app-route-loading,
+.scene-loading {
+  color: var(--atlas-accent);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  background: var(--atlas-canvas-deep);
+}

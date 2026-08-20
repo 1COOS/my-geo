@@ -1,0 +1,716 @@
+@media (max-width: 1080px) {
+  .knowledge-topic-grid {
+    grid-template-columns: 1.5fr repeat(3, 1fr);
+  }
+
+  .knowledge-region-workspace {
+    grid-template-columns: minmax(20rem, 1fr) minmax(24rem, 1fr);
+  }
+
+  .knowledge-country-grid {
+    grid-template-columns: repeat(3, minmax(10rem, 1fr));
+  }
+}
+
+@media (max-width: 900px), (max-height: 520px) {
+  .selected-linear-feature-route-outer {
+    stroke-width: 8px;
+  }
+
+  .selected-linear-feature-route-core {
+    stroke-width: 2.5px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .control-dock {
+    gap: 0.3rem;
+    padding: 0.32rem;
+    border-radius: 0.9rem;
+  }
+
+  .control-button {
+    flex: none;
+    justify-content: center;
+    width: 2.7rem;
+    min-width: 2.7rem;
+    min-height: 2.7rem;
+    padding: 0;
+  }
+
+  .control-button > span:last-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .control-button svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+}
+
+@media (min-width: 1081px) {
+  .knowledge-region-shell:not(.has-country-selection) .knowledge-country-grid {
+    grid-template-columns: repeat(5, minmax(10rem, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .control-button > span:last-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .control-button svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .knowledge-region-card,
+  .app-navigation-link {
+    transition: none;
+  }
+
+  .knowledge-region-card:hover,
+  .knowledge-region-card:focus-visible {
+    transform: none;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .landscape-prompt-device {
+    transform: rotate(90deg);
+  }
+
+  .landscape-prompt-arrow {
+    opacity: 1;
+  }
+}
+
+@media (max-height: 520px) {
+  .app-navigation-brand {
+    min-height: 2.15rem;
+    margin-bottom: 0.1rem;
+    border-radius: 0.68rem;
+  }
+
+  .app-navigation-link {
+    min-height: 2.75rem;
+    padding: 0.28rem 0.12rem;
+  }
+
+  .app-navigation-link svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .app-navigation-link span {
+    font-size: 0.52rem;
+  }
+
+  .knowledge-shell {
+    padding: 0.7rem 0.75rem 1.5rem 4.05rem;
+  }
+
+  .knowledge-topics,
+  .knowledge-regions {
+    margin-bottom: 1rem;
+  }
+
+  .knowledge-topic-card.is-active {
+    flex-basis: 22rem;
+  }
+
+  .knowledge-topic-stats {
+    gap: 0.5rem;
+  }
+
+  .knowledge-topic-stats strong {
+    font-size: 1.25rem;
+  }
+
+  .knowledge-continent-tabs button {
+    min-height: 2.8rem;
+    padding: 0.45rem 0.55rem;
+  }
+
+  .knowledge-region-workspace {
+    grid-template-columns: minmax(18rem, 0.9fr) minmax(26rem, 1.1fr);
+  }
+
+  .knowledge-map-card,
+  .knowledge-region-map {
+    min-height: 14rem;
+  }
+
+  .knowledge-region-shell {
+    --knowledge-detail-column: min(22rem, 42vw);
+    --knowledge-detail-gap: 0.7rem;
+  }
+
+  .knowledge-region-map-strip {
+    height: 8rem;
+    min-height: 8rem;
+  }
+
+  .knowledge-region-map-strip .knowledge-region-map {
+    min-height: 0;
+  }
+
+  .knowledge-country-grid {
+    grid-template-columns: repeat(2, minmax(8.5rem, 1fr));
+  }
+
+  .knowledge-country-open {
+    min-height: 5rem;
+    padding: 0.58rem;
+  }
+
+  .knowledge-country-open img {
+    width: 3.4rem;
+    height: 2.25rem;
+  }
+
+  .knowledge-country-card {
+    min-height: 5rem;
+  }
+
+  .knowledge-country-card[data-field-count='1'][data-show-flag='true']
+    .knowledge-country-open
+    img {
+    width: 4.5rem;
+    height: 3rem;
+  }
+
+  .knowledge-country-controls-row {
+    min-height: 2.25rem;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .knowledge-country-display-controls button {
+    min-width: 3.3rem;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.55rem;
+  }
+
+  .knowledge-country-detail {
+    top: 0.45rem;
+    right: 0.45rem;
+    bottom: 0.45rem;
+    width: var(--knowledge-detail-column);
+    padding: 0.8rem;
+  }
+
+  .knowledge-region-map-strip > .knowledge-region-map-toolbar {
+    top: 0.45rem;
+    right: 0.5rem;
+    left: 0.5rem;
+    gap: 0.4rem;
+  }
+
+  .knowledge-region-map-identity span {
+    display: none;
+  }
+
+  .knowledge-region-map-actions {
+    gap: 0.25rem;
+  }
+
+  .knowledge-region-map-actions > div {
+    min-width: 3.45rem;
+    padding: 0.3rem 0.4rem;
+  }
+
+  .knowledge-region-map-actions > a {
+    min-height: 2.25rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .knowledge-challenge-header {
+    margin-bottom: 0.55rem;
+  }
+
+  .knowledge-question-card {
+    padding: 0.8rem 1rem;
+  }
+
+  .knowledge-question-card > h1 {
+    margin: 0.25rem 0 0.55rem;
+    font-size: 1.25rem;
+  }
+
+  .knowledge-question-flag {
+    width: 8rem;
+    max-height: 4.5rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .knowledge-question-options {
+    gap: 0.45rem;
+  }
+
+  .knowledge-question-options button {
+    min-height: 3.25rem;
+    padding: 0.48rem;
+  }
+
+  .knowledge-question-feedback {
+    min-height: 2.8rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+  }
+  .app-navigation {
+    top: max(0.4rem, env(safe-area-inset-top));
+    bottom: auto;
+    left: max(0.4rem, env(safe-area-inset-left));
+    padding: 0.32rem;
+    gap: 0.25rem;
+    width: 3.2rem;
+    border-radius: var(--atlas-radius-compact);
+  }
+
+  .app-navigation-brand,
+  .app-navigation-link {
+    border-radius: var(--atlas-radius-control);
+  }
+
+  .knowledge-topic-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    gap: 0;
+  }
+
+  .knowledge-topic-card {
+    flex: 0 0 14rem;
+    min-height: 5.5rem;
+    padding: 0.65rem;
+    scroll-snap-align: start;
+    border-right: 1px solid var(--atlas-border-soft);
+  }
+
+  .knowledge-region-card {
+    min-height: 5.7rem;
+    padding: 0.62rem;
+    border-radius: 0;
+  }
+
+  .knowledge-country-display-controls button,
+  .knowledge-region-map-actions > a,
+  .knowledge-region-map-actions > div {
+    min-height: 2.75rem;
+  }
+  .layer-control {
+    left: max(4rem, env(safe-area-inset-left));
+    max-width: calc(100% - var(--scene-reserve) - 4rem);
+    border-radius: var(--atlas-radius-compact);
+  }
+
+  .control-dock {
+    border-radius: var(--atlas-radius-compact);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .landscape-runtime.is-touch-device .explore-shell {
+    --mini-map-width: clamp(10rem, 22vw, 12rem);
+    --detail-column: clamp(15rem, 35vw, 18.5rem);
+    --layout-gap: clamp(0.3rem, 1vw, 0.55rem);
+    --scene-reserve: calc(
+      var(--detail-column) + var(--layout-gap) + var(--edge-right)
+    );
+  }
+
+  .landscape-runtime.is-touch-device .country-search-field {
+    height: 2.75rem;
+  }
+
+  .landscape-runtime.is-touch-device .layer-control-heading {
+    display: none;
+  }
+
+  .landscape-runtime.is-touch-device .layer-toggle-dot {
+    display: none;
+  }
+
+  .landscape-runtime.is-touch-device .climate-fact-grid,
+  .landscape-runtime.is-touch-device .climate-legend {
+    grid-template-columns: 1fr;
+  }
+
+  .landscape-runtime.is-touch-device .country-search-popover {
+    max-height: calc(100dvh - 4.2rem - env(safe-area-inset-bottom));
+  }
+
+  .landscape-runtime.is-touch-device .world-mini-map {
+    z-index: 8;
+    right: auto;
+    bottom: var(--edge-bottom);
+    left: var(--edge-left);
+    width: var(--mini-map-width);
+    pointer-events: auto;
+  }
+
+  .landscape-runtime.is-touch-device .world-mini-map-toggle {
+    display: none;
+  }
+
+  .landscape-runtime.is-touch-device .world-mini-map-card {
+    display: block;
+    pointer-events: auto;
+  }
+
+  .landscape-runtime.is-touch-device .world-mini-map-close {
+    display: none;
+  }
+
+  .landscape-runtime.is-touch-device .control-deck {
+    right: calc(var(--edge-right) + var(--detail-column) + var(--layout-gap));
+    bottom: var(--edge-bottom);
+    left: calc(var(--edge-left) + var(--mini-map-width) + var(--layout-gap));
+  }
+
+  .landscape-runtime.is-touch-device .search-dialog {
+    width: min(21rem, calc((var(--middle-slot-width) + 100%) / 2));
+  }
+
+  .landscape-runtime.is-touch-device .search-dialog .country-search-popover {
+    display: flex;
+    max-height: calc(
+      100dvh - 10.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+    );
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .landscape-runtime.is-touch-device .search-dialog .country-search-popover ul {
+    min-height: 0;
+    max-height: none;
+  }
+
+  .landscape-runtime.is-touch-device .control-button > span:last-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .landscape-runtime.is-touch-device .control-button svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail-handle {
+    display: none;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail-heading {
+    grid-template-columns: 3.2rem minmax(0, 1fr);
+    gap: 0.6rem;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail-flag {
+    width: 3.2rem;
+    height: 2.2rem;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail-heading h2 {
+    font-size: 1.3rem;
+  }
+
+  .landscape-runtime.is-touch-device .desert-heading {
+    grid-template-columns: 3.05rem minmax(0, 1fr);
+    gap: 0.55rem;
+  }
+
+  .landscape-runtime.is-touch-device .desert-heading h2 {
+    font-size: 1.3rem;
+  }
+
+  .landscape-runtime.is-touch-device .desert-symbol {
+    width: 3rem;
+    height: 2.3rem;
+  }
+  .knowledge-region-content {
+    padding-right: 0;
+  }
+
+  .knowledge-country-detail-placeholder {
+    display: none;
+  }
+
+  .knowledge-country-detail:not(.knowledge-country-detail-placeholder) {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 3.9rem;
+    width: auto;
+    max-height: 63dvh;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--atlas-radius-panel) var(--atlas-radius-panel) 0 0;
+  }
+
+  .landscape-runtime.is-touch-device .layer-control {
+    right: var(--scene-reserve);
+    left: var(--edge-left);
+    gap: 0;
+    width: auto;
+    max-width: calc(100% - var(--scene-reserve) - var(--edge-left));
+    padding: 0.2rem;
+    border-radius: var(--atlas-radius-compact);
+  }
+
+  .landscape-runtime.is-touch-device .layer-control-options {
+    overflow: hidden;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .landscape-runtime.is-touch-device .layer-toggle {
+    gap: 0;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.62rem;
+  }
+
+  .landscape-runtime.is-touch-device .control-dock {
+    gap: 0.3rem;
+    padding: 0.32rem;
+    border-radius: var(--atlas-radius-compact);
+  }
+
+  .landscape-runtime.is-touch-device .control-button {
+    flex: none;
+    padding: 0;
+    width: 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  .landscape-runtime.is-touch-device .country-detail {
+    position: fixed;
+    z-index: 9;
+    top: var(--edge-top);
+    right: var(--edge-right);
+    bottom: var(--edge-bottom);
+    left: auto;
+    width: var(--detail-column);
+    max-height: none;
+    padding: 0.75rem;
+    border: 1px solid rgb(140 221 255 / 20%);
+    background: var(--atlas-panel);
+    border-color: var(--atlas-border);
+    border-radius: var(--atlas-radius-panel);
+  }
+}
+
+@media (max-width: 760px) {
+  .explore-shell {
+    --scene-reserve: 0px;
+  }
+
+  .explore-shell::before {
+    background:
+      linear-gradient(0deg, rgb(3 8 18 / 85%) 0%, transparent 56%),
+      linear-gradient(180deg, rgb(3 8 18 / 48%) 0%, transparent 30%);
+  }
+
+  .country-search-field {
+    height: 3rem;
+  }
+
+  .control-deck {
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    left: max(0.75rem, env(safe-area-inset-left));
+  }
+
+  .control-dock {
+    justify-content: stretch;
+  }
+
+  .world-mini-map {
+    position: absolute;
+    z-index: 8;
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+    left: max(0.75rem, env(safe-area-inset-left));
+    width: auto;
+    pointer-events: none;
+  }
+
+  .world-mini-map-toggle {
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+    width: fit-content;
+    min-height: 2.65rem;
+    padding: 0.58rem 0.75rem;
+    color: #dff6ff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    pointer-events: auto;
+    background: rgb(6 22 39 / 84%);
+    border: 1px solid rgb(127 211 255 / 18%);
+    border-radius: 0.8rem;
+    box-shadow: 0 14px 38px rgb(0 0 0 / 34%);
+    backdrop-filter: blur(16px);
+  }
+
+  .world-mini-map-toggle svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .world-mini-map-card {
+    display: none;
+    pointer-events: auto;
+  }
+
+  .world-mini-map.is-expanded .world-mini-map-toggle {
+    display: none;
+  }
+
+  .world-mini-map.is-expanded .world-mini-map-card {
+    display: block;
+  }
+
+  .world-mini-map-header {
+    padding: 0.62rem 0.72rem 0.5rem;
+  }
+
+  .world-mini-map-header output {
+    margin-left: auto;
+  }
+
+  .world-mini-map-close {
+    display: grid;
+    flex: none;
+    width: 1.8rem;
+    height: 1.8rem;
+    padding: 0;
+    color: #c5e1ed;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    background: rgb(142 216 246 / 8%);
+    border: 1px solid rgb(142 216 246 / 12%);
+    border-radius: 50%;
+    place-items: center;
+  }
+
+  .control-button {
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+    padding-inline: 0.48rem;
+  }
+
+  .control-button > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .country-detail {
+    position: fixed;
+    z-index: 12;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: min(63dvh, 34rem);
+    padding: 0.85rem 0.95rem calc(1rem + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 1.5rem 1.5rem 0 0;
+  }
+
+  .country-detail-handle {
+    display: block;
+    width: 2.8rem;
+    height: 0.25rem;
+    margin: 0 auto 0.55rem;
+    background: rgb(184 222 238 / 26%);
+    border-radius: 999px;
+  }
+
+  .country-detail-heading {
+    grid-template-columns: 3.45rem minmax(0, 1fr);
+  }
+
+  .country-detail-flag {
+    width: 3.45rem;
+    height: 2.4rem;
+  }
+
+  .country-detail-heading h2 {
+    font-size: 1.42rem;
+  }
+
+  .climate-fact-grid {
+    grid-template-columns: 1fr;
+  }
+  .knowledge-topic-grid {
+    display: block;
+  }
+
+  .knowledge-topic-card {
+    border-right: 0;
+    border-bottom: 1px solid var(--atlas-border-soft);
+  }
+
+  .knowledge-topic-card:last-child {
+    border-bottom: 0;
+  }
+
+  .knowledge-continent-tabs {
+    gap: 0.9rem;
+    overflow-x: auto;
+  }
+
+  .knowledge-region-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-country-grid {
+    grid-template-columns: repeat(2, minmax(8.5rem, 1fr));
+  }
+}

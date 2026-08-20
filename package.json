@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "bundle:check": "bun scripts/check-build-budgets.ts",
     "preview": "vite preview",
     "data:generate": "bun scripts/generate-country-data.ts",
     "data:generate:climate": "bun scripts/generate-climate-layer.ts",
@@ -17,7 +18,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "bun run build && playwright test",
+    "test:e2e": "bun run build && bun run bundle:check && playwright test",
     "check": "bun run data:validate && bun run lint && bun run typecheck && bun run format:check && bun run test && bun run test:e2e"
   },
   "dependencies": {
@@ -28,7 +29,6 @@
     "d3-geo": "3.1.1",
     "dexie": "^4.2.1",
     "i18next": "^25.5.2",
-    "motion": "^12.23.24",
     "r3f-globe": "^1.6.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -41,7 +41,6 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.56.1",
-    "@tailwindcss/vite": "^4.1.17",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -63,9 +62,7 @@
     "globals": "^16.5.0",
     "jsdom": "^27.2.0",
     "prettier": "^3.6.2",
-    "prettier-plugin-tailwindcss": "^0.7.1",
     "shapefile": "^0.6.6",
-    "tailwindcss": "^4.1.17",
     "topojson-client": "3.1.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",

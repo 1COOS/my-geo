@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { countriesByCode } from './countries'
-import { waterbodies, waterbodyGeometries } from './waterbodies'
+import { waterbodyGeometries } from './geometryData'
+import { waterbodies } from './waterbodies'
 import type { WaterbodyGeometry } from './waterbodySchema'
 
 type SurfaceGeometry = Extract<

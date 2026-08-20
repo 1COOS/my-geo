@@ -2,7 +2,8 @@ import { geoContains } from 'd3-geo'
 import { describe, expect, it } from 'vitest'
 
 import { countriesByCode, countrySourcesById } from './countries'
-import { desertGeometries, deserts } from './deserts'
+import { deserts } from './deserts'
+import { desertGeometries } from './geometryData'
 
 function countPoints(
   geometry: (typeof desertGeometries)[number]['lowDetailGeometry'],

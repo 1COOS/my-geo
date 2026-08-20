@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   knowledgeRegionProgressSchema,
+  loadExperiencePreferences,
+  loadKnowledgeProgress,
   mergeKnowledgeChallengeResult,
+  saveExperiencePreferences,
+  saveKnowledgeChallengeResult,
 } from './database'
 
 describe('knowledge progress', () => {
@@ -43,5 +47,21 @@ describe('knowledge progress', () => {
         attemptCount: -1,
       }).success,
     ).toBe(false)
+  })
+
+  it('falls back to memory-only outcomes when IndexedDB is unavailable', async () => {
+    expect((await loadExperiencePreferences()).status).toBe('memory-only')
+    expect((await loadKnowledgeProgress()).status).toBe('memory-only')
+    expect(
+      (
+        await saveExperiencePreferences({
+          autoRotate: false,
+          quality: 'low',
+        })
+      ).status,
+    ).toBe('memory-only')
+    expect((await saveKnowledgeChallengeResult('east-asia', 90)).status).toBe(
+      'memory-only',
+    )
   })
 })

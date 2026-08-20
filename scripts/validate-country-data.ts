@@ -13,15 +13,15 @@ import {
   countrySourceRegistrySchema,
 } from '../src/data/countrySchema'
 import { cityCatalogSchema } from '../src/data/citySchema'
+import { linearGeoFeatures } from '../src/data/linearGeoFeatures'
+import { mountainRanges } from '../src/data/mountainRanges'
+import { deserts } from '../src/data/deserts'
 import {
+  desertGeometries,
   linearGeoFeatureGeometries,
-  linearGeoFeatures,
-} from '../src/data/linearGeoFeatures'
-import {
   mountainRangeGeometries,
-  mountainRanges,
-} from '../src/data/mountainRanges'
-import { desertGeometries, deserts } from '../src/data/deserts'
+  waterbodyGeometries,
+} from '../src/data/geometryData'
 import { landmarks } from '../src/data/landmarks'
 import {
   desertGeometryDefinitions,
@@ -41,7 +41,7 @@ import {
   NATURAL_EARTH_MARINE_ARCHIVE_SHA256,
   waterbodyGeometryDefinitions,
 } from './waterbody-geometry-content'
-import { waterbodies, waterbodyGeometries } from '../src/data/waterbodies'
+import { waterbodies } from '../src/data/waterbodies'
 import { priorityCityCounts } from './city-content'
 import {
   adjacentRegionNames,

@@ -5,8 +5,11 @@ import {
   type GeoProjection,
 } from 'd3-geo'
 
-import { countries, countryBoundaries } from '../../data/countries'
-import type { CountryBoundary } from '../../data/countrySchema'
+import { countries } from '../../data/countries'
+import type {
+  CountryBoundaries,
+  CountryBoundary,
+} from '../../data/countrySchema'
 import type { GeoPosition } from '../../shared/types/geo'
 
 export const MINI_MAP_WIDTH = 360
@@ -26,16 +29,12 @@ export const worldMiniMapProjection = geoEquirectangular()
 
 export const worldMiniMapPath = geoPath(worldMiniMapProjection)
 
-const boundaryByCode = new Map(
-  countryBoundaries.features.map((feature) => [
-    feature.properties.code,
-    feature,
-  ]),
-)
-
-export const microstateCountries = countries.filter(
-  (country) => !boundaryByCode.has(country.code),
-)
+export function getMicrostateCountries(boundaries: CountryBoundaries) {
+  const boundaryCodes = new Set(
+    boundaries.features.map((feature) => feature.properties.code),
+  )
+  return countries.filter((country) => !boundaryCodes.has(country.code))
+}
 
 export function projectGeoPosition(
   position: GeoPosition,
@@ -58,13 +57,16 @@ export function invertMiniMapPoint(
   }
 }
 
-export function findCountryAtPosition(position: GeoPosition) {
+export function findCountryAtPosition(
+  position: GeoPosition,
+  countryBoundaries: CountryBoundaries,
+) {
   const point = projectGeoPosition(position)
   if (!point) return null
 
   let closestCountryCode: string | null = null
   let closestDistance = Number.POSITIVE_INFINITY
-  for (const country of microstateCountries) {
+  for (const country of getMicrostateCountries(countryBoundaries)) {
     const countryPoint = projectGeoPosition(country.center)
     if (!countryPoint) continue
     const distance = Math.hypot(

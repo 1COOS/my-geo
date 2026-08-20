@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getLinearGeoFeatureGeometry } from './linearGeoFeatures'
+import { getLinearGeoFeatureGeometry } from './geometryData'
 
 type Position = readonly [number, number]
 

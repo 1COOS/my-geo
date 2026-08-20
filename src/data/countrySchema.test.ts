@@ -5,10 +5,10 @@ import {
   capitalCities,
   cities,
   countries,
-  countryBoundaries,
   countrySourcesById,
   getCitiesForCountry,
 } from './countries'
+import { countryBoundaries } from './geometryData'
 
 const expectedFeaturedCodes = [
   'AU',

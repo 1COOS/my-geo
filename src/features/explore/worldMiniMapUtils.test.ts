@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { getCountry } from '../../data/countries'
+import { countryBoundaries } from '../../data/geometryData'
 import {
   findCountryAtPosition,
   invertMiniMapPoint,
@@ -21,13 +22,30 @@ describe('world mini map utilities', () => {
   })
 
   it('detects polygon countries, dateline countries, microstates, and ocean', () => {
-    expect(findCountryAtPosition(getCountry('CN')!.center)).toBe('CN')
-    expect(findCountryAtPosition({ latitude: 23.7, longitude: 121 })).toBe('CN')
-    expect(findCountryAtPosition({ latitude: -17.8, longitude: 177.9 })).toBe(
-      'FJ',
-    )
-    expect(findCountryAtPosition(getCountry('VA')!.center)).toBe('VA')
-    expect(findCountryAtPosition({ latitude: 0, longitude: -140 })).toBeNull()
+    expect(
+      findCountryAtPosition(getCountry('CN')!.center, countryBoundaries),
+    ).toBe('CN')
+    expect(
+      findCountryAtPosition(
+        { latitude: 23.7, longitude: 121 },
+        countryBoundaries,
+      ),
+    ).toBe('CN')
+    expect(
+      findCountryAtPosition(
+        { latitude: -17.8, longitude: 177.9 },
+        countryBoundaries,
+      ),
+    ).toBe('FJ')
+    expect(
+      findCountryAtPosition(getCountry('VA')!.center, countryBoundaries),
+    ).toBe('VA')
+    expect(
+      findCountryAtPosition(
+        { latitude: 0, longitude: -140 },
+        countryBoundaries,
+      ),
+    ).toBeNull()
   })
 
   it('clamps latitude and wraps longitude for keyboard navigation', () => {

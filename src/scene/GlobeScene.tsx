@@ -1,4 +1,4 @@
-import { OrbitControls, Stars } from '@react-three/drei'
+import { Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import R3fGlobe, { type GlobeMethods } from 'r3f-globe'
@@ -24,47 +24,18 @@ import {
 } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
-import {
-  cities,
-  countryBoundaries,
-  getCity,
-  getCountry,
-} from '../data/countries'
-import { deserts, getDesert, getDesertGeometry } from '../data/deserts'
+import type { CountryBoundaries } from '../data/countrySchema'
+import type { DesertGeometry } from '../data/desertSchema'
 import type { ClimateTypeId } from '../data/climateLearningSchema'
-import type { Desert } from '../data/desertSchema'
-import {
-  geographyReferenceLines,
-  getReferenceLine,
-} from '../data/geographyLearning'
+import { getReferenceLine } from '../data/geographyLearning'
 import type {
   GeographyTopicId,
-  ReferenceLine,
   ReferenceLineId,
 } from '../data/geographyLearningSchema'
-import { getLandmark, landmarks } from '../data/landmarks'
-import type { Landmark } from '../data/landmarkSchema'
-import {
-  getWaterbody,
-  getWaterbodyGeometry,
-  waterbodies,
-  waterbodyKindLabels,
-} from '../data/waterbodies'
-import type { City } from '../data/citySchema'
-import {
-  getLinearGeoFeature,
-  getLinearGeoFeatureGeometry,
-  linearGeoFeatureKindLabels,
-  linearGeoFeatures,
-} from '../data/linearGeoFeatures'
-import type { LinearGeoFeature } from '../data/linearGeoFeatureSchema'
-import {
-  getMountainRange,
-  getMountainRangeGeometry,
-  mountainRanges,
-} from '../data/mountainRanges'
-import type { MountainRange } from '../data/mountainRangeSchema'
-import type { Waterbody } from '../data/waterbodySchema'
+import { getWaterbody } from '../data/waterbodies'
+import type { LinearGeoFeatureGeometry } from '../data/linearGeoFeatureSchema'
+import type { MountainRangeGeometry } from '../data/mountainRangeSchema'
+import type { WaterbodyGeometry } from '../data/waterbodySchema'
 import type { CameraTarget, GeoPosition, GlobeView } from '../shared/types/geo'
 import {
   getBoundaryCode,
@@ -78,56 +49,52 @@ import {
   getLinearFeatureIdForLayer,
   getMapLabelPlacement,
   getOverviewCameraPosition,
-  getVisibleLayerCities,
-  getVisibleLayerWaterbodies,
-  getVisibleLinearFeatures,
   getWaterbodyIdForLayer,
-  getWaterbodyLabelState,
   getWaterbodyMarker,
   getWaterbodyPolygonState,
   OVERVIEW_CAMERA_DISTANCE,
   shouldApplyCameraTargetRequest,
-  type CityMarker,
-  type GlobePointMarker,
-  type WaterbodyMarker,
 } from './countrySceneInteraction'
 import {
   getLinearFeatureEndpointPairs,
-  getLinearFeatureGeometryForScene,
   getSelectedLinearFeatureLabelOffset,
 } from './linearFeatureSceneInteraction'
 import {
-  addGeographicPathAltitude,
-  getGeographicPathAppearance,
   getGeographicPathPointAltitude,
   getGeographicPathPointLatitude,
   getGeographicPathPointLongitude,
 } from './geographicPathStyle'
-import {
-  getMountainGeometryForScene,
-  getMountainRangeIdForLayer,
-  getVisibleMountainRanges,
-} from './mountainSceneInteraction'
+import { getMountainRangeIdForLayer } from './mountainSceneInteraction'
 import {
   getLandmarkIdForLayer,
-  getLandmarkLabelPriority,
   getLandmarkMarker,
-  getVisibleLandmarks,
-  type LandmarkMarker,
 } from './landmarkSceneInteraction'
 import {
-  getDesertGeometryForScene,
   getDesertIdForLayer,
   getDesertPolygonState,
-  getVisibleDeserts,
 } from './desertSceneInteraction'
+import { getReferenceLineIdForLayer } from './geographyLearningScene'
+import { advanceLabelLayoutFrame } from './globeFrameScheduling'
+import { GlobeCameraControls } from './GlobeCameraControls'
+import { GlobeDomOverlay } from './GlobeDomOverlay'
 import {
-  geographyCoordinateLabels,
-  getGeographyReferencePaths,
-  getReferenceLineIdForLayer,
-} from './geographyLearningScene'
+  getLabelGroup,
+  getLabelPriority,
+  getMapLabelName,
+  labelRectsOverlap,
+  type LabelGroup,
+  type LabelRect,
+  type MapLabel,
+} from './globeLabelLayout'
+import { useGlobeLabelData } from './useGlobeLabelData'
+import { useGlobeRenderData } from './useGlobeRenderData'
 
-export type GlobeSceneProps = {
+export type GlobeWorldProps = {
+  countryBoundaries: CountryBoundaries | null
+  waterbodyGeometries: WaterbodyGeometry[] | null
+  linearFeatureGeometries: LinearGeoFeatureGeometry[] | null
+  mountainGeometries: MountainRangeGeometry[] | null
+  desertGeometries: DesertGeometry[] | null
   autoRotate: boolean
   cameraTarget: CameraTarget
   quality: 'balanced' | 'low'
@@ -186,7 +153,86 @@ export type GlobeSceneProps = {
   onViewCenterCommit: (view: GlobeView) => void
 }
 
-type WorldProps = GlobeSceneProps & {
+export type GlobeSceneProps = {
+  geometry: Pick<
+    GlobeWorldProps,
+    | 'countryBoundaries'
+    | 'waterbodyGeometries'
+    | 'linearFeatureGeometries'
+    | 'mountainGeometries'
+    | 'desertGeometries'
+  >
+  view: Pick<
+    GlobeWorldProps,
+    'autoRotate' | 'cameraTarget' | 'quality' | 'reducedMotion'
+  >
+  layers: Pick<
+    GlobeWorldProps,
+    | 'showCapitals'
+    | 'showCities'
+    | 'showOceanLayer'
+    | 'showLakeLayer'
+    | 'showWaterwayLayer'
+    | 'showRiverAndCanalLayer'
+    | 'showMountainLayer'
+    | 'showDesertLayer'
+    | 'showLandmarkLayer'
+    | 'showGeographyLearningLayer'
+    | 'showClimateLayer'
+  >
+  climate: Pick<
+    GlobeWorldProps,
+    | 'selectedClimateTypeId'
+    | 'climateRasterUrl'
+    | 'climateBoundaryRasterUrl'
+    | 'selectedClimatePosition'
+  >
+  selection: Pick<
+    GlobeWorldProps,
+    | 'selectedGeographyTopicId'
+    | 'selectedReferenceLineId'
+    | 'selectedCountryCode'
+    | 'selectedCityId'
+    | 'selectedWaterbodyId'
+    | 'selectedLinearFeatureId'
+    | 'selectedMountainRangeId'
+    | 'selectedDesertId'
+    | 'selectedLandmarkId'
+  >
+  hover: Pick<
+    GlobeWorldProps,
+    | 'hoveredCountryCode'
+    | 'hoveredCityId'
+    | 'hoveredWaterbodyId'
+    | 'hoveredLinearFeatureId'
+    | 'hoveredMountainRangeId'
+    | 'hoveredDesertId'
+    | 'hoveredLandmarkId'
+  >
+  events: Pick<
+    GlobeWorldProps,
+    | 'onSelectCountry'
+    | 'onSelectCity'
+    | 'onHoverCountry'
+    | 'onHoverCity'
+    | 'onSelectWaterbody'
+    | 'onHoverWaterbody'
+    | 'onSelectLinearFeature'
+    | 'onHoverLinearFeature'
+    | 'onSelectMountainRange'
+    | 'onHoverMountainRange'
+    | 'onSelectDesert'
+    | 'onHoverDesert'
+    | 'onSelectLandmark'
+    | 'onHoverLandmark'
+    | 'onSelectGeographyTopic'
+    | 'onSelectClimatePosition'
+    | 'onViewCenterChange'
+    | 'onViewCenterCommit'
+  >
+}
+
+type WorldProps = GlobeWorldProps & {
   labelItems: MapLabel[]
   labelLayerRef: RefObject<HTMLDivElement | null>
   controlsInteractingRef: { current: boolean }
@@ -225,64 +271,6 @@ function releaseClimateBoundaryTexture(
   if (material.emissiveMap === texture) material.emissiveMap = null
   texture.dispose()
 }
-
-type MapLabel =
-  | {
-      id: string
-      type: 'city'
-      latitude: number
-      longitude: number
-      city: City
-    }
-  | {
-      id: string
-      type: 'waterbody'
-      latitude: number
-      longitude: number
-      waterbody: Waterbody
-    }
-  | {
-      id: string
-      type: 'linearFeature'
-      latitude: number
-      longitude: number
-      feature: LinearGeoFeature
-    }
-  | {
-      id: string
-      type: 'mountainRange'
-      latitude: number
-      longitude: number
-      range: MountainRange
-    }
-  | {
-      id: string
-      type: 'desert'
-      latitude: number
-      longitude: number
-      desert: Desert
-    }
-  | {
-      id: string
-      type: 'landmark'
-      latitude: number
-      longitude: number
-      landmark: Landmark
-    }
-  | {
-      id: string
-      type: 'referenceLine'
-      latitude: number
-      longitude: number
-      line: ReferenceLine
-    }
-  | {
-      id: string
-      type: 'coordinateLabel'
-      latitude: number
-      longitude: number
-      label: string
-    }
 
 type GlobeLayerObject = {
   parent?: GlobeLayerObject | null
@@ -324,103 +312,16 @@ type CameraFlight = {
   duration: number
 }
 
-type LabelRect = {
-  left: number
-  top: number
-  right: number
-  bottom: number
-}
-
-type LabelGroup =
-  | 'capital'
-  | 'city'
-  | 'ocean'
-  | 'lake'
-  | 'waterway'
-  | 'river'
-  | 'canal'
-  | 'mountain'
-  | 'desert'
-  | 'landmark'
-  | 'geography'
-
-function getLabelGroup(item: MapLabel): LabelGroup {
-  if (item.type === 'city') return item.city.isCapital ? 'capital' : 'city'
-  if (item.type === 'waterbody') return item.waterbody.layer
-  if (item.type === 'linearFeature') return item.feature.kind
-  if (item.type === 'mountainRange') return 'mountain'
-  if (item.type === 'referenceLine' || item.type === 'coordinateLabel')
-    return 'geography'
-  return item.type
-}
-
 function getWaterbodyLayerForScene(value: object | undefined) {
   return getWaterbody(getWaterbodyIdForLayer('polygon', value))?.layer
 }
 
-function overlaps(left: LabelRect, right: LabelRect) {
-  return !(
-    left.right < right.left ||
-    left.left > right.right ||
-    left.bottom < right.top ||
-    left.top > right.bottom
-  )
-}
-
-function getLabelPriority(
-  item: MapLabel,
-  selectedCityId: string | null,
-  hoveredCityId: string | null,
-  selectedWaterbodyId: string | null,
-  hoveredWaterbodyId: string | null,
-  selectedLinearFeatureId: string | null,
-  hoveredLinearFeatureId: string | null,
-  selectedMountainRangeId: string | null,
-  hoveredMountainRangeId: string | null,
-  selectedDesertId: string | null,
-  hoveredDesertId: string | null,
-  selectedLandmarkId: string | null,
-  hoveredLandmarkId: string | null,
-  selectedReferenceLineId: ReferenceLineId | null,
-) {
-  if (item.type === 'referenceLine' && item.line.id === selectedReferenceLineId)
-    return 0
-  if (item.type === 'referenceLine')
-    return item.line.category === 'latitude-zone-boundary' ? 4.5 : 1.4
-  if (item.type === 'coordinateLabel') return 6
-  if (item.type === 'landmark') {
-    return getLandmarkLabelPriority(item.landmark, {
-      selectedLandmarkId,
-      hoveredLandmarkId,
-    })
-  }
-  if (
-    item.id === selectedCityId ||
-    item.id === selectedWaterbodyId ||
-    item.id === selectedLinearFeatureId ||
-    item.id === selectedMountainRangeId ||
-    item.id === selectedDesertId ||
-    item.id === selectedLandmarkId
-  )
-    return 0
-  if (
-    item.id === hoveredCityId ||
-    item.id === hoveredWaterbodyId ||
-    item.id === hoveredLinearFeatureId ||
-    item.id === hoveredMountainRangeId ||
-    item.id === hoveredDesertId ||
-    item.id === hoveredLandmarkId
-  )
-    return 1
-  if (item.type === 'waterbody') return 2 + item.waterbody.labelPriority / 100
-  if (item.type === 'linearFeature')
-    return 2.5 + item.feature.labelPriority / 100
-  if (item.type === 'mountainRange') return 2.7 + item.range.labelPriority / 100
-  if (item.type === 'desert') return 2.8 + item.desert.labelPriority / 100
-  return (item.city.isCapital ? 3 : 10) + item.city.order / 10
-}
-
 function World({
+  countryBoundaries,
+  waterbodyGeometries,
+  linearFeatureGeometries,
+  mountainGeometries,
+  desertGeometries,
   autoRotate,
   cameraTarget,
   quality,
@@ -484,6 +385,8 @@ function World({
   const viewCenterFrameRef = useRef<number | null>(null)
   const labelElementsRef = useRef(new Map<string, HTMLElement>())
   const visibleLabelIdsRef = useRef(new Set<string>())
+  const labelWorldPositionRef = useRef(new Vector3())
+  const labelFrameAccumulatorRef = useRef(0)
   const flyToTargetRef = useRef<(target: CameraTarget) => void>(() => undefined)
   const { camera, gl, size } = useThree()
   const rendererSize = useMemo(
@@ -558,263 +461,33 @@ function World({
       )
     }
   }, [gl, onControlsInteractionEnd, onControlsInteractionStart])
-  const pointMarkers = useMemo<GlobePointMarker[]>(() => {
-    const markers: GlobePointMarker[] = []
-    for (const item of labelItems) {
-      if (item.type === 'city') {
-        markers.push({
-          markerType: 'city',
-          cityId: item.city.id,
-          countryCode: item.city.countryCode,
-          lat: item.city.latitude,
-          lng: item.city.longitude,
-          name: item.city.name.zh,
-          isCapital: item.city.isCapital,
-        } satisfies CityMarker)
-      } else if (item.type === 'waterbody') {
-        markers.push({
-          markerType: 'waterbody',
-          waterbodyId: item.waterbody.id,
-          layer: item.waterbody.layer,
-          kind: item.waterbody.kind,
-          lat: item.waterbody.center.latitude,
-          lng: item.waterbody.center.longitude,
-          name: item.waterbody.name.zh,
-        } satisfies WaterbodyMarker)
-      } else if (item.type === 'landmark') {
-        markers.push({
-          markerType: 'landmark',
-          landmarkId: item.landmark.id,
-          lat: item.landmark.position.latitude,
-          lng: item.landmark.position.longitude,
-          name: item.landmark.name.zh,
-        } satisfies LandmarkMarker)
-      }
-    }
-    if (selectedClimatePosition) {
-      markers.push({
-        markerType: 'climate',
-        lat: selectedClimatePosition.latitude,
-        lng: selectedClimatePosition.longitude,
-        name: '气候判读点',
-      })
-    }
-    return markers
-  }, [labelItems, selectedClimatePosition])
-  const selectedWaterbody = getWaterbody(selectedWaterbodyId)
-  const selectedWaterbodyGeometry = getWaterbodyGeometry(selectedWaterbodyId)
-  const selectedSurfaceFeature = useMemo(
-    () =>
-      selectedWaterbody?.layer !== 'lake' &&
-      selectedWaterbodyGeometry?.kind === 'surface'
-        ? {
-            type: 'Feature' as const,
-            properties: { waterbodyId: selectedWaterbodyGeometry.id },
-            geometry:
-              quality === 'low'
-                ? selectedWaterbodyGeometry.lowDetailGeometry
-                : selectedWaterbodyGeometry.geometry,
-          }
-        : null,
-    [quality, selectedWaterbody, selectedWaterbodyGeometry],
-  )
-  const visibleLakeSurfaceFeatures = useMemo(
-    () =>
-      labelItems.flatMap((item) => {
-        if (item.type !== 'waterbody' || item.waterbody.layer !== 'lake') {
-          return []
-        }
-        const geometry = getWaterbodyGeometry(item.waterbody.id)
-        return geometry?.kind === 'surface'
-          ? [
-              {
-                type: 'Feature' as const,
-                properties: { waterbodyId: geometry.id },
-                geometry:
-                  quality === 'low'
-                    ? geometry.lowDetailGeometry
-                    : geometry.geometry,
-              },
-            ]
-          : []
-      }),
-    [labelItems, quality],
-  )
-  const selectedTrenchPath = useMemo(() => {
-    if (selectedWaterbodyGeometry?.kind !== 'trench') return null
-    const pathState = {
-      waterbodyId: selectedWaterbodyGeometry.id,
-      kind: 'trench' as const,
-      selected: true,
-    }
-    const appearance = getGeographicPathAppearance(pathState, quality)
-    const points =
-      quality === 'low'
-        ? selectedWaterbodyGeometry.lowDetailPoints
-        : selectedWaterbodyGeometry.points
-    return {
-      ...pathState,
-      ...appearance,
-      points: addGeographicPathAltitude(points, appearance.altitude),
-    }
-  }, [quality, selectedWaterbodyGeometry])
-  const visibleDesertFeatures = useMemo(
-    () =>
-      getVisibleDeserts(deserts, {
-        showDesertLayer,
-      }).flatMap((desert) => {
-        const geometry = getDesertGeometry(desert.id)
-        return geometry
-          ? [
-              {
-                type: 'Feature' as const,
-                properties: { desertId: desert.id },
-                geometry: getDesertGeometryForScene(geometry, quality),
-              },
-            ]
-          : []
-      }),
-    [quality, showDesertLayer],
-  )
-  const selectedLinearFeature = getLinearGeoFeature(selectedLinearFeatureId)
-  const selectedMountainRange = getMountainRange(selectedMountainRangeId)
-  const selectedPathKind =
-    selectedLinearFeature?.kind ??
-    (selectedMountainRange ? ('mountain' as const) : undefined)
-  const selectedPathAltitude = getGeographicPathAppearance(
-    { kind: selectedPathKind, selected: true },
+  const {
+    pointMarkers,
+    selectedMountainRange,
+    selectedPathAltitude,
+    selectedLinearFeatureGeometry,
+    pathData,
+    polygonsData,
+  } = useGlobeRenderData({
+    countryBoundaries,
+    waterbodyGeometries,
+    linearFeatureGeometries,
+    mountainGeometries,
+    desertGeometries,
     quality,
-  ).altitude
-  const selectedLinearFeatureGeometry = useMemo(() => {
-    if (selectedLinearFeature) {
-      const geometry = getLinearGeoFeatureGeometry(selectedLinearFeature.id)
-      return geometry
-        ? getLinearFeatureGeometryForScene(geometry, quality, true)
-        : null
-    }
-    if (selectedMountainRange) {
-      const geometry = getMountainRangeGeometry(selectedMountainRange.id)
-      return geometry
-        ? getMountainGeometryForScene(geometry, quality, true)
-        : null
-    }
-    return null
-  }, [quality, selectedLinearFeature, selectedMountainRange])
-  const visibleLinearFeatures = useMemo(
-    () =>
-      getVisibleLinearFeatures(linearGeoFeatures, {
-        showRiverAndCanalLayer,
-        selectedLinearFeatureId,
-        hoveredLinearFeatureId,
-      }),
-    [hoveredLinearFeatureId, selectedLinearFeatureId, showRiverAndCanalLayer],
-  )
-  const linearPaths = useMemo(
-    () =>
-      visibleLinearFeatures.flatMap((feature) => {
-        const geometry = getLinearGeoFeatureGeometry(feature.id)
-        if (!geometry) return []
-        const lines = getLinearFeatureGeometryForScene(
-          geometry,
-          quality,
-          feature.id === selectedLinearFeatureId,
-        ).coordinates
-        return lines.map((points, segmentIndex) => {
-          const pathState = {
-            kind: feature.kind,
-            selected: feature.id === selectedLinearFeatureId,
-            hovered: feature.id === hoveredLinearFeatureId,
-          }
-          const appearance = getGeographicPathAppearance(pathState, quality)
-          return {
-            linearFeatureId: feature.id,
-            ...pathState,
-            ...appearance,
-            segmentIndex,
-            points: addGeographicPathAltitude(
-              points.map(([longitude, latitude]) => [latitude, longitude]),
-              appearance.altitude,
-            ),
-          }
-        })
-      }),
-    [
-      hoveredLinearFeatureId,
-      quality,
-      selectedLinearFeatureId,
-      visibleLinearFeatures,
-    ],
-  )
-  const visibleMountains = useMemo(
-    () =>
-      getVisibleMountainRanges(mountainRanges, {
-        showMountainLayer,
-        selectedMountainRangeId,
-        hoveredMountainRangeId,
-      }),
-    [hoveredMountainRangeId, selectedMountainRangeId, showMountainLayer],
-  )
-  const mountainPaths = useMemo(
-    () =>
-      visibleMountains.flatMap((range) => {
-        const geometry = getMountainRangeGeometry(range.id)
-        if (!geometry) return []
-        const lines = getMountainGeometryForScene(
-          geometry,
-          quality,
-          range.id === selectedMountainRangeId,
-        ).coordinates
-        return lines.map((points, segmentIndex) => {
-          const pathState = {
-            kind: 'mountain' as const,
-            selected: range.id === selectedMountainRangeId,
-            hovered: range.id === hoveredMountainRangeId,
-          }
-          const appearance = getGeographicPathAppearance(pathState, quality)
-          return {
-            mountainRangeId: range.id,
-            ...pathState,
-            ...appearance,
-            segmentIndex,
-            points: addGeographicPathAltitude(
-              points.map(([longitude, latitude]) => [latitude, longitude]),
-              appearance.altitude,
-            ),
-          }
-        })
-      }),
-    [
-      hoveredMountainRangeId,
-      quality,
-      selectedMountainRangeId,
-      visibleMountains,
-    ],
-  )
-  const geographyReferencePaths = useMemo(
-    () =>
-      showGeographyLearningLayer
-        ? getGeographyReferencePaths(quality, selectedReferenceLineId)
-        : [],
-    [quality, selectedReferenceLineId, showGeographyLearningLayer],
-  )
-  const pathData = useMemo(
-    () => [
-      ...(selectedTrenchPath ? [selectedTrenchPath] : []),
-      ...linearPaths,
-      ...mountainPaths,
-      ...geographyReferencePaths,
-    ],
-    [geographyReferencePaths, linearPaths, mountainPaths, selectedTrenchPath],
-  )
-  const polygonsData = useMemo(
-    () => [
-      ...countryBoundaries.features,
-      ...visibleDesertFeatures,
-      ...visibleLakeSurfaceFeatures,
-      ...(selectedSurfaceFeature ? [selectedSurfaceFeature] : []),
-    ],
-    [selectedSurfaceFeature, visibleDesertFeatures, visibleLakeSurfaceFeatures],
-  )
+    labelItems,
+    selectedClimatePosition,
+    selectedWaterbodyId,
+    showDesertLayer,
+    selectedLinearFeatureId,
+    selectedMountainRangeId,
+    showRiverAndCanalLayer,
+    hoveredLinearFeatureId,
+    showMountainLayer,
+    hoveredMountainRangeId,
+    selectedReferenceLineId,
+    showGeographyLearningLayer,
+  })
 
   const syncPointOfView = useCallback(() => {
     globeRef.current?.setPointOfView(camera)
@@ -979,6 +652,55 @@ function World({
     size.width,
   ])
 
+  const labelLayoutItems = useMemo(() => {
+    const priorityState = {
+      selectedCityId,
+      hoveredCityId,
+      selectedWaterbodyId,
+      hoveredWaterbodyId,
+      selectedLinearFeatureId,
+      hoveredLinearFeatureId,
+      selectedMountainRangeId,
+      hoveredMountainRangeId,
+      selectedDesertId,
+      hoveredDesertId,
+      selectedLandmarkId,
+      hoveredLandmarkId,
+      selectedReferenceLineId,
+    }
+    return [...labelItems]
+      .sort(
+        (left, right) =>
+          getLabelPriority(left, priorityState) -
+          getLabelPriority(right, priorityState),
+      )
+      .map((item) => ({
+        item,
+        group: getLabelGroup(item),
+        width: Math.max(56, getMapLabelName(item).length * 14 + 28),
+        height: 28,
+      }))
+  }, [
+    hoveredCityId,
+    hoveredDesertId,
+    hoveredLandmarkId,
+    hoveredLinearFeatureId,
+    hoveredMountainRangeId,
+    hoveredWaterbodyId,
+    labelItems,
+    selectedCityId,
+    selectedDesertId,
+    selectedLandmarkId,
+    selectedLinearFeatureId,
+    selectedMountainRangeId,
+    selectedReferenceLineId,
+    selectedWaterbodyId,
+  ])
+  const activeLabelGroupCount = useMemo(
+    () => new Set(labelLayoutItems.map((candidate) => candidate.group)).size,
+    [labelLayoutItems],
+  )
+
   const layoutCityLabels = useCallback(() => {
     const globe = globeRef.current
     if (!globe) return
@@ -991,7 +713,7 @@ function World({
     const labelElements = labelElementsRef.current
     for (const cityId of visibleLabelIdsRef.current) {
       const element = labelElements.get(cityId)
-      if (element) element.hidden = true
+      if (element && !element.hidden) element.hidden = true
     }
     const nextVisibleIds = new Set<string>()
 
@@ -1010,41 +732,6 @@ function World({
     }
     let visibleCount = 0
 
-    const sortedItems = [...labelItems].sort(
-      (left, right) =>
-        getLabelPriority(
-          left,
-          selectedCityId,
-          hoveredCityId,
-          selectedWaterbodyId,
-          hoveredWaterbodyId,
-          selectedLinearFeatureId,
-          hoveredLinearFeatureId,
-          selectedMountainRangeId,
-          hoveredMountainRangeId,
-          selectedDesertId,
-          hoveredDesertId,
-          selectedLandmarkId,
-          hoveredLandmarkId,
-          selectedReferenceLineId,
-        ) -
-        getLabelPriority(
-          right,
-          selectedCityId,
-          hoveredCityId,
-          selectedWaterbodyId,
-          hoveredWaterbodyId,
-          selectedLinearFeatureId,
-          hoveredLinearFeatureId,
-          selectedMountainRangeId,
-          hoveredMountainRangeId,
-          selectedDesertId,
-          hoveredDesertId,
-          selectedLandmarkId,
-          hoveredLandmarkId,
-          selectedReferenceLineId,
-        ),
-    )
     const groupCount: Record<LabelGroup, number> = {
       capital: 0,
       city: 0,
@@ -1058,10 +745,12 @@ function World({
       landmark: 0,
       geography: 0,
     }
-    const activeGroups = new Set(labelItems.map(getLabelGroup)).size
-    const ordinaryGroupLimit = Math.ceil(budget / Math.max(activeGroups, 1))
+    const ordinaryGroupLimit = Math.ceil(
+      budget / Math.max(activeLabelGroupCount, 1),
+    )
 
-    for (const item of sortedItems) {
+    for (const candidate of labelLayoutItems) {
+      const { item, group: labelGroup, width, height } = candidate
       if (visibleCount >= budget) break
       const element = labelElements.get(item.id)
       if (!element) continue
@@ -1083,7 +772,6 @@ function World({
           item.line.id === selectedReferenceLineId) ||
         (item.type === 'referenceLine' &&
           item.line.category !== 'latitude-zone-boundary')
-      const labelGroup = getLabelGroup(item)
       if (
         !forced &&
         labelGroup !== 'geography' &&
@@ -1092,7 +780,7 @@ function World({
         continue
 
       const coordinate = globe.getCoords(item.latitude, item.longitude, 0.04)
-      const worldPosition = new Vector3(
+      const worldPosition = labelWorldPositionRef.current.set(
         coordinate.x,
         coordinate.y,
         coordinate.z,
@@ -1106,24 +794,6 @@ function World({
         continue
       }
 
-      const labelName =
-        item.type === 'city'
-          ? item.city.name.zh
-          : item.type === 'waterbody'
-            ? item.waterbody.name.zh
-            : item.type === 'linearFeature'
-              ? item.feature.name.zh
-              : item.type === 'mountainRange'
-                ? item.range.name.zh
-                : item.type === 'desert'
-                  ? item.desert.name.zh
-                  : item.type === 'landmark'
-                    ? item.landmark.name.zh
-                    : item.type === 'referenceLine'
-                      ? item.line.shortLabel
-                      : item.label
-      const width = Math.max(56, labelName.length * 14 + 28)
-      const height = 28
       if (
         (item.type === 'linearFeature' &&
           item.id === selectedLinearFeatureId) ||
@@ -1167,13 +837,16 @@ function World({
       }
       if (
         !forced &&
-        acceptedRects.some((accepted) => overlaps(rect, accepted))
+        acceptedRects.some((accepted) => labelRectsOverlap(rect, accepted))
       ) {
         continue
       }
 
-      element.hidden = false
-      element.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`
+      if (element.hidden) element.hidden = false
+      const transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`
+      if (element.style.transform !== transform) {
+        element.style.transform = transform
+      }
       if (item.type === 'waterbody' && item.waterbody.layer === 'lake') {
         element.style.setProperty(
           '--lake-label-leader-length',
@@ -1199,7 +872,8 @@ function World({
     hoveredMountainRangeId,
     hoveredDesertId,
     hoveredLandmarkId,
-    labelItems,
+    activeLabelGroupCount,
+    labelLayoutItems,
     quality,
     projectSelectedMountainPeak,
     selectedCityId,
@@ -1384,7 +1058,14 @@ function World({
       }
     }
 
-    if (autoRotate || labelLayoutPendingRef.current) {
+    const labelFrame = advanceLabelLayoutFrame(
+      labelFrameAccumulatorRef.current,
+      delta,
+      quality,
+      autoRotate || labelLayoutPendingRef.current,
+    )
+    labelFrameAccumulatorRef.current = labelFrame.accumulatedSeconds
+    if (labelFrame.shouldLayout) {
       labelLayoutPendingRef.current = false
       layoutCityLabels()
       layoutSelectedLinearFeatureOverlay()
@@ -1732,28 +1413,16 @@ function World({
         }}
       />
 
-      <OrbitControls
-        ref={controlsRef}
-        makeDefault
-        keyEvents
-        enableDamping
-        dampingFactor={0.055}
-        enablePan={false}
-        minDistance={155}
-        maxDistance={OVERVIEW_CAMERA_DISTANCE}
-        minPolarAngle={0.18}
-        maxPolarAngle={Math.PI - 0.18}
-        rotateSpeed={0.62}
-        zoomSpeed={0.72}
+      <GlobeCameraControls
+        controlsRef={controlsRef}
         autoRotate={autoRotate}
-        autoRotateSpeed={0.42}
-        onStart={onControlsInteractionStart}
-        onChange={() => {
+        onInteractionStart={onControlsInteractionStart}
+        onInteractionChange={() => {
           syncPointOfView()
           labelLayoutPendingRef.current = true
           scheduleViewChange()
         }}
-        onEnd={() => {
+        onInteractionEnd={() => {
           onControlsInteractionEnd()
           commitView()
         }}
@@ -1773,7 +1442,27 @@ function World({
   )
 }
 
-export function GlobeScene(props: GlobeSceneProps) {
+export function GlobeScene({
+  geometry,
+  view,
+  layers,
+  climate,
+  selection,
+  hover,
+  events,
+}: GlobeSceneProps) {
+  const props = useMemo<GlobeWorldProps>(
+    () => ({
+      ...geometry,
+      ...view,
+      ...layers,
+      ...climate,
+      ...selection,
+      ...hover,
+      ...events,
+    }),
+    [climate, events, geometry, hover, layers, selection, view],
+  )
   const {
     onHoverCity,
     onHoverCountry,
@@ -1783,23 +1472,11 @@ export function GlobeScene(props: GlobeSceneProps) {
     onHoverDesert,
     onHoverLandmark,
   } = props
-  const tooltipRef = useRef<HTMLDivElement>(null)
   const labelLayerRef = useRef<HTMLDivElement>(null)
   const controlsInteractingRef = useRef(false)
   const [controlsInteracting, setControlsInteracting] = useState(false)
   const selectedLinearFeatureOverlayRef = useRef<SVGSVGElement>(null)
   const selectedMountainPeakRef = useRef<HTMLButtonElement>(null)
-  const hoveredCountry = getCountry(props.hoveredCountryCode)
-  const hoveredCity = getCity(props.hoveredCityId)
-  const hoveredWaterbody = getWaterbody(props.hoveredWaterbodyId)
-  const hoveredLinearFeature = getLinearGeoFeature(props.hoveredLinearFeatureId)
-  const hoveredMountainRange = getMountainRange(props.hoveredMountainRangeId)
-  const hoveredDesert = getDesert(props.hoveredDesertId)
-  const hoveredLandmark = getLandmark(props.hoveredLandmarkId)
-  const selectedLinearFeature = getLinearGeoFeature(
-    props.selectedLinearFeatureId,
-  )
-  const selectedMountainRange = getMountainRange(props.selectedMountainRangeId)
   const clearHoveredEntities = useCallback(() => {
     onHoverCountry(null)
     onHoverCity(null)
@@ -1828,200 +1505,17 @@ export function GlobeScene(props: GlobeSceneProps) {
     controlsInteractingRef.current = false
     setControlsInteracting(false)
   }, [])
-  const selectedLinearFeatureStemCount = selectedLinearFeature
-    ? (getLinearGeoFeatureGeometry(selectedLinearFeature.id)?.geometry
-        .coordinates.length ?? 0)
-    : 0
-  const labelCities = useMemo(
-    () =>
-      getVisibleLayerCities(cities, {
-        showCapitals: props.showCapitals,
-        showCities: props.showCities,
-        selectedCityId: props.selectedCityId,
-        hoveredCityId: props.hoveredCityId,
-      }),
-    [
-      props.hoveredCityId,
-      props.selectedCityId,
-      props.showCapitals,
-      props.showCities,
-    ],
-  )
-  const labelWaterbodies = useMemo(
-    () =>
-      getVisibleLayerWaterbodies(waterbodies, {
-        showOceanLayer: props.showOceanLayer,
-        showLakeLayer: props.showLakeLayer,
-        showWaterwayLayer: props.showWaterwayLayer,
-        selectedWaterbodyId: props.selectedWaterbodyId,
-        hoveredWaterbodyId: props.hoveredWaterbodyId,
-      }),
-    [
-      props.hoveredWaterbodyId,
-      props.selectedWaterbodyId,
-      props.showOceanLayer,
-      props.showLakeLayer,
-      props.showWaterwayLayer,
-    ],
-  )
-  const labelLinearFeatures = useMemo(
-    () =>
-      getVisibleLinearFeatures(linearGeoFeatures, {
-        showRiverAndCanalLayer: props.showRiverAndCanalLayer,
-        selectedLinearFeatureId: props.selectedLinearFeatureId,
-        hoveredLinearFeatureId: props.hoveredLinearFeatureId,
-      }),
-    [
-      props.hoveredLinearFeatureId,
-      props.selectedLinearFeatureId,
-      props.showRiverAndCanalLayer,
-    ],
-  )
-  const labelMountainRanges = useMemo(
-    () =>
-      getVisibleMountainRanges(mountainRanges, {
-        showMountainLayer: props.showMountainLayer,
-        selectedMountainRangeId: props.selectedMountainRangeId,
-        hoveredMountainRangeId: props.hoveredMountainRangeId,
-      }),
-    [
-      props.hoveredMountainRangeId,
-      props.selectedMountainRangeId,
-      props.showMountainLayer,
-    ],
-  )
-  const labelDeserts = useMemo(
-    () =>
-      getVisibleDeserts(deserts, {
-        showDesertLayer: props.showDesertLayer,
-      }),
-    [props.showDesertLayer],
-  )
-  const labelLandmarks = useMemo(
-    () =>
-      getVisibleLandmarks(landmarks, {
-        showLandmarkLayer: props.showLandmarkLayer,
-      }),
-    [props.showLandmarkLayer],
-  )
-  const labelReferenceLines = useMemo(
-    () => (props.showGeographyLearningLayer ? geographyReferenceLines : []),
-    [props.showGeographyLearningLayer],
-  )
-  const labelCoordinateItems = useMemo(
-    () =>
-      props.showGeographyLearningLayer
-        ? props.quality === 'balanced'
-          ? geographyCoordinateLabels
-          : geographyCoordinateLabels.filter(
-              (item) =>
-                item.label === '0°' ||
-                item.label.startsWith('60°') ||
-                item.label.startsWith('120°'),
-            )
-        : [],
-    [props.quality, props.showGeographyLearningLayer],
-  )
-  const labelItems = useMemo<MapLabel[]>(
-    () => [
-      ...labelCities.map((city) => ({
-        id: city.id,
-        type: 'city' as const,
-        latitude: city.latitude,
-        longitude: city.longitude,
-        city,
-      })),
-      ...labelWaterbodies.map((waterbody) => ({
-        id: waterbody.id,
-        type: 'waterbody' as const,
-        latitude: waterbody.center.latitude,
-        longitude: waterbody.center.longitude,
-        waterbody,
-      })),
-      ...labelLinearFeatures.map((feature) => ({
-        id: feature.id,
-        type: 'linearFeature' as const,
-        latitude: feature.labelPosition.latitude,
-        longitude: feature.labelPosition.longitude,
-        feature,
-      })),
-      ...labelMountainRanges.map((range) => ({
-        id: range.id,
-        type: 'mountainRange' as const,
-        latitude: range.labelPosition.latitude,
-        longitude: range.labelPosition.longitude,
-        range,
-      })),
-      ...labelDeserts.map((desert) => ({
-        id: desert.id,
-        type: 'desert' as const,
-        latitude: desert.center.latitude,
-        longitude: desert.center.longitude,
-        desert,
-      })),
-      ...labelLandmarks.map((landmark) => ({
-        id: landmark.id,
-        type: 'landmark' as const,
-        latitude: landmark.position.latitude,
-        longitude: landmark.position.longitude,
-        landmark,
-      })),
-      ...labelReferenceLines.map((line) => ({
-        id: `reference-${line.id}`,
-        type: 'referenceLine' as const,
-        latitude: line.anchorPosition.latitude,
-        longitude: line.anchorPosition.longitude,
-        line,
-      })),
-      ...labelCoordinateItems.map((item) => ({
-        ...item,
-        id: `coordinate-${item.id}`,
-        type: 'coordinateLabel' as const,
-      })),
-    ],
-    [
-      labelCities,
-      labelDeserts,
-      labelLinearFeatures,
-      labelLandmarks,
-      labelMountainRanges,
-      labelCoordinateItems,
-      labelReferenceLines,
-      labelWaterbodies,
-    ],
-  )
+  const labelData = useGlobeLabelData(props)
 
   return (
-    <div
-      className="globe-canvas"
-      data-testid="globe-scene"
-      data-climate-highlight-id={
-        props.showClimateLayer
-          ? (props.selectedClimateTypeId ?? undefined)
-          : undefined
-      }
-      data-climate-boundary-id={
-        props.showClimateLayer && props.climateBoundaryRasterUrl
-          ? (props.selectedClimateTypeId ?? undefined)
-          : undefined
-      }
-      data-controls-interacting={controlsInteracting ? 'true' : 'false'}
-      role="application"
-      aria-label="交互式 3D 地球。拖动旋转，滚轮缩放，方向键移动视角。"
-      tabIndex={0}
-      onPointerMove={(event) => {
-        if (!tooltipRef.current) return
-        tooltipRef.current.style.transform = `translate3d(${event.clientX + 14}px, ${event.clientY + 14}px, 0)`
-      }}
-      onPointerLeave={() => {
-        props.onHoverCountry(null)
-        props.onHoverCity(null)
-        props.onHoverWaterbody(null)
-        props.onHoverLinearFeature(null)
-        props.onHoverMountainRange(null)
-        props.onHoverDesert(null)
-        props.onHoverLandmark(null)
-      }}
+    <GlobeDomOverlay
+      worldProps={props}
+      labels={labelData}
+      controlsInteracting={controlsInteracting}
+      controlsInteractingRef={controlsInteractingRef}
+      labelLayerRef={labelLayerRef}
+      selectedLinearFeatureOverlayRef={selectedLinearFeatureOverlayRef}
+      selectedMountainPeakRef={selectedMountainPeakRef}
     >
       <Canvas
         camera={{
@@ -2040,7 +1534,7 @@ export function GlobeScene(props: GlobeSceneProps) {
       >
         <World
           {...props}
-          labelItems={labelItems}
+          labelItems={labelData.labelItems}
           labelLayerRef={labelLayerRef}
           controlsInteractingRef={controlsInteractingRef}
           onControlsInteractionStart={beginControlsInteraction}
@@ -2049,311 +1543,6 @@ export function GlobeScene(props: GlobeSceneProps) {
           selectedMountainPeakRef={selectedMountainPeakRef}
         />
       </Canvas>
-      {selectedLinearFeature || selectedMountainRange ? (
-        <svg
-          ref={selectedLinearFeatureOverlayRef}
-          className={`selected-linear-feature-overlay is-${selectedLinearFeature?.kind ?? 'mountain'}`}
-          data-testid={
-            selectedLinearFeature
-              ? 'selected-linear-feature-overlay'
-              : 'selected-mountain-overlay'
-          }
-          data-linear-feature-id={selectedLinearFeature?.id}
-          data-mountain-range-id={selectedMountainRange?.id}
-          data-linear-detail={selectedLinearFeature ? 'high' : undefined}
-          data-mountain-detail={selectedMountainRange ? 'high' : undefined}
-          style={{ display: 'none' }}
-          aria-hidden="true"
-        >
-          <path
-            className="selected-linear-feature-route-outer"
-            data-testid={
-              selectedLinearFeature
-                ? 'selected-linear-feature-route'
-                : 'selected-mountain-route'
-            }
-            data-linear-route-layer="outer"
-          />
-          <path
-            className="selected-linear-feature-route-core"
-            data-linear-route-layer="core"
-          />
-          {selectedLinearFeature
-            ? Array.from(
-                { length: selectedLinearFeatureStemCount },
-                (_, index) => (
-                  <g key={index} data-linear-endpoint-pair={index}>
-                    <circle
-                      className="selected-linear-feature-endpoint is-start"
-                      data-testid="selected-linear-feature-start"
-                      data-linear-endpoint="start"
-                      r="6"
-                    />
-                    <polygon
-                      className="selected-linear-feature-endpoint is-end"
-                      data-testid="selected-linear-feature-end"
-                      data-linear-endpoint="end"
-                    />
-                  </g>
-                ),
-              )
-            : null}
-        </svg>
-      ) : null}
-      {selectedMountainRange ? (
-        <button
-          ref={selectedMountainPeakRef}
-          type="button"
-          hidden
-          className="mountain-peak-marker"
-          data-testid="selected-mountain-peak"
-          data-mountain-range-id={selectedMountainRange.id}
-          aria-label={`${selectedMountainRange.highestPeak.name.zh}，海拔${selectedMountainRange.highestPeak.elevationMeters}米`}
-          onClick={() => props.onSelectMountainRange(selectedMountainRange.id)}
-        >
-          <span className="mountain-peak-marker-shape" aria-hidden="true" />
-          <span className="mountain-peak-marker-tooltip">
-            <strong>{selectedMountainRange.highestPeak.name.zh}</strong>
-            <small>{selectedMountainRange.highestPeak.name.en}</small>
-            <b>
-              {selectedMountainRange.highestPeak.approximateElevation
-                ? '约 '
-                : ''}
-              {selectedMountainRange.highestPeak.elevationMeters.toLocaleString(
-                'zh-CN',
-              )}{' '}
-              m
-            </b>
-          </span>
-        </button>
-      ) : null}
-      <div
-        ref={labelLayerRef}
-        className="globe-city-labels"
-        aria-label="城市、水域、山脉、沙漠、古迹与经纬网地理标签"
-      >
-        {labelCities.map((city) => (
-          <button
-            type="button"
-            key={city.id}
-            hidden
-            className={city.isCapital ? 'city-label is-capital' : 'city-label'}
-            data-map-label-id={city.id}
-            data-city-id={city.id}
-            aria-label={`定位到${city.name.zh}${city.isCapital ? '首都' : '城市'}`}
-            onPointerEnter={() => {
-              if (!controlsInteractingRef.current) props.onHoverCity(city.id)
-            }}
-            onPointerLeave={() => props.onHoverCity(null)}
-            onClick={() => props.onSelectCity(city.id)}
-          >
-            <span aria-hidden="true" />
-            {city.name.zh}
-          </button>
-        ))}
-        {labelWaterbodies.map((waterbody) => (
-          <button
-            type="button"
-            key={waterbody.id}
-            hidden
-            className={`city-label waterbody-label is-${waterbody.layer} is-${getWaterbodyLabelState(
-              waterbody.id,
-              props.selectedWaterbodyId,
-              props.hoveredWaterbodyId,
-            )}`}
-            data-map-label-id={waterbody.id}
-            data-waterbody-id={waterbody.id}
-            aria-label={`定位到${waterbody.name.zh}${waterbodyKindLabels[waterbody.kind]}`}
-            onPointerEnter={() => {
-              if (!controlsInteractingRef.current)
-                props.onHoverWaterbody(waterbody.id)
-            }}
-            onPointerLeave={() => props.onHoverWaterbody(null)}
-            onClick={() => props.onSelectWaterbody(waterbody.id)}
-          >
-            <span aria-hidden="true" />
-            {waterbody.name.zh}
-          </button>
-        ))}
-        {labelLinearFeatures.map((feature) => (
-          <button
-            type="button"
-            key={feature.id}
-            hidden
-            className={
-              feature.id === props.selectedLinearFeatureId
-                ? `city-label linear-feature-label is-${feature.kind} is-selected`
-                : `city-label linear-feature-label is-${feature.kind}`
-            }
-            data-map-label-id={feature.id}
-            data-linear-feature-id={feature.id}
-            aria-label={`定位到${feature.name.zh}${linearGeoFeatureKindLabels[feature.kind]}`}
-            onPointerEnter={() => {
-              if (!controlsInteractingRef.current)
-                props.onHoverLinearFeature(feature.id)
-            }}
-            onPointerLeave={() => props.onHoverLinearFeature(null)}
-            onClick={() => props.onSelectLinearFeature(feature.id)}
-          >
-            <span aria-hidden="true" />
-            {feature.name.zh}
-          </button>
-        ))}
-        {labelMountainRanges.map((range) => (
-          <button
-            type="button"
-            key={range.id}
-            hidden
-            className={
-              range.id === props.selectedMountainRangeId
-                ? 'city-label mountain-range-label is-selected'
-                : 'city-label mountain-range-label'
-            }
-            data-map-label-id={range.id}
-            data-mountain-range-id={range.id}
-            aria-label={`定位到${range.name.zh}`}
-            onPointerEnter={() => {
-              if (!controlsInteractingRef.current)
-                props.onHoverMountainRange(range.id)
-            }}
-            onPointerLeave={() => props.onHoverMountainRange(null)}
-            onClick={() => props.onSelectMountainRange(range.id)}
-          >
-            <span aria-hidden="true" />
-            {range.name.zh}
-          </button>
-        ))}
-        {labelDeserts.map((desert) => (
-          <button
-            type="button"
-            key={desert.id}
-            hidden
-            className={
-              desert.id === props.selectedDesertId
-                ? 'city-label desert-label is-selected'
-                : 'city-label desert-label'
-            }
-            data-map-label-id={desert.id}
-            data-desert-id={desert.id}
-            aria-label={`定位到${desert.name.zh}`}
-            onPointerEnter={() => {
-              if (!controlsInteractingRef.current)
-                props.onHoverDesert(desert.id)
-            }}
-            onPointerLeave={() => props.onHoverDesert(null)}
-            onClick={() => props.onSelectDesert(desert.id)}
-          >
-            <span aria-hidden="true" />
-            {desert.name.zh}
-          </button>
-        ))}
-        {labelLandmarks.map((landmark) => (
-          <button
-            type="button"
-            key={landmark.id}
-            hidden
-            className={
-              landmark.id === props.selectedLandmarkId
-                ? 'city-label landmark-label is-selected'
-                : 'city-label landmark-label'
-            }
-            data-map-label-id={landmark.id}
-            data-landmark-id={landmark.id}
-            aria-label={`定位到古迹${landmark.name.zh}`}
-            onPointerEnter={() => {
-              if (!controlsInteractingRef.current)
-                props.onHoverLandmark(landmark.id)
-            }}
-            onPointerLeave={() => props.onHoverLandmark(null)}
-            onClick={() => props.onSelectLandmark(landmark.id)}
-          >
-            <span aria-hidden="true" />
-            {landmark.name.zh}
-          </button>
-        ))}
-        {labelReferenceLines.map((line) => (
-          <button
-            type="button"
-            key={line.id}
-            hidden
-            className={
-              line.id === props.selectedReferenceLineId
-                ? `city-label geography-reference-label is-${line.category} is-selected`
-                : `city-label geography-reference-label is-${line.category}`
-            }
-            data-map-label-id={`reference-${line.id}`}
-            data-reference-line-id={line.id}
-            aria-label={`打开${line.name.zh}知识`}
-            onClick={() => props.onSelectGeographyTopic(line.topicId, line.id)}
-          >
-            <span aria-hidden="true" />
-            {line.shortLabel}
-          </button>
-        ))}
-        {labelCoordinateItems.map((item) => (
-          <span
-            key={item.id}
-            hidden
-            className="city-label geography-coordinate-label"
-            data-map-label-id={`coordinate-${item.id}`}
-            aria-hidden="true"
-          >
-            {item.label}
-          </span>
-        ))}
-      </div>
-      {!controlsInteracting &&
-      (hoveredLandmark ||
-        hoveredDesert ||
-        hoveredMountainRange ||
-        hoveredLinearFeature ||
-        hoveredWaterbody ||
-        hoveredCity ||
-        hoveredCountry) ? (
-        <div ref={tooltipRef} className="country-hover-tooltip" role="tooltip">
-          {hoveredLandmark ? (
-            <>
-              <span>{hoveredLandmark.name.zh}</span>
-              <small>古迹 · {hoveredLandmark.name.en}</small>
-            </>
-          ) : hoveredDesert ? (
-            <>
-              <span>{hoveredDesert.name.zh}</span>
-              <small>沙漠 · {hoveredDesert.name.en}</small>
-            </>
-          ) : hoveredMountainRange ? (
-            <>
-              <span>{hoveredMountainRange.name.zh}</span>
-              <small>山脉 · {hoveredMountainRange.name.en}</small>
-            </>
-          ) : hoveredLinearFeature ? (
-            <>
-              <span>{hoveredLinearFeature.name.zh}</span>
-              <small>
-                {linearGeoFeatureKindLabels[hoveredLinearFeature.kind]}
-              </small>
-            </>
-          ) : hoveredWaterbody ? (
-            <>
-              <span>{hoveredWaterbody.name.zh}</span>
-              <small>{waterbodyKindLabels[hoveredWaterbody.kind]}</small>
-            </>
-          ) : hoveredCity ? (
-            <>
-              <span>{hoveredCity.name.zh}</span>
-              <small>
-                {hoveredCity.isCapital ? '首都' : hoveredCity.name.en}
-              </small>
-            </>
-          ) : hoveredCountry ? (
-            <>
-              <img src={hoveredCountry.flagAsset} alt="" />
-              <span>{hoveredCountry.name.zh}</span>
-              <small>{hoveredCountry.code}</small>
-            </>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+    </GlobeDomOverlay>
   )
 }

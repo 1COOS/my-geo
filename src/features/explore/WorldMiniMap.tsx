@@ -9,7 +9,8 @@ import {
   type MouseEvent,
 } from 'react'
 
-import { countryBoundaries, getCountry } from '../../data/countries'
+import { getCountry } from '../../data/countries'
+import type { CountryBoundaries } from '../../data/countrySchema'
 import { geographyReferenceLines } from '../../data/geographyLearning'
 import type { ClimateTypeId } from '../../data/climateLearningSchema'
 import type {
@@ -31,12 +32,13 @@ import {
   MINI_MAP_KEYBOARD_FAST_STEP,
   MINI_MAP_KEYBOARD_STEP,
   MINI_MAP_WIDTH,
-  microstateCountries,
+  getMicrostateCountries,
   moveMiniMapCursor,
   projectGeoPosition,
 } from './worldMiniMapUtils'
 
 type WorldMiniMapProps = {
+  countryBoundaries: CountryBoundaries | null
   expanded: boolean
   selectedCountryCode: string | null
   showGeographyLearningLayer: boolean
@@ -64,6 +66,7 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
   function WorldMiniMap(
     {
       expanded,
+      countryBoundaries,
       selectedCountryCode,
       showGeographyLearningLayer,
       showClimateLayer,
@@ -86,11 +89,16 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
       useState<GeoPosition>(INITIAL_VIEW_CENTER)
     const boundaryPaths = useMemo(
       () =>
-        countryBoundaries.features.map((boundary) => ({
+        (countryBoundaries?.features ?? []).map((boundary) => ({
           code: boundary.properties.code,
           path: getBoundaryPath(boundary),
         })),
-      [],
+      [countryBoundaries],
+    )
+    const microstateCountries = useMemo(
+      () =>
+        countryBoundaries ? getMicrostateCountries(countryBoundaries) : [],
+      [countryBoundaries],
     )
     const microstateMarkers = useMemo(
       () =>
@@ -98,7 +106,7 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
           const point = projectGeoPosition(country.center)
           return point ? [{ country, point }] : []
         }),
-      [],
+      [microstateCountries],
     )
     const keyboardCursorPoint = projectGeoPosition(keyboardCursor)
     const selectedClimatePoint = selectedClimatePosition
@@ -142,14 +150,23 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
           onSelectClimatePosition(position)
           return
         }
-        const countryCode = knownCountryCode ?? findCountryAtPosition(position)
+        const countryCode =
+          knownCountryCode ??
+          (countryBoundaries
+            ? findCountryAtPosition(position, countryBoundaries)
+            : null)
         if (countryCode) {
           onNavigate({ kind: 'country', countryCode })
           return
         }
         onNavigate({ kind: 'coordinate', position })
       },
-      [onNavigate, onSelectClimatePosition, showClimateLayer],
+      [
+        countryBoundaries,
+        onNavigate,
+        onSelectClimatePosition,
+        showClimateLayer,
+      ],
     )
 
     const handleMapClick = (event: MouseEvent<SVGSVGElement>) => {

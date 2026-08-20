@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { countriesByCode } from './countries'
-import {
-  linearGeoFeatureGeometries,
-  linearGeoFeatures,
-} from './linearGeoFeatures'
+import { linearGeoFeatureGeometries } from './geometryData'
+import { linearGeoFeatures } from './linearGeoFeatures'
 
 describe('linear geography catalogue', () => {
   it('contains 30 river systems and 10 artificial canals', () => {

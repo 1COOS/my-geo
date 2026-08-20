@@ -1,12 +1,13 @@
-import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+import { minifiedJsonAssets } from './scripts/minified-json-assets.ts'
+
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss(),
+    minifiedJsonAssets(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
@@ -47,7 +48,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,json}'],
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
@@ -56,7 +57,8 @@ export default defineConfig({
   ],
   build: {
     target: 'es2022',
-    sourcemap: true,
-    chunkSizeWarningLimit: 3_000,
+    sourcemap: process.env.GENERATE_SOURCEMAP === 'true',
+    cssMinify: 'lightningcss',
+    chunkSizeWarningLimit: 2_200,
   },
 })

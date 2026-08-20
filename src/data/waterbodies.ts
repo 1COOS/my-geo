@@ -1,20 +1,10 @@
 import { countrySourcesById } from './countries'
-import generatedWaterbodyGeometries from './generated/waterbody-geometries.json'
 import {
   waterbodyCatalogSchema,
-  waterbodyGeometryCatalogSchema,
-  surfaceWaterbodyGeometrySchema,
   type Waterbody,
   type WaterbodyGeometry,
   type WaterbodyKind,
 } from './waterbodySchema'
-
-const generatedWaterbodyGeometriesById = new Map(
-  generatedWaterbodyGeometries.map((geometry) => {
-    const parsed = surfaceWaterbodyGeometrySchema.parse(geometry)
-    return [parsed.id, parsed]
-  }),
-)
 
 type SurfaceDefinition = {
   id: string
@@ -1034,41 +1024,30 @@ function buildWaterbody(definition: Definition): Waterbody {
   }
 }
 
-function buildGeometry(definition: Definition): WaterbodyGeometry {
-  if (definition.kind === 'trench') {
-    return {
-      id: definition.id,
-      kind: 'trench',
-      points: definition.points,
-      lowDetailPoints: [definition.points[0], definition.points.at(-1)!],
-    }
-  }
-  const geometry = generatedWaterbodyGeometriesById.get(definition.id)
-  if (!geometry) {
-    throw new Error(`Missing generated waterbody geometry for ${definition.id}`)
-  }
-  return geometry
-}
-
 export const waterbodies = waterbodyCatalogSchema.parse(
   definitions.map(buildWaterbody),
 )
-export const waterbodyGeometries = waterbodyGeometryCatalogSchema.parse(
-  definitions.map(buildGeometry),
-)
 export const waterbodiesById = new Map(
   waterbodies.map((waterbody) => [waterbody.id, waterbody]),
-)
-export const waterbodyGeometriesById = new Map(
-  waterbodyGeometries.map((geometry) => [geometry.id, geometry]),
 )
 
 export function getWaterbody(id: string | null | undefined) {
   return id ? waterbodiesById.get(id) : undefined
 }
 
-export function getWaterbodyGeometry(id: string | null | undefined) {
-  return id ? waterbodyGeometriesById.get(id) : undefined
+export function getEmbeddedWaterbodyGeometries(): WaterbodyGeometry[] {
+  return definitions.flatMap((definition) =>
+    definition.kind === 'trench'
+      ? [
+          {
+            id: definition.id,
+            kind: 'trench' as const,
+            points: definition.points,
+            lowDetailPoints: [definition.points[0], definition.points.at(-1)!],
+          },
+        ]
+      : [],
+  )
 }
 
 export function getWaterbodySource(id: string) {

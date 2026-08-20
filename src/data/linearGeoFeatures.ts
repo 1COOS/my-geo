@@ -1,10 +1,9 @@
 import {
   linearGeoFeatureCatalogSchema,
-  linearGeoFeatureGeometryCatalogSchema,
   type LinearGeoFeature,
   type LinearGeoFeatureGeometry,
 } from './linearGeoFeatureSchema'
-import generatedRiverGeometries from './generated/river-geometries.json'
+import { getCanalCameraDistance } from './linearFeatureGeometry'
 
 type Position = [number, number]
 
@@ -1060,6 +1059,7 @@ function buildRiver(definition: RiverDefinition): LinearGeoFeature {
 }
 
 function buildCanal(definition: CanalDefinition): LinearGeoFeature {
+  const geometry = buildGeometry(definition)
   return {
     id: definition.id,
     name: { zh: definition.zh, en: definition.en },
@@ -1073,7 +1073,7 @@ function buildCanal(definition: CanalDefinition): LinearGeoFeature {
       longitude: definition.label[0],
       latitude: definition.label[1],
     },
-    cameraDistance: 190,
+    cameraDistance: getCanalCameraDistance(geometry.geometry),
     region: definition.region,
     countryCodes: definition.countries,
     lengthKilometers: definition.length,
@@ -1121,24 +1121,16 @@ export const linearGeoFeatures = linearGeoFeatureCatalogSchema.parse([
   ...rivers.map(buildRiver),
   ...canals.map(buildCanal),
 ])
-export const linearGeoFeatureGeometries =
-  linearGeoFeatureGeometryCatalogSchema.parse([
-    ...generatedRiverGeometries,
-    ...canals.map(buildGeometry),
-  ])
 export const linearGeoFeaturesById = new Map(
   linearGeoFeatures.map((feature) => [feature.id, feature]),
-)
-export const linearGeoFeatureGeometriesById = new Map(
-  linearGeoFeatureGeometries.map((geometry) => [geometry.id, geometry]),
 )
 
 export function getLinearGeoFeature(id: string | null | undefined) {
   return id ? linearGeoFeaturesById.get(id) : undefined
 }
 
-export function getLinearGeoFeatureGeometry(id: string | null | undefined) {
-  return id ? linearGeoFeatureGeometriesById.get(id) : undefined
+export function getEmbeddedLinearFeatureGeometries() {
+  return canals.map(buildGeometry)
 }
 
 export const linearGeoFeatureKindLabels = {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { desertGeometries, deserts } from '../data/deserts'
+import { deserts } from '../data/deserts'
+import { desertGeometries } from '../data/geometryData'
 import {
   getDesertGeometryForScene,
   getDesertIdForLayer,

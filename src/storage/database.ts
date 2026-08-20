@@ -23,6 +23,14 @@ export type KnowledgeRegionProgress = z.infer<
   typeof knowledgeRegionProgressSchema
 >
 
+export type PersistenceStatus =
+  'idle' | 'saving' | 'saved' | 'memory-only' | 'error'
+
+export type PersistenceOutcome<T> = {
+  value: T
+  status: Extract<PersistenceStatus, 'saved' | 'memory-only' | 'error'>
+}
+
 const defaultPreferences: ExperiencePreferences = {
   id: 'current',
   autoRotate: true,
@@ -55,19 +63,52 @@ function getDatabase() {
 }
 
 export async function loadExperiencePreferences() {
-  const stored = await getDatabase()?.preferences.get('current')
-  const parsed = experiencePreferencesSchema.safeParse(stored)
-  return parsed.success ? parsed.data : defaultPreferences
+  const table = getDatabase()?.preferences
+  if (!table) {
+    return {
+      value: defaultPreferences,
+      status: 'memory-only',
+    } satisfies PersistenceOutcome<ExperiencePreferences>
+  }
+  try {
+    const stored = await table.get('current')
+    const parsed = experiencePreferencesSchema.safeParse(stored)
+    return {
+      value: parsed.success ? parsed.data : defaultPreferences,
+      status: 'saved',
+    } satisfies PersistenceOutcome<ExperiencePreferences>
+  } catch {
+    return {
+      value: defaultPreferences,
+      status: 'error',
+    } satisfies PersistenceOutcome<ExperiencePreferences>
+  }
 }
 
 export async function saveExperiencePreferences(
   preferences: Pick<ExperiencePreferences, 'autoRotate' | 'quality'>,
 ) {
-  await getDatabase()?.preferences.put({
-    id: 'current',
-    ...preferences,
-    updatedAt: Date.now(),
-  })
+  const table = getDatabase()?.preferences
+  if (!table) {
+    return {
+      value: preferences,
+      status: 'memory-only',
+    } satisfies PersistenceOutcome<typeof preferences>
+  }
+  try {
+    await table.put({
+      id: 'current',
+      ...preferences,
+      updatedAt: Date.now(),
+    })
+    return { value: preferences, status: 'saved' } satisfies PersistenceOutcome<
+      typeof preferences
+    >
+  } catch {
+    return { value: preferences, status: 'error' } satisfies PersistenceOutcome<
+      typeof preferences
+    >
+  }
 }
 
 export function mergeKnowledgeChallengeResult(
@@ -88,11 +129,28 @@ export function mergeKnowledgeChallengeResult(
 }
 
 export async function loadKnowledgeProgress() {
-  const stored = (await getDatabase()?.knowledgeProgress.toArray()) ?? []
-  return stored.flatMap((progress) => {
-    const parsed = knowledgeRegionProgressSchema.safeParse(progress)
-    return parsed.success ? [parsed.data] : []
-  })
+  const table = getDatabase()?.knowledgeProgress
+  if (!table) {
+    return {
+      value: [],
+      status: 'memory-only',
+    } satisfies PersistenceOutcome<KnowledgeRegionProgress[]>
+  }
+  try {
+    const stored = await table.toArray()
+    return {
+      value: stored.flatMap((progress) => {
+        const parsed = knowledgeRegionProgressSchema.safeParse(progress)
+        return parsed.success ? [parsed.data] : []
+      }),
+      status: 'saved',
+    } satisfies PersistenceOutcome<KnowledgeRegionProgress[]>
+  } catch {
+    return {
+      value: [],
+      status: 'error',
+    } satisfies PersistenceOutcome<KnowledgeRegionProgress[]>
+  }
 }
 
 export async function saveKnowledgeChallengeResult(
@@ -100,9 +158,26 @@ export async function saveKnowledgeChallengeResult(
   score: number,
 ) {
   const table = getDatabase()?.knowledgeProgress
-  if (!table) return mergeKnowledgeChallengeResult(undefined, regionId, score)
-  const current = await table.get(regionId)
-  const next = mergeKnowledgeChallengeResult(current, regionId, score)
-  await table.put(next)
-  return next
+  if (!table) {
+    const value = mergeKnowledgeChallengeResult(undefined, regionId, score)
+    return {
+      value,
+      status: 'memory-only',
+    } satisfies PersistenceOutcome<KnowledgeRegionProgress>
+  }
+  try {
+    const current = await table.get(regionId)
+    const next = mergeKnowledgeChallengeResult(current, regionId, score)
+    await table.put(next)
+    return {
+      value: next,
+      status: 'saved',
+    } satisfies PersistenceOutcome<KnowledgeRegionProgress>
+  } catch {
+    const value = mergeKnowledgeChallengeResult(undefined, regionId, score)
+    return {
+      value,
+      status: 'error',
+    } satisfies PersistenceOutcome<KnowledgeRegionProgress>
+  }
 }

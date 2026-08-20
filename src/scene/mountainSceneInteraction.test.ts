@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  getMountainRange,
-  getMountainRangeGeometry,
-  mountainRanges,
-} from '../data/mountainRanges'
+import { getMountainRangeGeometry } from '../data/geometryData'
+import { getMountainRange, mountainRanges } from '../data/mountainRanges'
 import {
   getMountainGeometryForScene,
   getMountainRangeIdForLayer,

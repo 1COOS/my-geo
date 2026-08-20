@@ -1,9 +1,7 @@
-import boundariesJson from './generated/country-boundaries.json'
 import citiesJson from './generated/cities.json'
 import countrySourcesJson from './generated/country-sources.json'
 import countriesJson from './generated/countries.json'
 import {
-  countryBoundariesSchema,
   countryCatalogSchema,
   countrySourceRegistrySchema,
   type Country,
@@ -12,7 +10,6 @@ import { cityCatalogSchema } from './citySchema'
 
 export const countries = countryCatalogSchema.parse(countriesJson)
 export const cities = cityCatalogSchema.parse(citiesJson)
-export const countryBoundaries = countryBoundariesSchema.parse(boundariesJson)
 export const countrySources =
   countrySourceRegistrySchema.parse(countrySourcesJson)
 

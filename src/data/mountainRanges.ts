@@ -1,7 +1,5 @@
-import generatedMountainGeometries from './generated/mountain-geometries.json'
 import {
   mountainRangeCatalogSchema,
-  mountainRangeGeometryCatalogSchema,
   type MountainRange,
 } from './mountainRangeSchema'
 
@@ -839,21 +837,10 @@ export const mountainRanges = mountainRangeCatalogSchema.parse(
   })),
 )
 
-export const mountainRangeGeometries = mountainRangeGeometryCatalogSchema.parse(
-  generatedMountainGeometries,
-)
-
 const mountainRangesById = new Map(
   mountainRanges.map((range) => [range.id, range]),
-)
-const mountainGeometriesById = new Map(
-  mountainRangeGeometries.map((geometry) => [geometry.id, geometry]),
 )
 
 export function getMountainRange(id: string | null | undefined) {
   return id ? (mountainRangesById.get(id) ?? null) : null
-}
-
-export function getMountainRangeGeometry(id: string | null | undefined) {
-  return id ? (mountainGeometriesById.get(id) ?? null) : null
 }

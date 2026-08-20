@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { countriesByCode } from './countries'
-import { mountainRangeGeometries, mountainRanges } from './mountainRanges'
+import { mountainRangeGeometries } from './geometryData'
+import { mountainRanges } from './mountainRanges'
 
 type Position = readonly [number, number]
 

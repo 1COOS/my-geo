@@ -1,0 +1,89 @@
+:root {
+  --atlas-canvas: #081216;
+  --atlas-canvas-deep: #050c0f;
+  --atlas-panel: #102126;
+  --atlas-panel-raised: #152a30;
+  --atlas-panel-muted: #0d1a1e;
+  --atlas-border: #2b444a;
+  --atlas-border-soft: rgb(124 157 164 / 18%);
+  --atlas-text: #edf3f2;
+  --atlas-text-secondary: #9baaad;
+  --atlas-text-muted: #718589;
+  --atlas-accent: #79c8d4;
+  --atlas-accent-soft: rgb(121 200 212 / 13%);
+  --atlas-progress: #b5cd7d;
+  --atlas-warning: #d8b86f;
+  --atlas-danger: #d87c75;
+  --atlas-focus: #f1ce63;
+  --atlas-shadow: 0 12px 32px rgb(0 0 0 / 28%);
+  --atlas-radius-control: 0.25rem;
+  --atlas-radius-compact: 0.375rem;
+  --atlas-radius-panel: 0.625rem;
+  font-family:
+    Inter, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', system-ui,
+    sans-serif;
+  color: var(--atlas-text);
+  background: var(--atlas-canvas-deep);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  padding: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg {
+  display: block;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+button:focus-visible,
+a:focus-visible,
+[role='application']:focus-visible {
+  outline: 3px solid var(--atlas-focus);
+  outline-offset: 3px;
+}
+
+body {
+  color: var(--atlas-text);
+  background: var(--atlas-canvas-deep);
+}
+
+button,
+a {
+  transition-duration: 160ms;
+}

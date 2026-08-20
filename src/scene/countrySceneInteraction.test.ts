@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { cities, countryBoundaries } from '../data/countries'
+import { cities } from '../data/countries'
+import { countryBoundaries } from '../data/geometryData'
 import { waterbodies } from '../data/waterbodies'
 import { linearGeoFeatures } from '../data/linearGeoFeatures'
 import {
