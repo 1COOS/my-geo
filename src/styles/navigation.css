@@ -214,14 +214,16 @@
   min-height: 2.5rem;
   margin: 0 0 0.35rem;
   color: var(--atlas-canvas-deep);
-  background: var(--atlas-accent);
+  background: transparent;
   border-radius: var(--atlas-radius-control);
   box-shadow: none;
 }
 
-.app-navigation-brand span {
-  font-size: 1.05rem;
-  font-weight: 600;
+.app-navigation-brand img {
+  display: block;
+  width: 2.15rem;
+  height: 2.15rem;
+  object-fit: contain;
 }
 
 .app-navigation-link {

@@ -96,6 +96,19 @@ afterEach(() => {
   Reflect.deleteProperty(document.documentElement, 'requestFullscreen')
 })
 
+describe('AppNavigation brand', () => {
+  it('uses the existing My Geo logo instead of the temporary letter', () => {
+    installFullscreenHarness({ enabled: false })
+    const { container } = renderNavigation()
+    const brand = container.querySelector('.app-navigation-brand')
+    const logo = brand?.querySelector('img')
+
+    expect(logo).toHaveAttribute('src', '/icons/my-geo-mark.svg')
+    expect(logo).toHaveAttribute('alt', '')
+    expect(brand).not.toHaveTextContent('M')
+  })
+})
+
 describe('AppNavigation fullscreen control', () => {
   it('hides the control when the Fullscreen API is unavailable', () => {
     installFullscreenHarness({ enabled: false })
