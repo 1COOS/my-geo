@@ -1,0 +1,518 @@
+.knowledge-card-shell {
+  --knowledge-card-accent: var(--atlas-accent);
+
+  position: fixed;
+  z-index: 55;
+  top: var(--edge-top, max(0.75rem, env(safe-area-inset-top)));
+  right: var(--edge-right, max(0.75rem, env(safe-area-inset-right)));
+  bottom: var(--edge-bottom, max(0.75rem, env(safe-area-inset-bottom)));
+  display: flex;
+  width: var(--detail-column, clamp(15rem, 35vw, 24rem));
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  flex-direction: column;
+  color: var(--atlas-text);
+  background: var(--atlas-panel);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+  box-shadow: var(--atlas-shadow);
+}
+
+.knowledge-card-content {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.knowledge-card-shell .country-detail-close {
+  position: absolute;
+  z-index: 4;
+  top: 1rem;
+  right: 1rem;
+  float: none;
+  margin: 0;
+  color: var(--atlas-text-secondary);
+  background: var(--atlas-panel);
+}
+
+.knowledge-card-shell .country-detail-close:hover,
+.knowledge-card-shell .country-detail-close:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: var(--knowledge-card-accent);
+}
+
+.knowledge-card-footer {
+  flex: none;
+  padding: 0.75rem 1rem 1rem;
+  background: var(--atlas-panel);
+  border-top: 1px solid var(--atlas-border-soft);
+}
+
+.knowledge-card-action {
+  display: grid;
+  min-height: 3.5rem;
+  padding: 0.65rem 0.8rem;
+  text-align: center;
+  color: var(--atlas-canvas-deep);
+  background: var(--atlas-progress);
+  border: 1px solid var(--atlas-progress);
+  border-radius: var(--atlas-radius-control);
+  place-content: center;
+}
+
+.knowledge-card-action span {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.knowledge-card-action small {
+  margin-top: 0.1rem;
+  font-size: 0.56rem;
+  opacity: 0.72;
+}
+
+.knowledge-card-action:hover,
+.knowledge-card-action:focus-visible {
+  color: var(--atlas-canvas-deep);
+  background: color-mix(in srgb, var(--atlas-progress), white 12%);
+}
+
+.country-knowledge-card .knowledge-country-detail-heading {
+  display: flex;
+  min-height: 0;
+  gap: 0.85rem;
+  padding-right: 3.25rem;
+  align-items: center;
+}
+
+.country-knowledge-card
+  .knowledge-country-detail-heading
+  > .country-flag-frame {
+  width: 5.2rem;
+  flex: none;
+  border-radius: 0.2rem;
+  box-shadow: none;
+}
+
+.country-knowledge-card .knowledge-country-detail-heading > div > span {
+  display: block;
+  color: var(--atlas-accent);
+  font-size: 0.56rem;
+}
+
+.country-knowledge-card .knowledge-country-detail-heading h2 {
+  margin: 0.18rem 0;
+  color: var(--atlas-text);
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+
+.country-knowledge-card .knowledge-country-detail-heading p,
+.country-knowledge-card .knowledge-country-detail-heading small {
+  display: block;
+  margin: 0;
+  color: var(--atlas-text-secondary);
+  font-size: 0.62rem;
+  line-height: 1.4;
+}
+
+.country-knowledge-card .knowledge-country-detail-heading small {
+  margin-top: 0.12rem;
+  color: var(--atlas-text-muted);
+  font-size: 0.54rem;
+}
+
+.country-knowledge-card .knowledge-country-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 1rem 0 0;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.country-knowledge-card .knowledge-country-fact {
+  min-width: 0;
+  padding: 0.65rem 0.7rem;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--atlas-border-soft);
+  border-bottom: 1px solid var(--atlas-border-soft);
+  border-radius: 0;
+}
+
+.country-knowledge-card .knowledge-country-fact.is-population,
+.country-knowledge-card .knowledge-country-fact.is-area,
+.country-knowledge-card .knowledge-country-fact.is-languages {
+  border-right: 0;
+}
+
+.country-knowledge-card .knowledge-country-fact.is-languages {
+  grid-column: 1 / -1;
+  border-bottom: 0;
+}
+
+.country-knowledge-card .knowledge-country-facts dt {
+  color: var(--atlas-text-muted);
+  font-size: 0.56rem;
+  font-weight: 500;
+}
+
+.country-knowledge-card .knowledge-country-facts dd {
+  margin: 0.24rem 0 0;
+  color: var(--atlas-text);
+  font-size: 0.66rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.country-knowledge-card .knowledge-country-facts dd strong,
+.country-knowledge-card .knowledge-country-facts dd small,
+.knowledge-fact-value-list > span {
+  display: block;
+}
+
+.country-knowledge-card .knowledge-country-facts dd small {
+  margin-top: 0.08rem;
+  color: var(--atlas-text-muted);
+  font-size: 0.54rem;
+  font-weight: 400;
+}
+
+.knowledge-fact-value-list,
+.knowledge-fact-list,
+.knowledge-language-list {
+  display: grid;
+  gap: 0.24rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.knowledge-language-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.55rem;
+}
+
+.knowledge-language-list li {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.knowledge-fact-list li + li,
+.knowledge-fact-value-list > span + span {
+  padding-top: 0.24rem;
+  border-top: 1px solid var(--atlas-border-soft);
+}
+
+.country-knowledge-card .knowledge-country-facts .detail-expand-toggle {
+  min-height: 1.9rem;
+  padding: 0.25rem 0.35rem;
+  margin-top: 0.3rem;
+  font-size: 0.55rem;
+}
+
+.country-knowledge-card section {
+  padding-top: 0.9rem;
+  margin-top: 0.9rem;
+  border-top: 1px solid var(--atlas-border-soft);
+}
+
+.country-knowledge-card h3 {
+  margin: 0 0 0.45rem;
+  color: var(--atlas-text-muted);
+  font-size: 0.56rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.country-knowledge-card .knowledge-country-highlights ul {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.country-knowledge-card .knowledge-country-highlights li {
+  padding: 0.65rem 0.7rem;
+  color: var(--atlas-text-secondary);
+  font-size: 0.65rem;
+  line-height: 1.55;
+  background: var(--atlas-panel-muted);
+  border-left: 2px solid var(--atlas-accent);
+  border-radius: 0 var(--atlas-radius-compact) var(--atlas-radius-compact) 0;
+}
+
+.country-knowledge-card .knowledge-country-neighbours > .country-border-group {
+  display: block;
+}
+
+.country-knowledge-card .country-border-list,
+.country-knowledge-card .country-region-list {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.country-knowledge-card .country-border-list button,
+.country-knowledge-card .country-region-list > span {
+  min-height: 2rem;
+  padding: 0.32rem 0.48rem;
+  font-size: 0.57rem;
+}
+
+.country-knowledge-card .country-border-list .country-flag-frame {
+  width: 1.35rem;
+}
+
+.country-knowledge-card .city-list {
+  border-color: var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.country-knowledge-card .city-list li {
+  border-color: var(--atlas-border-soft);
+}
+
+.country-knowledge-card .city-list-static,
+.country-knowledge-card .city-list button {
+  min-height: 2.35rem;
+  padding: 0.38rem 0.5rem;
+}
+
+.knowledge-city-facts > div {
+  grid-column: 1 / -1;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.knowledge-card-shell
+  :is(
+    .country-detail-heading,
+    .city-detail-heading,
+    .waterbody-detail-heading,
+    .geography-learning-heading,
+    .climate-learning-heading
+  ) {
+  min-height: 3.25rem;
+  padding-right: 3.25rem;
+}
+
+.knowledge-card-shell
+  :is(
+    .country-detail-heading > div p,
+    .city-detail-heading > div p,
+    .waterbody-detail-heading p,
+    .geography-learning-heading p,
+    .climate-learning-heading p
+  ) {
+  color: var(--knowledge-card-accent);
+}
+
+.knowledge-card-shell:not(.country-knowledge-card)
+  :is(
+    .waterbody-detail-heading,
+    .geography-learning-heading,
+    .climate-learning-heading
+  ) {
+  display: flex;
+  min-height: 0;
+  gap: 0.85rem;
+  padding-right: 3.25rem;
+  align-items: center;
+}
+
+.knowledge-card-shell:not(.country-knowledge-card)
+  :is(
+    .waterbody-detail-heading h2,
+    .geography-learning-heading h2,
+    .climate-learning-heading h2
+  ) {
+  margin: 0.18rem 0;
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+
+.knowledge-card-shell:not(.country-knowledge-card)
+  :is(
+    .waterbody-detail-heading p,
+    .geography-learning-heading p,
+    .climate-learning-heading p
+  ) {
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+}
+
+.knowledge-card-shell:not(.country-knowledge-card)
+  :is(
+    .waterbody-detail-heading span,
+    .geography-learning-heading span,
+    .climate-learning-heading span
+  ) {
+  margin-top: 0;
+  color: var(--atlas-text-secondary);
+  font-size: 0.62rem;
+}
+
+.knowledge-card-shell:not(.country-knowledge-card) .country-detail-section {
+  padding-top: 0.9rem;
+  margin-top: 0.9rem;
+  border-top: 1px solid var(--atlas-border-soft);
+}
+
+.knowledge-card-shell:not(.country-knowledge-card) .country-detail-label {
+  margin-bottom: 0.45rem;
+  color: var(--atlas-text-muted);
+  font-size: 0.56rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.knowledge-card-shell:not(.country-knowledge-card) .fun-fact-list {
+  display: grid;
+  gap: 0.4rem;
+  overflow: visible;
+  border: 0;
+}
+
+.knowledge-card-shell:not(.country-knowledge-card) .fun-fact-list li {
+  display: block;
+  padding: 0.65rem 0.7rem;
+  background: var(--atlas-panel-muted);
+  border: 0;
+  border-left: 2px solid var(--knowledge-card-accent);
+  border-radius: 0 var(--atlas-radius-compact) var(--atlas-radius-compact) 0;
+}
+
+.knowledge-card-shell:not(.country-knowledge-card) .fun-fact-list li > span {
+  display: none;
+}
+
+.knowledge-card-shell .detail-expand-toggle {
+  color: var(--knowledge-card-accent);
+}
+
+.knowledge-card-shell .detail-expand-toggle:hover,
+.knowledge-card-shell .detail-expand-toggle:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+  border-color: var(--knowledge-card-accent);
+}
+
+.knowledge-card-shell .fun-fact-list li > span {
+  color: var(--atlas-canvas-deep);
+  background: var(--knowledge-card-accent);
+}
+
+.city-list-static,
+.knowledge-card-shell .city-list button {
+  display: grid;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.58rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--atlas-text);
+}
+
+.city-list-static strong,
+.city-list-static small {
+  display: block;
+}
+
+.city-list-static small,
+.city-list-static em {
+  color: var(--atlas-text-secondary);
+}
+
+.city-list-static em {
+  font-size: 0.56rem;
+  font-style: normal;
+}
+
+.knowledge-card-shell .country-border-list button:hover,
+.knowledge-card-shell .country-border-list button:focus-visible {
+  border-color: var(--knowledge-card-accent);
+}
+
+.knowledge-card-shell .geography-current-reading,
+.knowledge-card-shell .geography-line-callout,
+.knowledge-card-shell .climate-current-reading,
+.knowledge-card-shell .climate-example-list,
+.knowledge-card-shell .climate-common-mistake,
+.knowledge-card-shell .mountain-peak-card {
+  box-shadow: none;
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .knowledge-card-content {
+    padding: 0.75rem;
+  }
+
+  .knowledge-card-shell .country-detail-close {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .knowledge-card-footer {
+    padding: 0.55rem 0.75rem 0.75rem;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 760px) {
+  .explore-shell.has-country-detail,
+  .knowledge-region-shell.has-country-selection {
+    --detail-column: clamp(15rem, 35vw, 18rem);
+  }
+
+  .explore-shell.has-country-detail {
+    --scene-reserve: calc(
+      var(--detail-column) + var(--layout-gap) + var(--edge-right)
+    );
+  }
+
+  .knowledge-card-shell.country-detail {
+    top: var(--edge-top, max(0.5rem, env(safe-area-inset-top)));
+    right: var(--edge-right, max(0.5rem, env(safe-area-inset-right)));
+    bottom: var(--edge-bottom, max(0.5rem, env(safe-area-inset-bottom)));
+    left: auto;
+    width: var(--detail-column);
+    max-height: none;
+    padding: 0;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius-panel);
+  }
+
+  .knowledge-card-shell .country-detail-handle {
+    display: none;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 760px) {
+  .explore-shell.has-country-detail {
+    --scene-reserve: 0px;
+  }
+
+  .knowledge-card-shell.country-detail {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: min(63dvh, 34rem);
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 1.5rem 1.5rem 0 0;
+  }
+}

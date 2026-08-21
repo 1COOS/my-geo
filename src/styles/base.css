@@ -63,6 +63,7 @@ svg {
 }
 
 .country-flag-frame {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -72,11 +73,22 @@ svg {
   min-height: 0;
 }
 
+.country-flag-frame::before {
+  content: '';
+  display: block;
+  width: 0;
+  padding-top: 66.6667%;
+  flex: none;
+}
+
 .country-flag-image {
-  width: auto;
+  position: absolute;
+  inset: 0;
+  width: 100%;
   max-width: 100%;
-  height: auto;
+  height: 100%;
   max-height: 100%;
+  margin: auto;
   min-width: 0;
   min-height: 0;
   border: 0;

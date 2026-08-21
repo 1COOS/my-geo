@@ -1,5 +1,5 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -49,6 +49,7 @@ vi.mock('../../shared/lib/webgl', () => ({
 
 describe('ExplorePage', () => {
   beforeEach(() => {
+    window.history.replaceState({}, '', '/explore')
     supportsWebGLMock.mockReturnValue(true)
     globePropsMock.mockClear()
     climateRasterMocks.display.mockReset()
@@ -82,6 +83,88 @@ describe('ExplorePage', () => {
       position: { latitude: 39.9, longitude: 116.4 },
       climateTypeId: 'temperate-monsoon',
       period: '1991–2020',
+    })
+  })
+
+  it('opens a validated geography deep link and focuses its reference line', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/explore?geography=earth-zones&line=tropic-of-cancer',
+    )
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    const card = await screen.findByLabelText('地球经纬线知识卡')
+    expect(
+      within(card).getByRole('heading', { name: '北回归线' }),
+    ).toBeInTheDocument()
+    expect(within(card).getByText('纬线')).toBeInTheDocument()
+    expect(within(card).getByText('23.5°N')).toBeInTheDocument()
+    expect(
+      within(card).getByRole('button', { name: /南回归线/ }),
+    ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+        showGeographyLearningLayer: true,
+        selectedGeographyTopicId: 'earth-zones',
+        selectedReferenceLineId: 'tropic-of-cancer',
+        cameraTarget: {
+          position: { latitude: 23.5, longitude: 105 },
+          distance: 350,
+        },
+      }),
+    )
+  })
+
+  it('keeps a valid geography topic but drops an invalid or mismatched line', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/explore?geography=grid-reading&line=equator',
+    )
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    const card = await screen.findByLabelText('地球经纬线知识卡')
+    expect(
+      within(card).getByRole('heading', { name: '地球经纬线' }),
+    ).toBeInTheDocument()
+    expect(
+      within(card).getByRole('button', { name: '经度基准' }),
+    ).toHaveAttribute('aria-current', 'page')
+    expect(within(card).getByLabelText('经度基准重点线')).toBeInTheDocument()
+    expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+      showGeographyLearningLayer: true,
+      selectedGeographyTopicId: 'grid-reading',
+      selectedReferenceLineId: null,
+    })
+  })
+
+  it('ignores an invalid geography deep link', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/explore?geography=unknown&line=equator',
+    )
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    expect(await screen.findByTestId('mock-globe-scene')).toBeInTheDocument()
+    expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
+    expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+      showGeographyLearningLayer: false,
+      selectedGeographyTopicId: null,
+      selectedReferenceLineId: null,
     })
   })
 
@@ -270,8 +353,11 @@ describe('ExplorePage', () => {
       screen.getByRole('combobox', { name: '搜索地点' }),
       '赤道{Enter}',
     )
-    expect(screen.getByLabelText('经纬网知识卡')).toBeInTheDocument()
-    expect(screen.getByText('重要纬线与东西半球界线示意')).toBeInTheDocument()
+    expect(screen.getByLabelText('地球经纬线知识卡')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '赤道' })).toBeInTheDocument()
+    expect(
+      screen.getByText(/最长的纬线，也是南北半球的分界线/),
+    ).toBeInTheDocument()
   })
 
   it('opens a city knowledge card and requests the closer city camera distance', async () => {
@@ -624,7 +710,7 @@ describe('ExplorePage', () => {
       }
 
     const toggle = screen.getByRole('button', {
-      name: '经纬教学图层：经纬网判读、半球、纬度分区与地球五带',
+      name: '经纬图层：经度基准、半球界线、纬度分区线与五带分界线',
     })
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
     act(() =>
@@ -636,10 +722,19 @@ describe('ExplorePage', () => {
     await user.click(toggle)
 
     expect(toggle).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByLabelText('经纬网知识卡')).toBeInTheDocument()
+    const card = screen.getByLabelText('地球经纬线知识卡')
+    expect(
+      within(card).getByRole('heading', { name: '地球经纬线' }),
+    ).toBeInTheDocument()
+    expect(within(card).getByLabelText('地球经纬线用途')).toBeInTheDocument()
+    expect(within(card).getByLabelText('经度基准重点线')).toBeInTheDocument()
+    expect(within(card).getAllByRole('button')).toHaveLength(7)
+    expect(
+      within(card).queryByText(/用纬线和经线为地球表面建立坐标/),
+    ).toBeNull()
     expect(getProps()).toMatchObject({
       showGeographyLearningLayer: true,
-      selectedGeographyTopicId: 'grid-reading',
+      selectedGeographyTopicId: null,
       selectedReferenceLineId: null,
     })
     expect(screen.getByLabelText('当前中心判读')).toHaveTextContent(
@@ -659,9 +754,68 @@ describe('ExplorePage', () => {
       '温带与寒带分界线上',
     )
 
+    await user.click(within(card).getByRole('button', { name: '五带界线' }))
+    expect(within(card).getByLabelText('五带分界线重点线')).toBeInTheDocument()
+    await user.click(within(card).getByRole('button', { name: /北回归线/ }))
+    expect(
+      within(card).getByRole('heading', { name: '北回归线' }),
+    ).toBeInTheDocument()
+    expect(within(card).getByText('五带分界线')).toBeInTheDocument()
+    expect(
+      within(card).getByRole('button', { name: /南回归线/ }),
+    ).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      selectedGeographyTopicId: 'earth-zones',
+      selectedReferenceLineId: 'tropic-of-cancer',
+    })
+
+    await user.click(within(card).getByRole('button', { name: /南回归线/ }))
+    expect(
+      within(card).getByRole('heading', { name: '南回归线' }),
+    ).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      selectedGeographyTopicId: 'earth-zones',
+      selectedReferenceLineId: 'tropic-of-capricorn',
+    })
+
+    await user.click(
+      within(card).getByRole('button', { name: '返回地球经纬线' }),
+    )
+    expect(
+      within(card).getByRole('heading', { name: '地球经纬线' }),
+    ).toBeInTheDocument()
+    expect(
+      within(card).getByRole('button', { name: '五带界线' }),
+    ).toHaveAttribute('aria-current', 'page')
+    expect(getProps()).toMatchObject({
+      selectedGeographyTopicId: 'earth-zones',
+      selectedReferenceLineId: null,
+    })
+
+    await user.click(
+      within(card).getByRole('button', { name: '关闭地球经纬线知识卡' }),
+    )
+    expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+
     await user.click(toggle)
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
-    expect(screen.getByLabelText('经纬网知识卡')).toBeInTheDocument()
+    expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
+
+    await user.click(toggle)
+    const reopenedCard = screen.getByLabelText('地球经纬线知识卡')
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      within(reopenedCard).getByRole('heading', { name: '地球经纬线' }),
+    ).toBeInTheDocument()
+    expect(getProps()).toMatchObject({
+      selectedGeographyTopicId: null,
+      selectedReferenceLineId: null,
+    })
+
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByLabelText('地球经纬线知识卡')).toBeInTheDocument()
   })
 
   it('opens the climate overview, keeps the card after hiding, and classifies globe clicks', async () => {
@@ -793,8 +947,11 @@ describe('ExplorePage', () => {
     await screen.findByRole('option', { name: /北回归线/ })
     await user.keyboard('{Enter}')
 
-    expect(screen.getByLabelText('经纬网知识卡')).toBeInTheDocument()
-    expect(screen.getAllByText('北回归线 23.5°N').length).toBeGreaterThan(0)
+    expect(screen.getByLabelText('地球经纬线知识卡')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: '北回归线' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('23.5°N')).toBeInTheDocument()
     expect(getProps()).toMatchObject({
       showGeographyLearningLayer: true,
       selectedGeographyTopicId: 'earth-zones',
@@ -810,7 +967,7 @@ describe('ExplorePage', () => {
       screen.getByRole('combobox', { name: '搜索地点' }),
       '中国{Enter}',
     )
-    expect(screen.queryByLabelText('经纬网知识卡')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
     expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
     expect(getProps()).toMatchObject({
       showGeographyLearningLayer: true,

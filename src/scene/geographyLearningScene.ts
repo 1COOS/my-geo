@@ -11,6 +11,7 @@ import { addGeographicPathAltitude } from './geographicPathStyle'
 export type GeographyReferencePath = {
   referenceLineId: ReferenceLineId
   category: ReferenceLine['category']
+  interactionOnly: boolean
   points: ReturnType<typeof addGeographicPathAltitude>
   color: string
   stroke: number
@@ -40,6 +41,7 @@ export function getGeographyReferencePaths(
     return {
       referenceLineId: line.id,
       category: line.category,
+      interactionOnly: false,
       points: addGeographicPathAltitude(
         getReferenceLineScenePoints(line),
         altitude,
@@ -47,19 +49,65 @@ export function getGeographyReferencePaths(
       color: selected ? '#ffffff' : categoryColors[line.category],
       stroke: selected
         ? quality === 'balanced'
-          ? 1.1
-          : 0.82
+          ? 1.7
+          : 1.25
         : line.category === 'latitude-zone-boundary'
           ? quality === 'balanced'
-            ? 0.24
-            : 0.16
+            ? 0.42
+            : 0.3
           : quality === 'balanced'
-            ? 0.52
-            : 0.36,
+            ? 0.8
+            : 0.6,
       dashLength: dashed ? 0.08 : 1,
       dashGap: dashed ? 0.055 : 0,
     }
   })
+}
+
+export function getGeographyReferenceHitPaths(touchDevice: boolean) {
+  return geographyReferenceLines.map((line): GeographyReferencePath => ({
+    referenceLineId: line.id,
+    category: line.category,
+    interactionOnly: true,
+    points: addGeographicPathAltitude(getReferenceLineScenePoints(line), 0.069),
+    color: 'rgba(255,255,255,0)',
+    stroke: touchDevice ? 18 : 10,
+    dashLength: 1,
+    dashGap: 0,
+  }))
+}
+
+export function getGeographyScenePaths(
+  quality: 'balanced' | 'low',
+  selectedReferenceLineId: ReferenceLineId | null,
+  touchDevice: boolean,
+  visible: boolean,
+) {
+  if (!visible) return []
+  return [
+    ...getGeographyReferenceHitPaths(touchDevice),
+    ...getGeographyReferencePaths(quality, selectedReferenceLineId),
+  ]
+}
+
+export function getGeographyPointerDragThreshold(pointerType: string) {
+  return pointerType === 'touch' ? 10 : 6
+}
+
+export function getGeographyCanvasCursor(
+  referenceLineId: ReferenceLineId | null,
+) {
+  return referenceLineId ? 'pointer' : ''
+}
+
+export function hasExceededGeographyDragThreshold(
+  start: { x: number; y: number; pointerType: string },
+  current: { x: number; y: number },
+) {
+  return (
+    Math.hypot(current.x - start.x, current.y - start.y) >=
+    getGeographyPointerDragThreshold(start.pointerType)
+  )
 }
 
 export function getReferenceLineIdForLayer(

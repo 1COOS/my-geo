@@ -1,4 +1,10 @@
-import { geographyLearningCatalogSchema } from './geographyLearningSchema'
+import {
+  geographyLearningCatalogSchema,
+  geographyTopicIdSchema,
+  referenceLineIdSchema,
+  type GeographyTopicId,
+  type ReferenceLineId,
+} from './geographyLearningSchema'
 
 const sourceIds = [
   'moe-geography-curriculum-2022',
@@ -6,6 +12,15 @@ const sourceIds = [
 ] as const
 
 const catalog = geographyLearningCatalogSchema.parse({
+  overview: {
+    name: { zh: '地球经纬线', en: "Earth's Latitude and Longitude Lines" },
+    eyebrow: '地球 · 经纬网',
+    summary:
+      '经纬网由纬线和经线共同组成，用来确定地球表面的位置，并进一步判断半球、纬度分区和地球五带。',
+    currentViewLabel: '当前视角判读',
+    diagramCaption: '地球重要经纬线示意',
+    sourceIds,
+  },
   sources: [
     {
       id: sourceIds[0],
@@ -27,14 +42,16 @@ const catalog = geographyLearningCatalogSchema.parse({
   topics: [
     {
       id: 'grid-reading',
-      name: { zh: '经纬网判读', en: 'Reading the Geographic Grid' },
-      aliases: ['经纬网', '经纬度', '坐标判读', '纬度', '经度'],
+      name: { zh: '经度基准', en: 'Longitude References' },
+      shortName: { zh: '经度基准', en: 'Longitude' },
+      visualization: { kind: 'reference-lines' },
+      aliases: ['经纬网判读', '经纬网', '经纬度', '坐标判读', '纬度', '经度'],
       summary:
-        '经纬网用纬线和经线为地球表面建立坐标。My Geo统一按“纬度在前、经度在后”显示位置。',
+        '本初子午线和180°经线分别是经度的起点与共同终点，用来判断东西经度并建立地球坐标。',
       rules: [
-        '纬线指示东西方向，纬度从赤道0°向南北两极增大到90°。',
         '经线指示南北方向，经度从本初子午线0°向东、向西增大到180°。',
-        '先判断目标位于赤道南北和本初子午线东西，再读取度数与方向字母。',
+        '本初子午线是0°经线，180°经线是东经与西经共同的终点。',
+        '读取坐标时先写纬度、再写经度，并标明南北纬与东西经。',
       ],
       commonMistakes: [
         '0°经线和180°经线划分东西经，不等同于20°W与160°E划分东西半球。',
@@ -45,8 +62,18 @@ const catalog = geographyLearningCatalogSchema.parse({
     },
     {
       id: 'hemispheres',
-      name: { zh: '半球划分', en: 'Hemispheres' },
-      aliases: ['南北半球', '东西半球', '北半球', '南半球', '东半球', '西半球'],
+      name: { zh: '半球界线', en: 'Hemisphere Boundaries' },
+      shortName: { zh: '半球界线', en: 'Hemispheres' },
+      visualization: { kind: 'reference-lines' },
+      aliases: [
+        '半球划分',
+        '南北半球',
+        '东西半球',
+        '北半球',
+        '南半球',
+        '东半球',
+        '西半球',
+      ],
       summary:
         '赤道划分南北半球；东西半球采用20°W和160°E组成的经线圈，尽量减少对主要大陆的切割。',
       rules: [
@@ -62,8 +89,11 @@ const catalog = geographyLearningCatalogSchema.parse({
     },
     {
       id: 'latitude-zones',
-      name: { zh: '低中高纬度', en: 'Latitude Zones' },
+      name: { zh: '纬度分区线', en: 'Latitude Zone Boundaries' },
+      shortName: { zh: '纬度分区', en: 'Latitude zones' },
+      visualization: { kind: 'reference-lines' },
       aliases: [
+        '低中高纬度',
         '低纬度',
         '中纬度',
         '高纬度',
@@ -86,8 +116,18 @@ const catalog = geographyLearningCatalogSchema.parse({
     },
     {
       id: 'earth-zones',
-      name: { zh: '地球五带', en: 'Earth’s Heat Zones' },
-      aliases: ['五带', '热带', '北温带', '南温带', '北寒带', '南寒带'],
+      name: { zh: '五带分界线', en: 'Heat Zone Boundaries' },
+      shortName: { zh: '五带界线', en: 'Heat zones' },
+      visualization: { kind: 'reference-lines' },
+      aliases: [
+        '地球五带',
+        '五带',
+        '热带',
+        '北温带',
+        '南温带',
+        '北寒带',
+        '南寒带',
+      ],
       summary:
         '南北回归线和南北极圈把地球划分为热带、南北温带和南北寒带，反映太阳照射与昼夜现象的纬度差异。',
       rules: [
@@ -305,6 +345,7 @@ const catalog = geographyLearningCatalogSchema.parse({
 export const geographyTopics = catalog.topics
 export const geographyReferenceLines = catalog.referenceLines
 export const geographyLearningSources = catalog.sources
+export const geographyLearningOverview = catalog.overview
 
 export const geographyTopicsById = new Map(
   geographyTopics.map((topic) => [topic.id, topic]),
@@ -319,6 +360,76 @@ export function getGeographyTopic(id: string | null | undefined) {
 
 export function getReferenceLine(id: string | null | undefined) {
   return id ? geographyReferenceLinesById.get(id as never) : undefined
+}
+
+export function getGeographyTopicReferenceLines(topicId: GeographyTopicId) {
+  return geographyReferenceLines.filter((line) => line.topicId === topicId)
+}
+
+export function formatReferenceLineCoordinate(
+  line: (typeof geographyReferenceLines)[number],
+) {
+  const degrees = `${Math.abs(line.coordinate)}°`
+  if (line.coordinate === 0 || Math.abs(line.coordinate) === 180) {
+    return degrees
+  }
+  if (line.orientation === 'latitude') {
+    return `${degrees}${line.coordinate > 0 ? 'N' : 'S'}`
+  }
+  return `${degrees}${line.coordinate > 0 ? 'E' : 'W'}`
+}
+
+export type GeographyLearningSelection = {
+  topicId: GeographyTopicId
+  referenceLineId: ReferenceLineId | null
+}
+
+export type GeographyExploreSelection =
+  | { kind: 'overview'; focusTopicId: GeographyTopicId | null }
+  | {
+      kind: 'line'
+      topicId: GeographyTopicId
+      referenceLineId: ReferenceLineId
+    }
+
+export function resolveGeographyExploreSelection(
+  topicId: string | null | undefined,
+  referenceLineId: string | null | undefined,
+): GeographyExploreSelection | null {
+  const parsedTopicId = geographyTopicIdSchema.safeParse(topicId)
+  if (!parsedTopicId.success) return null
+
+  const parsedReferenceLineId = referenceLineIdSchema.safeParse(referenceLineId)
+  const referenceLine = parsedReferenceLineId.success
+    ? getReferenceLine(parsedReferenceLineId.data)
+    : undefined
+
+  return referenceLine?.topicId === parsedTopicId.data
+    ? {
+        kind: 'line',
+        topicId: parsedTopicId.data,
+        referenceLineId: referenceLine.id,
+      }
+    : { kind: 'overview', focusTopicId: parsedTopicId.data }
+}
+
+export function resolveGeographyLearningSelection(
+  topicId: string | null | undefined,
+  referenceLineId: string | null | undefined,
+): GeographyLearningSelection | null {
+  const parsedTopicId = geographyTopicIdSchema.safeParse(topicId)
+  if (!parsedTopicId.success) return null
+
+  const parsedReferenceLineId = referenceLineIdSchema.safeParse(referenceLineId)
+  const referenceLine = parsedReferenceLineId.success
+    ? getReferenceLine(parsedReferenceLineId.data)
+    : undefined
+
+  return {
+    topicId: parsedTopicId.data,
+    referenceLineId:
+      referenceLine?.topicId === parsedTopicId.data ? referenceLine.id : null,
+  }
 }
 
 export function getReferenceLineScenePoints(

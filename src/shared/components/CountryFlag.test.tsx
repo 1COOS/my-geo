@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { CountryFlag } from './CountryFlag'
@@ -29,4 +29,36 @@ describe('CountryFlag', () => {
     expect(image).toHaveAttribute('alt', '')
     expect(image?.parentElement).toHaveClass('country-flag-frame')
   })
+
+  it.each([
+    {
+      src: '/flags/ch.svg',
+      naturalWidth: 1,
+      naturalHeight: 1,
+      width: '66.66666666666666%',
+      height: '100%',
+    },
+    {
+      src: '/flags/qa.svg',
+      naturalWidth: 28,
+      naturalHeight: 11,
+      width: '100%',
+      height: '58.92857142857143%',
+    },
+  ])(
+    'sizes $src inside the 3:2 slot without stretching it',
+    ({ src, naturalWidth, naturalHeight, width, height }) => {
+      const { container } = render(<CountryFlag src={src} alt="" />)
+      const image = container.querySelector('img')!
+      Object.defineProperties(image, {
+        naturalWidth: { configurable: true, value: naturalWidth },
+        naturalHeight: { configurable: true, value: naturalHeight },
+      })
+
+      fireEvent.load(image)
+
+      expect(image.style.width).toBe(width)
+      expect(image.style.height).toBe(height)
+    },
+  )
 })

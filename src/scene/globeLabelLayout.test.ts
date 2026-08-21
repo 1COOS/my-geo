@@ -6,6 +6,7 @@ import { waterbodies } from '../data/waterbodies'
 import {
   getLabelGroup,
   getLabelPriority,
+  getLabelVisibilityChanges,
   labelRectsOverlap,
   type MapLabel,
 } from './globeLabelLayout'
@@ -84,5 +85,23 @@ describe('globe label layout', () => {
     expect(
       labelRectsOverlap(base, { left: 21, top: 0, right: 30, bottom: 20 }),
     ).toBe(false)
+  })
+
+  it('changes DOM visibility only when label membership changes', () => {
+    expect(
+      getLabelVisibilityChanges(
+        new Set(['capital-beijing', 'city-shanghai']),
+        new Set(['capital-beijing', 'city-guangzhou']),
+      ),
+    ).toEqual({
+      hiddenIds: ['city-shanghai'],
+      shownIds: ['city-guangzhou'],
+    })
+    expect(
+      getLabelVisibilityChanges(
+        new Set(['capital-beijing']),
+        new Set(['capital-beijing']),
+      ),
+    ).toEqual({ hiddenIds: [], shownIds: [] })
   })
 })

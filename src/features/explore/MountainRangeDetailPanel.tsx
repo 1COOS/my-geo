@@ -22,6 +22,7 @@ export function MountainRangeDetailPanel({
       label={`${range.name.zh}知识卡`}
       closeLabel={`关闭${range.name.zh}知识卡`}
       identity={range.id}
+      accent="#d99b52"
       onClose={onClose}
     >
       <div className="waterbody-detail-heading mountain-range-heading">

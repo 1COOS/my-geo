@@ -22,6 +22,7 @@ export function DesertDetailPanel({
       label={`${desert.name.zh}知识卡`}
       closeLabel={`关闭${desert.name.zh}知识卡`}
       identity={desert.id}
+      accent="#e9ad58"
       onClose={onClose}
     >
       <div className="waterbody-detail-heading desert-heading">

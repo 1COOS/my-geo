@@ -23,6 +23,13 @@ export function WaterbodyDetailPanel({
       label={`${waterbody.name.zh}水域知识卡`}
       closeLabel="关闭水域知识卡"
       identity={waterbody.id}
+      accent={
+        waterbody.layer === 'lake'
+          ? '#53e6bd'
+          : waterbody.layer === 'waterway'
+            ? '#aa7cff'
+            : '#31e4ff'
+      }
       onClose={onClose}
     >
       <div className="waterbody-detail-heading">

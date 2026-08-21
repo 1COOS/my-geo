@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import {
   Link,
   Navigate,
@@ -25,8 +25,8 @@ const countryCardFields: Array<{
   id: CountryCardField
   label: string
 }> = [
-  { id: 'country', label: '国家' },
   { id: 'flag', label: '国旗' },
+  { id: 'country', label: '国家' },
   { id: 'capital', label: '首都' },
 ]
 
@@ -59,6 +59,12 @@ export function KnowledgeRegionPage() {
   const showCountry = visibleCardFields.has('country')
   const showFlag = visibleCardFields.has('flag')
   const showCapital = visibleCardFields.has('capital')
+  const countryGridStyle = {
+    '--knowledge-country-columns-wide': Math.min(regionCountries.length, 5),
+    '--knowledge-country-columns-detail': Math.min(regionCountries.length, 4),
+    '--knowledge-country-columns-tablet': Math.min(regionCountries.length, 3),
+    '--knowledge-country-columns-compact': Math.min(regionCountries.length, 2),
+  } as CSSProperties
 
   const toggleCardField = (field: CountryCardField) => {
     setVisibleCardFields((current) => {
@@ -161,7 +167,7 @@ export function KnowledgeRegionPage() {
             ) : null}
           </div>
 
-          <div className="knowledge-country-grid">
+          <div className="knowledge-country-grid" style={countryGridStyle}>
             {regionCountries.map((country) => (
               <article
                 className="knowledge-country-card"

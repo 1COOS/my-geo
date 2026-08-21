@@ -37,6 +37,7 @@ export function ClimateLearningPanel({
           ? `climate-${selection.climateTypeId}`
           : 'climate-overview'
       }
+      accent={climateType?.color ?? '#79c8d4'}
       onClose={onClose}
     >
       <header className="climate-learning-heading">

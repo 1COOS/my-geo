@@ -22,8 +22,10 @@ import type { ClimateTypeId } from '../../data/climateLearningSchema'
 import { getCitiesForCountry, getCity, getCountry } from '../../data/countries'
 import { getDesert } from '../../data/deserts'
 import {
+  geographyLearningOverview,
   getGeographyTopic,
   getReferenceLine,
+  resolveGeographyExploreSelection,
 } from '../../data/geographyLearning'
 import type {
   GeographyTopicId,
@@ -207,8 +209,8 @@ function LayerControl({
           type="button"
           className="layer-toggle is-geography"
           aria-pressed={showGeographyLearningLayer}
-          aria-label="经纬教学图层：经纬网判读、半球、纬度分区与地球五带"
-          title="经纬：重要经纬线、半球与地球五带"
+          aria-label="经纬图层：经度基准、半球界线、纬度分区线与五带分界线"
+          title="经纬：地球重要经纬线"
           onClick={onToggleGeographyLearningLayer}
         >
           <span className="layer-toggle-dot" aria-hidden="true" />
@@ -372,10 +374,16 @@ export function ExplorePage() {
     selection?.kind === 'desert' ? selection.desertId : null
   const selectedLandmarkId =
     selection?.kind === 'landmark' ? selection.landmarkId : null
+  const geographySelection =
+    selection?.kind === 'geography' ? selection.value : null
   const selectedGeographyTopicId =
-    selection?.kind === 'geography' ? selection.topicId : null
+    geographySelection?.kind === 'line'
+      ? geographySelection.topicId
+      : (geographySelection?.focusTopicId ?? null)
   const selectedReferenceLineId =
-    selection?.kind === 'geography' ? selection.referenceLineId : null
+    geographySelection?.kind === 'line'
+      ? geographySelection.referenceLineId
+      : null
   const climateSelection =
     selection?.kind === 'climate' ? selection.value : null
   const hoveredCountryCode =
@@ -544,8 +552,7 @@ export function ExplorePage() {
       type: 'select',
       selection: {
         kind: 'geography',
-        topicId: 'grid-reading',
-        referenceLineId: null,
+        value: { kind: 'overview', focusTopicId: null },
       },
     })
   }, [showGeographyLearningLayer])
@@ -574,11 +581,21 @@ export function ExplorePage() {
       referenceLineId: ReferenceLineId | null = null,
     ) => {
       setCommittedViewCenter(currentViewCenterRef.current)
+      const referenceLine = getReferenceLine(referenceLineId)
       dispatch({
         type: 'select',
-        selection: { kind: 'geography', topicId, referenceLineId },
+        selection: {
+          kind: 'geography',
+          value:
+            referenceLine?.topicId === topicId
+              ? {
+                  kind: 'line',
+                  topicId,
+                  referenceLineId: referenceLine.id,
+                }
+              : { kind: 'overview', focusTopicId: topicId },
+        },
       })
-      const referenceLine = getReferenceLine(referenceLineId)
       if (referenceLine) {
         requestCameraTarget(
           referenceLine.focusPosition,
@@ -587,6 +604,27 @@ export function ExplorePage() {
       }
     },
     [requestCameraTarget],
+  )
+  const openGeographyOverview = useCallback(
+    (focusTopicId: GeographyTopicId | null = null) => {
+      setCommittedViewCenter(currentViewCenterRef.current)
+      dispatch({
+        type: 'select',
+        selection: {
+          kind: 'geography',
+          value: { kind: 'overview', focusTopicId },
+        },
+      })
+    },
+    [],
+  )
+  const openGeographyLine = useCallback(
+    (referenceLineId: ReferenceLineId) => {
+      const referenceLine = getReferenceLine(referenceLineId)
+      if (!referenceLine) return
+      openGeographyTopic(referenceLine.topicId, referenceLine.id)
+    },
+    [openGeographyTopic],
   )
   const selectClimateType = useCallback((climateTypeId: ClimateTypeId) => {
     dispatch({ type: 'selectClimateType', climateTypeId })
@@ -680,6 +718,40 @@ export function ExplorePage() {
     handledCountryDeepLinkRef.current = requestedCountryCode
     navigateToCountry(requestedCountryCode)
   }, [navigateToCountry, requestedCountryCode])
+  const requestedGeographySelection = useMemo(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    return resolveGeographyExploreSelection(
+      searchParams.get('geography'),
+      searchParams.get('line'),
+    )
+  }, [])
+  const handledGeographyDeepLinkRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (
+      !requestedGeographySelection ||
+      getCountry(requestedCountryCode) ||
+      handledGeographyDeepLinkRef.current
+    ) {
+      return
+    }
+    handledGeographyDeepLinkRef.current =
+      requestedGeographySelection.kind === 'line'
+        ? `${requestedGeographySelection.topicId}:${requestedGeographySelection.referenceLineId}`
+        : `${requestedGeographySelection.focusTopicId}:overview`
+    if (requestedGeographySelection.kind === 'line') {
+      openGeographyTopic(
+        requestedGeographySelection.topicId,
+        requestedGeographySelection.referenceLineId,
+      )
+    } else {
+      openGeographyOverview(requestedGeographySelection.focusTopicId)
+    }
+  }, [
+    openGeographyOverview,
+    openGeographyTopic,
+    requestedCountryCode,
+    requestedGeographySelection,
+  ])
   const navigateToCity = useCallback(
     (cityId: string) => {
       const city = getCity(cityId)
@@ -904,7 +976,7 @@ export function ExplorePage() {
     hoveredDesertId === null &&
     selectedLandmarkId === null &&
     hoveredLandmarkId === null &&
-    selectedGeographyTopicId === null &&
+    geographySelection === null &&
     climateSelection === null
 
   return (
@@ -916,7 +988,7 @@ export function ExplorePage() {
         selectedMountainRange ||
         selectedDesert ||
         selectedLandmark ||
-        selectedGeographyTopic ||
+        geographySelection ||
         climateSelection
           ? 'explore-shell has-country-detail'
           : 'explore-shell'
@@ -1102,7 +1174,9 @@ export function ExplorePage() {
                   selectedDesert?.name.zh ??
                   selectedLandmark?.name.zh ??
                   selectedReferenceLine?.name.zh ??
-                  selectedGeographyTopic?.name.zh ??
+                  (geographySelection
+                    ? geographyLearningOverview.name.zh
+                    : undefined) ??
                   selectedClimateType?.name.zh ??
                   (climateSelection ? '世界气候类型' : undefined)
                 }
@@ -1216,12 +1290,12 @@ export function ExplorePage() {
           onSelectCountry={navigateToCountry}
         />
       ) : null}
-      {selectedGeographyTopic ? (
+      {geographySelection ? (
         <GeographyLearningPanel
-          topicId={selectedGeographyTopic.id}
-          referenceLineId={selectedReferenceLineId}
+          selection={geographySelection}
           viewCenter={committedViewCenter}
-          onSelectTopic={openGeographyTopic}
+          onSelectLine={openGeographyLine}
+          onShowOverview={openGeographyOverview}
           onClose={() => {
             dispatch({ type: 'clearSelection' })
           }}

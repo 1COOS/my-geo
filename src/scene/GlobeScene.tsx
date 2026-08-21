@@ -73,13 +73,18 @@ import {
   getDesertIdForLayer,
   getDesertPolygonState,
 } from './desertSceneInteraction'
-import { getReferenceLineIdForLayer } from './geographyLearningScene'
-import { shouldLayoutGlobeLabelsThisFrame } from './globeFrameScheduling'
+import {
+  getGeographyCanvasCursor,
+  getReferenceLineIdForLayer,
+  hasExceededGeographyDragThreshold,
+} from './geographyLearningScene'
+import { advanceGlobeLabelFrame } from './globeFrameScheduling'
 import { GlobeCameraControls } from './GlobeCameraControls'
 import { GlobeDomOverlay } from './GlobeDomOverlay'
 import {
   getLabelGroup,
   getLabelPriority,
+  getLabelVisibilityChanges,
   getMapLabelName,
   labelRectsOverlap,
   type LabelGroup,
@@ -242,6 +247,20 @@ type WorldProps = GlobeWorldProps & {
   selectedMountainPeakRef: RefObject<HTMLButtonElement | null>
 }
 
+type LabelLayoutCandidate = {
+  item: MapLabel
+  group: LabelGroup
+  width: number
+  height: number
+}
+
+type MutableLabelProjection = {
+  x: number
+  y: number
+  leaderLength: number
+  leaderAngleDegrees: number
+}
+
 function resetClimateBoundaryMaterial(material: MeshStandardMaterial) {
   material.emissiveMap = null
   material.emissive.set('#061f33')
@@ -384,10 +403,29 @@ function World({
   const labelLayoutPendingRef = useRef(true)
   const viewCenterFrameRef = useRef<number | null>(null)
   const labelElementsRef = useRef(new Map<string, HTMLElement>())
+  const admittedLabelIdsRef = useRef(new Set<string>())
   const visibleLabelIdsRef = useRef(new Set<string>())
-  const labelWorldPositionRef = useRef(new Vector3())
+  const labelWorldPositionsRef = useRef(new Map<string, Vector3>())
+  const projectedLabelPositionRef = useRef(new Vector3())
+  const labelProjectionRef = useRef<MutableLabelProjection>({
+    x: 0,
+    y: 0,
+    leaderLength: 0,
+    leaderAngleDegrees: 0,
+  })
+  const labelCollisionFrameAccumulatorRef = useRef(0)
   const flyToTargetRef = useRef<(target: CameraTarget) => void>(() => undefined)
+  const canvasElementRef = useRef<HTMLCanvasElement | null>(null)
+  const geographyPointerGestureRef = useRef<{
+    pointerId: number
+    pointerType: string
+    x: number
+    y: number
+    dragged: boolean
+  } | null>(null)
+  const suppressGeographyClickRef = useRef(false)
   const { camera, gl, size } = useThree()
+  const touchDevice = useMemo(() => navigator.maxTouchPoints > 0, [])
   const rendererSize = useMemo(
     () => new Vector2(size.width, size.height),
     [size.height, size.width],
@@ -437,27 +475,64 @@ function World({
   }, [climateBoundaryRasterUrl, globeMaterial, quality, showClimateLayer])
   useEffect(() => {
     const canvas = gl.domElement
-    const handlePointerMove = (event: PointerEvent) => {
-      if (event.buttons !== 0) onControlsInteractionStart()
+    canvasElementRef.current = canvas
+    const handlePointerDown = (event: PointerEvent) => {
+      geographyPointerGestureRef.current = {
+        pointerId: event.pointerId,
+        pointerType: event.pointerType,
+        x: event.clientX,
+        y: event.clientY,
+        dragged: false,
+      }
+      suppressGeographyClickRef.current = false
+      canvas.style.cursor = 'grabbing'
+      onControlsInteractionStart()
     }
-    canvas.addEventListener('pointerdown', onControlsInteractionStart, true)
+    const handlePointerMove = (event: PointerEvent) => {
+      const gesture = geographyPointerGestureRef.current
+      if (
+        gesture?.pointerId !== event.pointerId ||
+        (event.pointerType !== 'touch' && event.buttons === 0)
+      )
+        return
+      if (
+        !gesture.dragged &&
+        hasExceededGeographyDragThreshold(gesture, {
+          x: event.clientX,
+          y: event.clientY,
+        })
+      ) {
+        gesture.dragged = true
+      }
+      onControlsInteractionStart()
+    }
+    const handlePointerUp = (event: PointerEvent) => {
+      const gesture = geographyPointerGestureRef.current
+      if (gesture?.pointerId === event.pointerId) {
+        suppressGeographyClickRef.current = gesture.dragged
+        geographyPointerGestureRef.current = null
+      }
+      canvas.style.cursor = ''
+      onControlsInteractionEnd()
+    }
+    const handlePointerCancel = () => {
+      suppressGeographyClickRef.current = true
+      geographyPointerGestureRef.current = null
+      canvas.style.cursor = ''
+      onControlsInteractionEnd()
+    }
+    canvas.addEventListener('pointerdown', handlePointerDown, true)
     window.addEventListener('pointermove', handlePointerMove, true)
-    window.addEventListener('pointerup', onControlsInteractionEnd, true)
-    window.addEventListener('pointercancel', onControlsInteractionEnd, true)
+    window.addEventListener('pointerup', handlePointerUp, true)
+    window.addEventListener('pointercancel', handlePointerCancel, true)
 
     return () => {
-      canvas.removeEventListener(
-        'pointerdown',
-        onControlsInteractionStart,
-        true,
-      )
+      canvas.style.cursor = ''
+      canvasElementRef.current = null
+      canvas.removeEventListener('pointerdown', handlePointerDown, true)
       window.removeEventListener('pointermove', handlePointerMove, true)
-      window.removeEventListener('pointerup', onControlsInteractionEnd, true)
-      window.removeEventListener(
-        'pointercancel',
-        onControlsInteractionEnd,
-        true,
-      )
+      window.removeEventListener('pointerup', handlePointerUp, true)
+      window.removeEventListener('pointercancel', handlePointerCancel, true)
     }
   }, [gl, onControlsInteractionEnd, onControlsInteractionStart])
   const {
@@ -486,6 +561,7 @@ function World({
     hoveredMountainRangeId,
     selectedReferenceLineId,
     showGeographyLearningLayer,
+    touchDevice,
   })
 
   const syncPointOfView = useCallback(() => {
@@ -651,7 +727,7 @@ function World({
     size.width,
   ])
 
-  const labelLayoutItems = useMemo(() => {
+  const labelLayoutItems = useMemo<LabelLayoutCandidate[]>(() => {
     const priorityState = {
       selectedCityId,
       hoveredCityId,
@@ -699,8 +775,137 @@ function World({
     () => new Set(labelLayoutItems.map((candidate) => candidate.group)).size,
     [labelLayoutItems],
   )
+  const labelLayoutCandidatesById = useMemo(
+    () =>
+      new Map(
+        labelLayoutItems.map((candidate) => [candidate.item.id, candidate]),
+      ),
+    [labelLayoutItems],
+  )
 
-  const layoutCityLabels = useCallback(() => {
+  const cacheLabelWorldPositions = useCallback(() => {
+    const globe = globeRef.current
+    if (!globe) return
+
+    const currentPositions = labelWorldPositionsRef.current
+    const nextPositions = new Map<string, Vector3>()
+    for (const { item } of labelLayoutItems) {
+      const coordinate = globe.getCoords(item.latitude, item.longitude, 0.04)
+      const worldPosition = currentPositions.get(item.id) ?? new Vector3()
+      worldPosition.set(coordinate.x, coordinate.y, coordinate.z)
+      nextPositions.set(item.id, worldPosition)
+    }
+    labelWorldPositionsRef.current = nextPositions
+  }, [labelLayoutItems])
+
+  const getSelectedLabelOffset = useCallback(() => {
+    if (!selectedLinearFeatureId && !selectedMountainRangeId) return null
+    const projectedRoute = getProjectedSelectedLinearFeatureLines()
+      .flat()
+      .filter((point) => point.visible)
+    return getSelectedLinearFeatureLabelOffset(projectedRoute)
+  }, [
+    getProjectedSelectedLinearFeatureLines,
+    selectedLinearFeatureId,
+    selectedMountainRangeId,
+  ])
+
+  const projectLabelCandidate = useCallback(
+    (
+      candidate: LabelLayoutCandidate,
+      globeRadius: number,
+      projectedPeak: ReturnType<typeof projectSelectedMountainPeak>,
+      selectedLabelOffset: ReturnType<
+        typeof getSelectedLinearFeatureLabelOffset
+      > | null,
+    ) => {
+      const { item, width, height } = candidate
+      const worldPosition = labelWorldPositionsRef.current.get(item.id)
+      if (!worldPosition) return false
+      if (worldPosition.dot(camera.position) <= globeRadius ** 2) return false
+
+      const screenPosition = projectedLabelPositionRef.current
+        .copy(worldPosition)
+        .project(camera)
+      let x = (screenPosition.x * 0.5 + 0.5) * size.width
+      let y = (-screenPosition.y * 0.5 + 0.5) * size.height
+      if (x < 12 || x > size.width - 12 || y < 12 || y > size.height - 12) {
+        return false
+      }
+
+      if (
+        selectedLabelOffset &&
+        ((item.type === 'linearFeature' &&
+          item.id === selectedLinearFeatureId) ||
+          (item.type === 'mountainRange' &&
+            item.id === selectedMountainRangeId))
+      ) {
+        x = Math.max(
+          width / 2 + 12,
+          Math.min(size.width - width / 2 - 12, x + selectedLabelOffset.x),
+        )
+        y = Math.max(
+          height / 2 + 12,
+          Math.min(size.height - height / 2 - 12, y + selectedLabelOffset.y),
+        )
+        if (
+          projectedPeak?.visible &&
+          Math.hypot(x - projectedPeak.x, y - projectedPeak.y) < 64
+        ) {
+          y = Math.max(height / 2 + 12, y - 48)
+        }
+      }
+
+      const labelPlacement = getMapLabelPlacement({
+        x,
+        y,
+        labelWidth: width,
+        labelHeight: height,
+        viewportWidth: size.width,
+        viewportHeight: size.height,
+        isLake: item.type === 'waterbody' && item.waterbody.layer === 'lake',
+      })
+      const projection = labelProjectionRef.current
+      projection.x = labelPlacement.x
+      projection.y = labelPlacement.y
+      projection.leaderLength = labelPlacement.leaderLength
+      projection.leaderAngleDegrees = labelPlacement.leaderAngleDegrees
+      return true
+    },
+    [
+      camera,
+      selectedLinearFeatureId,
+      selectedMountainRangeId,
+      size.height,
+      size.width,
+    ],
+  )
+
+  const applyLabelProjection = useCallback(
+    (candidate: LabelLayoutCandidate, element: HTMLElement) => {
+      const projection = labelProjectionRef.current
+      const transform = `translate3d(${projection.x}px, ${projection.y}px, 0) translate(-50%, -50%)`
+      if (element.style.transform !== transform) {
+        element.style.transform = transform
+      }
+      if (
+        candidate.item.type === 'waterbody' &&
+        candidate.item.waterbody.layer === 'lake'
+      ) {
+        element.style.setProperty(
+          '--lake-label-leader-length',
+          `${projection.leaderLength.toFixed(2)}px`,
+        )
+        element.style.setProperty(
+          '--lake-label-leader-angle',
+          `${projection.leaderAngleDegrees.toFixed(2)}deg`,
+        )
+      }
+    },
+    [],
+  )
+
+  const reconcileLabelLayout = useCallback(() => {
     const globe = globeRef.current
     if (!globe) return
 
@@ -710,10 +915,7 @@ function World({
     camera.updateMatrixWorld()
 
     const labelElements = labelElementsRef.current
-    for (const cityId of visibleLabelIdsRef.current) {
-      const element = labelElements.get(cityId)
-      if (element && !element.hidden) element.hidden = true
-    }
+    const nextAdmittedIds = new Set<string>()
     const nextVisibleIds = new Set<string>()
 
     const touchDevice = navigator.maxTouchPoints > 0
@@ -747,6 +949,7 @@ function World({
     const ordinaryGroupLimit = Math.ceil(
       budget / Math.max(activeLabelGroupCount, 1),
     )
+    const selectedLabelOffset = getSelectedLabelOffset()
 
     for (const candidate of labelLayoutItems) {
       const { item, group: labelGroup, width, height } = candidate
@@ -768,9 +971,7 @@ function World({
         item.id === selectedLandmarkId ||
         item.id === hoveredLandmarkId ||
         (item.type === 'referenceLine' &&
-          item.line.id === selectedReferenceLineId) ||
-        (item.type === 'referenceLine' &&
-          item.line.category !== 'latitude-zone-boundary')
+          item.line.id === selectedReferenceLineId)
       if (
         !forced &&
         labelGroup !== 'geography' &&
@@ -778,61 +979,21 @@ function World({
       )
         continue
 
-      const coordinate = globe.getCoords(item.latitude, item.longitude, 0.04)
-      const worldPosition = labelWorldPositionRef.current.set(
-        coordinate.x,
-        coordinate.y,
-        coordinate.z,
-      )
-      if (worldPosition.dot(camera.position) <= globeRadius ** 2) continue
-
-      const screenPosition = worldPosition.clone().project(camera)
-      let x = (screenPosition.x * 0.5 + 0.5) * size.width
-      let y = (-screenPosition.y * 0.5 + 0.5) * size.height
-      if (x < 12 || x > size.width - 12 || y < 12 || y > size.height - 12) {
-        continue
-      }
-
       if (
-        (item.type === 'linearFeature' &&
-          item.id === selectedLinearFeatureId) ||
-        (item.type === 'mountainRange' && item.id === selectedMountainRangeId)
-      ) {
-        const projectedRoute = getProjectedSelectedLinearFeatureLines()
-          .flat()
-          .filter((point) => point.visible)
-        const offset = getSelectedLinearFeatureLabelOffset(projectedRoute)
-        x = Math.max(
-          width / 2 + 12,
-          Math.min(size.width - width / 2 - 12, x + offset.x),
+        !projectLabelCandidate(
+          candidate,
+          globeRadius,
+          projectedPeak,
+          selectedLabelOffset,
         )
-        y = Math.max(
-          height / 2 + 12,
-          Math.min(size.height - height / 2 - 12, y + offset.y),
-        )
-        if (
-          projectedPeak?.visible &&
-          Math.hypot(x - projectedPeak.x, y - projectedPeak.y) < 64
-        ) {
-          y = Math.max(height / 2 + 12, y - 48)
-        }
-      }
-      const labelPlacement = getMapLabelPlacement({
-        x,
-        y,
-        labelWidth: width,
-        labelHeight: height,
-        viewportWidth: size.width,
-        viewportHeight: size.height,
-        isLake: item.type === 'waterbody' && item.waterbody.layer === 'lake',
-      })
-      x = labelPlacement.x
-      y = labelPlacement.y
+      )
+        continue
+      const projection = labelProjectionRef.current
       const rect = {
-        left: x - width / 2 - 5,
-        top: y - height / 2 - 5,
-        right: x + width / 2 + 5,
-        bottom: y + height / 2 + 5,
+        left: projection.x - width / 2 - 5,
+        top: projection.y - height / 2 - 5,
+        right: projection.x + width / 2 + 5,
+        bottom: projection.y + height / 2 + 5,
       }
       if (
         !forced &&
@@ -841,30 +1002,32 @@ function World({
         continue
       }
 
-      if (element.hidden) element.hidden = false
-      const transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`
-      if (element.style.transform !== transform) {
-        element.style.transform = transform
-      }
-      if (item.type === 'waterbody' && item.waterbody.layer === 'lake') {
-        element.style.setProperty(
-          '--lake-label-leader-length',
-          `${labelPlacement.leaderLength.toFixed(2)}px`,
-        )
-        element.style.setProperty(
-          '--lake-label-leader-angle',
-          `${labelPlacement.leaderAngleDegrees.toFixed(2)}deg`,
-        )
-      }
+      applyLabelProjection(candidate, element)
+      nextAdmittedIds.add(item.id)
       nextVisibleIds.add(item.id)
       acceptedRects.push(rect)
       visibleCount += 1
       groupCount[labelGroup] += 1
     }
+
+    const { hiddenIds, shownIds } = getLabelVisibilityChanges(
+      visibleLabelIdsRef.current,
+      nextVisibleIds,
+    )
+    for (const id of hiddenIds) {
+      const element = labelElements.get(id)
+      if (element && !element.hidden) element.hidden = true
+    }
+    for (const id of shownIds) {
+      const element = labelElements.get(id)
+      if (element?.hidden) element.hidden = false
+    }
+    admittedLabelIdsRef.current = nextAdmittedIds
     visibleLabelIdsRef.current = nextVisibleIds
   }, [
+    applyLabelProjection,
     camera,
-    getProjectedSelectedLinearFeatureLines,
+    getSelectedLabelOffset,
     hoveredCityId,
     hoveredWaterbodyId,
     hoveredLinearFeatureId,
@@ -873,6 +1036,7 @@ function World({
     hoveredLandmarkId,
     activeLabelGroupCount,
     labelLayoutItems,
+    projectLabelCandidate,
     quality,
     projectSelectedMountainPeak,
     selectedCityId,
@@ -882,8 +1046,46 @@ function World({
     selectedDesertId,
     selectedLandmarkId,
     selectedReferenceLineId,
-    size.height,
-    size.width,
+  ])
+
+  const trackAdmittedLabelPositions = useCallback(() => {
+    const globe = globeRef.current
+    if (!globe) return
+
+    camera.updateMatrixWorld()
+    const globeRadius = globe.getGlobeRadius()
+    const projectedPeak = projectSelectedMountainPeak()
+    const selectedLabelOffset = getSelectedLabelOffset()
+    const labelElements = labelElementsRef.current
+    const visibleLabelIds = visibleLabelIdsRef.current
+
+    for (const id of admittedLabelIdsRef.current) {
+      const candidate = labelLayoutCandidatesById.get(id)
+      const element = labelElements.get(id)
+      if (!candidate || !element) continue
+      const isVisible = projectLabelCandidate(
+        candidate,
+        globeRadius,
+        projectedPeak,
+        selectedLabelOffset,
+      )
+      if (!isVisible) {
+        if (!element.hidden) element.hidden = true
+        visibleLabelIds.delete(id)
+        continue
+      }
+
+      applyLabelProjection(candidate, element)
+      if (element.hidden) element.hidden = false
+      visibleLabelIds.add(id)
+    }
+  }, [
+    applyLabelProjection,
+    camera,
+    getSelectedLabelOffset,
+    labelLayoutCandidatesById,
+    projectLabelCandidate,
+    projectSelectedMountainPeak,
   ])
 
   useEffect(() => {
@@ -894,14 +1096,15 @@ function World({
         (element) => [element.dataset.mapLabelId ?? '', element],
       ),
     )
-    visibleLabelIdsRef.current.clear()
-    layoutCityLabels()
+    cacheLabelWorldPositions()
+    reconcileLabelLayout()
     layoutSelectedLinearFeatureOverlay()
     layoutSelectedMountainPeak()
   }, [
+    cacheLabelWorldPositions,
     labelItems,
     labelLayerRef,
-    layoutCityLabels,
+    reconcileLabelLayout,
     layoutSelectedLinearFeatureOverlay,
     layoutSelectedMountainPeak,
   ])
@@ -919,7 +1122,7 @@ function World({
     )
     camera.updateProjectionMatrix()
     syncPointOfView()
-    layoutCityLabels()
+    reconcileLabelLayout()
     layoutSelectedLinearFeatureOverlay()
     layoutSelectedMountainPeak()
 
@@ -929,7 +1132,7 @@ function World({
     }
   }, [
     camera,
-    layoutCityLabels,
+    reconcileLabelLayout,
     layoutSelectedLinearFeatureOverlay,
     layoutSelectedMountainPeak,
     size.height,
@@ -959,7 +1162,9 @@ function World({
   }, [getView, onViewCenterChange])
 
   const commitView = useCallback(() => {
-    layoutCityLabels()
+    labelLayoutPendingRef.current = false
+    labelCollisionFrameAccumulatorRef.current = 0
+    reconcileLabelLayout()
     layoutSelectedLinearFeatureOverlay()
     layoutSelectedMountainPeak()
     const view = getView()
@@ -968,7 +1173,7 @@ function World({
     onViewCenterCommit(view)
   }, [
     getView,
-    layoutCityLabels,
+    reconcileLabelLayout,
     layoutSelectedLinearFeatureOverlay,
     layoutSelectedMountainPeak,
     onViewCenterChange,
@@ -1057,11 +1262,17 @@ function World({
       }
     }
 
-    if (
-      shouldLayoutGlobeLabelsThisFrame(quality, labelLayoutPendingRef.current)
-    ) {
+    const labelFrame = advanceGlobeLabelFrame(
+      labelCollisionFrameAccumulatorRef.current,
+      delta,
+      quality,
+      labelLayoutPendingRef.current,
+    )
+    labelCollisionFrameAccumulatorRef.current = labelFrame.accumulatedSeconds
+    if (labelFrame.shouldTrackPositions) {
       labelLayoutPendingRef.current = false
-      layoutCityLabels()
+      if (labelFrame.shouldReconcileLayout) reconcileLabelLayout()
+      else trackAdmittedLabelPositions()
       layoutSelectedLinearFeatureOverlay()
       layoutSelectedMountainPeak()
     }
@@ -1080,11 +1291,11 @@ function World({
   }, [gl, quality])
 
   useEffect(() => {
-    layoutCityLabels()
+    reconcileLabelLayout()
     layoutSelectedLinearFeatureOverlay()
     layoutSelectedMountainPeak()
   }, [
-    layoutCityLabels,
+    reconcileLabelLayout,
     layoutSelectedLinearFeatureOverlay,
     layoutSelectedMountainPeak,
   ])
@@ -1320,7 +1531,8 @@ function World({
         onGlobeReady={() => {
           globeReadyRef.current = true
           syncPointOfView()
-          layoutCityLabels()
+          cacheLabelWorldPositions()
+          reconcileLabelLayout()
           layoutSelectedLinearFeatureOverlay()
           layoutSelectedMountainPeak()
           applyCameraTargetRequest()
@@ -1338,6 +1550,10 @@ function World({
           const landmarkId = getLandmarkIdForLayer(layer, value)
           onHoverLandmark(landmarkId)
           const referenceLineId = getReferenceLineIdForLayer(layer, value)
+          const canvas = canvasElementRef.current
+          if (canvas) {
+            canvas.style.cursor = getGeographyCanvasCursor(referenceLineId)
+          }
           const cityId = getCityIdForLayer(layer, value)
           onHoverCity(cityId)
           onHoverCountry(
@@ -1381,6 +1597,10 @@ function World({
           const referenceLineId = getReferenceLineIdForLayer(layer, value)
           const referenceLine = getReferenceLine(referenceLineId)
           if (referenceLine) {
+            if (suppressGeographyClickRef.current) {
+              suppressGeographyClickRef.current = false
+              return
+            }
             onSelectGeographyTopic(referenceLine.topicId, referenceLine.id)
             return
           }

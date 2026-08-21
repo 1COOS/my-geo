@@ -2,14 +2,16 @@ import { z } from 'zod'
 
 import { geoPositionSchema, localizedNameSchema } from './countrySchema'
 
-export const geographyTopicIdSchema = z.enum([
+export const geographyTopicIds = [
   'grid-reading',
   'hemispheres',
   'latitude-zones',
   'earth-zones',
-])
+] as const
 
-export const referenceLineIdSchema = z.enum([
+export const geographyTopicIdSchema = z.enum(geographyTopicIds)
+
+export const referenceLineIds = [
   'equator',
   'tropic-of-cancer',
   'tropic-of-capricorn',
@@ -23,7 +25,9 @@ export const referenceLineIdSchema = z.enum([
   'antimeridian',
   'western-hemisphere-boundary',
   'eastern-hemisphere-boundary',
-])
+] as const
+
+export const referenceLineIdSchema = z.enum(referenceLineIds)
 
 export const referenceLineCategorySchema = z.enum([
   'equator',
@@ -34,9 +38,22 @@ export const referenceLineCategorySchema = z.enum([
   'hemisphere-boundary',
 ])
 
+export const geographyOverviewSchema = z.object({
+  name: localizedNameSchema,
+  eyebrow: z.string().min(4),
+  summary: z.string().min(20),
+  currentViewLabel: z.string().min(4),
+  diagramCaption: z.string().min(8),
+  sourceIds: z.array(z.string().min(1)).min(1),
+})
+
 export const geographyTopicSchema = z.object({
   id: geographyTopicIdSchema,
   name: localizedNameSchema,
+  shortName: localizedNameSchema,
+  visualization: z.object({
+    kind: z.literal('reference-lines'),
+  }),
   aliases: z.array(z.string().min(1)).min(1),
   summary: z.string().min(20),
   rules: z.array(z.string().min(10)).min(2).max(5),
@@ -72,16 +89,33 @@ export const geographyLearningSourceSchema = z.object({
 
 export const geographyLearningCatalogSchema = z
   .object({
-    topics: z.array(geographyTopicSchema).length(4),
-    referenceLines: z.array(referenceLineSchema).length(13),
+    overview: geographyOverviewSchema,
+    topics: z.array(geographyTopicSchema).min(1),
+    referenceLines: z.array(referenceLineSchema).min(1),
     sources: z.array(geographyLearningSourceSchema).min(2),
   })
   .superRefine((catalog, context) => {
-    const topicIds = new Set(catalog.topics.map((topic) => topic.id))
+    const topicIds = new Set<string>()
     const sourceIds = new Set(catalog.sources.map((source) => source.id))
     const lineIds = new Set<string>()
 
+    for (const sourceId of catalog.overview.sourceIds) {
+      if (!sourceIds.has(sourceId)) {
+        context.addIssue({
+          code: 'custom',
+          message: `Unknown geography source ${sourceId} on overview`,
+        })
+      }
+    }
+
     for (const topic of catalog.topics) {
+      if (topicIds.has(topic.id)) {
+        context.addIssue({
+          code: 'custom',
+          message: `Duplicate geography topic ${topic.id}`,
+        })
+      }
+      topicIds.add(topic.id)
       for (const sourceId of topic.sourceIds) {
         if (!sourceIds.has(sourceId)) {
           context.addIssue({
@@ -89,6 +123,15 @@ export const geographyLearningCatalogSchema = z
             message: `Unknown geography source ${sourceId} on ${topic.id}`,
           })
         }
+      }
+    }
+
+    for (const topicId of geographyTopicIds) {
+      if (!topicIds.has(topicId)) {
+        context.addIssue({
+          code: 'custom',
+          message: `Missing geography topic ${topicId}`,
+        })
       }
     }
 
@@ -115,11 +158,21 @@ export const geographyLearningCatalogSchema = z
         }
       }
     }
+
+    for (const lineId of referenceLineIds) {
+      if (!lineIds.has(lineId)) {
+        context.addIssue({
+          code: 'custom',
+          message: `Missing geography reference line ${lineId}`,
+        })
+      }
+    }
   })
 
 export type GeographyTopicId = z.infer<typeof geographyTopicIdSchema>
 export type ReferenceLineId = z.infer<typeof referenceLineIdSchema>
 export type ReferenceLineCategory = z.infer<typeof referenceLineCategorySchema>
+export type GeographyOverview = z.infer<typeof geographyOverviewSchema>
 export type GeographyTopic = z.infer<typeof geographyTopicSchema>
 export type ReferenceLine = z.infer<typeof referenceLineSchema>
 export type GeographyLearningSource = z.infer<

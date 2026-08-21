@@ -42,14 +42,57 @@ describe('exploreReducer', () => {
       type: 'select',
       selection: {
         kind: 'geography',
-        topicId: 'grid-reading',
-        referenceLineId: null,
+        value: { kind: 'overview', focusTopicId: null },
       },
     })
 
     expect(lakeState.layers.lake).toBe(true)
     expect(desertState.layers.desert).toBe(true)
     expect(geographyState.layers.geography).toBe(true)
+  })
+
+  it('moves between geography overview and line cards without coupling card and layer visibility', () => {
+    const overview = exploreReducer(initialExploreState, {
+      type: 'select',
+      selection: {
+        kind: 'geography',
+        value: { kind: 'overview', focusTopicId: 'earth-zones' },
+      },
+    })
+    const line = exploreReducer(overview, {
+      type: 'select',
+      selection: {
+        kind: 'geography',
+        value: {
+          kind: 'line',
+          topicId: 'earth-zones',
+          referenceLineId: 'tropic-of-cancer',
+        },
+      },
+    })
+    const hidden = exploreReducer(line, {
+      type: 'setLayer',
+      layer: 'geography',
+      visible: false,
+    })
+    const closed = exploreReducer(hidden, { type: 'clearSelection' })
+
+    expect(overview.selection).toEqual({
+      kind: 'geography',
+      value: { kind: 'overview', focusTopicId: 'earth-zones' },
+    })
+    expect(line.selection).toEqual({
+      kind: 'geography',
+      value: {
+        kind: 'line',
+        topicId: 'earth-zones',
+        referenceLineId: 'tropic-of-cancer',
+      },
+    })
+    expect(hidden.layers.geography).toBe(false)
+    expect(hidden.selection).toEqual(line.selection)
+    expect(closed.selection).toBeNull()
+    expect(closed.layers.geography).toBe(false)
   })
 
   it('clears hidden-layer hover without clearing the current selection', () => {

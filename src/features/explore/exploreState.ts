@@ -3,10 +3,7 @@ import type {
   ClimateTypeId,
 } from '../../data/climateLearningSchema'
 import { getCity } from '../../data/countries'
-import type {
-  GeographyTopicId,
-  ReferenceLineId,
-} from '../../data/geographyLearningSchema'
+import type { GeographyExploreSelection } from '../../data/geographyLearning'
 import { getWaterbody } from '../../data/waterbodies'
 
 export type LayerVisibility = {
@@ -31,11 +28,7 @@ export type ExploreSelection =
   | { kind: 'mountainRange'; rangeId: string }
   | { kind: 'desert'; desertId: string }
   | { kind: 'landmark'; landmarkId: string }
-  | {
-      kind: 'geography'
-      topicId: GeographyTopicId
-      referenceLineId: ReferenceLineId | null
-    }
+  | { kind: 'geography'; value: GeographyExploreSelection }
   | { kind: 'climate'; value: ClimateKnowledgeSelection }
   | null
 

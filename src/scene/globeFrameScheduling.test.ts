@@ -1,19 +1,39 @@
 import { describe, expect, it } from 'vitest'
 
-import { shouldLayoutGlobeLabelsThisFrame } from './globeFrameScheduling'
+import { advanceGlobeLabelFrame } from './globeFrameScheduling'
 
 describe('globe label frame scheduling', () => {
   it.each(['balanced', 'low'] as const)(
-    'updates %s labels on every frame where the camera changes',
+    'tracks %s label positions on every camera-changed frame',
     (quality) => {
-      expect(shouldLayoutGlobeLabelsThisFrame(quality, true)).toBe(true)
+      expect(advanceGlobeLabelFrame(0, 1 / 120, quality, true)).toMatchObject({
+        shouldTrackPositions: true,
+        shouldReconcileLayout: false,
+      })
     },
   )
 
-  it.each(['balanced', 'low'] as const)(
-    'skips %s label layout while the camera is idle',
-    (quality) => {
-      expect(shouldLayoutGlobeLabelsThisFrame(quality, false)).toBe(false)
-    },
-  )
+  it('reconciles balanced collisions at 15Hz', () => {
+    expect(
+      advanceGlobeLabelFrame(1 / 20, 1 / 60, 'balanced', true),
+    ).toMatchObject({
+      shouldTrackPositions: true,
+      shouldReconcileLayout: true,
+    })
+  })
+
+  it('reconciles low-quality collisions at 10Hz', () => {
+    expect(advanceGlobeLabelFrame(1 / 12, 1 / 60, 'low', true)).toMatchObject({
+      shouldTrackPositions: true,
+      shouldReconcileLayout: true,
+    })
+  })
+
+  it('skips idle work and resets the collision accumulator', () => {
+    expect(advanceGlobeLabelFrame(0.08, 1 / 60, 'balanced', false)).toEqual({
+      shouldTrackPositions: false,
+      shouldReconcileLayout: false,
+      accumulatedSeconds: 0,
+    })
+  })
 })

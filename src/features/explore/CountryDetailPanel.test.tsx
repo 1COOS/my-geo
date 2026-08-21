@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
 import { getCitiesForCountry, getCountry } from '../../data/countries'
@@ -9,15 +10,17 @@ function renderCountry(code: string, onSelectCountry = vi.fn()) {
   const country = getCountry(code)
   expect(country).toBeDefined()
   render(
-    <CountryDetailPanel
-      country={country!}
-      cities={getCitiesForCountry(code)}
-      selectedCity={undefined}
-      onClose={vi.fn()}
-      onSelectCountry={onSelectCountry}
-      onSelectCity={vi.fn()}
-      onBackToCountry={vi.fn()}
-    />,
+    <MemoryRouter>
+      <CountryDetailPanel
+        country={country!}
+        cities={getCitiesForCountry(code)}
+        selectedCity={undefined}
+        onClose={vi.fn()}
+        onSelectCountry={onSelectCountry}
+        onSelectCity={vi.fn()}
+        onBackToCountry={vi.fn()}
+      />
+    </MemoryRouter>,
   )
   return onSelectCountry
 }
@@ -27,15 +30,17 @@ function renderCountryData(
   onSelectCountry = vi.fn(),
 ) {
   render(
-    <CountryDetailPanel
-      country={country}
-      cities={getCitiesForCountry(country.code)}
-      selectedCity={undefined}
-      onClose={vi.fn()}
-      onSelectCountry={onSelectCountry}
-      onSelectCity={vi.fn()}
-      onBackToCountry={vi.fn()}
-    />,
+    <MemoryRouter>
+      <CountryDetailPanel
+        country={country}
+        cities={getCitiesForCountry(country.code)}
+        selectedCity={undefined}
+        onClose={vi.fn()}
+        onSelectCountry={onSelectCountry}
+        onSelectCity={vi.fn()}
+        onBackToCountry={vi.fn()}
+      />
+    </MemoryRouter>,
   )
 }
 
@@ -48,15 +53,17 @@ function renderSelectedCity(code: string, cityId: string) {
 
   const onBackToCountry = vi.fn()
   render(
-    <CountryDetailPanel
-      country={country!}
-      cities={cities}
-      selectedCity={city}
-      onClose={vi.fn()}
-      onSelectCountry={vi.fn()}
-      onSelectCity={vi.fn()}
-      onBackToCountry={onBackToCountry}
-    />,
+    <MemoryRouter>
+      <CountryDetailPanel
+        country={country!}
+        cities={cities}
+        selectedCity={city}
+        onClose={vi.fn()}
+        onSelectCountry={vi.fn()}
+        onSelectCity={vi.fn()}
+        onBackToCountry={onBackToCountry}
+      />
+    </MemoryRouter>,
   )
   return onBackToCountry
 }
@@ -74,15 +81,31 @@ describe('CountryDetailPanel', () => {
     expect(flag).toHaveClass('country-flag-image')
     expect(flag.parentElement).toHaveClass(
       'country-flag-frame',
-      'country-detail-flag',
+      'knowledge-country-detail-flag',
     )
     expect(screen.getByText(/中华人民共和国/)).toBeInTheDocument()
     expect(screen.getAllByText('北京').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('约 14.1亿 人')).toBeInTheDocument()
     expect(screen.getByText('2025 年')).toBeInTheDocument()
     expect(screen.getByText('人民币（CNY）')).toBeInTheDocument()
+    expect(screen.queryByText('次区域')).not.toBeInTheDocument()
+    expect(screen.queryByText('Eastern Asia')).not.toBeInTheDocument()
+    const facts = document.querySelector('.knowledge-country-facts')
+    expect(facts).not.toBeNull()
+    expect(
+      Array.from(facts!.querySelectorAll(':scope > div > dt')).map(
+        (label) => label.textContent,
+      ),
+    ).toEqual(['首都', '人口', '货币', '面积', '语言'])
+    expect(facts!.querySelector('.is-languages')).toHaveClass(
+      'knowledge-country-fact',
+      'is-languages',
+    )
     expect(screen.getByText('中国香港')).toBeInTheDocument()
     expect(screen.getByText('中国澳门')).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /在知识体系中学习/ }),
+    ).toHaveAttribute('href', '/knowledge/countries/east-asia?country=CN')
     expect(screen.queryByText(/资料来源/)).not.toBeInTheDocument()
   })
 
@@ -161,20 +184,25 @@ describe('CountryDetailPanel', () => {
     ).toBeInTheDocument()
   })
 
-  it('collapses long language and currency lists without dropping content', async () => {
+  it('shows every language while keeping long currency lists expandable', async () => {
     renderCountry('ZW')
 
-    expect(screen.queryByText('卡兰加语')).not.toBeInTheDocument()
+    expect(screen.getByText('卡兰加语')).toBeInTheDocument()
+    expect(
+      document.querySelectorAll('.knowledge-language-list > li'),
+    ).toHaveLength(15)
+    expect(
+      screen.queryByRole('button', { name: '查看全部语言（15）' }),
+    ).not.toBeInTheDocument()
     expect(screen.queryByText('欧元')).not.toBeInTheDocument()
 
-    await userEvent.click(
-      screen.getByRole('button', { name: '查看全部语言（15）' }),
-    )
-    await userEvent.click(
-      screen.getByRole('button', { name: '查看全部货币（9）' }),
-    )
+    const currencyExpand = screen.getByRole('button', {
+      name: '查看全部货币（9）',
+    })
+    expect(currencyExpand).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(currencyExpand)
 
-    expect(screen.getByText('卡兰加语')).toBeInTheDocument()
+    expect(currencyExpand).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('欧元（EUR）')).toBeInTheDocument()
   })
 

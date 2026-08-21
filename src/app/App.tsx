@@ -16,6 +16,11 @@ const KnowledgeRegionPage = lazy(async () => {
   return { default: module.KnowledgeRegionPage }
 })
 
+const KnowledgeEarthPage = lazy(async () => {
+  const module = await import('../features/knowledge/KnowledgeEarthPage')
+  return { default: module.KnowledgeEarthPage }
+})
+
 const KnowledgeChallengePage = lazy(async () => {
   const module = await import('../features/knowledge/KnowledgeChallengePage')
   return { default: module.KnowledgeChallengePage }
@@ -39,6 +44,10 @@ export function App() {
                 <Route path="/" element={<Navigate to="/explore" replace />} />
                 <Route path="/explore" element={<ExplorePage />} />
                 <Route path="/knowledge" element={<KnowledgePage />} />
+                <Route
+                  path="/knowledge/earth"
+                  element={<KnowledgeEarthPage />}
+                />
                 <Route
                   path="/knowledge/countries/:regionId"
                   element={<KnowledgeRegionPage />}

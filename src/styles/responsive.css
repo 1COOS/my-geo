@@ -1,14 +1,25 @@
 @media (max-width: 1080px) {
   .knowledge-topic-grid {
-    grid-template-columns: 1.5fr repeat(3, 1fr);
+    grid-template-columns: 1.45fr repeat(4, 1fr);
+  }
+
+  .knowledge-topic-grid.is-earth-active {
+    grid-template-columns: 1fr 1.45fr repeat(3, 1fr);
   }
 
   .knowledge-region-workspace {
     grid-template-columns: minmax(20rem, 1fr) minmax(24rem, 1fr);
   }
 
+  .knowledge-earth-workspace {
+    grid-template-columns: minmax(23rem, 1.05fr) minmax(21rem, 0.95fr);
+  }
+
   .knowledge-country-grid {
-    grid-template-columns: repeat(3, minmax(10rem, 1fr));
+    grid-template-columns: repeat(
+      var(--knowledge-country-columns-tablet),
+      minmax(0, 1fr)
+    );
   }
 }
 
@@ -58,7 +69,10 @@
 
 @media (min-width: 1081px) {
   .knowledge-region-shell:not(.has-country-selection) .knowledge-country-grid {
-    grid-template-columns: repeat(5, minmax(10rem, 1fr));
+    grid-template-columns: repeat(
+      var(--knowledge-country-columns-wide),
+      minmax(0, 1fr)
+    );
   }
 }
 
@@ -160,13 +174,21 @@
     grid-template-columns: minmax(18rem, 0.9fr) minmax(26rem, 1.1fr);
   }
 
+  .knowledge-earth-workspace {
+    grid-template-columns: minmax(22rem, 1.08fr) minmax(20rem, 0.92fr);
+  }
+
+  .knowledge-earth-lesson {
+    padding: 0.7rem;
+  }
+
   .knowledge-map-card,
   .knowledge-region-map {
     min-height: 14rem;
   }
 
   .knowledge-region-shell {
-    --knowledge-detail-column: min(22rem, 42vw);
+    --detail-column: clamp(15rem, 35vw, 22rem);
     --knowledge-detail-gap: 0.7rem;
   }
 
@@ -180,7 +202,10 @@
   }
 
   .knowledge-country-grid {
-    grid-template-columns: repeat(2, minmax(8.5rem, 1fr));
+    grid-template-columns: repeat(
+      var(--knowledge-country-columns-compact),
+      minmax(0, 1fr)
+    );
   }
 
   .knowledge-country-open {
@@ -212,14 +237,6 @@
     min-width: 3.3rem;
     min-height: 2.25rem;
     padding: 0.35rem 0.55rem;
-  }
-
-  .knowledge-country-detail {
-    top: 0.45rem;
-    right: 0.45rem;
-    bottom: 0.45rem;
-    width: var(--knowledge-detail-column);
-    padding: 0.8rem;
   }
 
   .knowledge-region-map-strip > .knowledge-region-map-toolbar {
@@ -455,25 +472,8 @@
     width: 3rem;
     height: 2.3rem;
   }
-  .knowledge-region-content {
-    padding-right: 0;
-  }
-
   .knowledge-country-detail-placeholder {
     display: none;
-  }
-
-  .knowledge-country-detail:not(.knowledge-country-detail-placeholder) {
-    top: auto;
-    right: 0;
-    bottom: 0;
-    left: 3.9rem;
-    width: auto;
-    max-height: 63dvh;
-    border-right: 0;
-    border-bottom: 0;
-    border-left: 0;
-    border-radius: var(--atlas-radius-panel) var(--atlas-radius-panel) 0 0;
   }
 
   .landscape-runtime.is-touch-device .layer-control {
@@ -531,10 +531,6 @@
 }
 
 @media (max-width: 760px) {
-  .explore-shell {
-    --scene-reserve: 0px;
-  }
-
   .explore-shell::before {
     background:
       linear-gradient(0deg, rgb(3 8 18 / 85%) 0%, transparent 56%),
@@ -643,31 +639,6 @@
     text-overflow: ellipsis;
   }
 
-  .country-detail {
-    position: fixed;
-    z-index: 12;
-    top: auto;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    width: auto;
-    max-height: min(63dvh, 34rem);
-    padding: 0.85rem 0.95rem calc(1rem + env(safe-area-inset-bottom));
-    border-right: 0;
-    border-bottom: 0;
-    border-left: 0;
-    border-radius: 1.5rem 1.5rem 0 0;
-  }
-
-  .country-detail-handle {
-    display: block;
-    width: 2.8rem;
-    height: 0.25rem;
-    margin: 0 auto 0.55rem;
-    background: rgb(184 222 238 / 26%);
-    border-radius: 999px;
-  }
-
   .country-detail-heading {
     grid-template-columns: 3.45rem minmax(0, 1fr);
   }
@@ -705,7 +676,14 @@
     grid-template-columns: 1fr;
   }
 
+  .knowledge-earth-workspace {
+    grid-template-columns: 1fr;
+  }
+
   .knowledge-country-grid {
-    grid-template-columns: repeat(2, minmax(8.5rem, 1fr));
+    grid-template-columns: repeat(
+      var(--knowledge-country-columns-compact),
+      minmax(0, 1fr)
+    );
   }
 }

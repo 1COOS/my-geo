@@ -21,7 +21,7 @@ import {
   addGeographicPathAltitude,
   getGeographicPathAppearance,
 } from './geographicPathStyle'
-import { getGeographyReferencePaths } from './geographyLearningScene'
+import { getGeographyScenePaths } from './geographyLearningScene'
 import type { GlobeWorldProps } from './GlobeScene'
 import type { MapLabel } from './globeLabelLayout'
 import type { LandmarkMarker } from './landmarkSceneInteraction'
@@ -50,7 +50,7 @@ type UseGlobeRenderDataInput = Pick<
   | 'hoveredMountainRangeId'
   | 'selectedReferenceLineId'
   | 'showGeographyLearningLayer'
-> & { labelItems: MapLabel[] }
+> & { labelItems: MapLabel[]; touchDevice: boolean }
 
 export function useGlobeRenderData({
   countryBoundaries,
@@ -71,6 +71,7 @@ export function useGlobeRenderData({
   hoveredMountainRangeId,
   selectedReferenceLineId,
   showGeographyLearningLayer,
+  touchDevice,
 }: UseGlobeRenderDataInput) {
   const pointMarkers = useMemo<GlobePointMarker[]>(() => {
     const markers: GlobePointMarker[] = []
@@ -329,21 +330,24 @@ export function useGlobeRenderData({
       visibleMountains,
     ],
   )
-  const geographyReferencePaths = useMemo(
+  const geographyPaths = useMemo(
     () =>
-      showGeographyLearningLayer
-        ? getGeographyReferencePaths(quality, selectedReferenceLineId)
-        : [],
-    [quality, selectedReferenceLineId, showGeographyLearningLayer],
+      getGeographyScenePaths(
+        quality,
+        selectedReferenceLineId,
+        touchDevice,
+        showGeographyLearningLayer,
+      ),
+    [quality, selectedReferenceLineId, showGeographyLearningLayer, touchDevice],
   )
   const pathData = useMemo(
     () => [
       ...(selectedTrenchPath ? [selectedTrenchPath] : []),
       ...linearPaths,
       ...mountainPaths,
-      ...geographyReferencePaths,
+      ...geographyPaths,
     ],
-    [geographyReferencePaths, linearPaths, mountainPaths, selectedTrenchPath],
+    [geographyPaths, linearPaths, mountainPaths, selectedTrenchPath],
   )
   const polygonsData = useMemo(
     () => [

@@ -20,6 +20,7 @@ export function LandmarkDetailPanel({
       label={`${landmark.name.zh}古迹知识卡`}
       closeLabel={`关闭${landmark.name.zh}古迹知识卡`}
       identity={landmark.id}
+      accent="#ffc85c"
       onClose={onClose}
     >
       <div className="waterbody-detail-heading landmark-heading">

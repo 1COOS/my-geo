@@ -992,7 +992,7 @@
 }
 
 .explore-shell.has-country-detail {
-  --detail-column: clamp(20rem, 28vw, 24rem);
+  --detail-column: clamp(15rem, 35vw, 24rem);
 }
 
 .explore-shell::before {

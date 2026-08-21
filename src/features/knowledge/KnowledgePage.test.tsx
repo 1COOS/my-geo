@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import { KnowledgeChallengePage } from './KnowledgeChallengePage'
+import { KnowledgeEarthPage } from './KnowledgeEarthPage'
 import { KnowledgePage } from './KnowledgePage'
 import { KnowledgeRegionPage } from './KnowledgeRegionPage'
 
@@ -26,13 +27,18 @@ describe('knowledge pages', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: '国家 · 国旗 · 首都',
+        name: '国家',
         level: 1,
       }),
     ).toBeVisible()
     expect(screen.getByLabelText('国家知识范围')).toHaveTextContent(
       '195个国家23个地区',
     )
+    expect(screen.getByRole('link', { name: /已开放\s*地球/ })).toHaveAttribute(
+      'href',
+      '/knowledge/earth',
+    )
+    expect(screen.getAllByText('即将开放')).toHaveLength(3)
     expect(screen.getByTestId('knowledge-region-east-asia')).toBeVisible()
     await waitFor(() => expect(getMapCountryPath('CN')).toBeInTheDocument())
     expect(getMapCountryPath('CN')).toHaveClass('is-continent')
@@ -44,6 +50,74 @@ describe('knowledge pages', () => {
     expect(screen.queryByTestId('knowledge-region-east-asia')).toBeNull()
     expect(getMapCountryPath('CN')).not.toHaveClass('is-continent')
     expect(getMapCountryPath('FR')).toHaveClass('is-continent')
+  })
+
+  it('opens the earth topic, restores URL state, and moves the locator with the keyboard', async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter
+        initialEntries={['/knowledge/earth?topic=hemispheres&line=equator']}
+      >
+        <Routes>
+          <Route path="/knowledge/earth" element={<KnowledgeEarthPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(
+      screen.getByRole('heading', { name: '地球', level: 1 }),
+    ).toBeVisible()
+    expect(screen.getByLabelText('地球知识范围')).toHaveTextContent(
+      '4类用途13条参考线',
+    )
+    expect(screen.getByRole('button', { name: '半球界线' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(screen.getByLabelText('当前参考线')).toHaveTextContent(
+      '0°赤道Equator',
+    )
+    expect(
+      screen.getByRole('link', { name: /在3D地球中观察/ }),
+    ).toHaveAttribute('href', '/explore?geography=hemispheres&line=equator')
+    expect(screen.getByText('0.0° · 25.0°E')).toBeVisible()
+
+    const map = screen.getByTestId('knowledge-earth-map')
+    map.focus()
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByText('5.0°S · 25.0°E')).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: '纬度分区' }))
+    expect(screen.queryByLabelText('当前参考线')).toBeNull()
+    await user.click(screen.getByRole('button', { name: '北纬30°线30°N' }))
+    expect(screen.getByLabelText('当前参考线')).toHaveTextContent('北纬30°线')
+    expect(
+      screen.getByRole('link', { name: /在3D地球中观察/ }),
+    ).toHaveAttribute(
+      'href',
+      '/explore?geography=latitude-zones&line=north-low-middle-boundary',
+    )
+  })
+
+  it('falls back to the default earth chapter for invalid URL state', () => {
+    render(
+      <MemoryRouter
+        initialEntries={['/knowledge/earth?topic=unknown&line=equator']}
+      >
+        <Routes>
+          <Route path="/knowledge/earth" element={<KnowledgeEarthPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('button', { name: '经度基准' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(screen.queryByLabelText('当前参考线')).toBeNull()
+    expect(
+      screen.getByRole('link', { name: /在3D地球中观察/ }),
+    ).toHaveAttribute('href', '/explore?geography=grid-reading')
   })
 
   it('combines country card fields, opens inline detail, and follows cross-region neighbours', async () => {
@@ -96,6 +170,11 @@ describe('knowledge pages', () => {
       name: '首都',
     })
 
+    expect(
+      within(displayControls)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['国旗', '国家', '首都'])
     expect(countryControl).toHaveAttribute('aria-pressed', 'false')
     expect(flagControl).toHaveAttribute('aria-pressed', 'true')
     expect(flagControl).toBeDisabled()
@@ -114,16 +193,40 @@ describe('knowledge pages', () => {
     await user.click(countryControl)
     expect(chinaCard).toHaveTextContent('中国')
     expect(chinaCard).toHaveTextContent('China')
+    const countryCardFields = Array.from(
+      chinaCard.querySelector('.knowledge-country-open')!.children,
+    )
+    expect(countryCardFields).toHaveLength(3)
+    expect(countryCardFields[0]).toHaveClass('country-flag-frame')
+    expect(countryCardFields[1]).toHaveClass('knowledge-country-name')
+    expect(countryCardFields[2]).toHaveClass('knowledge-country-card-capital')
 
     await user.click(flagControl)
     expect(within(chinaCard).queryByRole('img')).toBeNull()
+    expect(
+      Array.from(
+        chinaCard.querySelector('.knowledge-country-open')!.children,
+      ).map((field) => field.className),
+    ).toEqual(['knowledge-country-name', 'knowledge-country-card-capital'])
     await user.click(countryControl)
     expect(within(chinaCard).queryByText('中国')).toBeNull()
     expect(capitalControl).toBeDisabled()
+    expect(
+      chinaCard.querySelector('.knowledge-country-open')!.children,
+    ).toHaveLength(1)
 
     await user.click(screen.getByRole('button', { name: '查看中国国家详情' }))
     expect(screen.queryByLabelText('国家详情提示')).toBeNull()
     expect(screen.getByLabelText('中国国家学习详情')).toBeVisible()
+    expect(screen.getByText(/中华人民共和国/)).toBeVisible()
+    expect(screen.getByText('2025 年')).toBeVisible()
+    expect(screen.getByText('人民币（CNY）')).toBeVisible()
+    expect(screen.queryByText('次区域')).toBeNull()
+    expect(screen.queryByText('Eastern Asia')).toBeNull()
+    expect(screen.queryByRole('button', { name: '探索城市北京' })).toBeNull()
+    expect(
+      screen.getByRole('link', { name: /在3D地球上查看/ }),
+    ).toHaveAttribute('href', '/explore?country=CN')
     expect(document.querySelectorAll('path.is-country')).toHaveLength(1)
     expect(document.querySelectorAll('path.is-region')).toHaveLength(4)
     expect(getMapCountryPath('CN')).toHaveClass('is-country')
@@ -135,7 +238,7 @@ describe('knowledge pages', () => {
     expect(getMapCountryPath('CN')).toHaveClass('is-region')
 
     await user.click(screen.getByRole('button', { name: '查看中国国家详情' }))
-    await user.click(screen.getByRole('button', { name: '阿富汗' }))
+    await user.click(screen.getByRole('button', { name: '探索邻国阿富汗' }))
     expect(
       screen.getByRole('heading', { name: '南亚', level: 1 }),
     ).toBeVisible()
@@ -144,6 +247,34 @@ describe('knowledge pages', () => {
     expect(getMapCountryPath('AF')).toHaveClass('is-country')
     expect(getMapCountryPath('IN')).toHaveClass('is-region')
     expect(getMapCountryPath('CN')).not.toHaveClass('is-region')
+  })
+
+  it('matches small-region grid columns to the number of countries', () => {
+    render(
+      <MemoryRouter initialEntries={['/knowledge/countries/east-europe']}>
+        <Routes>
+          <Route
+            path="/knowledge/countries/:regionId"
+            element={<KnowledgeRegionPage />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const grid = document.querySelector<HTMLElement>('.knowledge-country-grid')
+    expect(grid).not.toBeNull()
+    expect(
+      grid!.style.getPropertyValue('--knowledge-country-columns-wide'),
+    ).toBe('4')
+    expect(
+      grid!.style.getPropertyValue('--knowledge-country-columns-detail'),
+    ).toBe('4')
+    expect(
+      grid!.style.getPropertyValue('--knowledge-country-columns-tablet'),
+    ).toBe('3')
+    expect(
+      grid!.style.getPropertyValue('--knowledge-country-columns-compact'),
+    ).toBe('2')
   })
 
   it('gives immediate feedback in the mixed regional challenge', async () => {

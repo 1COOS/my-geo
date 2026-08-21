@@ -119,6 +119,21 @@ export function labelRectsOverlap(left: LabelRect, right: LabelRect) {
   )
 }
 
+export function getLabelVisibilityChanges(
+  currentVisibleIds: ReadonlySet<string>,
+  nextVisibleIds: ReadonlySet<string>,
+) {
+  const hiddenIds: string[] = []
+  const shownIds: string[] = []
+  currentVisibleIds.forEach((id) => {
+    if (!nextVisibleIds.has(id)) hiddenIds.push(id)
+  })
+  nextVisibleIds.forEach((id) => {
+    if (!currentVisibleIds.has(id)) shownIds.push(id)
+  })
+  return { hiddenIds, shownIds }
+}
+
 type LabelPriorityState = {
   selectedCityId: string | null
   hoveredCityId: string | null
