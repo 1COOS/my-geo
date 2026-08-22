@@ -50,7 +50,7 @@ type UseGlobeRenderDataInput = Pick<
   | 'hoveredMountainRangeId'
   | 'selectedReferenceLineId'
   | 'showGeographyLearningLayer'
-> & { labelItems: MapLabel[]; touchDevice: boolean }
+> & { labelItems: MapLabel[] }
 
 export function useGlobeRenderData({
   countryBoundaries,
@@ -71,7 +71,6 @@ export function useGlobeRenderData({
   hoveredMountainRangeId,
   selectedReferenceLineId,
   showGeographyLearningLayer,
-  touchDevice,
 }: UseGlobeRenderDataInput) {
   const pointMarkers = useMemo<GlobePointMarker[]>(() => {
     const markers: GlobePointMarker[] = []
@@ -335,10 +334,9 @@ export function useGlobeRenderData({
       getGeographyScenePaths(
         quality,
         selectedReferenceLineId,
-        touchDevice,
         showGeographyLearningLayer,
       ),
-    [quality, selectedReferenceLineId, showGeographyLearningLayer, touchDevice],
+    [quality, selectedReferenceLineId, showGeographyLearningLayer],
   )
   const pathData = useMemo(
     () => [

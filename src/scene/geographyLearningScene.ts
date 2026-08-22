@@ -6,12 +6,12 @@ import type {
   ReferenceLine,
   ReferenceLineId,
 } from '../data/geographyLearningSchema'
+import type { Intersection, Object3D, Raycaster } from 'three'
 import { addGeographicPathAltitude } from './geographicPathStyle'
 
 export type GeographyReferencePath = {
   referenceLineId: ReferenceLineId
   category: ReferenceLine['category']
-  interactionOnly: boolean
   points: ReturnType<typeof addGeographicPathAltitude>
   color: string
   stroke: number
@@ -41,7 +41,6 @@ export function getGeographyReferencePaths(
     return {
       referenceLineId: line.id,
       category: line.category,
-      interactionOnly: false,
       points: addGeographicPathAltitude(
         getReferenceLineScenePoints(line),
         altitude,
@@ -49,45 +48,108 @@ export function getGeographyReferencePaths(
       color: selected ? '#ffffff' : categoryColors[line.category],
       stroke: selected
         ? quality === 'balanced'
-          ? 1.7
-          : 1.25
-        : line.category === 'latitude-zone-boundary'
-          ? quality === 'balanced'
-            ? 0.42
-            : 0.3
-          : quality === 'balanced'
-            ? 0.8
-            : 0.6,
+          ? 2.6
+          : 2
+        : quality === 'balanced'
+          ? 1.2
+          : 0.9,
       dashLength: dashed ? 0.08 : 1,
       dashGap: dashed ? 0.055 : 0,
     }
   })
 }
 
-export function getGeographyReferenceHitPaths(touchDevice: boolean) {
-  return geographyReferenceLines.map((line): GeographyReferencePath => ({
-    referenceLineId: line.id,
-    category: line.category,
-    interactionOnly: true,
-    points: addGeographicPathAltitude(getReferenceLineScenePoints(line), 0.069),
-    color: 'rgba(255,255,255,0)',
-    stroke: touchDevice ? 18 : 10,
-    dashLength: 1,
-    dashGap: 0,
-  }))
-}
-
 export function getGeographyScenePaths(
   quality: 'balanced' | 'low',
   selectedReferenceLineId: ReferenceLineId | null,
-  touchDevice: boolean,
   visible: boolean,
 ) {
   if (!visible) return []
-  return [
-    ...getGeographyReferenceHitPaths(touchDevice),
-    ...getGeographyReferencePaths(quality, selectedReferenceLineId),
-  ]
+  return getGeographyReferencePaths(quality, selectedReferenceLineId)
+}
+
+type GlobePathGroup = Object3D & {
+  __globeObjType?: string
+  __data?: unknown
+}
+
+type RaycastableLine = Object3D & {
+  material?: { linewidth?: number }
+}
+
+type Line2RaycasterParams = Raycaster['params'] & {
+  Line2?: { threshold?: number }
+}
+
+const originalRaycasts = new WeakMap<
+  RaycastableLine,
+  RaycastableLine['raycast']
+>()
+const geographyHitWidths = new WeakMap<RaycastableLine, number>()
+
+function hasReferenceLineId(value: unknown): value is GeographyReferencePath {
+  if (!value || typeof value !== 'object') return false
+  const referenceLineId = (value as { referenceLineId?: unknown })
+    .referenceLineId
+  return (
+    typeof referenceLineId === 'string' &&
+    geographyReferenceLines.some((line) => line.id === referenceLineId)
+  )
+}
+
+export function getGeographyLineHitWidth(touchDevice: boolean) {
+  return touchDevice ? 18 : 10
+}
+
+export function applyGeographyReferenceLineHitAreas(
+  scene: Object3D,
+  touchDevice: boolean,
+) {
+  const hitWidth = getGeographyLineHitWidth(touchDevice)
+  let patchedCount = 0
+
+  scene.traverse((object) => {
+    const group = object as GlobePathGroup
+    if (group.__globeObjType !== 'path' || !hasReferenceLineId(group.__data)) {
+      return
+    }
+
+    const line = group.children[0] as RaycastableLine | undefined
+    if (!line || typeof line.raycast !== 'function') return
+
+    if (!originalRaycasts.has(line)) {
+      originalRaycasts.set(line, line.raycast.bind(line))
+      line.raycast = function geographyReferenceLineRaycast(
+        raycaster: Raycaster,
+        intersections: Intersection[],
+      ) {
+        const originalRaycast = originalRaycasts.get(this)
+        const targetWidth = geographyHitWidths.get(this)
+        if (!originalRaycast || targetWidth === undefined) return
+
+        const params = raycaster.params as Line2RaycasterParams
+        const previousLine2 = params.Line2
+        const visibleWidth = this.material?.linewidth ?? 0
+        const threshold = Math.max(0, targetWidth - visibleWidth)
+        params.Line2 = {
+          ...previousLine2,
+          threshold: Math.max(previousLine2?.threshold ?? 0, threshold),
+        }
+
+        try {
+          originalRaycast(raycaster, intersections)
+        } finally {
+          if (previousLine2) params.Line2 = previousLine2
+          else delete params.Line2
+        }
+      }
+    }
+
+    geographyHitWidths.set(line, hitWidth)
+    patchedCount += 1
+  })
+
+  return patchedCount
 }
 
 export function getGeographyPointerDragThreshold(pointerType: string) {

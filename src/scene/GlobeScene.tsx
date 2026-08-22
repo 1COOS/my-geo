@@ -74,6 +74,7 @@ import {
   getDesertPolygonState,
 } from './desertSceneInteraction'
 import {
+  applyGeographyReferenceLineHitAreas,
   getGeographyCanvasCursor,
   getReferenceLineIdForLayer,
   hasExceededGeographyDragThreshold,
@@ -424,7 +425,7 @@ function World({
     dragged: boolean
   } | null>(null)
   const suppressGeographyClickRef = useRef(false)
-  const { camera, gl, size } = useThree()
+  const { camera, gl, scene, size } = useThree()
   const touchDevice = useMemo(() => navigator.maxTouchPoints > 0, [])
   const rendererSize = useMemo(
     () => new Vector2(size.width, size.height),
@@ -561,8 +562,15 @@ function World({
     hoveredMountainRangeId,
     selectedReferenceLineId,
     showGeographyLearningLayer,
-    touchDevice,
   })
+
+  useEffect(() => {
+    if (!showGeographyLearningLayer) return
+    const frameId = window.requestAnimationFrame(() => {
+      applyGeographyReferenceLineHitAreas(scene, touchDevice)
+    })
+    return () => window.cancelAnimationFrame(frameId)
+  }, [pathData, scene, showGeographyLearningLayer, touchDevice])
 
   const syncPointOfView = useCallback(() => {
     globeRef.current?.setPointOfView(camera)
@@ -1530,6 +1538,7 @@ function World({
         pathTransitionDuration={0}
         onGlobeReady={() => {
           globeReadyRef.current = true
+          applyGeographyReferenceLineHitAreas(scene, touchDevice)
           syncPointOfView()
           cacheLabelWorldPositions()
           reconcileLabelLayout()
