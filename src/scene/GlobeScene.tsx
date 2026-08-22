@@ -75,7 +75,10 @@ import {
 } from './desertSceneInteraction'
 import {
   applyGeographyReferenceLineHitAreas,
+  getGeographyAngularHitRadius,
   getGeographyCanvasCursor,
+  getGeographyLineHitWidth,
+  getNearestGeographyReferenceLineId,
   getReferenceLineIdForLayer,
   hasExceededGeographyDragThreshold,
 } from './geographyLearningScene'
@@ -571,6 +574,31 @@ function World({
     })
     return () => window.cancelAnimationFrame(frameId)
   }, [pathData, scene, showGeographyLearningLayer, touchDevice])
+
+  const getNearbyGeographyReferenceLine = useCallback(
+    (event: unknown) => {
+      const globe = globeRef.current
+      const point = getGlobeClickPoint(event)
+      if (!globe || !point || !(camera instanceof PerspectiveCamera))
+        return null
+
+      const coordinate = globe.toGeoCoords(point)
+      const angularRadius = getGeographyAngularHitRadius(
+        getGeographyLineHitWidth(touchDevice) / 2,
+        globe.getGlobeRadius(),
+        camera.position.length(),
+        size.height,
+        camera.fov,
+      )
+      return getReferenceLine(
+        getNearestGeographyReferenceLineId(
+          { latitude: coordinate.lat, longitude: coordinate.lng },
+          angularRadius,
+        ),
+      )
+    },
+    [camera, size.height, touchDevice],
+  )
 
   const syncPointOfView = useCallback(() => {
     globeRef.current?.setPointOfView(camera)
@@ -1605,13 +1633,23 @@ function World({
           }
           const referenceLineId = getReferenceLineIdForLayer(layer, value)
           const referenceLine = getReferenceLine(referenceLineId)
+          if (showGeographyLearningLayer && suppressGeographyClickRef.current) {
+            suppressGeographyClickRef.current = false
+            return
+          }
           if (referenceLine) {
-            if (suppressGeographyClickRef.current) {
-              suppressGeographyClickRef.current = false
-              return
-            }
             onSelectGeographyTopic(referenceLine.topicId, referenceLine.id)
             return
+          }
+          if (showGeographyLearningLayer) {
+            const nearbyReferenceLine = getNearbyGeographyReferenceLine(event)
+            if (nearbyReferenceLine) {
+              onSelectGeographyTopic(
+                nearbyReferenceLine.topicId,
+                nearbyReferenceLine.id,
+              )
+              return
+            }
           }
           const cityId = getCityIdForLayer(layer, value)
           if (cityId) {

@@ -3,8 +3,10 @@ import { Object3D, Raycaster } from 'three'
 
 import {
   applyGeographyReferenceLineHitAreas,
+  getGeographyAngularHitRadius,
   getGeographyCanvasCursor,
   getGeographyLineHitWidth,
+  getNearestGeographyReferenceLineId,
   getGeographyPointerDragThreshold,
   getGeographyReferencePaths,
   getGeographyScenePaths,
@@ -81,7 +83,7 @@ describe('geography learning scene paths', () => {
       __data: { linearFeatureId: 'nile' },
     })
     const geographyLine = Object.assign(new Object3D(), {
-      material: { linewidth: 0.8 },
+      material: { linewidth: 1.2 },
     })
     const riverLine = Object.assign(new Object3D(), {
       material: { linewidth: 1 },
@@ -114,14 +116,19 @@ describe('geography learning scene paths', () => {
     }
     raycasterParams.Line2 = previousLine2
     geographyLine.raycast(raycaster, [])
-    expect(observedThreshold).toBeCloseTo(9.2)
+    expect(observedThreshold).toBeCloseTo(46.8)
     expect(raycasterParams.Line2).toBe(previousLine2)
 
     expect(applyGeographyReferenceLineHitAreas(scene, true)).toBe(1)
     geographyLine.raycast(raycaster, [])
-    expect(observedThreshold).toBeCloseTo(17.2)
-    expect(getGeographyLineHitWidth(false)).toBe(10)
-    expect(getGeographyLineHitWidth(true)).toBe(18)
+    expect(observedThreshold).toBeCloseTo(78.8)
+
+    geographyLine.material.linewidth = 2.6
+    geographyLine.raycast(raycaster, [])
+    expect(observedThreshold).toBeCloseTo(77.4)
+    expect(raycasterParams.Line2).toBe(previousLine2)
+    expect(getGeographyLineHitWidth(false)).toBe(48)
+    expect(getGeographyLineHitWidth(true)).toBe(80)
   })
 
   it('uses separate mouse and touch drag thresholds', () => {
@@ -145,6 +152,37 @@ describe('geography learning scene paths', () => {
         { x: 20, y: 10 },
       ),
     ).toBe(true)
+  })
+
+  it('converts the transparent pixel radius and snaps to the nearest line', () => {
+    const desktopRadius = getGeographyAngularHitRadius(24, 100, 400, 720, 42)
+    const touchRadius = getGeographyAngularHitRadius(40, 100, 400, 720, 42)
+
+    expect(desktopRadius).toBeGreaterThan(4)
+    expect(desktopRadius).toBeLessThan(5)
+    expect(touchRadius).toBeGreaterThan(7)
+    expect(touchRadius).toBeLessThan(8)
+    expect(
+      getNearestGeographyReferenceLineId(
+        { latitude: 26, longitude: 105 },
+        desktopRadius,
+      ),
+    ).toBe('tropic-of-cancer')
+    expect(
+      getNearestGeographyReferenceLineId(
+        { latitude: 28.5, longitude: 105 },
+        desktopRadius,
+      ),
+    ).toBe('north-low-middle-boundary')
+    expect(
+      getNearestGeographyReferenceLineId(
+        { latitude: 12, longitude: -17 },
+        desktopRadius,
+      ),
+    ).toBe('western-hemisphere-boundary')
+    expect(
+      getNearestGeographyReferenceLineId({ latitude: 15, longitude: 80 }, 1),
+    ).toBeNull()
   })
 
   it('uses a pointer cursor only inside a reference-line hit target', () => {

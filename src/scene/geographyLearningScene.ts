@@ -6,6 +6,7 @@ import type {
   ReferenceLine,
   ReferenceLineId,
 } from '../data/geographyLearningSchema'
+import type { GeoPosition } from '../shared/types/geo'
 import type { Intersection, Object3D, Raycaster } from 'three'
 import { addGeographicPathAltitude } from './geographicPathStyle'
 
@@ -98,7 +99,70 @@ function hasReferenceLineId(value: unknown): value is GeographyReferencePath {
 }
 
 export function getGeographyLineHitWidth(touchDevice: boolean) {
-  return touchDevice ? 18 : 10
+  return touchDevice ? 80 : 48
+}
+
+export function getGeographyAngularHitRadius(
+  hitRadiusPixels: number,
+  globeRadius: number,
+  cameraDistance: number,
+  viewportHeight: number,
+  verticalFovDegrees: number,
+) {
+  const focalLengthPixels =
+    viewportHeight / (2 * Math.tan((verticalFovDegrees * Math.PI) / 360))
+  const visibleDistance = Math.max(cameraDistance - globeRadius, globeRadius)
+  const pixelsPerSurfaceRadian =
+    (focalLengthPixels * globeRadius) / visibleDistance
+  return (Math.atan(hitRadiusPixels / pixelsPerSurfaceRadian) * 180) / Math.PI
+}
+
+function normalizeLongitudeDelta(longitude: number) {
+  return ((longitude + 540) % 360) - 180
+}
+
+export function getReferenceLineAngularDistance(
+  line: ReferenceLine,
+  position: GeoPosition,
+) {
+  if (line.orientation === 'latitude') {
+    return Math.abs(position.latitude - line.coordinate)
+  }
+
+  const longitudeDelta = Math.abs(
+    normalizeLongitudeDelta(position.longitude - line.coordinate),
+  )
+  if (longitudeDelta > 90) return 90 - Math.abs(position.latitude)
+
+  const latitudeRadians = (position.latitude * Math.PI) / 180
+  const longitudeRadians = (longitudeDelta * Math.PI) / 180
+  return (
+    (Math.asin(
+      Math.min(
+        1,
+        Math.abs(Math.cos(latitudeRadians) * Math.sin(longitudeRadians)),
+      ),
+    ) *
+      180) /
+    Math.PI
+  )
+}
+
+export function getNearestGeographyReferenceLineId(
+  position: GeoPosition,
+  maxAngularDistance: number,
+) {
+  let nearestId: ReferenceLineId | null = null
+  let nearestDistance = maxAngularDistance
+
+  for (const line of geographyReferenceLines) {
+    const distance = getReferenceLineAngularDistance(line, position)
+    if (distance > nearestDistance) continue
+    nearestDistance = distance
+    nearestId = line.id
+  }
+
+  return nearestId
 }
 
 export function applyGeographyReferenceLineHitAreas(
