@@ -7,10 +7,6 @@
     grid-template-columns: 1fr 1.45fr repeat(3, 1fr);
   }
 
-  .knowledge-region-workspace {
-    grid-template-columns: minmax(20rem, 1fr) minmax(24rem, 1fr);
-  }
-
   .knowledge-earth-workspace {
     grid-template-columns: minmax(23rem, 1.05fr) minmax(21rem, 0.95fr);
   }
@@ -153,10 +149,6 @@
     margin-bottom: 1rem;
   }
 
-  .knowledge-topic-card.is-active {
-    flex-basis: 22rem;
-  }
-
   .knowledge-topic-stats {
     gap: 0.5rem;
   }
@@ -170,21 +162,12 @@
     padding: 0.45rem 0.55rem;
   }
 
-  .knowledge-region-workspace {
-    grid-template-columns: minmax(18rem, 0.9fr) minmax(26rem, 1.1fr);
-  }
-
   .knowledge-earth-workspace {
     grid-template-columns: minmax(22rem, 1.08fr) minmax(20rem, 0.92fr);
   }
 
   .knowledge-earth-lesson {
     padding: 0.7rem;
-  }
-
-  .knowledge-map-card,
-  .knowledge-region-map {
-    min-height: 14rem;
   }
 
   .knowledge-region-shell {
@@ -309,21 +292,6 @@
   .app-navigation-brand,
   .app-navigation-link {
     border-radius: var(--atlas-radius-control);
-  }
-
-  .knowledge-topic-grid {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    gap: 0;
-  }
-
-  .knowledge-topic-card {
-    flex: 0 0 14rem;
-    min-height: 5.5rem;
-    padding: 0.65rem;
-    scroll-snap-align: start;
-    border-right: 1px solid var(--atlas-border-soft);
   }
 
   .knowledge-region-card {
@@ -654,26 +622,9 @@
   .climate-fact-grid {
     grid-template-columns: 1fr;
   }
-  .knowledge-topic-grid {
-    display: block;
-  }
-
-  .knowledge-topic-card {
-    border-right: 0;
-    border-bottom: 1px solid var(--atlas-border-soft);
-  }
-
-  .knowledge-topic-card:last-child {
-    border-bottom: 0;
-  }
-
   .knowledge-continent-tabs {
     gap: 0.9rem;
     overflow-x: auto;
-  }
-
-  .knowledge-region-workspace {
-    grid-template-columns: 1fr;
   }
 
   .knowledge-earth-workspace {
@@ -685,5 +636,39 @@
       var(--knowledge-country-columns-compact),
       minmax(0, 1fr)
     );
+  }
+}
+
+@media (max-width: 760px), (max-height: 520px) {
+  .knowledge-topic-grid {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .knowledge-topic-card {
+    flex: 0 0 14rem;
+    min-height: 4.5rem;
+    padding: 0.5rem 0.65rem;
+    scroll-snap-align: start;
+    border-right: 1px solid var(--atlas-border-soft);
+    border-bottom: 0;
+  }
+
+  .knowledge-topic-card.is-active {
+    flex-basis: 22rem;
+  }
+
+  .knowledge-topic-card:last-child {
+    border-right: 0;
+  }
+
+  .knowledge-region-grid {
+    overflow-x: auto;
+  }
+
+  .knowledge-region-card {
+    flex: 0 0 min(17rem, calc(100vw - 5rem));
   }
 }

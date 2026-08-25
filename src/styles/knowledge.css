@@ -8,14 +8,6 @@
   margin-top: 0;
 }
 
-.knowledge-topic-card.is-locked span,
-.knowledge-topic-card.is-available > div > span {
-  color: #65dcff;
-  font-size: 0.58rem;
-  font-weight: 850;
-  letter-spacing: 0.1em;
-}
-
 .knowledge-topic-card h1 {
   margin-top: 0;
   font-size: clamp(1.2rem, 1.6vw, 1.4rem);
@@ -42,7 +34,7 @@
 }
 
 .knowledge-topic-stats strong {
-  font-size: 1.65rem;
+  font-size: 1.35rem;
   line-height: 1;
 }
 
@@ -51,7 +43,6 @@
   font-weight: 700;
 }
 
-.knowledge-map-card > div:first-child,
 .knowledge-region-map-strip > div:first-child {
   position: absolute;
   z-index: 2;
@@ -61,7 +52,6 @@
   flex-direction: column;
 }
 
-.knowledge-map-card > div > span,
 .knowledge-region-map-strip > div > span {
   color: #5ddcff;
   font-size: 0.56rem;
@@ -69,22 +59,15 @@
   letter-spacing: 0.14em;
 }
 
-.knowledge-map-card > div > strong,
 .knowledge-region-map-strip > div > strong {
   margin-top: 0.25rem;
   font-size: 1.05rem;
-}
-
-.knowledge-map-card > div > small {
-  color: #789aae;
-  font-size: 0.58rem;
 }
 
 .knowledge-region-map {
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 19rem;
 }
 
 .knowledge-region-map > rect {
@@ -104,6 +87,10 @@
   filter: drop-shadow(0 0 0.5rem rgb(137 235 255 / 82%));
 }
 
+.knowledge-region-map-countries path.is-selectable {
+  cursor: pointer;
+}
+
 .knowledge-region-index {
   color: var(--region-accent);
   font-size: 0.56rem;
@@ -119,18 +106,6 @@
 .knowledge-region-card > strong {
   color: #94b8c9;
   font-size: 0.62rem;
-}
-
-.knowledge-region-progress {
-  grid-column: 2 / -1;
-  align-self: end;
-}
-
-.knowledge-region-progress span {
-  display: block;
-  margin-bottom: 0.28rem;
-  color: #83a4b5;
-  font-size: 0.56rem;
 }
 
 .knowledge-view-on-globe,
@@ -479,8 +454,8 @@
   display: flex;
   gap: 1rem;
   align-items: center;
-  min-height: 6.25rem;
-  padding: 0.9rem 1rem;
+  min-height: 4.75rem;
+  padding: 0.6rem 0.8rem;
   background: transparent;
   border: 0;
   border-right: 1px solid var(--atlas-border-soft);
@@ -521,14 +496,13 @@
   background: var(--atlas-accent-soft);
 }
 
-.knowledge-topic-card.is-locked span,
 .knowledge-topic-stats strong {
   color: var(--atlas-progress);
 }
 
 .knowledge-topic-card h1,
 .knowledge-topic-card h3 {
-  margin: 0.28rem 0 0.35rem;
+  margin: 0 0 0.2rem;
   font-size: 0.88rem;
   color: var(--atlas-text);
   font-weight: 600;
@@ -674,12 +648,6 @@
   color: var(--atlas-text-muted);
 }
 
-.knowledge-region-workspace {
-  display: grid;
-  grid-template-columns: minmax(24rem, 1.15fr) minmax(27rem, 1fr);
-  gap: 0.8rem;
-}
-
 .knowledge-map-card,
 .knowledge-region-map-strip {
   position: relative;
@@ -690,10 +658,9 @@
 }
 
 .knowledge-map-card {
-  min-height: 19.5rem;
+  aspect-ratio: 36 / 17;
 }
 
-.knowledge-map-card > div > span,
 .knowledge-region-map-strip > div > span,
 .knowledge-region-map-identity span {
   color: var(--atlas-accent);
@@ -701,14 +668,12 @@
   letter-spacing: 0.06em;
 }
 
-.knowledge-map-card > div > strong,
 .knowledge-region-map-strip > div > strong,
 .knowledge-region-map-identity h1 {
   color: var(--atlas-text);
   font-weight: 600;
 }
 
-.knowledge-map-card > div > small,
 .knowledge-region-map-identity a {
   color: var(--atlas-text-secondary);
 }
@@ -740,9 +705,8 @@
 }
 
 .knowledge-region-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-  display: block;
+  display: flex;
+  margin-top: 0.8rem;
   overflow: hidden;
   background: var(--atlas-panel-muted);
   border: 1px solid var(--atlas-border);
@@ -754,20 +718,23 @@
 
   position: relative;
   display: grid;
+  flex: 1 1 0;
   grid-template-columns: auto 1fr auto;
   gap: 0.65rem;
+  align-items: center;
+  min-width: 0;
   overflow: hidden;
   color: #eafaff;
-  min-height: 6.2rem;
+  min-height: 5.2rem;
   padding: 0.8rem 0.9rem;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--atlas-border-soft);
+  border-right: 1px solid var(--atlas-border-soft);
   border-radius: 0;
 }
 
 .knowledge-region-card:last-child {
-  border-bottom: 0;
+  border-right: 0;
 }
 
 .knowledge-region-card::before {
@@ -794,12 +761,10 @@
 }
 
 .knowledge-region-card p,
-.knowledge-region-card > strong,
-.knowledge-region-progress span {
+.knowledge-region-card > strong {
   color: var(--atlas-text-secondary);
 }
 
-.knowledge-region-progress i,
 .knowledge-challenge-header i {
   display: block;
   width: 100%;
@@ -809,7 +774,6 @@
   border-radius: 0;
 }
 
-.knowledge-region-progress b,
 .knowledge-challenge-header b {
   display: block;
   height: 100%;

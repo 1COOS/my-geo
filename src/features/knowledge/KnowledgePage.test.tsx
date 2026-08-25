@@ -34,19 +34,28 @@ describe('knowledge pages', () => {
     expect(screen.getByLabelText('国家知识范围')).toHaveTextContent(
       '195个国家23个地区',
     )
-    expect(screen.getByRole('link', { name: /已开放\s*地球/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /地球/ })).toHaveAttribute(
       'href',
       '/knowledge/earth',
     )
-    expect(screen.getAllByText('即将开放')).toHaveLength(3)
+    expect(screen.queryByText('已开放')).toBeNull()
+    expect(screen.queryByText('即将开放')).toBeNull()
+    expect(screen.getByText('国家、国旗、首都')).toBeVisible()
     expect(screen.getByTestId('knowledge-region-east-asia')).toBeVisible()
+    expect(screen.queryByText('尚未挑战')).toBeNull()
+    expect(document.querySelector('.knowledge-map-summary')).toBeNull()
+    expect(document.querySelector('.knowledge-region-progress')).toBeNull()
     await waitFor(() => expect(getMapCountryPath('CN')).toBeInTheDocument())
     expect(getMapCountryPath('CN')).toHaveClass('is-continent')
     expect(getMapCountryPath('IN')).toHaveClass('is-continent')
     expect(getMapCountryPath('FR')).not.toHaveClass('is-continent')
 
-    await user.click(screen.getByRole('tab', { name: /欧洲/ }))
+    await user.click(getMapCountryPath('FR'))
     expect(screen.getByTestId('knowledge-region-north-europe')).toBeVisible()
+    expect(screen.getByRole('tab', { name: /欧洲/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
     expect(screen.queryByTestId('knowledge-region-east-asia')).toBeNull()
     expect(getMapCountryPath('CN')).not.toHaveClass('is-continent')
     expect(getMapCountryPath('FR')).toHaveClass('is-continent')

@@ -24,12 +24,14 @@ type KnowledgeRegionMapProps = {
   continentId: KnowledgeContinentId
   regionId?: KnowledgeRegionId
   selectedCountryCode?: string
+  onSelectContinent?: (continentId: KnowledgeContinentId) => void
 }
 
 export function KnowledgeRegionMap({
   continentId,
   regionId,
   selectedCountryCode,
+  onSelectContinent,
 }: KnowledgeRegionMapProps) {
   const boundaryResource = useGeometryResource(loadCountryBoundaries)
   const paths = useMemo(
@@ -85,7 +87,16 @@ export function KnowledgeRegionMap({
                 key={code}
                 d={path}
                 data-country-code={code}
-                className={stateClass}
+                className={
+                  onSelectContinent && region
+                    ? `${stateClass ?? ''} is-selectable`.trim()
+                    : stateClass
+                }
+                onClick={
+                  onSelectContinent && region
+                    ? () => onSelectContinent(region.continentId)
+                    : undefined
+                }
               />
             )
           })}

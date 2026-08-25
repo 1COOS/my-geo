@@ -21,7 +21,7 @@ const futureTopics = [
 const availableTopics = {
   countries: {
     title: '国家',
-    note: '按区域认识国家、国旗与首都。',
+    note: '国家、国旗、首都',
     to: '/knowledge',
     stats: [
       { value: '195', label: '个国家' },
@@ -79,7 +79,6 @@ export function KnowledgeTopicNavigation({
               to={topic.to}
             >
               <div>
-                <span>已开放</span>
                 <h3>{topic.title}</h3>
                 <p>{topic.note}</p>
               </div>
@@ -90,7 +89,6 @@ export function KnowledgeTopicNavigation({
         {futureTopics.map((topic) => (
           <article className="knowledge-topic-card is-locked" key={topic.name}>
             <div>
-              <span>即将开放</span>
               <h3>{topic.name}</h3>
               <p>{topic.note}</p>
             </div>
