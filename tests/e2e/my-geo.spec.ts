@@ -737,7 +737,12 @@ for (const viewport of [
         page,
         '.knowledge-region-map-countries path[data-country-code="CN"].is-continent',
       ),
-    ).toEqual(standardHighlight)
+    ).toEqual({
+      fill: 'rgb(76, 201, 240)',
+      stroke: 'rgb(76, 201, 240)',
+      strokeWidth: '1.15px',
+      filter: 'none',
+    })
 
     await page.getByRole('tab', { name: /欧洲/ }).click()
     expect(
@@ -745,7 +750,12 @@ for (const viewport of [
         page,
         '.knowledge-region-map-countries path[data-country-code="FR"].is-continent',
       ),
-    ).toEqual(standardHighlight)
+    ).toEqual({
+      fill: 'rgb(255, 138, 91)',
+      stroke: 'rgb(255, 138, 91)',
+      strokeWidth: '1.15px',
+      filter: 'none',
+    })
 
     await page.goto('/knowledge/countries/east-asia')
     expect(

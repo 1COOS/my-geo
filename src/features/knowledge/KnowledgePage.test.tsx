@@ -49,6 +49,26 @@ describe('knowledge pages', () => {
     expect(getMapCountryPath('CN')).toHaveClass('is-continent')
     expect(getMapCountryPath('IN')).toHaveClass('is-continent')
     expect(getMapCountryPath('FR')).not.toHaveClass('is-continent')
+    expect(
+      (getMapCountryPath('CN') as SVGPathElement).style.getPropertyValue(
+        '--knowledge-region-accent',
+      ),
+    ).toBe('#4cc9f0')
+    expect(
+      (getMapCountryPath('JP') as SVGPathElement).style.getPropertyValue(
+        '--knowledge-region-accent',
+      ),
+    ).toBe('#4cc9f0')
+    expect(
+      (getMapCountryPath('IN') as SVGPathElement).style.getPropertyValue(
+        '--knowledge-region-accent',
+      ),
+    ).toBe('#8b8cff')
+    expect(
+      (getMapCountryPath('FR') as SVGPathElement).style.getPropertyValue(
+        '--knowledge-region-accent',
+      ),
+    ).toBe('')
 
     await user.click(getMapCountryPath('FR'))
     expect(screen.getByTestId('knowledge-region-north-europe')).toBeVisible()
@@ -59,6 +79,11 @@ describe('knowledge pages', () => {
     expect(screen.queryByTestId('knowledge-region-east-asia')).toBeNull()
     expect(getMapCountryPath('CN')).not.toHaveClass('is-continent')
     expect(getMapCountryPath('FR')).toHaveClass('is-continent')
+    expect(
+      (getMapCountryPath('FR') as SVGPathElement).style.getPropertyValue(
+        '--knowledge-region-accent',
+      ),
+    ).toBe('#ff8a5b')
   })
 
   it('opens the earth topic, restores URL state, and moves the locator with the keyboard', async () => {

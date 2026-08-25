@@ -1,6 +1,7 @@
 import { geoEquirectangular, geoPath } from 'd3-geo'
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 
+import { countries } from '../../data/countries'
 import { loadCountryBoundaries } from '../../data/geometryResources'
 import {
   knowledgeRegionByCountryCode,
@@ -11,6 +12,7 @@ import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
 
 const MAP_WIDTH = 720
 const MAP_HEIGHT = 340
+const MICROSTATE_RADIUS = 4
 const projection = geoEquirectangular()
   .scale(MAP_WIDTH / (2 * Math.PI))
   .translate([MAP_WIDTH / 2, MAP_HEIGHT / 2])
@@ -42,6 +44,48 @@ export function KnowledgeRegionMap({
       })),
     [boundaryResource.data],
   )
+  const microstateMarkers = useMemo(() => {
+    const boundaryCodes = new Set(
+      (boundaryResource.data?.features ?? []).map(
+        (feature) => feature.properties.code,
+      ),
+    )
+    return countries.flatMap((country) => {
+      if (boundaryCodes.has(country.code)) return []
+      const point = projection([
+        country.center.longitude,
+        country.center.latitude,
+      ])
+      const region = knowledgeRegionByCountryCode.get(country.code)
+      return point && region ? [{ country, point, region }] : []
+    })
+  }, [boundaryResource.data])
+
+  const getStateClass = (
+    code: string,
+    region: ReturnType<typeof knowledgeRegionByCountryCode.get>,
+  ) =>
+    selectedCountryCode
+      ? code === selectedCountryCode
+        ? 'is-country'
+        : region?.id === regionId
+          ? 'is-region'
+          : undefined
+      : regionId
+        ? region?.id === regionId
+          ? 'is-region'
+          : undefined
+        : region?.continentId === continentId
+          ? 'is-continent'
+          : undefined
+
+  const getAccentStyle = (
+    stateClass: string | undefined,
+    accent: string | undefined,
+  ) =>
+    stateClass === 'is-continent' && accent
+      ? ({ '--knowledge-region-accent': accent } as CSSProperties)
+      : undefined
 
   return (
     <>
@@ -69,24 +113,13 @@ export function KnowledgeRegionMap({
         <g className="knowledge-region-map-countries">
           {paths.map(({ code, path }) => {
             const region = knowledgeRegionByCountryCode.get(code)
-            const stateClass = selectedCountryCode
-              ? code === selectedCountryCode
-                ? 'is-country'
-                : region?.id === regionId
-                  ? 'is-region'
-                  : undefined
-              : regionId
-                ? region?.id === regionId
-                  ? 'is-region'
-                  : undefined
-                : region?.continentId === continentId
-                  ? 'is-continent'
-                  : undefined
+            const stateClass = getStateClass(code, region)
             return (
               <path
                 key={code}
                 d={path}
                 data-country-code={code}
+                style={getAccentStyle(stateClass, region?.accent)}
                 className={
                   onSelectContinent && region
                     ? `${stateClass ?? ''} is-selectable`.trim()
@@ -98,6 +131,33 @@ export function KnowledgeRegionMap({
                     : undefined
                 }
               />
+            )
+          })}
+        </g>
+        <g className="knowledge-region-map-microstates">
+          {microstateMarkers.map(({ country, point, region }) => {
+            const stateClass = getStateClass(country.code, region)
+            return (
+              <circle
+                key={country.code}
+                cx={point[0]}
+                cy={point[1]}
+                r={MICROSTATE_RADIUS}
+                data-country-code={country.code}
+                style={getAccentStyle(stateClass, region.accent)}
+                className={
+                  onSelectContinent
+                    ? `${stateClass ?? ''} is-selectable`.trim()
+                    : stateClass
+                }
+                onClick={
+                  onSelectContinent
+                    ? () => onSelectContinent(region.continentId)
+                    : undefined
+                }
+              >
+                <title>{country.name.zh}</title>
+              </circle>
             )
           })}
         </g>

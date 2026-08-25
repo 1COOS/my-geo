@@ -92,6 +92,14 @@ const continentDefinitions = [
   },
 ] satisfies z.input<typeof knowledgeContinentSchema>[]
 
+const regionAccentSequence = [
+  '#4cc9f0',
+  '#ff8a5b',
+  '#8b8cff',
+  '#f6c453',
+  '#46d1a3',
+] as const
+
 const regionDefinitions = [
   {
     id: 'east-asia',
@@ -99,7 +107,7 @@ const regionDefinitions = [
     name: { zh: '东亚', en: 'Eastern Asia' },
     description: '位于亚洲东部，季风影响显著，人口与城市密集。',
     sourceSubregions: ['东亚'],
-    accent: '#55d9ff',
+    accent: regionAccentSequence[0],
   },
   {
     id: 'southeast-asia',
@@ -107,7 +115,7 @@ const regionDefinitions = [
     name: { zh: '东南亚', en: 'South-eastern Asia' },
     description: '连接亚洲与大洋洲，由中南半岛和众多岛屿组成。',
     sourceSubregions: ['东南亚'],
-    accent: '#50e3a4',
+    accent: regionAccentSequence[1],
   },
   {
     id: 'south-asia',
@@ -115,7 +123,7 @@ const regionDefinitions = [
     name: { zh: '南亚', en: 'Southern Asia' },
     description: '喜马拉雅山脉以南，印度洋北岸的重要区域。',
     sourceSubregions: ['南亚'],
-    accent: '#ffd469',
+    accent: regionAccentSequence[2],
   },
   {
     id: 'central-asia',
@@ -123,7 +131,7 @@ const regionDefinitions = [
     name: { zh: '中亚', en: 'Central Asia' },
     description: '深居亚欧大陆内部，草原、荒漠与绿洲广布。',
     sourceSubregions: ['中亚'],
-    accent: '#d9b06f',
+    accent: regionAccentSequence[3],
   },
   {
     id: 'west-asia',
@@ -131,7 +139,7 @@ const regionDefinitions = [
     name: { zh: '西亚', en: 'Western Asia' },
     description: '处在亚欧非交会地带，海陆通道与能源资源重要。',
     sourceSubregions: ['西亚'],
-    accent: '#ff9f66',
+    accent: regionAccentSequence[4],
   },
   {
     id: 'north-europe',
@@ -139,7 +147,7 @@ const regionDefinitions = [
     name: { zh: '北欧', en: 'Northern Europe' },
     description: '临近北大西洋和北极圈，峡湾、岛屿与湖泊众多。',
     sourceSubregions: ['北欧'],
-    accent: '#8bdcff',
+    accent: regionAccentSequence[0],
   },
   {
     id: 'west-europe',
@@ -147,7 +155,7 @@ const regionDefinitions = [
     name: { zh: '西欧', en: 'Western Europe' },
     description: '大西洋沿岸国家集中，城市化程度较高。',
     sourceSubregions: ['西欧'],
-    accent: '#7bb9ff',
+    accent: regionAccentSequence[1],
   },
   {
     id: 'central-europe',
@@ -155,7 +163,7 @@ const regionDefinitions = [
     name: { zh: '中欧', en: 'Central Europe' },
     description: '位于欧洲中部，多条河流与交通通道在此交会。',
     sourceSubregions: ['中欧'],
-    accent: '#9d9bff',
+    accent: regionAccentSequence[2],
   },
   {
     id: 'south-europe',
@@ -163,7 +171,7 @@ const regionDefinitions = [
     name: { zh: '南欧', en: 'Southern Europe' },
     description: '地中海沿岸半岛众多，历史城市与海洋联系紧密。',
     sourceSubregions: ['南欧', '东南欧'],
-    accent: '#c28cff',
+    accent: regionAccentSequence[3],
   },
   {
     id: 'east-europe',
@@ -171,7 +179,7 @@ const regionDefinitions = [
     name: { zh: '东欧', en: 'Eastern Europe' },
     description: '欧洲东部平原广阔，与亚洲内陆联系紧密。',
     sourceSubregions: ['东欧'],
-    accent: '#76a5ff',
+    accent: regionAccentSequence[4],
   },
   {
     id: 'north-africa',
@@ -179,7 +187,7 @@ const regionDefinitions = [
     name: { zh: '北非', en: 'Northern Africa' },
     description: '位于撒哈拉沙漠以北，面向地中海和大西洋。',
     sourceSubregions: ['北非'],
-    accent: '#ffc864',
+    accent: regionAccentSequence[0],
   },
   {
     id: 'west-africa',
@@ -187,7 +195,7 @@ const regionDefinitions = [
     name: { zh: '西非', en: 'Western Africa' },
     description: '从萨赫勒延伸到几内亚湾，气候和植被变化明显。',
     sourceSubregions: ['西非'],
-    accent: '#ffac55',
+    accent: regionAccentSequence[1],
   },
   {
     id: 'central-africa',
@@ -195,7 +203,7 @@ const regionDefinitions = [
     name: { zh: '中非', en: 'Middle Africa' },
     description: '刚果盆地位于其中，赤道雨林分布广泛。',
     sourceSubregions: ['中非'],
-    accent: '#68d785',
+    accent: regionAccentSequence[2],
   },
   {
     id: 'east-africa',
@@ -203,7 +211,7 @@ const regionDefinitions = [
     name: { zh: '东非', en: 'Eastern Africa' },
     description: '高原、裂谷与印度洋海岸构成多样地貌。',
     sourceSubregions: ['东非'],
-    accent: '#5fd6ae',
+    accent: regionAccentSequence[3],
   },
   {
     id: 'southern-africa',
@@ -211,7 +219,7 @@ const regionDefinitions = [
     name: { zh: '南部非洲', en: 'Southern Africa' },
     description: '位于非洲大陆南部，草原、高原与荒漠并存。',
     sourceSubregions: ['南部非洲'],
-    accent: '#8dd26c',
+    accent: regionAccentSequence[4],
   },
   {
     id: 'north-america',
@@ -219,7 +227,7 @@ const regionDefinitions = [
     name: { zh: '北美洲', en: 'Northern America' },
     description: '横跨寒带到热带，拥有广阔平原和纵贯山系。',
     sourceSubregions: ['北美洲'],
-    accent: '#62c8ff',
+    accent: regionAccentSequence[0],
   },
   {
     id: 'central-america',
@@ -227,7 +235,7 @@ const regionDefinitions = [
     name: { zh: '中美洲', en: 'Central America' },
     description: '连接南北美洲的狭长陆桥，火山和热带景观丰富。',
     sourceSubregions: ['中美洲'],
-    accent: '#4edbc1',
+    accent: regionAccentSequence[1],
   },
   {
     id: 'caribbean',
@@ -235,7 +243,7 @@ const regionDefinitions = [
     name: { zh: '加勒比地区', en: 'Caribbean' },
     description: '加勒比海中的岛屿国家密集，海洋特色鲜明。',
     sourceSubregions: ['加勒比地区'],
-    accent: '#5ed9ee',
+    accent: regionAccentSequence[2],
   },
   {
     id: 'south-america',
@@ -243,7 +251,7 @@ const regionDefinitions = [
     name: { zh: '南美洲', en: 'South America' },
     description: '安第斯山脉纵贯西部，亚马孙流域面积广大。',
     sourceSubregions: ['南美洲'],
-    accent: '#75db72',
+    accent: regionAccentSequence[3],
   },
   {
     id: 'australia-new-zealand',
@@ -251,7 +259,7 @@ const regionDefinitions = [
     name: { zh: '澳大利亚和新西兰', en: 'Australia and New Zealand' },
     description: '大洋洲面积最大的两个国家，隔塔斯曼海相望。',
     sourceSubregions: ['澳大利亚和新西兰'],
-    accent: '#62b6ff',
+    accent: regionAccentSequence[0],
   },
   {
     id: 'melanesia',
@@ -259,7 +267,7 @@ const regionDefinitions = [
     name: { zh: '美拉尼西亚', en: 'Melanesia' },
     description: '位于西南太平洋，由大岛和群岛国家组成。',
     sourceSubregions: ['美拉尼西亚'],
-    accent: '#9a8cff',
+    accent: regionAccentSequence[1],
   },
   {
     id: 'micronesia',
@@ -267,7 +275,7 @@ const regionDefinitions = [
     name: { zh: '密克罗尼西亚', en: 'Micronesia' },
     description: '西太平洋众多小岛组成的岛屿区域。',
     sourceSubregions: ['密克罗尼西亚'],
-    accent: '#d184ff',
+    accent: regionAccentSequence[2],
   },
   {
     id: 'polynesia',
@@ -275,7 +283,7 @@ const regionDefinitions = [
     name: { zh: '波利尼西亚', en: 'Polynesia' },
     description: '分布在太平洋中部和南部广阔海域。',
     sourceSubregions: ['波利尼西亚'],
-    accent: '#ff83ca',
+    accent: regionAccentSequence[3],
   },
 ] satisfies z.input<typeof knowledgeRegionDefinitionSchema>[]
 

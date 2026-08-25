@@ -74,7 +74,13 @@
   fill: transparent;
 }
 
-.knowledge-region-map-countries path.is-continent,
+.knowledge-region-map-countries path.is-continent {
+  fill: var(--knowledge-region-accent);
+  fill-opacity: 0.48;
+  stroke: var(--knowledge-region-accent);
+  stroke-opacity: 0.82;
+}
+
 .knowledge-region-map-countries path.is-region {
   fill: rgb(42 149 188 / 45%);
   stroke: rgb(115 224 255 / 52%);
@@ -88,6 +94,40 @@
 }
 
 .knowledge-region-map-countries path.is-selectable {
+  cursor: pointer;
+}
+
+.knowledge-region-map-microstates circle {
+  fill: rgb(113 215 255 / 1%);
+  stroke: none;
+}
+
+.knowledge-region-map-microstates
+  circle.is-selectable:not(.is-continent):hover {
+  fill: rgb(113 215 255 / 38%);
+  stroke: var(--atlas-map-highlight-stroke);
+  stroke-width: 0.8;
+}
+
+.knowledge-region-map-microstates circle.is-continent {
+  fill: var(--knowledge-region-accent);
+  fill-opacity: 0.9;
+  stroke: var(--knowledge-region-accent);
+  stroke-width: 1;
+}
+
+.knowledge-region-map-microstates circle.is-region {
+  fill: var(--atlas-map-highlight-fill);
+  stroke: var(--atlas-map-highlight-stroke);
+}
+
+.knowledge-region-map-microstates circle.is-country {
+  fill: var(--atlas-country-selection-fill);
+  stroke: var(--atlas-country-selection-stroke);
+  stroke-width: 1.45;
+}
+
+.knowledge-region-map-microstates circle.is-selectable {
   cursor: pointer;
 }
 
@@ -690,10 +730,20 @@
   stroke: rgb(137 165 170 / 34%);
 }
 
-.knowledge-region-map-countries path.is-continent,
+.knowledge-region-map-countries path.is-continent {
+  fill: var(--knowledge-region-accent);
+  fill-opacity: 0.48;
+  stroke: var(--knowledge-region-accent);
+  stroke-opacity: 0.82;
+  stroke-width: var(--atlas-map-highlight-stroke-width);
+  filter: none;
+}
+
 .knowledge-region-map-countries path.is-region {
   fill: var(--atlas-map-highlight-fill);
+  fill-opacity: 1;
   stroke: var(--atlas-map-highlight-stroke);
+  stroke-opacity: 1;
   stroke-width: var(--atlas-map-highlight-stroke-width);
   filter: none;
 }
