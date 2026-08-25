@@ -11,12 +11,10 @@ import type {
   GeographyTopicId,
   ReferenceLineId,
 } from '../../data/geographyLearningSchema'
+import { useEffect, useRef } from 'react'
 import { classifyGeoPosition } from '../../shared/lib/geoClassification'
 import type { GeoPosition } from '../../shared/types/geo'
-import {
-  GeographyReferenceDiagram,
-  GeographyTopicNav,
-} from '../geography-learning/GeographyLearningContent'
+import { GeographyReferenceDiagram } from '../geography-learning/GeographyLearningContent'
 import { DetailPanelShell } from './DetailPanelShell'
 
 type GeographyLearningPanelProps = {
@@ -31,17 +29,21 @@ function GeographyOverviewCard({
   focusTopicId,
   viewCenter,
   onSelectLine,
-  onSelectTopic,
 }: {
   focusTopicId: GeographyTopicId | null
   viewCenter: GeoPosition
   onSelectLine: (referenceLineId: ReferenceLineId) => void
-  onSelectTopic: (topicId: GeographyTopicId) => void
 }) {
   const classification = classifyGeoPosition(viewCenter)
-  const topicId = focusTopicId ?? geographyTopics[0].id
-  const topic = getGeographyTopic(topicId)!
-  const topicLines = getGeographyTopicReferenceLines(topicId)
+  const focusedGroupRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (!focusTopicId) return
+    const frameId = window.requestAnimationFrame(() => {
+      focusedGroupRef.current?.scrollIntoView?.({ block: 'nearest' })
+    })
+    return () => window.cancelAnimationFrame(frameId)
+  }, [focusTopicId])
 
   return (
     <>
@@ -64,30 +66,48 @@ function GeographyOverviewCard({
         showCaption={false}
       />
 
-      <GeographyTopicNav
-        label="地球经纬线用途"
-        topicId={topicId}
-        onSelectTopic={onSelectTopic}
-      />
-
-      <section
-        className="country-detail-section"
-        aria-label={`${topic.name.zh}重点线`}
+      <div
+        aria-label="地球经纬线分类"
+        style={{ display: 'grid', gap: '0.75rem', marginTop: '0.75rem' }}
       >
-        <p className="country-detail-label">{topicLines.length}条重点线</p>
-        <div className="geography-reference-list">
-          {topicLines.map((line) => (
-            <button
-              key={line.id}
-              type="button"
-              onClick={() => onSelectLine(line.id)}
+        {geographyTopics.map((topic) => {
+          const focused = topic.id === focusTopicId
+          const topicLines = getGeographyTopicReferenceLines(topic.id)
+          return (
+            <section
+              key={topic.id}
+              ref={focused ? focusedGroupRef : undefined}
+              className="country-detail-section"
+              aria-label={`${topic.name.zh}经纬线`}
+              aria-current={focused ? 'true' : undefined}
+              style={
+                focused
+                  ? {
+                      paddingLeft: '0.65rem',
+                      borderLeft: '2px solid var(--atlas-accent)',
+                    }
+                  : undefined
+              }
             >
-              <strong>{line.name.zh}</strong>
-              <small>{formatReferenceLineCoordinate(line)}</small>
-            </button>
-          ))}
-        </div>
-      </section>
+              <h3 style={{ margin: '0 0 0.45rem', fontSize: '0.78rem' }}>
+                {topic.name.zh}
+              </h3>
+              <div className="geography-reference-list">
+                {topicLines.map((line) => (
+                  <button
+                    key={line.id}
+                    type="button"
+                    onClick={() => onSelectLine(line.id)}
+                  >
+                    <strong>{line.name.zh}</strong>
+                    <small>{formatReferenceLineCoordinate(line)}</small>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )
+        })}
+      </div>
     </>
   )
 }
@@ -218,7 +238,6 @@ export function GeographyLearningPanel({
           focusTopicId={selection.focusTopicId}
           viewCenter={viewCenter}
           onSelectLine={onSelectLine}
-          onSelectTopic={onShowOverview}
         />
       )}
     </DetailPanelShell>

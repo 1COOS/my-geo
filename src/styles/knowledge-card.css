@@ -12,11 +12,16 @@
   padding: 0;
   overflow: hidden;
   flex-direction: column;
+  font-size: var(--fs-m);
   color: var(--atlas-text);
   background: var(--atlas-panel);
   border: 1px solid var(--atlas-border);
   border-radius: var(--atlas-radius-panel);
   box-shadow: var(--atlas-shadow);
+}
+
+.knowledge-card-shell small {
+  font-size: inherit;
 }
 
 .knowledge-card-content {
@@ -65,13 +70,11 @@
 }
 
 .knowledge-card-action span {
-  font-size: 0.72rem;
   font-weight: 700;
 }
 
 .knowledge-card-action small {
   margin-top: 0.1rem;
-  font-size: 0.56rem;
   opacity: 0.72;
 }
 
@@ -101,7 +104,6 @@
 .country-knowledge-card .knowledge-country-detail-heading > div > span {
   display: block;
   color: var(--atlas-accent);
-  font-size: 0.56rem;
 }
 
 .country-knowledge-card .knowledge-country-detail-heading h2 {
@@ -116,14 +118,12 @@
   display: block;
   margin: 0;
   color: var(--atlas-text-secondary);
-  font-size: 0.62rem;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .country-knowledge-card .knowledge-country-detail-heading small {
   margin-top: 0.12rem;
   color: var(--atlas-text-muted);
-  font-size: 0.54rem;
 }
 
 .country-knowledge-card .knowledge-country-facts {
@@ -159,14 +159,13 @@
 
 .country-knowledge-card .knowledge-country-facts dt {
   color: var(--atlas-text-muted);
-  font-size: 0.56rem;
   font-weight: 500;
 }
 
 .country-knowledge-card .knowledge-country-facts dd {
   margin: 0.24rem 0 0;
   color: var(--atlas-text);
-  font-size: 0.66rem;
+  font-size: var(--fs-s);
   font-weight: 500;
   line-height: 1.45;
 }
@@ -180,7 +179,7 @@
 .country-knowledge-card .knowledge-country-facts dd small {
   margin-top: 0.08rem;
   color: var(--atlas-text-muted);
-  font-size: 0.54rem;
+  font-size: var(--fs-m);
   font-weight: 400;
 }
 
@@ -217,7 +216,7 @@
   min-height: 1.9rem;
   padding: 0.25rem 0.35rem;
   margin-top: 0.3rem;
-  font-size: 0.55rem;
+  font-size: var(--fs-m);
 }
 
 .country-knowledge-card section {
@@ -229,7 +228,7 @@
 .country-knowledge-card h3 {
   margin: 0 0 0.45rem;
   color: var(--atlas-text-muted);
-  font-size: 0.56rem;
+  font-size: var(--fs-m);
   font-weight: 500;
   letter-spacing: 0.08em;
 }
@@ -245,8 +244,8 @@
 .country-knowledge-card .knowledge-country-highlights li {
   padding: 0.65rem 0.7rem;
   color: var(--atlas-text-secondary);
-  font-size: 0.65rem;
-  line-height: 1.55;
+  font-size: var(--fs-b);
+  line-height: var(--lh-b);
   background: var(--atlas-panel-muted);
   border-left: 2px solid var(--atlas-accent);
   border-radius: 0 var(--atlas-radius-compact) var(--atlas-radius-compact) 0;
@@ -267,7 +266,6 @@
 .country-knowledge-card .country-region-list > span {
   min-height: 2rem;
   padding: 0.32rem 0.48rem;
-  font-size: 0.57rem;
 }
 
 .country-knowledge-card .country-border-list .country-flag-frame {
@@ -348,7 +346,6 @@
     .geography-learning-heading p,
     .climate-learning-heading p
   ) {
-  font-size: 0.56rem;
   letter-spacing: 0.06em;
 }
 
@@ -360,7 +357,6 @@
   ) {
   margin-top: 0;
   color: var(--atlas-text-secondary);
-  font-size: 0.62rem;
 }
 
 .knowledge-card-shell:not(.country-knowledge-card) .country-detail-section {
@@ -372,7 +368,6 @@
 .knowledge-card-shell:not(.country-knowledge-card) .country-detail-label {
   margin-bottom: 0.45rem;
   color: var(--atlas-text-muted);
-  font-size: 0.56rem;
   font-weight: 500;
   letter-spacing: 0.08em;
 }
@@ -436,7 +431,6 @@
 }
 
 .city-list-static em {
-  font-size: 0.56rem;
   font-style: normal;
 }
 

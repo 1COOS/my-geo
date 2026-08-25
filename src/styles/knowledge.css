@@ -8,16 +8,10 @@
   margin-top: 0;
 }
 
-.knowledge-topic-card h1 {
-  margin-top: 0;
-  font-size: clamp(1.2rem, 1.6vw, 1.4rem);
-  white-space: nowrap;
-}
-
 .knowledge-topic-card p {
   margin: 0;
-  font-size: 0.67rem;
-  line-height: 1.5;
+  font-size: var(--fs-b);
+  line-height: var(--lh-b);
 }
 
 .knowledge-topic-stats {
@@ -29,7 +23,7 @@
 
 .knowledge-topic-stats > div {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.25rem;
   align-items: end;
 }
 
@@ -39,7 +33,7 @@
 }
 
 .knowledge-topic-stats span {
-  font-size: 0.62rem;
+  font-size: var(--fs-m);
   font-weight: 700;
 }
 
@@ -54,7 +48,7 @@
 
 .knowledge-region-map-strip > div > span {
   color: #5ddcff;
-  font-size: 0.56rem;
+  font-size: var(--fs-m);
   font-weight: 850;
   letter-spacing: 0.14em;
 }
@@ -131,23 +125,6 @@
   cursor: pointer;
 }
 
-.knowledge-region-index {
-  color: var(--region-accent);
-  font-size: 0.56rem;
-  font-weight: 900;
-}
-
-.knowledge-region-card p {
-  margin: 0.2rem 0 0;
-  color: #7896a8;
-  font-size: 0.55rem;
-}
-
-.knowledge-region-card > strong {
-  color: #94b8c9;
-  font-size: 0.62rem;
-}
-
 .knowledge-view-on-globe,
 .knowledge-challenge-result button,
 .knowledge-challenge-result a {
@@ -157,7 +134,7 @@
   align-items: center;
   justify-content: center;
   color: #03121e;
-  font-size: 0.7rem;
+  font-size: var(--fs-m);
   font-weight: 850;
   cursor: pointer;
   background: linear-gradient(135deg, #7ce7ff, #45bfff);
@@ -213,13 +190,13 @@
   width: fit-content;
   margin-bottom: 0.2rem;
   color: #9be8ff;
-  font-size: 0.58rem;
+  font-size: var(--fs-m);
   font-weight: 760;
 }
 
 .knowledge-region-map-identity span {
   color: #5ddcff;
-  font-size: 0.5rem;
+  font-size: var(--fs-m);
   font-weight: 850;
   letter-spacing: 0.12em;
 }
@@ -245,7 +222,7 @@
   align-items: center;
   justify-content: center;
   color: #03121e;
-  font-size: 0.58rem;
+  font-size: var(--fs-m);
   font-weight: 850;
   background: linear-gradient(135deg, #7ce7ff, #45bfff);
   border-radius: 0.65rem;
@@ -306,20 +283,20 @@
 .knowledge-country-name small {
   margin-top: 0.2rem;
   color: #718fa1;
-  font-size: 0.55rem;
+  font-size: var(--fs-m);
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
 
 .knowledge-country-card-capital small {
   color: #6f91a4;
-  font-size: 0.55rem;
+  font-size: var(--fs-m);
 }
 
 .knowledge-country-card-capital strong {
   margin-top: 0.2rem;
   color: #d8f8ff;
-  font-size: 0.68rem;
+  font-size: var(--fs-s);
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -338,8 +315,8 @@
 .knowledge-country-detail-placeholder p {
   margin: 0.55rem 0 0;
   color: #7898aa;
-  font-size: 0.65rem;
-  line-height: 1.6;
+  font-size: var(--fs-b);
+  line-height: var(--lh-b);
 }
 
 .knowledge-challenge-header > div {
@@ -351,7 +328,7 @@
 .knowledge-challenge-header > div > span {
   flex: none;
   color: #81dfff;
-  font-size: 0.62rem;
+  font-size: var(--fs-m);
   font-weight: 800;
 }
 
@@ -362,7 +339,7 @@
 .knowledge-question-card > p {
   margin: 0;
   color: #5edcff;
-  font-size: 0.6rem;
+  font-size: var(--fs-m);
   font-weight: 850;
   letter-spacing: 0.14em;
   text-align: center;
@@ -386,13 +363,14 @@
 }
 
 .knowledge-question-options button strong {
-  font-size: 0.75rem;
+  font-size: var(--fs-m);
 }
 
 .knowledge-question-feedback p {
   margin: 0;
   color: #9db8c6;
-  font-size: 0.68rem;
+  font-size: var(--fs-b);
+  line-height: var(--lh-b);
 }
 
 .knowledge-challenge-result {
@@ -404,7 +382,7 @@
   display: inline-block;
   padding: 0.35rem 0.65rem;
   color: #ffd793;
-  font-size: 0.62rem;
+  font-size: var(--fs-m);
   font-weight: 850;
   background: rgb(255 190 83 / 10%);
   border: 1px solid rgb(255 203 112 / 25%);
@@ -444,13 +422,13 @@
 .knowledge-challenge-result > p {
   margin: 1rem auto 0.4rem;
   color: #9eb8c6;
-  font-size: 0.72rem;
-  line-height: 1.6;
+  font-size: var(--fs-b);
+  line-height: var(--lh-b);
 }
 
 .knowledge-challenge-result > small {
   color: #668a9e;
-  font-size: 0.58rem;
+  font-size: var(--fs-m);
 }
 
 .knowledge-challenge-result > div:last-child {
@@ -554,6 +532,19 @@
   color: var(--atlas-text-secondary);
 }
 
+.is-countries-active .is-active {
+  justify-content: flex-start;
+}
+
+.is-countries-active .is-active h1 {
+  font-size: 1.2rem;
+}
+
+.is-countries-active .is-active p {
+  font-size: var(--fs-m);
+  white-space: nowrap;
+}
+
 .knowledge-topic-stats i {
   width: 1px;
   height: 1.8rem;
@@ -590,13 +581,13 @@
 
 .knowledge-earth-map-heading span {
   color: var(--atlas-text-muted);
-  font-size: 0.56rem;
+  font-size: var(--fs-m);
 }
 
 .knowledge-earth-map-heading strong {
   margin-left: 0.35rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.72rem;
+  font-size: var(--fs-m);
 }
 
 .knowledge-earth-classifications {
@@ -634,13 +625,15 @@
   gap: 1.4rem;
   padding: 0 0.2rem;
   margin: 1rem 0 0.85rem;
-  border-bottom: 1px solid var(--atlas-border);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .knowledge-continent-tabs button {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex: none;
+  gap: 0.35rem;
+  align-items: baseline;
   cursor: pointer;
   position: relative;
   min-height: 2.9rem;
@@ -678,14 +671,14 @@
 }
 
 .knowledge-continent-tabs strong {
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
 .knowledge-continent-tabs span {
-  margin-top: 0.12rem;
-  font-size: 0.58rem;
+  font-size: var(--fs-b);
   color: var(--atlas-text-muted);
+  white-space: nowrap;
 }
 
 .knowledge-map-card,
@@ -769,9 +762,8 @@
   position: relative;
   display: grid;
   flex: 1 1 0;
-  grid-template-columns: auto 1fr auto;
-  gap: 0.65rem;
-  align-items: center;
+  gap: 0.2rem;
+  align-content: center;
   min-width: 0;
   overflow: hidden;
   color: #eafaff;
@@ -810,9 +802,30 @@
   font-weight: 600;
 }
 
-.knowledge-region-card p,
-.knowledge-region-card > strong {
+.knowledge-region-heading {
+  display: flex;
+  min-width: 0;
+  gap: 0.5rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.knowledge-region-heading > strong {
+  flex: none;
   color: var(--atlas-text-secondary);
+  font-size: var(--fs-m);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.knowledge-region-card p {
+  min-width: 0;
+  margin: 0.2rem 0 0;
+  overflow: hidden;
+  color: var(--atlas-text-secondary);
+  font-size: var(--fs-m);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .knowledge-challenge-header i {
@@ -865,7 +878,7 @@
 }
 
 .knowledge-region-map-actions span {
-  font-size: 0.5rem;
+  font-size: var(--fs-m);
   color: var(--atlas-text-muted);
 }
 
@@ -894,7 +907,7 @@
 .knowledge-country-display-controls button {
   min-width: 4rem;
   padding: 0.45rem 0.75rem;
-  font-size: 0.62rem;
+  font-size: var(--fs-m);
   cursor: pointer;
   min-height: 2.75rem;
   color: var(--atlas-text-secondary);
@@ -1042,13 +1055,13 @@
 }
 
 .knowledge-challenge-header > a {
-  font-size: 0.65rem;
+  font-size: var(--fs-m);
   font-weight: 750;
   color: var(--atlas-accent);
 }
 
 .knowledge-challenge-header > strong {
-  font-size: 0.68rem;
+  font-size: var(--fs-s);
   text-align: right;
   color: var(--atlas-text);
   font-weight: 600;
@@ -1153,7 +1166,7 @@
   display: grid;
   width: 1.65rem;
   height: 1.65rem;
-  font-size: 0.62rem;
+  font-size: var(--fs-m);
   font-weight: 850;
   place-items: center;
   color: var(--atlas-text-secondary);
@@ -1184,7 +1197,7 @@
 .knowledge-question-feedback button {
   min-height: 2.6rem;
   padding: 0.55rem 1rem;
-  font-size: 0.66rem;
+  font-size: var(--fs-m);
   cursor: pointer;
   border: 0;
   color: var(--atlas-canvas-deep);

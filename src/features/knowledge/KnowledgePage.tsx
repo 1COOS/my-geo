@@ -53,7 +53,7 @@ export function KnowledgePage() {
             />
           </div>
           <div className="knowledge-region-grid">
-            {regions.map((region, index) => (
+            {regions.map((region) => (
               <Link
                 key={region.id}
                 to={`/knowledge/countries/${region.id}`}
@@ -63,14 +63,11 @@ export function KnowledgePage() {
                   { '--region-accent': region.accent } as React.CSSProperties
                 }
               >
-                <span className="knowledge-region-index">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <div>
+                <div className="knowledge-region-heading">
                   <h3>{region.name.zh}</h3>
-                  <p>{region.name.en}</p>
+                  <strong>{region.countryCodes.length} 国</strong>
                 </div>
-                <strong>{region.countryCodes.length} 国</strong>
+                <p>{region.name.en}</p>
               </Link>
             ))}
           </div>

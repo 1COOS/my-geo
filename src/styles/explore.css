@@ -170,12 +170,12 @@
 
 .mountain-peak-marker-tooltip small {
   color: #cbb890;
-  font-size: 0.62rem;
+  font-size: var(--fs-m);
 }
 
 .mountain-peak-marker-tooltip b {
   color: #ffd879;
-  font-size: 0.68rem;
+  font-size: var(--fs-s);
 }
 
 .city-label {
@@ -547,7 +547,7 @@
 .country-hover-tooltip small {
   color: #7facc6;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.64rem;
+  font-size: var(--fs-m);
 }
 
 .country-search {
@@ -646,14 +646,14 @@
 .country-search-popover small {
   overflow: hidden;
   color: #83a1b3;
-  font-size: 0.68rem;
+  font-size: var(--fs-m);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .country-search-popover code {
   color: #77bedf;
-  font-size: 0.65rem;
+  font-size: var(--fs-m);
 }
 
 .country-search-empty {
@@ -861,9 +861,9 @@
   min-height: 2.15rem;
   padding: 0.52rem 0.7rem 0.62rem;
   color: #d9c9e7;
-  font-size: 0.55rem;
+  font-size: var(--fs-m);
   font-weight: 650;
-  line-height: 1.45;
+  line-height: 1.5;
   background: rgb(66 30 86 / 18%);
 }
 
@@ -941,7 +941,7 @@
   z-index: 20;
   padding: 0.48rem 0.65rem;
   color: #eaf8ff;
-  font-size: 0.72rem;
+  font-size: var(--fs-m);
   background: #10263b;
   border: 1px solid rgb(147 222 255 / 18%);
   border-radius: 0.5rem;
@@ -1039,7 +1039,7 @@
   flex: none;
   gap: 0.35rem;
   align-items: center;
-  font-size: 0.66rem;
+  font-size: var(--fs-m);
   min-height: 2.2rem;
   padding: 0 0.7rem 0 0.45rem;
   color: var(--atlas-text-secondary);
@@ -1070,7 +1070,7 @@
   flex: none;
   gap: 0.38rem;
   align-items: center;
-  font-size: 0.7rem;
+  font-size: var(--fs-m);
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -1277,7 +1277,7 @@
 .country-search-caption {
   margin: 0;
   padding: 0.35rem 0.48rem 0.5rem;
-  font-size: 0.65rem;
+  font-size: var(--fs-m);
   color: var(--atlas-text-muted);
   font-weight: 500;
   letter-spacing: 0.03em;
@@ -1321,26 +1321,28 @@
 
 .world-mini-map-header {
   display: flex;
-  gap: 0.55rem;
+  gap: 0.35rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.65rem 0.72rem 0.5rem;
+  padding: 0.4rem 0.6rem 0.35rem;
   border-bottom: 1px solid var(--atlas-border-soft);
 }
 
 .world-mini-map-header span {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.48rem;
+  font-size: 0.625rem;
+  line-height: 1.2;
   color: var(--atlas-text-secondary);
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 400;
+  letter-spacing: 0.02em;
 }
 
 .world-mini-map-header output {
   flex: none;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.54rem;
-  font-weight: 650;
+  font-size: 0.625rem;
+  line-height: 1.2;
+  font-weight: 400;
   color: var(--atlas-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -1416,7 +1418,7 @@
   display: flex;
   gap: 0.55rem;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--fs-m);
   white-space: nowrap;
   cursor: pointer;
   background: transparent;

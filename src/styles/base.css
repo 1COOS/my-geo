@@ -26,6 +26,10 @@
   --atlas-radius-control: 0.25rem;
   --atlas-radius-compact: 0.375rem;
   --atlas-radius-panel: 0.625rem;
+  --fs-m: 0.75rem;
+  --fs-s: 0.8125rem;
+  --fs-b: 0.875rem;
+  --lh-b: 1.6;
   font-family:
     Inter, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', system-ui,
     sans-serif;

@@ -162,7 +162,7 @@
 .landscape-prompt-eyebrow {
   margin: 0 0 0.7rem;
   color: var(--atlas-accent);
-  font-size: 0.72rem;
+  font-size: var(--fs-m);
   font-weight: 600;
   letter-spacing: 0.08em;
 }
@@ -185,7 +185,7 @@
 
 .landscape-prompt-card > .landscape-prompt-hint {
   margin-top: 0.8rem;
-  font-size: clamp(0.72rem, 3vw, 0.82rem);
+  font-size: clamp(var(--fs-m), 3vw, 0.82rem);
   color: var(--atlas-text-muted);
 }
 
@@ -280,7 +280,7 @@
 }
 
 .app-navigation-link span {
-  font-size: 0.62rem;
+  font-size: var(--fs-m);
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -289,7 +289,7 @@
   z-index: 90;
   padding: 0.45rem 0.6rem;
   color: var(--atlas-text);
-  font-size: 0.7rem;
+  font-size: var(--fs-m);
   background: var(--atlas-panel-raised);
   border: 1px solid var(--atlas-border);
   border-radius: var(--atlas-radius-control);

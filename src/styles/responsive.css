@@ -137,7 +137,7 @@
   }
 
   .app-navigation-link span {
-    font-size: 0.52rem;
+    font-size: var(--fs-m);
   }
 
   .knowledge-shell {
@@ -464,7 +464,7 @@
     gap: 0;
     min-height: 2.75rem;
     padding: 0.4rem 0.55rem;
-    font-size: 0.62rem;
+    font-size: var(--fs-m);
   }
 
   .landscape-runtime.is-touch-device .control-dock {
@@ -537,7 +537,7 @@
     min-height: 2.65rem;
     padding: 0.58rem 0.75rem;
     color: #dff6ff;
-    font-size: 0.7rem;
+    font-size: var(--fs-m);
     font-weight: 700;
     cursor: pointer;
     pointer-events: auto;
@@ -572,7 +572,7 @@
   }
 
   .world-mini-map-header {
-    padding: 0.62rem 0.72rem 0.5rem;
+    padding: 0.4rem 0.5rem 0.35rem;
   }
 
   .world-mini-map-header output {

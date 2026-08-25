@@ -21,16 +21,16 @@ const futureTopics = [
 const availableTopics = {
   countries: {
     title: '国家',
-    note: '国家、国旗、首都',
+    note: '国家｜国旗｜首都',
     to: '/knowledge',
     stats: [
-      { value: '195', label: '个国家' },
-      { value: '23', label: '个地区' },
+      { value: '195', label: '国家' },
+      { value: '23', label: '地区' },
     ],
   },
   earth: {
     title: '地球',
-    note: '认识经度基准、半球界线、纬度分区线与五带分界线。',
+    note: '经纬判读与五带',
     to: '/knowledge/earth',
     stats: [
       { value: String(geographyTopics.length), label: '类用途' },

@@ -607,9 +607,52 @@ for (const viewport of [
     })
     await waitForKnowledgeCardSettled(knowledgeCard)
     const knowledgeBox = await knowledgeCard.boundingBox()
+    const knowledgeLayout = await knowledgeCard.evaluate((element) => {
+      const content = element.querySelector<HTMLElement>(
+        '.knowledge-card-content',
+      )!
+      return {
+        documentOverflows:
+          document.documentElement.scrollWidth >
+          document.documentElement.clientWidth,
+        contentClientHeight: content.clientHeight,
+        contentScrollHeight: content.scrollHeight,
+      }
+    })
+    expect(knowledgeBox).not.toBeNull()
+    expect(knowledgeBox!.x).toBeGreaterThanOrEqual(0)
+    expect(knowledgeBox!.y).toBeGreaterThanOrEqual(0)
+    expect(knowledgeBox!.x + knowledgeBox!.width).toBeLessThanOrEqual(
+      viewport.width + 1,
+    )
+    expect(knowledgeBox!.y + knowledgeBox!.height).toBeLessThanOrEqual(
+      viewport.height + 1,
+    )
+    expect(knowledgeLayout.documentOverflows).toBe(false)
+    expect(knowledgeLayout.contentScrollHeight).toBeGreaterThanOrEqual(
+      knowledgeLayout.contentClientHeight,
+    )
     const knowledgeContent = await knowledgeCard
       .locator('.knowledge-card-content')
       .innerText()
+    const typography = await knowledgeCard.evaluate((element) => {
+      const fontSize = (selector: string) => {
+        const target = element.querySelector(selector)
+        if (!target) throw new Error(`Missing typography target: ${selector}`)
+        return Number.parseFloat(getComputedStyle(target).fontSize)
+      }
+
+      return {
+        body: fontSize('.knowledge-country-highlights li'),
+        factLabel: fontSize('.knowledge-country-facts dt'),
+        factValue: fontSize('.knowledge-country-facts dd'),
+        officialName: fontSize('.knowledge-country-detail-heading small'),
+      }
+    })
+    expect(typography.officialName).toBeGreaterThanOrEqual(12)
+    expect(typography.factLabel).toBeGreaterThanOrEqual(12)
+    expect(typography.factValue).toBeGreaterThanOrEqual(13)
+    expect(typography.body).toBeGreaterThanOrEqual(14)
     await expect(knowledgeCard.getByText('次区域')).toHaveCount(0)
     await expect(knowledgeCard.getByText('Eastern Asia')).toHaveCount(0)
     await expect(
@@ -2038,23 +2081,22 @@ test('shows synchronized geography reference lines and opens curriculum knowledg
   await expect(card).toBeVisible()
   await expect(card.getByRole('heading', { name: '地球经纬线' })).toBeVisible()
   await expect(card.getByText('当前视角判读')).toBeVisible()
-  const usageNav = card.getByLabel('地球经纬线用途')
-  await expect(usageNav.getByRole('button')).toHaveCount(4)
+  const categories = card.getByLabel('地球经纬线分类')
+  await expect(categories.getByRole('heading', { level: 3 })).toHaveCount(4)
   await expect(
-    card.getByLabel('经度基准重点线').getByRole('button'),
+    card.getByLabel('经度基准经纬线').getByRole('button'),
   ).toHaveCount(2)
-  await usageNav.getByRole('button', { name: '半球界线' }).click()
   await expect(
-    card.getByLabel('半球界线重点线').getByRole('button'),
+    card.getByLabel('半球界线经纬线').getByRole('button'),
   ).toHaveCount(3)
-  await usageNav.getByRole('button', { name: '纬度分区' }).click()
   await expect(
-    card.getByLabel('纬度分区线重点线').getByRole('button'),
+    card.getByLabel('纬度分区线经纬线').getByRole('button'),
   ).toHaveCount(4)
-  await usageNav.getByRole('button', { name: '五带界线' }).click()
   await expect(
-    card.getByLabel('五带分界线重点线').getByRole('button'),
+    card.getByLabel('五带分界线经纬线').getByRole('button'),
   ).toHaveCount(4)
+  await expect(categories.getByRole('button')).toHaveCount(13)
+  await expect(card.getByText(/条重点线/)).toHaveCount(0)
   await expect(card.getByText(/用纬线和经线为地球表面建立坐标/)).toHaveCount(0)
   await expect(
     page.locator('.world-mini-map-geography-layer line'),
@@ -2070,6 +2112,25 @@ test('shows synchronized geography reference lines and opens curriculum knowledg
       page.locator('.geography-reference-label:not([hidden])').count(),
     )
     .toBeLessThan(13)
+
+  const spatialTypography = await page.evaluate(() => {
+    const globeLabel = document.querySelector(
+      '.geography-reference-label:not([hidden])',
+    )
+    const diagramLabel = document.querySelector(
+      '.geography-reference-diagram text',
+    )
+    if (!globeLabel || !diagramLabel) {
+      throw new Error('Missing geography spatial label')
+    }
+    return {
+      diagramLabel: Number.parseFloat(getComputedStyle(diagramLabel).fontSize),
+      globeLabel: Number.parseFloat(getComputedStyle(globeLabel).fontSize),
+    }
+  })
+  expect(spatialTypography.globeLabel).toBeGreaterThanOrEqual(10)
+  expect(spatialTypography.globeLabel).toBeLessThan(11)
+  expect(spatialTypography.diagramLabel).toBe(7)
 
   const cancerLabel = page.locator(
     '.geography-reference-label[data-reference-line-id="tropic-of-cancer"]',
@@ -2093,9 +2154,10 @@ test('shows synchronized geography reference lines and opens curriculum knowledg
 
   await card.getByRole('button', { name: '返回地球经纬线' }).click()
   await expect(card.getByRole('heading', { name: '地球经纬线' })).toBeVisible()
-  await expect(
-    usageNav.getByRole('button', { name: '五带界线' }),
-  ).toHaveAttribute('aria-current', 'page')
+  await expect(card.getByLabel('五带分界线经纬线')).toHaveAttribute(
+    'aria-current',
+    'true',
+  )
   await expect(
     page.locator('.geography-reference-label.is-selected'),
   ).toHaveCount(0)
@@ -2131,9 +2193,10 @@ test('shows synchronized geography reference lines and opens curriculum knowledg
   await search.press('Enter')
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
   await expect(card.getByRole('heading', { name: '地球经纬线' })).toBeVisible()
-  await expect(
-    usageNav.getByRole('button', { name: '半球界线' }),
-  ).toHaveAttribute('aria-current', 'page')
+  await expect(card.getByLabel('半球界线经纬线')).toHaveAttribute(
+    'aria-current',
+    'true',
+  )
 })
 
 test('renders and classifies the synchronized world climate layer', async ({
@@ -2668,6 +2731,7 @@ test('does not replay a stale city camera target after dragging', async ({
 })
 
 test('keeps the full 2D map visible in touch landscape', async ({ page }) => {
+  test.setTimeout(45_000)
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'maxTouchPoints', {
       configurable: true,
@@ -2688,6 +2752,30 @@ test('keeps the full 2D map visible in touch landscape', async ({ page }) => {
   const map = page.getByTestId('world-mini-map')
   await expect(toggle).toBeHidden()
   await expect(map).toBeVisible()
+
+  const headerTypography = await page.evaluate(() => {
+    const header = document.querySelector('.world-mini-map-header')
+    const label = header?.querySelector('span')
+    const output = header?.querySelector('output')
+    if (!header || !label || !output) {
+      throw new Error('Missing world mini-map header typography')
+    }
+    const headerBox = header.getBoundingClientRect()
+    const labelStyle = getComputedStyle(label)
+    const outputStyle = getComputedStyle(output)
+    return {
+      height: headerBox.height,
+      labelFontSize: labelStyle.fontSize,
+      labelFontWeight: labelStyle.fontWeight,
+      outputFontSize: outputStyle.fontSize,
+      outputFontWeight: outputStyle.fontWeight,
+    }
+  })
+  expect(headerTypography.height).toBeLessThanOrEqual(38)
+  expect(headerTypography.labelFontSize).toBe('10px')
+  expect(headerTypography.outputFontSize).toBe('10px')
+  expect(headerTypography.labelFontWeight).toBe('400')
+  expect(headerTypography.outputFontWeight).toBe('400')
 
   await map.locator('[data-country-code="CN"]').click()
   await expect(page.getByLabel('中国国家知识卡')).toBeVisible()

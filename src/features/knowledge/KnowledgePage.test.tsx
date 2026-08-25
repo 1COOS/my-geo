@@ -32,7 +32,7 @@ describe('knowledge pages', () => {
       }),
     ).toBeVisible()
     expect(screen.getByLabelText('国家知识范围')).toHaveTextContent(
-      '195个国家23个地区',
+      '195国家23地区',
     )
     expect(screen.getByRole('link', { name: /地球/ })).toHaveAttribute(
       'href',
@@ -40,7 +40,9 @@ describe('knowledge pages', () => {
     )
     expect(screen.queryByText('已开放')).toBeNull()
     expect(screen.queryByText('即将开放')).toBeNull()
-    expect(screen.getByText('国家、国旗、首都')).toBeVisible()
+    expect(screen.getByText('国家｜国旗｜首都')).toBeVisible()
+    expect(screen.getByText('经纬判读与五带')).toBeVisible()
+    expect(document.querySelector('.knowledge-region-index')).toBeNull()
     expect(screen.getByTestId('knowledge-region-east-asia')).toBeVisible()
     expect(screen.queryByText('尚未挑战')).toBeNull()
     expect(document.querySelector('.knowledge-map-summary')).toBeNull()

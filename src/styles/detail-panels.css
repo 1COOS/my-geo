@@ -49,7 +49,6 @@
 
 .geography-learning-heading p {
   color: #d291ff;
-  font-size: 0.58rem;
   font-weight: 780;
   letter-spacing: 0.1em;
 }
@@ -64,7 +63,6 @@
   display: block;
   margin-top: 0.15rem;
   color: #91a8b8;
-  font-size: 0.64rem;
 }
 
 .geography-learning-orbit {
@@ -122,13 +120,11 @@
 
 .geography-current-reading span {
   color: #bba8ca;
-  font-size: 0.62rem;
 }
 
 .geography-current-reading strong {
   color: #fff3bd;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.72rem;
 }
 
 .geography-current-reading ul {
@@ -143,7 +139,6 @@
 .geography-current-reading li {
   padding: 0.24rem 0.4rem;
   color: #dceaf2;
-  font-size: 0.58rem;
   background: rgb(5 20 35 / 44%);
   border-radius: 999px;
 }
@@ -187,7 +182,6 @@
 .geography-reference-diagram figcaption {
   margin-top: 0.35rem;
   color: #819aaa;
-  font-size: 0.56rem;
   text-align: center;
 }
 
@@ -202,7 +196,6 @@
 .geography-line-callout span,
 .geography-line-callout small {
   color: #bda8cc;
-  font-size: 0.58rem;
 }
 
 .geography-line-callout h3,
@@ -225,8 +218,8 @@
 .geography-topic-content li,
 .geography-tip-grid li {
   color: #c7dbe6;
-  font-size: 0.68rem;
-  line-height: 1.58;
+  font-size: var(--fs-b);
+  line-height: var(--lh-b);
 }
 
 .geography-line-callout p {
@@ -241,7 +234,7 @@
 
 .geography-reference-list strong {
   overflow: hidden;
-  font-size: 0.65rem;
+  font-size: var(--fs-s);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -267,7 +260,6 @@
 
 .climate-learning-heading p {
   color: #9ed7e8;
-  font-size: 0.64rem;
   font-weight: 760;
   letter-spacing: 0.13em;
 }
@@ -280,7 +272,6 @@
 
 .climate-learning-heading span {
   color: #99afbb;
-  font-size: 0.74rem;
 }
 
 .climate-learning-heading > i {
@@ -305,7 +296,6 @@
 .climate-current-reading span,
 .climate-current-reading small {
   color: #9dc5d2;
-  font-size: 0.7rem;
 }
 
 .climate-current-reading strong {
@@ -324,8 +314,8 @@
 .climate-example-list li,
 .climate-common-mistake p {
   color: #c9dce6;
-  font-size: 0.77rem;
-  line-height: 1.68;
+  font-size: var(--fs-b);
+  line-height: var(--lh-b);
 }
 
 .climate-type-summary {
@@ -357,7 +347,6 @@
 
 .climate-fact-grid dt {
   color: #8fe3f4;
-  font-size: 0.68rem;
   font-weight: 760;
 }
 
@@ -381,7 +370,7 @@
 .climate-common-mistake strong {
   margin: 0;
   color: #e8f5bd;
-  font-size: 0.73rem;
+  font-size: var(--fs-m);
 }
 
 .climate-example-list ul {
@@ -436,7 +425,6 @@
 
 .waterbody-detail-heading p {
   color: #62dff8;
-  font-size: 0.6rem;
   font-weight: 780;
   letter-spacing: 0.12em;
 }
@@ -452,7 +440,6 @@
   margin-top: 0.14rem;
   overflow: hidden;
   color: #8caabd;
-  font-size: 0.64rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -495,8 +482,8 @@
 .waterbody-summary {
   margin: 0;
   color: #c6dce8;
-  font-size: 0.74rem;
-  line-height: 1.58;
+  font-size: var(--fs-b);
+  line-height: var(--lh-b);
 }
 
 .waterbody-tag-list {
@@ -508,7 +495,6 @@
 .waterbody-tag-list span {
   padding: 0.3rem 0.5rem;
   color: #bfeeff;
-  font-size: 0.68rem;
   background: rgb(66 181 226 / 9%);
   border: 1px solid rgb(91 207 251 / 14%);
   border-radius: 999px;
@@ -651,7 +637,7 @@
   display: block;
   margin-top: 0.08rem;
   color: #829fb1;
-  font-size: 0.56rem;
+  font-size: var(--fs-m);
 }
 
 .mountain-peak-card {
@@ -684,12 +670,11 @@
 
 .mountain-peak-card div span {
   color: #9fb1bc;
-  font-size: 0.66rem;
+  font-size: var(--fs-s);
 }
 
 .mountain-peak-card b {
   color: #ffd879;
-  font-size: 0.7rem;
   white-space: nowrap;
 }
 
@@ -713,7 +698,6 @@
 
 .country-detail-heading > div p {
   color: #68d8ff;
-  font-size: 0.58rem;
   font-weight: 750;
   letter-spacing: 0.1em;
 }
@@ -730,7 +714,6 @@
   margin-top: 0.16rem;
   overflow: hidden;
   color: #8faebe;
-  font-size: 0.64rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -740,8 +723,7 @@
   margin-top: 0.16rem !important;
   overflow: hidden;
   color: #7895a6;
-  font-size: 0.56rem;
-  line-height: 1.35;
+  line-height: 1.5;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -760,18 +742,16 @@
 }
 
 .city-list strong {
-  font-size: 0.72rem;
+  font-size: var(--fs-s);
 }
 
 .city-list small {
   margin-top: 0.08rem;
   color: #829fb1;
-  font-size: 0.6rem;
 }
 
 .city-list em {
   color: #759bad;
-  font-size: 0.58rem;
   font-style: normal;
 }
 
@@ -796,7 +776,6 @@
 
 .city-detail-heading > div p {
   color: #67d9ff;
-  font-size: 0.58rem;
   font-weight: 760;
   letter-spacing: 0.1em;
 }
@@ -812,7 +791,6 @@
   margin-top: 0.16rem;
   overflow: hidden;
   color: #8faebe;
-  font-size: 0.62rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -845,7 +823,6 @@
 .detail-facts-grid dt,
 .city-detail-facts dt {
   color: #7393a5;
-  font-size: 0.55rem;
   font-weight: 700;
 }
 
@@ -853,8 +830,8 @@
 .city-detail-facts dd {
   margin: 0.22rem 0 0;
   color: #e2f3fa;
-  font-size: 0.7rem;
-  line-height: 1.38;
+  font-size: var(--fs-s);
+  line-height: 1.5;
 }
 
 .detail-facts-grid dd > strong,
@@ -870,7 +847,7 @@
 .detail-value-stack small {
   margin-top: 0.08rem;
   color: #829fb1;
-  font-size: 0.56rem;
+  font-size: var(--fs-m);
 }
 
 .detail-value-stack {
@@ -890,7 +867,6 @@
 .city-reason-list li {
   padding: 0.34rem 0.5rem;
   color: #d7f2fc;
-  font-size: 0.61rem;
   background: rgb(77 207 255 / 9%);
   border: 1px solid rgb(111 218 255 / 13%);
   border-radius: 999px;
@@ -906,15 +882,14 @@
 
 .country-data-list strong {
   color: #e1eff7;
-  font-size: 0.67rem;
-  line-height: 1.32;
+  font-size: var(--fs-s);
+  line-height: 1.5;
 }
 
 .country-data-list small {
   margin-top: 0.06rem;
   color: #829fb1;
-  font-size: 0.55rem;
-  line-height: 1.35;
+  line-height: 1.5;
 }
 
 .country-border-group + .country-border-group {
@@ -925,7 +900,6 @@
   display: block;
   margin-bottom: 0.3rem;
   color: #829fb1;
-  font-size: 0.61rem;
 }
 
 .country-border-list,
@@ -943,7 +917,6 @@
   min-height: 2.75rem;
   padding: 0.32rem 0.55rem;
   color: #cfe7f2;
-  font-size: 0.65rem;
   background: rgb(91 177 215 / 8%);
   border: 1px solid rgb(121 211 250 / 11%);
   border-radius: 999px;
@@ -973,7 +946,6 @@
 
 .country-region-list small {
   color: #718b99;
-  font-size: 0.54rem;
 }
 
 .fun-fact-list {
@@ -989,7 +961,6 @@
   width: 1.35rem;
   height: 1.35rem;
   color: #0a2436;
-  font-size: 0.61rem;
   font-weight: 800;
   background: #f3cf62;
   border-radius: 50%;
@@ -1022,7 +993,6 @@
 
 .country-detail-muted {
   color: #9bb1bf;
-  font-size: 0.75rem;
 }
 
 .mountain-peak-marker-shape,
@@ -1122,7 +1092,6 @@
 
 .country-detail-label {
   margin: 0 0 0.42rem;
-  font-size: 0.59rem;
   color: var(--atlas-text-muted);
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -1248,7 +1217,6 @@
 .city-detail-back {
   padding: 0.35rem 0.65rem;
   margin: -0.2rem 3rem 0.55rem 0;
-  font-size: 0.68rem;
   cursor: pointer;
   min-height: 2.75rem;
   color: var(--atlas-accent);
@@ -1316,8 +1284,8 @@
 
 .fun-fact-list p {
   margin: 0;
-  font-size: 0.7rem;
-  line-height: 1.45;
+  font-size: var(--fs-b);
+  line-height: var(--lh-b);
   color: var(--atlas-text-secondary);
 }
 
@@ -1328,7 +1296,7 @@
   justify-content: center;
   width: 100%;
   padding: 0.35rem 0.5rem;
-  font-size: 0.62rem;
+  font-size: var(--fs-m);
   cursor: pointer;
   min-height: 2.75rem;
   margin-top: 0.35rem;
@@ -1392,7 +1360,6 @@
   min-width: 0;
   padding: 0.48rem 0.25rem;
   overflow: hidden;
-  font-size: 0.62rem;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1463,7 +1430,6 @@
 
 .geography-reference-list small {
   overflow: hidden;
-  font-size: 0.54rem;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--atlas-text-muted);
@@ -1472,7 +1438,6 @@
 .climate-overview-link {
   padding: 0;
   margin: 0 0 0.5rem;
-  font-size: 0.68rem;
   cursor: pointer;
   background: none;
   border: 0;
@@ -1495,7 +1460,6 @@
   gap: 0.48rem;
   align-items: center;
   padding: 0.42rem 0.5rem;
-  font-size: 0.68rem;
   text-align: left;
   cursor: pointer;
   min-height: 2.75rem;
@@ -1516,7 +1480,7 @@
 
 .eyebrow {
   margin: 0 0 1rem;
-  font-size: clamp(0.73rem, 1.1vw, 0.86rem);
+  font-size: clamp(var(--fs-m), 1.1vw, 0.86rem);
   text-transform: uppercase;
   color: var(--atlas-accent);
   font-weight: 600;

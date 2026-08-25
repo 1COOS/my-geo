@@ -136,10 +136,16 @@ describe('ExplorePage', () => {
     expect(
       within(card).getByRole('heading', { name: '地球经纬线' }),
     ).toBeInTheDocument()
+    const categories = within(card).getByLabelText('地球经纬线分类')
     expect(
-      within(card).getByRole('button', { name: '经度基准' }),
-    ).toHaveAttribute('aria-current', 'page')
-    expect(within(card).getByLabelText('经度基准重点线')).toBeInTheDocument()
+      within(categories).getAllByRole('heading', { level: 3 }),
+    ).toHaveLength(4)
+    expect(within(card).getByLabelText('经度基准经纬线')).toHaveAttribute(
+      'aria-current',
+      'true',
+    )
+    expect(within(categories).getAllByRole('button')).toHaveLength(13)
+    expect(within(card).queryByText(/条重点线/)).toBeNull()
     expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
       showGeographyLearningLayer: true,
       selectedGeographyTopicId: 'grid-reading',
@@ -726,9 +732,13 @@ describe('ExplorePage', () => {
     expect(
       within(card).getByRole('heading', { name: '地球经纬线' }),
     ).toBeInTheDocument()
-    expect(within(card).getByLabelText('地球经纬线用途')).toBeInTheDocument()
-    expect(within(card).getByLabelText('经度基准重点线')).toBeInTheDocument()
-    expect(within(card).getAllByRole('button')).toHaveLength(7)
+    const categories = within(card).getByLabelText('地球经纬线分类')
+    expect(
+      within(categories).getAllByRole('heading', { level: 3 }),
+    ).toHaveLength(4)
+    expect(within(categories).getAllByRole('button')).toHaveLength(13)
+    expect(within(card).getAllByRole('button')).toHaveLength(14)
+    expect(within(card).queryByText(/条重点线/)).toBeNull()
     expect(
       within(card).queryByText(/用纬线和经线为地球表面建立坐标/),
     ).toBeNull()
@@ -754,8 +764,6 @@ describe('ExplorePage', () => {
       '温带与寒带分界线上',
     )
 
-    await user.click(within(card).getByRole('button', { name: '五带界线' }))
-    expect(within(card).getByLabelText('五带分界线重点线')).toBeInTheDocument()
     await user.click(within(card).getByRole('button', { name: /北回归线/ }))
     expect(
       within(card).getByRole('heading', { name: '北回归线' }),
@@ -784,9 +792,10 @@ describe('ExplorePage', () => {
     expect(
       within(card).getByRole('heading', { name: '地球经纬线' }),
     ).toBeInTheDocument()
-    expect(
-      within(card).getByRole('button', { name: '五带界线' }),
-    ).toHaveAttribute('aria-current', 'page')
+    expect(within(card).getByLabelText('五带分界线经纬线')).toHaveAttribute(
+      'aria-current',
+      'true',
+    )
     expect(getProps()).toMatchObject({
       selectedGeographyTopicId: 'earth-zones',
       selectedReferenceLineId: null,

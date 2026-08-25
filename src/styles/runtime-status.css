@@ -18,7 +18,7 @@
 .geometry-resource-status,
 .knowledge-persistence-status {
   color: var(--atlas-text-secondary);
-  font-size: 0.72rem;
+  font-size: var(--fs-m);
 }
 
 .experience-persistence-status {
