@@ -1346,43 +1346,6 @@
   box-shadow: none;
 }
 
-.geography-topic-nav {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: 1rem;
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid var(--atlas-border);
-  border-radius: var(--atlas-radius-control);
-}
-
-.geography-topic-nav button {
-  min-width: 0;
-  padding: 0.48rem 0.25rem;
-  overflow: hidden;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  min-height: 2.75rem;
-  color: var(--atlas-text-secondary);
-  background: var(--atlas-panel-muted);
-  border: 0;
-  border-right: 1px solid var(--atlas-border);
-  border-radius: 0;
-}
-
-.geography-topic-nav button:last-child {
-  border-right: 0;
-}
-
-.geography-topic-nav button.is-active {
-  border-color: rgb(210 145 255 / 38%);
-  color: var(--atlas-text);
-  background: var(--atlas-panel-raised);
-  box-shadow: inset 0 -2px var(--atlas-accent);
-}
-
 .geography-reference-diagram rect {
   fill: var(--atlas-panel-muted);
   stroke: var(--atlas-border);

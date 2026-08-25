@@ -1,14 +1,5 @@
-import {
-  formatReferenceLineCoordinate,
-  geographyTopics,
-  getGeographyTopic,
-  getGeographyTopicReferenceLines,
-  getReferenceLine,
-} from '../../data/geographyLearning'
-import type {
-  GeographyTopicId,
-  ReferenceLineId,
-} from '../../data/geographyLearningSchema'
+import { geographyTopics } from '../../data/geographyLearning'
+import type { GeographyTopicId } from '../../data/geographyLearningSchema'
 
 type GeographyTopicNavProps = {
   topicId: GeographyTopicId
@@ -22,98 +13,23 @@ export function GeographyTopicNav({
   label = '地球经纬线用途',
 }: GeographyTopicNavProps) {
   return (
-    <nav className="geography-topic-nav" aria-label={label}>
+    <div
+      className="knowledge-continent-tabs knowledge-earth-topic-tabs"
+      role="tablist"
+      aria-label={label}
+    >
       {geographyTopics.map((topic) => (
         <button
           key={topic.id}
           type="button"
-          className={topic.id === topicId ? 'is-active' : undefined}
-          aria-current={topic.id === topicId ? 'page' : undefined}
+          role="tab"
+          aria-selected={topic.id === topicId}
           onClick={() => onSelectTopic(topic.id)}
         >
-          {topic.shortName.zh}
+          <strong>{topic.shortName.zh}</strong>
         </button>
       ))}
-    </nav>
-  )
-}
-
-type GeographyLessonSectionsProps = {
-  topicId: GeographyTopicId
-  referenceLineId: ReferenceLineId | null
-  onSelectReferenceLine: (referenceLineId: ReferenceLineId) => void
-}
-
-export function GeographyLessonSections({
-  topicId,
-  referenceLineId,
-  onSelectReferenceLine,
-}: GeographyLessonSectionsProps) {
-  const topic = getGeographyTopic(topicId)!
-  const referenceLine = getReferenceLine(referenceLineId)
-  const topicLines = getGeographyTopicReferenceLines(topicId)
-
-  return (
-    <>
-      {referenceLine ? (
-        <section className="geography-line-callout" aria-label="当前参考线">
-          <span>{formatReferenceLineCoordinate(referenceLine)}</span>
-          <h3>{referenceLine.name.zh}</h3>
-          <small>{referenceLine.name.en}</small>
-          <p>{referenceLine.explanation}</p>
-        </section>
-      ) : null}
-
-      <section className="country-detail-section geography-topic-content">
-        <p className="country-detail-label">核心规则</p>
-        <p>{topic.summary}</p>
-        <ol>
-          {topic.rules.map((rule) => (
-            <li key={rule}>{rule}</li>
-          ))}
-        </ol>
-      </section>
-
-      {topicLines.length > 0 ? (
-        <section className="country-detail-section">
-          <p className="country-detail-label">本组重点线</p>
-          <div className="geography-reference-list">
-            {topicLines.map((line) => (
-              <button
-                key={line.id}
-                type="button"
-                className={
-                  line.id === referenceLineId ? 'is-active' : undefined
-                }
-                onClick={() => onSelectReferenceLine(line.id)}
-              >
-                <strong>{line.name.zh}</strong>
-                <small>{formatReferenceLineCoordinate(line)}</small>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="country-detail-section geography-tip-grid">
-        <div>
-          <p className="country-detail-label">容易混淆</p>
-          <ul>
-            {topic.commonMistakes.map((mistake) => (
-              <li key={mistake}>{mistake}</li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <p className="country-detail-label">判读示例</p>
-          <ul>
-            {topic.examples.map((example) => (
-              <li key={example}>{example}</li>
-            ))}
-          </ul>
-        </div>
-      </section>
-    </>
+    </div>
   )
 }
 

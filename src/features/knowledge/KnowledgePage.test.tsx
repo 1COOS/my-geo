@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import { KnowledgeChallengePage } from './KnowledgeChallengePage'
@@ -14,6 +14,11 @@ function getMapCountryPath(countryCode: string) {
   )
   expect(path).not.toBeNull()
   return path!
+}
+
+function LocationProbe() {
+  const location = useLocation()
+  return <output data-testid="location-search">{location.search}</output>
 }
 
 describe('knowledge pages', () => {
@@ -97,6 +102,7 @@ describe('knowledge pages', () => {
         <Routes>
           <Route path="/knowledge/earth" element={<KnowledgeEarthPage />} />
         </Routes>
+        <LocationProbe />
       </MemoryRouter>,
     )
 
@@ -106,16 +112,23 @@ describe('knowledge pages', () => {
     expect(screen.getByLabelText('地球知识范围')).toHaveTextContent(
       '4类用途13条参考线',
     )
-    expect(screen.getByRole('button', { name: '半球界线' })).toHaveAttribute(
-      'aria-current',
-      'page',
+    expect(screen.getByRole('tab', { name: '半球界线' })).toHaveAttribute(
+      'aria-selected',
+      'true',
     )
-    expect(screen.getByLabelText('当前参考线')).toHaveTextContent(
-      '0°赤道Equator',
-    )
+    const referenceLines = screen.getByLabelText('重点经纬线')
+    expect(within(referenceLines).getAllByRole('button')).toHaveLength(3)
     expect(
-      screen.getByRole('link', { name: /在3D地球中观察/ }),
-    ).toHaveAttribute('href', '/explore?geography=hemispheres&line=equator')
+      within(referenceLines).getByRole('button', { name: '赤道0°' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByText('核心规则')).toBeNull()
+    expect(screen.queryByText('容易混淆')).toBeNull()
+    expect(screen.queryByText('判读示例')).toBeNull()
+    expect(screen.queryByRole('link', { name: /在3D地球中观察/ })).toBeNull()
+    expect(document.querySelector('.knowledge-earth-lesson')).toBeNull()
+    expect(screen.getByTestId('location-search')).toHaveTextContent(
+      '?topic=hemispheres&line=equator',
+    )
     expect(screen.getByText('0.0° · 25.0°E')).toBeVisible()
 
     const map = screen.getByTestId('knowledge-earth-map')
@@ -123,16 +136,42 @@ describe('knowledge pages', () => {
     await user.keyboard('{ArrowDown}')
     expect(screen.getByText('5.0°S · 25.0°E')).toBeVisible()
 
-    await user.click(screen.getByRole('button', { name: '纬度分区' }))
-    expect(screen.queryByLabelText('当前参考线')).toBeNull()
-    await user.click(screen.getByRole('button', { name: '北纬30°线30°N' }))
-    expect(screen.getByLabelText('当前参考线')).toHaveTextContent('北纬30°线')
-    expect(
-      screen.getByRole('link', { name: /在3D地球中观察/ }),
-    ).toHaveAttribute(
-      'href',
-      '/explore?geography=latitude-zones&line=north-low-middle-boundary',
+    await user.click(screen.getByRole('tab', { name: '经度基准' }))
+    expect(within(referenceLines).getAllByRole('button')).toHaveLength(2)
+    await user.click(screen.getByRole('tab', { name: '半球界线' }))
+    expect(within(referenceLines).getAllByRole('button')).toHaveLength(3)
+    await user.click(screen.getByRole('tab', { name: '纬度分区' }))
+    expect(within(referenceLines).getAllByRole('button')).toHaveLength(4)
+    expect(screen.getByTestId('location-search')).toHaveTextContent(
+      '?topic=latitude-zones',
     )
+    expect(
+      within(referenceLines).getByRole('button', { name: '北纬30°线30°N' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    await user.click(
+      within(referenceLines).getByRole('button', {
+        name: '北纬30°线30°N',
+      }),
+    )
+    expect(
+      within(referenceLines).getByRole('button', { name: '北纬30°线30°N' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('location-search')).toHaveTextContent(
+      '?topic=latitude-zones&line=north-low-middle-boundary',
+    )
+    await user.click(screen.getByRole('tab', { name: '五带界线' }))
+    expect(within(referenceLines).getAllByRole('button')).toHaveLength(4)
+    await user.click(
+      screen.getByRole('button', {
+        name: /选择南极圈，南极圈 66.5°S/,
+      }),
+    )
+    expect(screen.getByTestId('location-search')).toHaveTextContent(
+      '?topic=earth-zones&line=antarctic-circle',
+    )
+    expect(
+      within(referenceLines).getByRole('button', { name: '南极圈66.5°S' }),
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('falls back to the default earth chapter for invalid URL state', () => {
@@ -146,14 +185,15 @@ describe('knowledge pages', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('button', { name: '经度基准' })).toHaveAttribute(
-      'aria-current',
-      'page',
+    expect(screen.getByRole('tab', { name: '经度基准' })).toHaveAttribute(
+      'aria-selected',
+      'true',
     )
-    expect(screen.queryByLabelText('当前参考线')).toBeNull()
     expect(
-      screen.getByRole('link', { name: /在3D地球中观察/ }),
-    ).toHaveAttribute('href', '/explore?geography=grid-reading')
+      within(screen.getByLabelText('重点经纬线')).getAllByRole('button'),
+    ).toHaveLength(2)
+    expect(screen.queryByText('核心规则')).toBeNull()
+    expect(screen.queryByRole('link', { name: /在3D地球中观察/ })).toBeNull()
   })
 
   it('combines country card fields, opens inline detail, and follows cross-region neighbours', async () => {

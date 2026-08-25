@@ -7,10 +7,6 @@
     grid-template-columns: 1fr 1.45fr repeat(3, 1fr);
   }
 
-  .knowledge-earth-workspace {
-    grid-template-columns: minmax(23rem, 1.05fr) minmax(21rem, 0.95fr);
-  }
-
   .knowledge-country-grid {
     grid-template-columns: repeat(
       var(--knowledge-country-columns-tablet),
@@ -162,12 +158,8 @@
     padding: 0.45rem 0.55rem;
   }
 
-  .knowledge-earth-workspace {
-    grid-template-columns: minmax(22rem, 1.08fr) minmax(20rem, 0.92fr);
-  }
-
-  .knowledge-earth-lesson {
-    padding: 0.7rem;
+  .geography-reference-list.knowledge-earth-reference-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .knowledge-region-shell {
@@ -625,10 +617,6 @@
   .knowledge-continent-tabs {
     gap: 0.9rem;
     overflow-x: auto;
-  }
-
-  .knowledge-earth-workspace {
-    grid-template-columns: 1fr;
   }
 
   .knowledge-country-grid {

@@ -447,6 +447,13 @@ for (const viewport of [
       })
     }
     await page.setViewportSize(viewport)
+    await page.goto('/knowledge')
+    const countryMapCard = page.locator('.knowledge-map-card')
+    await expect(
+      countryMapCard.locator('.knowledge-region-map-countries path').first(),
+    ).toBeVisible()
+    const countryMapBox = await countryMapCard.boundingBox()
+
     await page.goto('/knowledge/earth?topic=hemispheres&line=equator')
 
     await expect(
@@ -454,9 +461,17 @@ for (const viewport of [
     ).toBeVisible()
     await expect(page.locator('.knowledge-topic-card')).toHaveCount(5)
     await expect(
-      page.getByRole('button', { name: '半球界线', exact: true }),
-    ).toHaveAttribute('aria-current', 'page')
-    await expect(page.getByLabel('当前参考线')).toContainText('赤道')
+      page.getByRole('tab', { name: '半球界线', exact: true }),
+    ).toHaveAttribute('aria-selected', 'true')
+    const referenceLines = page.getByLabel('重点经纬线')
+    await expect(referenceLines.getByRole('button')).toHaveCount(3)
+    await expect(
+      referenceLines.getByRole('button', { name: /赤道\s*0°/ }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('.knowledge-earth-lesson')).toHaveCount(0)
+    await expect(
+      page.getByRole('link', { name: /在3D地球中观察/ }),
+    ).toHaveCount(0)
     const map = page.getByTestId('knowledge-earth-map')
     await expect(map).toBeVisible()
 
@@ -467,39 +482,79 @@ for (const viewport of [
     ).toHaveText('0.0° · 30.0°E')
 
     const geometry = await page.evaluate(() => {
-      const workspace = document
-        .querySelector('.knowledge-earth-workspace')!
-        .getBoundingClientRect()
       const mapCard = document
         .querySelector('.knowledge-earth-map-card')!
         .getBoundingClientRect()
-      const lesson = document
-        .querySelector('.knowledge-earth-lesson')!
+      const map = document
+        .querySelector('.knowledge-earth-map')!
         .getBoundingClientRect()
+      const heading = document
+        .querySelector('.knowledge-earth-map-heading')!
+        .getBoundingClientRect()
+      const lineButtons = Array.from(
+        document.querySelectorAll('.knowledge-earth-reference-grid button'),
+      ).map((button) => button.getBoundingClientRect())
+      const tablist = document.querySelector('.knowledge-earth-topic-tabs')!
+      const tab = tablist.querySelector('button')!
       return {
-        workspaceWidth: workspace.width,
-        mapWidth: mapCard.width,
-        lessonWidth: lesson.width,
+        mapCard: {
+          x: mapCard.x,
+          y: mapCard.y,
+          width: mapCard.width,
+          height: mapCard.height,
+        },
+        map: { x: map.x, y: map.y, width: map.width, height: map.height },
+        heading: {
+          x: heading.x,
+          y: heading.y,
+          right: heading.right,
+          bottom: heading.bottom,
+        },
+        firstRowLineCount: lineButtons.filter(
+          (button) => Math.abs(button.y - lineButtons[0].y) < 1,
+        ).length,
+        tablistBorderBottomWidth: getComputedStyle(tablist).borderBottomWidth,
+        tabDisplay: getComputedStyle(tab).display,
+        tabFontSize: getComputedStyle(tab.querySelector('strong')!).fontSize,
         pageOverflows:
           document.documentElement.scrollWidth >
           document.documentElement.clientWidth,
       }
     })
-    expect(geometry.workspaceWidth).toBeGreaterThan(0)
-    expect(geometry.mapWidth).toBeGreaterThan(0)
-    expect(geometry.lessonWidth).toBeGreaterThan(0)
+    expect(countryMapBox).not.toBeNull()
+    expect(geometry.mapCard.width).toBeCloseTo(countryMapBox!.width, 0)
+    expect(geometry.mapCard.width / geometry.mapCard.height).toBeCloseTo(
+      720 / 340,
+      2,
+    )
+    expect(geometry.map.x).toBeCloseTo(geometry.mapCard.x + 1, 0)
+    expect(geometry.map.y).toBeCloseTo(geometry.mapCard.y + 1, 0)
+    expect(geometry.map.width).toBeCloseTo(geometry.mapCard.width - 2, 0)
+    expect(geometry.map.height).toBeCloseTo(geometry.mapCard.height - 2, 0)
+    expect(geometry.heading.x).toBeGreaterThanOrEqual(geometry.mapCard.x)
+    expect(geometry.heading.y).toBeGreaterThanOrEqual(geometry.mapCard.y)
+    expect(geometry.heading.right).toBeLessThanOrEqual(
+      geometry.mapCard.x + geometry.mapCard.width,
+    )
+    expect(geometry.heading.bottom).toBeLessThanOrEqual(
+      geometry.mapCard.y + geometry.mapCard.height,
+    )
+    expect(geometry.firstRowLineCount).toBe(viewport.height <= 520 ? 2 : 3)
+    expect(geometry.tablistBorderBottomWidth).toBe('0px')
+    expect(geometry.tabDisplay).toBe('flex')
+    expect(geometry.tabFontSize).toBe('15px')
     expect(geometry.pageOverflows).toBe(false)
   })
 }
 
-test('restores earth chapter state and opens the matching 3D lesson', async ({
+test('restores earth chapter state and synchronizes the map with the line list', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/knowledge/earth')
-  await page.getByRole('button', { name: '五带界线', exact: true }).click()
+  await page.getByRole('tab', { name: '五带界线', exact: true }).click()
   await page
-    .locator('.knowledge-earth-lesson')
+    .getByLabel('重点经纬线')
     .getByRole('button', { name: '北回归线 23.5°N' })
     .click()
   await expect(page).toHaveURL(
@@ -507,24 +562,38 @@ test('restores earth chapter state and opens the matching 3D lesson', async ({
   )
 
   await page.reload()
-  await expect(page.getByLabel('当前参考线')).toContainText('北回归线')
-  const globeLink = page.getByRole('link', { name: /在3D地球中观察/ })
-  await expect(globeLink).toHaveAttribute(
-    'href',
-    '/explore?geography=earth-zones&line=tropic-of-cancer',
-  )
-  await globeLink.click()
-  await expect(page).toHaveURL(
-    /\/explore\?geography=earth-zones&line=tropic-of-cancer$/,
-  )
-  const geographyCard = page.getByRole('complementary', {
-    name: '地球经纬线知识卡',
-  })
-  await expect(geographyCard).toBeVisible()
   await expect(
-    geographyCard.getByRole('heading', { name: '北回归线' }),
-  ).toBeVisible()
-  await expect(geographyCard.getByText('23.5°N', { exact: true })).toBeVisible()
+    page
+      .getByLabel('重点经纬线')
+      .getByRole('button', { name: '北回归线 23.5°N' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    page.locator(
+      '.knowledge-earth-map-reference-lines [data-reference-line-id="tropic-of-cancer"]',
+    ),
+  ).toHaveClass(/is-selected/)
+  await expect(page.locator('.knowledge-earth-map-heading strong')).toHaveText(
+    '23.5°N · 105.0°E',
+  )
+
+  await page
+    .getByRole('button', { name: /选择南极圈，南极圈 66.5°S/ })
+    .press('Enter')
+  await expect(page).toHaveURL(
+    /\/knowledge\/earth\?topic=earth-zones&line=antarctic-circle$/,
+  )
+  await expect(
+    page
+      .getByLabel('重点经纬线')
+      .getByRole('button', { name: '南极圈 66.5°S' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.knowledge-earth-map-heading strong')).toHaveText(
+    '66.5°S · 30.0°E',
+  )
+  await expect(page.getByRole('link', { name: /在3D地球中观察/ })).toHaveCount(
+    0,
+  )
+  await expect(page.locator('.knowledge-earth-lesson')).toHaveCount(0)
 })
 
 test('uses the contained flag contract across learning and exploration surfaces', async ({

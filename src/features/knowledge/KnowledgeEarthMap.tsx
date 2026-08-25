@@ -14,7 +14,6 @@ import type { GeoPosition } from '../../shared/types/geo'
 import {
   getBoundaryPath,
   invertMiniMapPoint,
-  MINI_MAP_HEIGHT,
   MINI_MAP_KEYBOARD_FAST_STEP,
   MINI_MAP_KEYBOARD_STEP,
   MINI_MAP_WIDTH,
@@ -31,6 +30,10 @@ type KnowledgeEarthMapProps = {
 }
 
 const INITIAL_POSITION = getCountry('CN')!.center
+const EARTH_MAP_VIEWBOX_TOP = 5
+const EARTH_MAP_VIEWBOX_HEIGHT = 170
+const EARTH_MAP_VIEWBOX_BOTTOM =
+  EARTH_MAP_VIEWBOX_TOP + EARTH_MAP_VIEWBOX_HEIGHT
 
 export function KnowledgeEarthMap({
   topicId,
@@ -59,7 +62,8 @@ export function KnowledgeEarthMap({
     const rect = event.currentTarget.getBoundingClientRect()
     const nextPosition = invertMiniMapPoint(
       ((event.clientX - rect.left) / rect.width) * MINI_MAP_WIDTH,
-      ((event.clientY - rect.top) / rect.height) * MINI_MAP_HEIGHT,
+      EARTH_MAP_VIEWBOX_TOP +
+        ((event.clientY - rect.top) / rect.height) * EARTH_MAP_VIEWBOX_HEIGHT,
     )
     if (nextPosition) onPositionChange(nextPosition)
   }
@@ -113,7 +117,7 @@ export function KnowledgeEarthMap({
       <svg
         className="knowledge-earth-map"
         data-testid="knowledge-earth-map"
-        viewBox={`0 0 ${MINI_MAP_WIDTH} ${MINI_MAP_HEIGHT}`}
+        viewBox={`0 ${EARTH_MAP_VIEWBOX_TOP} ${MINI_MAP_WIDTH} ${EARTH_MAP_VIEWBOX_HEIGHT}`}
         role="application"
         aria-label="世界经纬定位图。点击地图移动定位点；使用方向键移动5度，按住Shift移动15度，Home返回中国。"
         tabIndex={0}
@@ -122,8 +126,9 @@ export function KnowledgeEarthMap({
       >
         <rect
           className="knowledge-earth-map-ocean"
+          y={EARTH_MAP_VIEWBOX_TOP}
           width={MINI_MAP_WIDTH}
-          height={MINI_MAP_HEIGHT}
+          height={EARTH_MAP_VIEWBOX_HEIGHT}
           fill="#0b242b"
         />
         <g className="knowledge-earth-map-grid" aria-hidden="true">
@@ -132,8 +137,8 @@ export function KnowledgeEarthMap({
               key={`x-${x}`}
               x1={x}
               x2={x}
-              y1={0}
-              y2={180}
+              y1={EARTH_MAP_VIEWBOX_TOP}
+              y2={EARTH_MAP_VIEWBOX_BOTTOM}
               stroke="rgb(139 170 176 / 14%)"
               strokeWidth="0.45"
             />
@@ -174,7 +179,12 @@ export function KnowledgeEarthMap({
             const lineProps =
               line.orientation === 'latitude'
                 ? { x1: 0, x2: MINI_MAP_WIDTH, y1: point.y, y2: point.y }
-                : { x1: point.x, x2: point.x, y1: 0, y2: MINI_MAP_HEIGHT }
+                : {
+                    x1: point.x,
+                    x2: point.x,
+                    y1: EARTH_MAP_VIEWBOX_TOP,
+                    y2: EARTH_MAP_VIEWBOX_BOTTOM,
+                  }
 
             return (
               <g
