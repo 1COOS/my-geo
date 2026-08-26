@@ -18,7 +18,6 @@ import { CountryFlag } from '../../shared/components/CountryFlag'
 import { KnowledgeCountryDetail } from './KnowledgeCountryDetail'
 import { KnowledgeRegionMap } from './KnowledgeRegionMap'
 import { KnowledgeRegionOverviewCard } from './KnowledgeRegionOverviewCard'
-import { useKnowledgeProgress } from './useKnowledgeProgress'
 
 type CountryCardField = 'country' | 'flag' | 'capital'
 
@@ -39,7 +38,6 @@ export function KnowledgeRegionPage() {
   const [visibleCardFields, setVisibleCardFields] = useState<
     Set<CountryCardField>
   >(new Set<CountryCardField>(['flag']))
-  const { persistenceStatus } = useKnowledgeProgress()
 
   const regionCountries = useMemo(
     () => (region ? getCountriesForKnowledgeRegion(region.id) : []),
@@ -145,14 +143,6 @@ export function KnowledgeRegionPage() {
                 )
               })}
             </div>
-            {persistenceStatus === 'memory-only' ||
-            persistenceStatus === 'error' ? (
-              <output className="knowledge-persistence-status" role="status">
-                {persistenceStatus === 'memory-only'
-                  ? '当前浏览器无法使用本机存储，学习进度不会保留。'
-                  : '读取本机学习进度失败，当前显示安全默认值。'}
-              </output>
-            ) : null}
           </div>
 
           <div className="knowledge-country-grid" style={countryGridStyle}>

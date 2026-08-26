@@ -1,11 +1,9 @@
 import type { Country } from '../../data/countrySchema'
 import {
-  getCountriesForKnowledgeRegion,
-  getKnowledgeRegion,
-  knowledgeRegions,
-  type KnowledgeRegionId,
-} from '../../data/knowledgeRegions'
-import { countries } from '../../data/countries'
+  getQuestionPoolCountries,
+  type QuestionDifficulty,
+} from '../../data/countryQuestionFamiliarity'
+import type { KnowledgeContinentId } from '../../data/knowledgeRegions'
 
 export type KnowledgeQuestionKind =
   'flag-to-country' | 'country-to-flag' | 'country-to-capital'
@@ -20,6 +18,8 @@ export type KnowledgeQuestion = {
   id: string
   kind: KnowledgeQuestionKind
   prompt: string
+  continentId: KnowledgeContinentId
+  difficulty: QuestionDifficulty
   countryCode: string
   subjectFlagAsset?: string
   correctOptionId: string
@@ -48,20 +48,6 @@ function shuffle<T>(items: T[], random: RandomSource) {
 
 function getCapitalLabel(country: Country) {
   return country.capitals.map((capital) => capital.name.zh).join('、')
-}
-
-function getDistractorPool(
-  regionId: KnowledgeRegionId,
-  regionCountries: Country[],
-) {
-  if (regionCountries.length >= 4) return regionCountries
-  const continentId = getKnowledgeRegion(regionId)!.continentId
-  const continentCodes = new Set(
-    knowledgeRegions
-      .filter((region) => region.continentId === continentId)
-      .flatMap((region) => region.countryCodes),
-  )
-  return countries.filter((country) => continentCodes.has(country.code))
 }
 
 function buildOptions(
@@ -105,23 +91,20 @@ function buildOptions(
   )
 }
 
-export function getChallengeQuestionCount(countryCount: number) {
-  return Math.min(10, Math.max(4, countryCount * 2))
-}
+export const knowledgeChallengeQuestionCount = 10
 
 export function createKnowledgeChallenge(
-  regionId: KnowledgeRegionId,
+  continentId: KnowledgeContinentId,
+  difficulty: QuestionDifficulty,
   random: RandomSource = Math.random,
 ) {
-  const regionCountries = getCountriesForKnowledgeRegion(regionId)
-  const questionCount = getChallengeQuestionCount(regionCountries.length)
-  const countrySequence = shuffle(regionCountries, random)
-  const distractorPool = getDistractorPool(regionId, regionCountries)
+  const questionPool = getQuestionPoolCountries(continentId, difficulty)
+  const countrySequence = shuffle(questionPool, random)
 
-  return Array.from({ length: questionCount }, (_, index) => {
+  return Array.from({ length: knowledgeChallengeQuestionCount }, (_, index) => {
     const country = countrySequence[index % countrySequence.length]
     const kind = questionKinds[index % questionKinds.length]
-    const options = buildOptions(country, kind, distractorPool, random)
+    const options = buildOptions(country, kind, questionPool, random)
     const prompt =
       kind === 'flag-to-country'
         ? '这面国旗属于哪个国家？'
@@ -130,9 +113,11 @@ export function createKnowledgeChallenge(
           : `${country.name.zh}的首都是哪里？`
 
     return {
-      id: `${regionId}:${index}:${kind}:${country.code}`,
+      id: `${continentId}:${difficulty}:${index}:${kind}:${country.code}`,
       kind,
       prompt,
+      continentId,
+      difficulty,
       countryCode: country.code,
       subjectFlagAsset:
         kind === 'flag-to-country' ? country.flagAsset : undefined,

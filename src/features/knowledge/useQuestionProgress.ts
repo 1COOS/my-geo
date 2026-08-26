@@ -1,24 +1,24 @@
 import { useEffect, useState } from 'react'
 
 import {
-  loadKnowledgeProgress,
-  type KnowledgeRegionProgress,
+  loadQuestionProgress,
   type PersistenceStatus,
+  type QuestionChallengeProgress,
 } from '../../storage/database'
 
-export function useKnowledgeProgress() {
-  const [progressByRegion, setProgressByRegion] = useState<
-    Map<string, KnowledgeRegionProgress>
+export function useQuestionProgress() {
+  const [progressByChallenge, setProgressByChallenge] = useState<
+    Map<string, QuestionChallengeProgress>
   >(new Map())
   const [persistenceStatus, setPersistenceStatus] =
     useState<PersistenceStatus>('idle')
 
   useEffect(() => {
     let active = true
-    void loadKnowledgeProgress().then((result) => {
+    void loadQuestionProgress().then((result) => {
       if (!active) return
-      setProgressByRegion(
-        new Map(result.value.map((item) => [item.regionId, item])),
+      setProgressByChallenge(
+        new Map(result.value.map((item) => [item.challengeId, item])),
       )
       setPersistenceStatus(result.status === 'saved' ? 'idle' : result.status)
     })
@@ -27,5 +27,5 @@ export function useKnowledgeProgress() {
     }
   }, [])
 
-  return { progressByRegion, persistenceStatus }
+  return { progressByChallenge, persistenceStatus }
 }

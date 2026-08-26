@@ -79,10 +79,10 @@ function installFullscreenHarness({
   }
 }
 
-function renderNavigation() {
+function renderNavigation(initialEntry = '/explore') {
   return render(
     <Tooltip.Provider delayDuration={0}>
-      <MemoryRouter initialEntries={['/explore']}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <AppNavigation />
       </MemoryRouter>
     </Tooltip.Provider>,
@@ -106,6 +106,26 @@ describe('AppNavigation brand', () => {
     expect(logo).toHaveAttribute('src', '/icons/my-geo-mark.svg')
     expect(logo).toHaveAttribute('alt', '')
     expect(brand).not.toHaveTextContent('M')
+  })
+})
+
+describe('AppNavigation routes', () => {
+  it('places the question hub below knowledge and keeps its descendants active', () => {
+    installFullscreenHarness({ enabled: false })
+    renderNavigation('/questions/asia/easy')
+
+    const links = screen.getAllByRole('link')
+    expect(links.map((link) => link.textContent)).toEqual([
+      '探索',
+      '知识',
+      '问答',
+    ])
+    expect(screen.getByRole('link', { name: '知识问答' })).toHaveClass(
+      'is-active',
+    )
+    expect(screen.getByRole('link', { name: '知识体系' })).not.toHaveClass(
+      'is-active',
+    )
   })
 })
 

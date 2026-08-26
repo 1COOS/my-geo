@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
-import { KnowledgeChallengePage } from './KnowledgeChallengePage'
 import { KnowledgeEarthLineDetailPage } from './KnowledgeEarthLineDetailPage'
 import { KnowledgeEarthPage } from './KnowledgeEarthPage'
 import { KnowledgePage } from './KnowledgePage'
@@ -571,38 +570,5 @@ describe('knowledge pages', () => {
     expect(
       within(capitalField).getByText('Pretoria / Bloemfontein / Cape Town'),
     ).toBeVisible()
-  })
-
-  it('gives immediate feedback in the mixed regional challenge', async () => {
-    const user = userEvent.setup()
-    render(
-      <MemoryRouter
-        initialEntries={['/knowledge/countries/east-asia/challenge']}
-      >
-        <Routes>
-          <Route
-            path="/knowledge/countries/:regionId/challenge"
-            element={<KnowledgeChallengePage />}
-          />
-        </Routes>
-      </MemoryRouter>,
-    )
-
-    expect(screen.getByText('1 / 10')).toBeVisible()
-    const questionFlag = screen.getByAltText('待识别的国旗')
-    expect(questionFlag).toHaveClass('country-flag-image')
-    expect(questionFlag.parentElement).toHaveClass(
-      'country-flag-frame',
-      'knowledge-question-flag',
-    )
-    const optionButtons = screen
-      .getByRole('heading', { level: 1 })
-      .parentElement!.querySelectorAll<HTMLButtonElement>(
-        '.knowledge-question-options button',
-      )
-    expect(optionButtons).toHaveLength(4)
-    await user.click(optionButtons[0])
-    expect(screen.getByRole('button', { name: '下一题' })).toBeVisible()
-    expect(screen.getByText(/回答正确|正确答案是/)).toBeVisible()
   })
 })

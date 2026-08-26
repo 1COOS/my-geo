@@ -32,6 +32,11 @@ const KnowledgeChallengePage = lazy(async () => {
   return { default: module.KnowledgeChallengePage }
 })
 
+const KnowledgeQuestionsPage = lazy(async () => {
+  const module = await import('../features/knowledge/KnowledgeQuestionsPage')
+  return { default: module.KnowledgeQuestionsPage }
+})
+
 export function App() {
   return (
     <Tooltip.Provider delayDuration={300}>
@@ -64,6 +69,15 @@ export function App() {
                 />
                 <Route
                   path="/knowledge/countries/:regionId/challenge"
+                  element={<Navigate to="/questions" replace />}
+                />
+                <Route path="/questions" element={<KnowledgeQuestionsPage />} />
+                <Route
+                  path="/questions/countries/:regionId"
+                  element={<Navigate to="/questions" replace />}
+                />
+                <Route
+                  path="/questions/:continentId/:difficulty"
                   element={<KnowledgeChallengePage />}
                 />
                 <Route path="*" element={<Navigate to="/explore" replace />} />

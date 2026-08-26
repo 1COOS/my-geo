@@ -10,8 +10,10 @@ export const experiencePreferencesSchema = z.object({
 
 export type ExperiencePreferences = z.infer<typeof experiencePreferencesSchema>
 
-export const knowledgeRegionProgressSchema = z.object({
-  regionId: z.string().min(1),
+export const questionChallengeProgressSchema = z.object({
+  challengeId: z
+    .string()
+    .regex(/^(asia|europe|africa|americas|oceania):(easy|normal|hard)$/),
   bestScore: z.number().int().min(0).max(100),
   lastScore: z.number().int().min(0).max(100),
   attemptCount: z.number().int().nonnegative(),
@@ -19,8 +21,8 @@ export const knowledgeRegionProgressSchema = z.object({
   updatedAt: z.number().int().nonnegative(),
 })
 
-export type KnowledgeRegionProgress = z.infer<
-  typeof knowledgeRegionProgressSchema
+export type QuestionChallengeProgress = z.infer<
+  typeof questionChallengeProgressSchema
 >
 
 export type PersistenceStatus =
@@ -40,7 +42,7 @@ const defaultPreferences: ExperiencePreferences = {
 
 class MyGeoDatabase extends Dexie {
   preferences!: EntityTable<ExperiencePreferences, 'id'>
-  knowledgeProgress!: EntityTable<KnowledgeRegionProgress, 'regionId'>
+  questionProgress!: EntityTable<QuestionChallengeProgress, 'challengeId'>
 
   constructor() {
     super('my-geo')
@@ -50,6 +52,11 @@ class MyGeoDatabase extends Dexie {
     this.version(2).stores({
       preferences: 'id, updatedAt',
       knowledgeProgress: 'regionId, updatedAt, passedAt',
+    })
+    this.version(3).stores({
+      preferences: 'id, updatedAt',
+      knowledgeProgress: null,
+      questionProgress: 'challengeId, updatedAt, passedAt',
     })
   }
 }
@@ -111,15 +118,15 @@ export async function saveExperiencePreferences(
   }
 }
 
-export function mergeKnowledgeChallengeResult(
-  current: KnowledgeRegionProgress | undefined,
-  regionId: string,
+export function mergeQuestionChallengeResult(
+  current: QuestionChallengeProgress | undefined,
+  challengeId: string,
   score: number,
   now = Date.now(),
-): KnowledgeRegionProgress {
+): QuestionChallengeProgress {
   const normalizedScore = Math.min(100, Math.max(0, Math.round(score)))
   return {
-    regionId,
+    challengeId,
     bestScore: Math.max(current?.bestScore ?? 0, normalizedScore),
     lastScore: normalizedScore,
     attemptCount: (current?.attemptCount ?? 0) + 1,
@@ -128,56 +135,56 @@ export function mergeKnowledgeChallengeResult(
   }
 }
 
-export async function loadKnowledgeProgress() {
-  const table = getDatabase()?.knowledgeProgress
+export async function loadQuestionProgress() {
+  const table = getDatabase()?.questionProgress
   if (!table) {
     return {
       value: [],
       status: 'memory-only',
-    } satisfies PersistenceOutcome<KnowledgeRegionProgress[]>
+    } satisfies PersistenceOutcome<QuestionChallengeProgress[]>
   }
   try {
     const stored = await table.toArray()
     return {
       value: stored.flatMap((progress) => {
-        const parsed = knowledgeRegionProgressSchema.safeParse(progress)
+        const parsed = questionChallengeProgressSchema.safeParse(progress)
         return parsed.success ? [parsed.data] : []
       }),
       status: 'saved',
-    } satisfies PersistenceOutcome<KnowledgeRegionProgress[]>
+    } satisfies PersistenceOutcome<QuestionChallengeProgress[]>
   } catch {
     return {
       value: [],
       status: 'error',
-    } satisfies PersistenceOutcome<KnowledgeRegionProgress[]>
+    } satisfies PersistenceOutcome<QuestionChallengeProgress[]>
   }
 }
 
-export async function saveKnowledgeChallengeResult(
-  regionId: string,
+export async function saveQuestionChallengeResult(
+  challengeId: string,
   score: number,
 ) {
-  const table = getDatabase()?.knowledgeProgress
+  const table = getDatabase()?.questionProgress
   if (!table) {
-    const value = mergeKnowledgeChallengeResult(undefined, regionId, score)
+    const value = mergeQuestionChallengeResult(undefined, challengeId, score)
     return {
       value,
       status: 'memory-only',
-    } satisfies PersistenceOutcome<KnowledgeRegionProgress>
+    } satisfies PersistenceOutcome<QuestionChallengeProgress>
   }
   try {
-    const current = await table.get(regionId)
-    const next = mergeKnowledgeChallengeResult(current, regionId, score)
+    const current = await table.get(challengeId)
+    const next = mergeQuestionChallengeResult(current, challengeId, score)
     await table.put(next)
     return {
       value: next,
       status: 'saved',
-    } satisfies PersistenceOutcome<KnowledgeRegionProgress>
+    } satisfies PersistenceOutcome<QuestionChallengeProgress>
   } catch {
-    const value = mergeKnowledgeChallengeResult(undefined, regionId, score)
+    const value = mergeQuestionChallengeResult(undefined, challengeId, score)
     return {
       value,
       status: 'error',
-    } satisfies PersistenceOutcome<KnowledgeRegionProgress>
+    } satisfies PersistenceOutcome<QuestionChallengeProgress>
   }
 }

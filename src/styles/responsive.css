@@ -88,6 +88,11 @@
   .knowledge-region-card:focus-visible {
     transform: none;
   }
+
+  .knowledge-question-option:hover,
+  .knowledge-question-option:focus-visible {
+    transform: none;
+  }
   *,
   *::before,
   *::after {
@@ -200,7 +205,7 @@
   }
 
   .knowledge-question-card {
-    padding: 0.8rem 1rem;
+    padding: 0 1rem;
   }
 
   .knowledge-question-card > h1 {
@@ -218,14 +223,46 @@
   }
 
   .knowledge-question-options button {
-    min-height: 3.25rem;
+    min-height: 4.15rem;
     padding: 0.48rem;
+  }
+
+  .knowledge-question-option .country-flag-frame {
+    width: 4.75rem;
   }
 
   .knowledge-question-feedback {
     min-height: 2.8rem;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
+    margin-top: 0.3rem;
+    padding: 0.45rem 0.6rem;
+  }
+
+  .knowledge-result-actions {
+    flex-wrap: wrap;
+    margin-top: 0.7rem;
+  }
+
+  .knowledge-challenge-result {
+    padding: 0.85rem 1rem;
+  }
+
+  .knowledge-challenge-result h1 {
+    margin: 0.45rem 0;
+    font-size: 1.35rem;
+  }
+
+  .knowledge-result-score strong {
+    font-size: 3.4rem;
+  }
+
+  .knowledge-challenge-result > p,
+  .knowledge-result-progress {
+    margin-top: 0.55rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .knowledge-result-actions :is(button, a) {
+    min-height: 2.55rem;
   }
   .app-navigation {
     top: max(0.4rem, env(safe-area-inset-top));

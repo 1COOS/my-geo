@@ -25,6 +25,15 @@ function BookIcon() {
   )
 }
 
+function QuestionIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 5.5h14v10H9l-4 3z" />
+      <path d="M9.4 9a2.7 2.7 0 0 1 5.2.9c0 1.8-2.6 2-2.6 3.4M12 15.8h.01" />
+    </svg>
+  )
+}
+
 function FullscreenIcon({ active }: { active: boolean }) {
   return active ? (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -115,6 +124,16 @@ export function AppNavigation() {
       >
         <BookIcon />
         <span>知识</span>
+      </NavLink>
+      <NavLink
+        to="/questions"
+        className={({ isActive }) =>
+          isActive ? 'app-navigation-link is-active' : 'app-navigation-link'
+        }
+        aria-label="知识问答"
+      >
+        <QuestionIcon />
+        <span>问答</span>
       </NavLink>
       <FullscreenControl />
     </nav>

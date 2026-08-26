@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createKnowledgeChallenge,
-  getChallengeQuestionCount,
   getChallengeScore,
   hasPassedKnowledgeChallenge,
+  knowledgeChallengeQuestionCount,
 } from './knowledgeChallenge'
 
 function deterministicRandom() {
@@ -16,13 +16,14 @@ function deterministicRandom() {
 }
 
 describe('knowledge challenge', () => {
-  it('builds a deterministic mixed East Asia round', () => {
+  it('builds a deterministic mixed easy Asia round', () => {
     const questions = createKnowledgeChallenge(
-      'east-asia',
+      'asia',
+      'easy',
       deterministicRandom(),
     )
 
-    expect(questions).toHaveLength(10)
+    expect(questions).toHaveLength(knowledgeChallengeQuestionCount)
     expect(new Set(questions.map((question) => question.kind))).toEqual(
       new Set(['flag-to-country', 'country-to-flag', 'country-to-capital']),
     )
@@ -34,25 +35,33 @@ describe('knowledge challenge', () => {
           (option) => option.id === question.correctOptionId,
         ),
       ).toBe(true)
+      expect(question.continentId).toBe('asia')
+      expect(question.difficulty).toBe('easy')
     }
   })
 
-  it('uses same-continent distractors for a two-country region', () => {
+  it('keeps subjects and distractors inside the selected difficulty pool', () => {
     const questions = createKnowledgeChallenge(
-      'australia-new-zealand',
+      'oceania',
+      'hard',
       deterministicRandom(),
     )
+    const hardOceaniaCodes = new Set(['VU', 'PW', 'KI', 'TV', 'NR'])
 
-    expect(questions).toHaveLength(4)
+    expect(questions).toHaveLength(10)
     expect(questions.every((question) => question.options.length === 4)).toBe(
       true,
     )
+    expect(
+      questions.every(
+        (question) =>
+          hardOceaniaCodes.has(question.countryCode) &&
+          question.options.every((option) => hardOceaniaCodes.has(option.id)),
+      ),
+    ).toBe(true)
   })
 
-  it('applies adaptive question counts and the 80 percent pass mark', () => {
-    expect(getChallengeQuestionCount(2)).toBe(4)
-    expect(getChallengeQuestionCount(5)).toBe(10)
-    expect(getChallengeQuestionCount(17)).toBe(10)
+  it('uses the 80 percent pass mark', () => {
     expect(getChallengeScore(8, 10)).toBe(80)
     expect(hasPassedKnowledgeChallenge(8, 10)).toBe(true)
     expect(hasPassedKnowledgeChallenge(7, 10)).toBe(false)

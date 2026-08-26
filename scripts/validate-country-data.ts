@@ -13,6 +13,10 @@ import {
   countrySourceRegistrySchema,
 } from '../src/data/countrySchema'
 import { cityCatalogSchema } from '../src/data/citySchema'
+import {
+  countryQuestionFamiliarity,
+  questionDifficultySchema,
+} from '../src/data/countryQuestionFamiliarity'
 import { linearGeoFeatures } from '../src/data/linearGeoFeatures'
 import { mountainRanges } from '../src/data/mountainRanges'
 import { deserts } from '../src/data/deserts'
@@ -69,6 +73,22 @@ const boundaries = countryBoundariesSchema.parse(
 const cities = cityCatalogSchema.parse(
   await readJson(path.join(projectRoot, 'src/data/generated/cities.json')),
 )
+
+const questionDifficultyCountryCount = countryQuestionFamiliarity.reduce(
+  (continentTotal, definition) =>
+    continentTotal +
+    questionDifficultySchema.options.reduce(
+      (difficultyTotal, difficulty) =>
+        difficultyTotal + definition.difficulties[difficulty].length,
+      0,
+    ),
+  0,
+)
+if (questionDifficultyCountryCount !== countries.length) {
+  throw new Error(
+    `Expected ${countries.length} question difficulty assignments, received ${questionDifficultyCountryCount}`,
+  )
+}
 const sources = countrySourceRegistrySchema.parse(
   await readJson(
     path.join(projectRoot, 'src/data/generated/country-sources.json'),
@@ -660,5 +680,5 @@ for (const country of countries) {
 }
 
 console.log(
-  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${landmarks.length} landmarks, ${climateTypes.length} climate types, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} country boundaries, ${boundaries.landmasses.length} non-country landmass, and all local assets.`,
+  `Validated ${countries.length} complete country cards and question difficulty assignments, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${landmarks.length} landmarks, ${climateTypes.length} climate types, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} country boundaries, ${boundaries.landmasses.length} non-country landmass, and all local assets.`,
 )
