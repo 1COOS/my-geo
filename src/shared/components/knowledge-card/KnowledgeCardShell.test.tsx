@@ -6,6 +6,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { KnowledgeCardShell } from './KnowledgeCardShell'
 
 describe('KnowledgeCardShell', () => {
+  it('renders a non-dismissible card without a close control', () => {
+    render(
+      <KnowledgeCardShell label="常驻知识卡" identity="persistent">
+        <p>常驻内容</p>
+      </KnowledgeCardShell>,
+    )
+
+    expect(screen.getByLabelText('常驻知识卡')).toBeVisible()
+    expect(screen.getByText('常驻内容')).toBeVisible()
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
   it('applies an accent and resets the single content scroller on identity changes', () => {
     const scrollTo = vi.fn(function (
       this: HTMLElement,

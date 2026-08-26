@@ -456,6 +456,18 @@ for (const viewport of [
       })
     }
     await page.setViewportSize(viewport)
+
+    await page.goto('/knowledge/countries/east-asia?country=CN')
+    const countryDetailMap = page.locator('.knowledge-region-map-strip')
+    const countryDetailCard = page.getByLabel('中国国家学习详情')
+    await expect(countryDetailMap).toBeVisible()
+    await expect(countryDetailCard).toBeVisible()
+    await waitForKnowledgeCardSettled(countryDetailCard)
+    const [countryDetailMapBox, countryDetailCardBox] = await Promise.all([
+      countryDetailMap.boundingBox(),
+      countryDetailCard.boundingBox(),
+    ])
+
     await page.goto('/knowledge')
     const countryMapCard = page.locator('.knowledge-map-card')
     await expect(
@@ -463,7 +475,7 @@ for (const viewport of [
     ).toBeVisible()
     const countryMapBox = await countryMapCard.boundingBox()
 
-    await page.goto('/knowledge/earth?topic=hemispheres&line=equator')
+    await page.goto('/knowledge/earth?topic=hemispheres')
 
     await expect(
       page.getByRole('heading', { name: '地球', level: 1 }),
@@ -473,22 +485,88 @@ for (const viewport of [
       page.getByRole('tab', { name: '半球界线', exact: true }),
     ).toHaveAttribute('aria-selected', 'true')
     const referenceLines = page.getByLabel('重点经纬线')
-    await expect(referenceLines.getByRole('button')).toHaveCount(3)
+    await expect(referenceLines.getByRole('link')).toHaveCount(3)
     await expect(
-      referenceLines.getByRole('button', { name: /赤道\s*0°/ }),
-    ).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.locator('.knowledge-earth-lesson')).toHaveCount(0)
-    await expect(
-      page.getByRole('link', { name: /在3D地球中观察/ }),
-    ).toHaveCount(0)
+      referenceLines.getByRole('link', { name: /赤道\s*0°/ }),
+    ).toHaveAttribute('href', '/knowledge/earth/lines/equator')
+    await expect(page.getByText('当前定位')).toHaveCount(0)
+    await expect(page.getByLabel('当前位置判读')).toHaveCount(0)
+    await expect(page.locator('.knowledge-earth-map-marker')).toHaveCount(0)
     const map = page.getByTestId('knowledge-earth-map')
     await expect(map).toBeVisible()
-
-    await map.focus()
-    await page.keyboard.press('ArrowRight')
     await expect(
-      page.locator('.knowledge-earth-map-heading strong'),
-    ).toHaveText('0.0° · 30.0°E')
+      map.locator('.knowledge-earth-map-reference-lines > .is-topic-line'),
+    ).toHaveCount(3)
+    await expect(
+      map.locator('.knowledge-earth-map-reference-lines > .is-background-line'),
+    ).toHaveCount(10)
+    await expect(map.locator('.knowledge-earth-reference-label')).toHaveCount(3)
+    const coverageRegions = map.locator('[data-coverage-region-id]')
+    await expect(coverageRegions).toHaveCount(2)
+    await expect(
+      map.locator(
+        '[data-coverage-region-id="western-hemisphere"] .knowledge-earth-coverage-area',
+      ),
+    ).toHaveCount(2)
+    await expect(map.locator('.knowledge-earth-coverage-label')).toHaveCount(2)
+
+    const coverageColorContract = await coverageRegions.evaluateAll((regions) =>
+      regions.every((region) => {
+        const area = region.querySelector('.knowledge-earth-coverage-area')
+        const label = region.querySelector('.knowledge-earth-coverage-label')
+        if (!area || !label) return false
+        return (
+          getComputedStyle(area).fill === getComputedStyle(label).fill &&
+          getComputedStyle(area).fillOpacity === '0.12'
+        )
+      }),
+    )
+    expect(coverageColorContract).toBe(true)
+
+    const lineWidths = await map
+      .locator('.knowledge-earth-reference-visible')
+      .evaluateAll((lines) =>
+        Array.from(
+          new Set(lines.map((line) => line.getAttribute('stroke-width'))),
+        ).sort(),
+      )
+    expect(lineWidths).toEqual(['0.8', '1.8'])
+
+    const currentTopicLine = map.locator('[data-reference-line-id="equator"]')
+    await currentTopicLine.focus()
+    await expect(currentTopicLine).toHaveCSS('outline-style', 'none')
+    await expect(
+      currentTopicLine.locator('.knowledge-earth-reference-visible'),
+    ).toHaveCSS('stroke-width', '1.8px')
+
+    const homepageColors = await Promise.all([
+      map
+        .locator('[data-reference-line-id="equator"]')
+        .evaluate((element) =>
+          getComputedStyle(element)
+            .getPropertyValue('--knowledge-earth-line-color')
+            .trim(),
+        ),
+      referenceLines
+        .getByRole('link', { name: /赤道\s*0°/ })
+        .evaluate((element) =>
+          getComputedStyle(element)
+            .getPropertyValue('--knowledge-earth-line-color')
+            .trim(),
+        ),
+    ])
+    expect(homepageColors).toEqual(['#62d9ff', '#62d9ff'])
+
+    await map
+      .locator('[data-reference-line-id="tropic-of-cancer"]')
+      .press('Enter')
+    await expect(
+      page.getByRole('tab', { name: '五带界线', exact: true }),
+    ).toHaveAttribute('aria-selected', 'true')
+    await expect(page).toHaveURL(/\/knowledge\/earth\?topic=earth-zones$/)
+    await expect(referenceLines.getByRole('link')).toHaveCount(4)
+    await expect(map.locator('.knowledge-earth-reference-label')).toHaveCount(4)
+    await expect(coverageRegions).toHaveCount(5)
 
     const geometry = await page.evaluate(() => {
       const mapCard = document
@@ -497,12 +575,14 @@ for (const viewport of [
       const map = document
         .querySelector('.knowledge-earth-map')!
         .getBoundingClientRect()
-      const heading = document
-        .querySelector('.knowledge-earth-map-heading')!
-        .getBoundingClientRect()
       const lineButtons = Array.from(
-        document.querySelectorAll('.knowledge-earth-reference-grid button'),
+        document.querySelectorAll('.knowledge-earth-reference-grid a'),
       ).map((button) => button.getBoundingClientRect())
+      const labels = Array.from(
+        document.querySelectorAll(
+          '.knowledge-earth-reference-label, .knowledge-earth-coverage-label',
+        ),
+      ).map((label) => label.getBoundingClientRect())
       const tablist = document.querySelector('.knowledge-earth-topic-tabs')!
       const tab = tablist.querySelector('button')!
       return {
@@ -513,15 +593,19 @@ for (const viewport of [
           height: mapCard.height,
         },
         map: { x: map.x, y: map.y, width: map.width, height: map.height },
-        heading: {
-          x: heading.x,
-          y: heading.y,
-          right: heading.right,
-          bottom: heading.bottom,
-        },
+        minLineButtonHeight: Math.min(
+          ...lineButtons.map((button) => button.height),
+        ),
         firstRowLineCount: lineButtons.filter(
           (button) => Math.abs(button.y - lineButtons[0].y) < 1,
         ).length,
+        labelsInsideMap: labels.every(
+          (label) =>
+            label.x >= mapCard.x &&
+            label.y >= mapCard.y &&
+            label.right <= mapCard.right &&
+            label.bottom <= mapCard.bottom,
+        ),
         tablistBorderBottomWidth: getComputedStyle(tablist).borderBottomWidth,
         tabDisplay: getComputedStyle(tab).display,
         tabFontSize: getComputedStyle(tab.querySelector('strong')!).fontSize,
@@ -540,69 +624,135 @@ for (const viewport of [
     expect(geometry.map.y).toBeCloseTo(geometry.mapCard.y + 1, 0)
     expect(geometry.map.width).toBeCloseTo(geometry.mapCard.width - 2, 0)
     expect(geometry.map.height).toBeCloseTo(geometry.mapCard.height - 2, 0)
-    expect(geometry.heading.x).toBeGreaterThanOrEqual(geometry.mapCard.x)
-    expect(geometry.heading.y).toBeGreaterThanOrEqual(geometry.mapCard.y)
-    expect(geometry.heading.right).toBeLessThanOrEqual(
-      geometry.mapCard.x + geometry.mapCard.width,
+    expect(geometry.minLineButtonHeight).toBeGreaterThanOrEqual(
+      viewport.height <= 520 ? 56 : 64,
     )
-    expect(geometry.heading.bottom).toBeLessThanOrEqual(
-      geometry.mapCard.y + geometry.mapCard.height,
-    )
-    expect(geometry.firstRowLineCount).toBe(viewport.height <= 520 ? 2 : 3)
+    expect(geometry.firstRowLineCount).toBe(viewport.height <= 520 ? 2 : 4)
+    expect(geometry.labelsInsideMap).toBe(true)
     expect(geometry.tablistBorderBottomWidth).toBe('0px')
     expect(geometry.tabDisplay).toBe('flex')
     expect(geometry.tabFontSize).toBe('15px')
     expect(geometry.pageOverflows).toBe(false)
+
+    await referenceLines.getByRole('link', { name: '北回归线 23.5°N' }).click()
+    await expect(page).toHaveURL(/\/knowledge\/earth\/lines\/tropic-of-cancer$/)
+    const earthDetailMap = page.locator('.knowledge-earth-map-card')
+    const earthDetailCard = page.getByRole('complementary', {
+      name: '北回归线经纬线详情',
+    })
+    const siblingLines = page.getByLabel('五带分界线同组经纬线')
+    await expect(earthDetailMap).toBeVisible()
+    await expect(earthDetailCard).toBeVisible()
+    await waitForKnowledgeCardSettled(earthDetailCard)
+    await expect(page.getByLabel('知识主题')).toHaveCount(0)
+    await expect(page.getByText('资料来源')).toHaveCount(0)
+    await expect(
+      earthDetailCard.getByRole('link', { name: /在3D地球上查看/ }),
+    ).toHaveAttribute(
+      'href',
+      '/explore?geography=earth-zones&line=tropic-of-cancer',
+    )
+    await expect(page.getByRole('link', { name: '← 返回五带界线' })).toHaveCSS(
+      'font-weight',
+      '400',
+    )
+    await expect(siblingLines.getByRole('link')).toHaveCount(4)
+    await expect(
+      earthDetailMap.locator('[data-coverage-region-id]'),
+    ).toHaveCount(5)
+    await expect(earthDetailMap.locator('.is-selected')).toHaveCount(0)
+    expect(
+      await earthDetailMap
+        .locator('.is-topic-line .knowledge-earth-reference-visible')
+        .evaluateAll((lines) =>
+          Array.from(
+            new Set(lines.map((line) => line.getAttribute('stroke-width'))),
+          ),
+        ),
+    ).toEqual(['1.8'])
+    await expect(
+      siblingLines.getByRole('link', { name: '北回归线 23.5°N' }),
+    ).toHaveAttribute('aria-current', 'page')
+
+    const [earthDetailMapBox, earthDetailCardBox, detailLayoutBefore] =
+      await Promise.all([
+        earthDetailMap.boundingBox(),
+        earthDetailCard.boundingBox(),
+        page.evaluate(() => {
+          const buttons = Array.from(
+            document.querySelectorAll('.knowledge-earth-reference-grid a'),
+          ).map((button) => button.getBoundingClientRect())
+          return {
+            firstRowLineCount: buttons.filter(
+              (button) => Math.abs(button.y - buttons[0].y) < 1,
+            ).length,
+            pageOverflows:
+              document.documentElement.scrollWidth >
+              document.documentElement.clientWidth,
+          }
+        }),
+      ])
+    expect(countryDetailMapBox).not.toBeNull()
+    expect(countryDetailCardBox).not.toBeNull()
+    expect(earthDetailMapBox).not.toBeNull()
+    expect(earthDetailCardBox).not.toBeNull()
+    expect(earthDetailMapBox!.width).toBeCloseTo(countryDetailMapBox!.width, 0)
+    expect(earthDetailMapBox!.width / earthDetailMapBox!.height).toBeCloseTo(
+      720 / 340,
+      2,
+    )
+    expect(earthDetailCardBox!.width).toBeCloseTo(
+      countryDetailCardBox!.width,
+      0,
+    )
+    expect(detailLayoutBefore.firstRowLineCount).toBe(
+      viewport.height <= 520 ? 2 : 4,
+    )
+    expect(detailLayoutBefore.pageOverflows).toBe(false)
+
+    await siblingLines.getByRole('link', { name: '南极圈 66.5°S' }).click()
+    await expect(page).toHaveURL(/\/knowledge\/earth\/lines\/antarctic-circle$/)
+    await expect(
+      page.getByRole('complementary', { name: '南极圈经纬线详情' }),
+    ).toBeVisible()
+    const [earthDetailMapAfter, earthDetailCardAfter] = await Promise.all([
+      earthDetailMap.boundingBox(),
+      page
+        .getByRole('complementary', { name: '南极圈经纬线详情' })
+        .boundingBox(),
+    ])
+    expect(earthDetailMapAfter!.width).toBeCloseTo(earthDetailMapBox!.width, 0)
+    expect(earthDetailCardAfter!.width).toBeCloseTo(
+      earthDetailCardBox!.width,
+      0,
+    )
   })
 }
 
-test('restores earth chapter state and synchronizes the map with the line list', async ({
+test('redirects legacy earth-line URLs and rejects unknown line details', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto('/knowledge/earth')
-  await page.getByRole('tab', { name: '五带界线', exact: true }).click()
-  await page
-    .getByLabel('重点经纬线')
-    .getByRole('button', { name: '北回归线 23.5°N' })
-    .click()
-  await expect(page).toHaveURL(
-    /\/knowledge\/earth\?topic=earth-zones&line=tropic-of-cancer$/,
-  )
-
-  await page.reload()
+  await page.goto('/knowledge/earth?topic=earth-zones&line=tropic-of-cancer')
+  await expect(page).toHaveURL(/\/knowledge\/earth\/lines\/tropic-of-cancer$/)
   await expect(
-    page
-      .getByLabel('重点经纬线')
-      .getByRole('button', { name: '北回归线 23.5°N' }),
-  ).toHaveAttribute('aria-pressed', 'true')
+    page.getByRole('complementary', { name: '北回归线经纬线详情' }),
+  ).toBeVisible()
+  await expect(page.getByText('资料来源')).toHaveCount(0)
   await expect(
     page.locator(
       '.knowledge-earth-map-reference-lines [data-reference-line-id="tropic-of-cancer"]',
     ),
-  ).toHaveClass(/is-selected/)
-  await expect(page.locator('.knowledge-earth-map-heading strong')).toHaveText(
-    '23.5°N · 105.0°E',
-  )
-
-  await page
-    .getByRole('button', { name: /选择南极圈，南极圈 66.5°S/ })
-    .press('Enter')
-  await expect(page).toHaveURL(
-    /\/knowledge\/earth\?topic=earth-zones&line=antarctic-circle$/,
-  )
+  ).toHaveClass(/is-topic-line/)
   await expect(
-    page
-      .getByLabel('重点经纬线')
-      .getByRole('button', { name: '南极圈 66.5°S' }),
-  ).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('.knowledge-earth-map-heading strong')).toHaveText(
-    '66.5°S · 30.0°E',
-  )
-  await expect(page.getByRole('link', { name: /在3D地球中观察/ })).toHaveCount(
-    0,
-  )
-  await expect(page.locator('.knowledge-earth-lesson')).toHaveCount(0)
+    page.locator('.knowledge-earth-map-reference-lines .is-selected'),
+  ).toHaveCount(0)
+
+  await page.goto('/knowledge/earth/lines/unknown')
+  await expect(page).toHaveURL(/\/knowledge\/earth$/)
+  await expect(
+    page.getByRole('tab', { name: '经度基准', exact: true }),
+  ).toHaveAttribute('aria-selected', 'true')
 })
 
 test('uses the contained flag contract across learning and exploration surfaces', async ({
@@ -907,7 +1057,7 @@ for (const viewport of [
   })
 }
 
-test('completes a regional challenge and restores its local best score', async ({
+test('completes a regional challenge and returns to the compatible region route', async ({
   page,
 }) => {
   await page.goto('/knowledge/countries/east-asia/challenge')
@@ -921,16 +1071,19 @@ test('completes a regional challenge and restores its local best score', async (
       .click()
   }
 
-  const score = await page.getByTestId('knowledge-challenge-score').innerText()
+  await expect(page.getByTestId('knowledge-challenge-score')).toBeVisible()
   await expect(page.getByText('学习进度已保存在本机')).toBeVisible()
   await page.getByRole('link', { name: '返回区域学习' }).click()
-  await expect(page.getByTestId('knowledge-region-best-score')).toHaveText(
-    `${score}%`,
-  )
+  await expect(page).toHaveURL(/\/knowledge\/countries\/east-asia$/)
+  await expect(
+    page.getByRole('heading', { name: '东亚5国', level: 1 }),
+  ).toBeVisible()
+  await expect(page.getByTestId('knowledge-region-best-score')).toHaveCount(0)
+  await expect(page.getByRole('link', { name: '开始区域挑战' })).toHaveCount(0)
   await page.reload()
-  await expect(page.getByTestId('knowledge-region-best-score')).toHaveText(
-    `${score}%`,
-  )
+  await expect(
+    page.getByRole('heading', { name: '东亚5国', level: 1 }),
+  ).toBeVisible()
 })
 
 for (const viewport of [
@@ -962,14 +1115,31 @@ for (const viewport of [
           ? 3
           : 5
     for (const regionCase of [
-      { route: '/knowledge/countries/east-europe', countryCount: 4 },
+      {
+        route: '/knowledge/countries/east-europe',
+        countryCount: 4,
+        title: '东欧4国',
+      },
+      {
+        route: '/knowledge/countries/central-europe',
+        countryCount: 6,
+        title: '中欧6国',
+      },
       {
         route: '/knowledge/countries/australia-new-zealand',
         countryCount: 2,
+        title: '澳大利亚和新西兰2国',
       },
-      { route: '/knowledge/countries/east-asia', countryCount: 5 },
+      {
+        route: '/knowledge/countries/east-asia',
+        countryCount: 5,
+        title: '东亚5国',
+      },
     ]) {
       await page.goto(regionCase.route)
+      await expect(
+        page.getByRole('heading', { name: regionCase.title, level: 1 }),
+      ).toBeVisible()
       await expect(page.locator('.knowledge-country-card')).toHaveCount(
         regionCase.countryCount,
       )
@@ -1014,7 +1184,7 @@ for (const viewport of [
 }
 
 for (const viewport of [
-  { name: 'desktop', width: 1280, height: 720, touch: false },
+  { name: 'desktop', width: 1440, height: 900, touch: false },
   { name: 'phone landscape', width: 844, height: 390, touch: true },
   { name: 'iPad landscape', width: 1194, height: 834, touch: true },
 ]) {
@@ -1054,14 +1224,15 @@ for (const viewport of [
     expect(geometry.scrollHeight).toBeGreaterThanOrEqual(geometry.clientHeight)
 
     await page.getByTestId('knowledge-region-east-asia').click()
-    await expect(page.getByRole('link', { name: '开始区域挑战' })).toBeVisible()
-    const placeholder = page.getByLabel('国家详情提示')
-    const hidesPlaceholder = viewport.height <= 600
-    if (hidesPlaceholder) {
-      await expect(placeholder).toBeHidden()
-    } else {
-      await expect(placeholder).toBeVisible()
-    }
+    await expect(page.getByRole('link', { name: '开始区域挑战' })).toHaveCount(
+      0,
+    )
+    const regionCard = page.getByLabel('东亚区域知识')
+    await waitForKnowledgeCardSettled(regionCard)
+    await expect(regionCard).toContainText('自然地理')
+    await expect(regionCard).toContainText('人文地理')
+    await expect(regionCard).toContainText('学习要点')
+    await expect(regionCard.getByRole('button')).toHaveCount(0)
     const displayControls = page.getByRole('group', {
       name: '国家卡显示内容',
     })
@@ -1075,55 +1246,132 @@ for (const viewport of [
       displayControls.getByRole('button', { name: '国旗' }),
     ).toBeDisabled()
     const map = page.locator('.knowledge-region-map-strip')
+    const pageHeader = page.locator('.knowledge-region-page-header')
+    const backLink = pageHeader.getByRole('link', { name: '← 返回亚洲' })
+    const regionTitle = pageHeader.getByRole('heading', {
+      name: '东亚5国',
+      level: 1,
+    })
+    const regionCount = regionTitle.locator('strong')
+    await expect(backLink).toHaveAttribute('href', '/knowledge?continent=asia')
+    await expect(regionCount).toHaveText('5')
+    const regionCountStyle = await regionCount.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return {
+        color: style.color,
+        fontWeight: Number.parseInt(style.fontWeight, 10),
+        marginLeft: Number.parseFloat(style.marginLeft),
+        marginRight: Number.parseFloat(style.marginRight),
+      }
+    })
+    expect(regionCountStyle.color).toBe('rgb(76, 201, 240)')
+    expect(regionCountStyle.fontWeight).toBeGreaterThanOrEqual(700)
+    expect(regionCountStyle.marginLeft).toBeGreaterThan(0)
+    expect(regionCountStyle.marginRight).toBeGreaterThan(0)
+    await expect(map.getByRole('link')).toHaveCount(0)
+    await expect(map.getByText('WORLD POSITION')).toHaveCount(0)
     const mapCountryPaths = map.locator('.knowledge-region-map-countries')
     await expect(mapCountryPaths.locator('path.is-region')).toHaveCount(5)
     await expect(mapCountryPaths.locator('path.is-continent')).toHaveCount(0)
-    const mapActions = page.locator('.knowledge-region-map-actions')
+    await expect(page.locator('.knowledge-region-map-actions')).toHaveCount(0)
+    await expect(page.getByTestId('knowledge-region-best-score')).toHaveCount(0)
     const countryGrid = page.locator('.knowledge-country-grid')
-    const [mapBefore, controlsBox, actionsBox, gridBefore, placeholderBox] =
-      await Promise.all([
-        map.evaluate((element) => ({
-          x: element.getBoundingClientRect().x,
-          y: element.getBoundingClientRect().y,
-          width: element.getBoundingClientRect().width,
-          height: element.getBoundingClientRect().height,
-        })),
-        displayControls.boundingBox(),
-        mapActions.boundingBox(),
-        countryGrid.evaluate((element) => {
-          const box = element.getBoundingClientRect()
-          return { x: box.x, right: box.right, width: box.width }
-        }),
-        placeholder.boundingBox(),
-      ])
-    const expectedMapHeight =
-      viewport.height <= 520
-        ? 128
-        : Math.min(480, Math.max(224, viewport.height * 0.34))
-    expect(mapBefore.height).toBeCloseTo(expectedMapHeight, 0)
+    const [
+      mapBefore,
+      headerBox,
+      backLinkBox,
+      regionTitleBox,
+      controlsBox,
+      gridBefore,
+      regionCardBox,
+    ] = await Promise.all([
+      map.evaluate((element) => ({
+        x: element.getBoundingClientRect().x,
+        y: element.getBoundingClientRect().y,
+        width: element.getBoundingClientRect().width,
+        height: element.getBoundingClientRect().height,
+        pathLeft: Math.min(
+          ...Array.from(
+            element.querySelectorAll('.knowledge-region-map-countries path'),
+          ).map((path) => path.getBoundingClientRect().left),
+        ),
+        pathRight: Math.max(
+          ...Array.from(
+            element.querySelectorAll('.knowledge-region-map-countries path'),
+          ).map((path) => path.getBoundingClientRect().right),
+        ),
+      })),
+      pageHeader.boundingBox(),
+      backLink.boundingBox(),
+      regionTitle.boundingBox(),
+      displayControls.boundingBox(),
+      countryGrid.evaluate((element) => {
+        const box = element.getBoundingClientRect()
+        const cards = Array.from(
+          element.querySelectorAll('.knowledge-country-card'),
+        ).map((card) => card.getBoundingClientRect())
+        return {
+          x: box.x,
+          right: box.right,
+          width: box.width,
+          firstRowCount: cards.filter(
+            (card) => Math.abs(card.y - cards[0].y) < 1,
+          ).length,
+        }
+      }),
+      regionCard.boundingBox(),
+    ])
+    expect(mapBefore.width / mapBefore.height).toBeCloseTo(720 / 340, 2)
+    expect(mapBefore.pathLeft - mapBefore.x).toBeLessThanOrEqual(2.5)
+    expect(
+      mapBefore.x + mapBefore.width - mapBefore.pathRight,
+    ).toBeLessThanOrEqual(2.5)
+    expect(headerBox).not.toBeNull()
+    expect(backLinkBox).not.toBeNull()
+    expect(regionTitleBox).not.toBeNull()
     expect(controlsBox).not.toBeNull()
-    expect(actionsBox).not.toBeNull()
-    expect(controlsBox!.x).toBeCloseTo(mapBefore.x, 0)
-    expect(actionsBox!.x + actionsBox!.width).toBeCloseTo(
-      mapBefore.x + mapBefore.width,
+    expect(regionCardBox).not.toBeNull()
+    expect(regionCardBox!.x).toBeGreaterThanOrEqual(0)
+    expect(regionCardBox!.x + regionCardBox!.width).toBeLessThanOrEqual(
+      viewport.width + 1,
+    )
+    expect(mapBefore.x + mapBefore.width).toBeLessThanOrEqual(
+      regionCardBox!.x + 1,
+    )
+    expect(headerBox!.x).toBeCloseTo(mapBefore.x, 0)
+    expect(headerBox!.width).toBeCloseTo(mapBefore.width, 0)
+    expect(regionTitleBox!.x + regionTitleBox!.width / 2).toBeCloseTo(
+      headerBox!.x + headerBox!.width / 2,
       0,
     )
+    expect(backLinkBox!.y + backLinkBox!.height / 2).toBeCloseTo(
+      regionTitleBox!.y + regionTitleBox!.height / 2,
+      0,
+    )
+    expect(mapBefore.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height)
+    expect(controlsBox!.x).toBeCloseTo(mapBefore.x, 0)
     expect(controlsBox!.y).toBeGreaterThanOrEqual(
       mapBefore.y + mapBefore.height,
     )
-    expect(actionsBox!.y).toBeGreaterThanOrEqual(mapBefore.y + mapBefore.height)
     expect(gridBefore.x).toBeCloseTo(mapBefore.x, 0)
     expect(gridBefore.right).toBeCloseTo(mapBefore.x + mapBefore.width, 0)
+    expect(gridBefore.firstRowCount).toBe(
+      viewport.height <= 520 ? 2 : viewport.width <= 1080 ? 3 : 5,
+    )
 
+    const chinaCard = page
+      .getByRole('button', { name: '查看中国国家详情' })
+      .locator('..')
+    const flagOnlyBox = await chinaCard
+      .locator('.country-flag-frame')
+      .boundingBox()
+    expect(flagOnlyBox).not.toBeNull()
     await displayControls
       .getByRole('button', { name: '国家', exact: true })
       .click()
     await displayControls
       .getByRole('button', { name: '首都', exact: true })
       .click()
-    const chinaCard = page
-      .getByRole('button', { name: '查看中国国家详情' })
-      .locator('..')
     const verticalFields = await chinaCard
       .locator('.knowledge-country-open > *')
       .evaluateAll((fields) =>
@@ -1145,9 +1393,29 @@ for (const viewport of [
     expect(verticalFields[1].y).toBeLessThan(verticalFields[2].y)
     expect(verticalFields[0].centerX).toBeCloseTo(verticalFields[1].centerX, 0)
     expect(verticalFields[1].centerX).toBeCloseTo(verticalFields[2].centerX, 0)
+    const flagWithFieldsBox = await chinaCard
+      .locator('.country-flag-frame')
+      .boundingBox()
+    expect(flagWithFieldsBox).not.toBeNull()
+    expect(flagWithFieldsBox!.width).toBeCloseTo(flagOnlyBox!.width, 1)
+    expect(flagWithFieldsBox!.height).toBeCloseTo(flagOnlyBox!.height, 1)
+
+    const capitalField = chinaCard.locator('.knowledge-country-card-capital')
+    const capitalChinese = capitalField.locator('strong')
+    const capitalEnglish = capitalField.locator('small')
+    await expect(capitalChinese).toHaveText('北京')
+    await expect(capitalEnglish).toHaveText('Beijing')
+    await expect(capitalField.getByText('首都', { exact: true })).toHaveCount(0)
+    const [capitalChineseBox, capitalEnglishBox] = await Promise.all([
+      capitalChinese.boundingBox(),
+      capitalEnglish.boundingBox(),
+    ])
+    expect(capitalChineseBox).not.toBeNull()
+    expect(capitalEnglishBox).not.toBeNull()
+    expect(capitalChineseBox!.y).toBeLessThan(capitalEnglishBox!.y)
 
     await page.getByRole('button', { name: '查看中国国家详情' }).click()
-    await expect(placeholder).toHaveCount(0)
+    await expect(regionCard).toHaveCount(0)
     await expect(mapCountryPaths.locator('path.is-country')).toHaveCount(1)
     await expect(
       mapCountryPaths.locator('path[data-country-code="CN"].is-country'),
@@ -1181,20 +1449,19 @@ for (const viewport of [
     expect(detailBox!.x + detailBox!.width).toBeLessThanOrEqual(
       viewport.width + 1,
     )
-    expect(mapAfter.width).toBeLessThanOrEqual(mapBefore.width)
-    expect(gridAfter.width).toBeLessThanOrEqual(gridBefore.width)
+    expect(mapAfter.width).toBeCloseTo(mapBefore.width, 0)
+    expect(gridAfter.width).toBeCloseTo(gridBefore.width, 0)
     expect(gridAfter.x).toBeCloseTo(mapAfter.x, 0)
     expect(gridAfter.right).toBeCloseTo(mapAfter.x + mapAfter.width, 0)
     expect(gridAfter.firstRowCount).toBe(
-      viewport.height <= 520 ? 2 : viewport.width <= 1080 ? 3 : 4,
+      viewport.height <= 520 ? 2 : viewport.width <= 1080 ? 3 : 5,
     )
     expect(mapAfter.x + mapAfter.width).toBeLessThanOrEqual(detailBox!.x + 1)
     expect(gridAfter.x + gridAfter.width).toBeLessThanOrEqual(detailBox!.x + 1)
-    if (hidesPlaceholder) expect(placeholderBox).toBeNull()
-    else {
-      expect(placeholderBox).not.toBeNull()
-      expect(detailBox!.width).toBeGreaterThan(placeholderBox!.width)
-    }
+    expect(detailBox!.width).toBeCloseTo(regionCardBox!.width, 0)
+
+    await page.getByRole('button', { name: '关闭国家学习详情' }).click()
+    await expect(page.getByLabel('东亚区域知识')).toBeVisible()
   })
 }
 

@@ -57,6 +57,82 @@
   border-top: 1px solid var(--atlas-border-soft);
 }
 
+.knowledge-region-overview-heading p,
+.knowledge-region-overview-heading h2,
+.knowledge-region-overview-heading span,
+.knowledge-region-overview-lead,
+.knowledge-region-overview-summary p {
+  margin: 0;
+}
+
+.knowledge-region-overview-heading p {
+  color: var(--knowledge-card-accent);
+  font-size: var(--fs-m);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.knowledge-region-overview-heading h2 {
+  margin-top: 0.25rem;
+  color: var(--atlas-text);
+  font-size: 1.55rem;
+  font-weight: 600;
+}
+
+.knowledge-region-overview-heading span {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--atlas-text-secondary);
+  font-size: var(--fs-b);
+}
+
+.knowledge-region-overview-lead {
+  padding: 0.75rem 0.8rem;
+  margin-top: 1rem;
+  color: var(--atlas-text-secondary);
+  line-height: var(--lh-b);
+  background: var(--atlas-panel-muted);
+  border-left: 2px solid var(--knowledge-card-accent);
+  border-radius: 0 var(--atlas-radius-compact) var(--atlas-radius-compact) 0;
+}
+
+.knowledge-region-overview-summary > p {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+}
+
+.knowledge-region-overview-summary > p strong {
+  color: var(--knowledge-card-accent);
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.knowledge-region-overview-summary > p span {
+  color: var(--atlas-text-secondary);
+}
+
+.knowledge-region-overview-summary ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.knowledge-region-overview-summary ul {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.knowledge-region-overview-summary li {
+  padding: 0.3rem 0.45rem;
+  color: var(--atlas-text-secondary);
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border-soft);
+  border-radius: var(--atlas-radius-control);
+}
+
 .knowledge-card-action {
   display: grid;
   min-height: 3.5rem;
@@ -465,7 +541,7 @@
 
 @media (orientation: landscape) and (max-width: 760px) {
   .explore-shell.has-country-detail,
-  .knowledge-region-shell.has-country-selection {
+  .knowledge-region-shell {
     --detail-column: clamp(15rem, 35vw, 18rem);
   }
 

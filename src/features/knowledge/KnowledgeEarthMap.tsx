@@ -1,48 +1,81 @@
-import { useMemo, type KeyboardEvent, type MouseEvent } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 
-import { getCountry } from '../../data/countries'
 import { geographyReferenceLines } from '../../data/geographyLearning'
-import type {
-  GeographyTopicId,
-  ReferenceLine,
-  ReferenceLineId,
-} from '../../data/geographyLearningSchema'
+import type { GeographyTopicId } from '../../data/geographyLearningSchema'
 import { loadCountryBoundaries } from '../../data/geometryResources'
 import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
-import { classifyGeoPosition } from '../../shared/lib/geoClassification'
-import type { GeoPosition } from '../../shared/types/geo'
 import {
   getMapFeaturePath,
-  invertMiniMapPoint,
-  MINI_MAP_KEYBOARD_FAST_STEP,
-  MINI_MAP_KEYBOARD_STEP,
   MINI_MAP_WIDTH,
-  moveMiniMapCursor,
   projectGeoPosition,
 } from '../explore/worldMiniMapUtils'
+import {
+  getKnowledgeEarthCoverageRegions,
+  getKnowledgeEarthTopicLineColors,
+} from './knowledgeEarthLinePresentation'
 
 type KnowledgeEarthMapProps = {
   topicId: GeographyTopicId
-  referenceLineId: ReferenceLineId | null
-  position: GeoPosition
-  onPositionChange: (position: GeoPosition) => void
-  onSelectReferenceLine: (line: ReferenceLine) => void
+  onSelectTopic?: (topicId: GeographyTopicId) => void
 }
 
-const INITIAL_POSITION = getCountry('CN')!.center
 const EARTH_MAP_VIEWBOX_TOP = 5
 const EARTH_MAP_VIEWBOX_HEIGHT = 170
 const EARTH_MAP_VIEWBOX_BOTTOM =
   EARTH_MAP_VIEWBOX_TOP + EARTH_MAP_VIEWBOX_HEIGHT
+const EARTH_MAP_LABEL_INSET = 8
+
+function getReferenceLineLabelPosition(anchorPosition: {
+  latitude: number
+  longitude: number
+}) {
+  const point = projectGeoPosition(anchorPosition)!
+  const x = Math.min(
+    MINI_MAP_WIDTH - EARTH_MAP_LABEL_INSET,
+    Math.max(EARTH_MAP_LABEL_INSET, point.x),
+  )
+  const y = Math.min(
+    EARTH_MAP_VIEWBOX_BOTTOM - EARTH_MAP_LABEL_INSET,
+    Math.max(EARTH_MAP_VIEWBOX_TOP + EARTH_MAP_LABEL_INSET, point.y - 3),
+  )
+  const textAnchor: 'start' | 'middle' | 'end' =
+    point.x >= MINI_MAP_WIDTH - 28 ? 'end' : point.x <= 28 ? 'start' : 'middle'
+
+  return { x, y, textAnchor }
+}
+
+function getCoverageAreaRect(area: {
+  west: number
+  east: number
+  south: number
+  north: number
+}) {
+  const topLeft = projectGeoPosition({
+    latitude: area.north,
+    longitude: area.west,
+  })!
+  const bottomRight = projectGeoPosition({
+    latitude: area.south,
+    longitude: area.east,
+  })!
+  const x = Math.min(topLeft.x, bottomRight.x)
+  const right = Math.max(topLeft.x, bottomRight.x)
+  const y = Math.max(EARTH_MAP_VIEWBOX_TOP, Math.min(topLeft.y, bottomRight.y))
+  const bottom = Math.min(
+    EARTH_MAP_VIEWBOX_BOTTOM,
+    Math.max(topLeft.y, bottomRight.y),
+  )
+
+  return { x, y, width: right - x, height: bottom - y }
+}
 
 export function KnowledgeEarthMap({
   topicId,
-  referenceLineId,
-  position,
-  onPositionChange,
-  onSelectReferenceLine,
+  onSelectTopic,
 }: KnowledgeEarthMapProps) {
   const countryBoundaries = useGeometryResource(loadCountryBoundaries)
+  const topicLineColors = getKnowledgeEarthTopicLineColors(topicId)
+  const coverageRegions = getKnowledgeEarthCoverageRegions(topicId)
   const boundaryPaths = useMemo(
     () =>
       (countryBoundaries.data?.features ?? []).map((boundary) => ({
@@ -59,78 +92,16 @@ export function KnowledgeEarthMap({
       })),
     [countryBoundaries.data],
   )
-  const marker = projectGeoPosition(position)!
-  const classification = classifyGeoPosition(position)
-
-  const handleMapClick = (event: MouseEvent<SVGSVGElement>) => {
-    if (event.target !== event.currentTarget) {
-      const element = event.target as SVGElement
-      if (element.closest('[data-reference-line-id]')) return
-    }
-    const rect = event.currentTarget.getBoundingClientRect()
-    const nextPosition = invertMiniMapPoint(
-      ((event.clientX - rect.left) / rect.width) * MINI_MAP_WIDTH,
-      EARTH_MAP_VIEWBOX_TOP +
-        ((event.clientY - rect.top) / rect.height) * EARTH_MAP_VIEWBOX_HEIGHT,
-    )
-    if (nextPosition) onPositionChange(nextPosition)
-  }
-
-  const handleMapKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
-    if (event.target !== event.currentTarget) return
-    const step = event.shiftKey
-      ? MINI_MAP_KEYBOARD_FAST_STEP
-      : MINI_MAP_KEYBOARD_STEP
-    let nextPosition: GeoPosition | null = null
-
-    if (event.key === 'ArrowUp') {
-      nextPosition = moveMiniMapCursor(position, step, 0)
-    } else if (event.key === 'ArrowDown') {
-      nextPosition = moveMiniMapCursor(position, -step, 0)
-    } else if (event.key === 'ArrowLeft') {
-      nextPosition = moveMiniMapCursor(position, 0, -step)
-    } else if (event.key === 'ArrowRight') {
-      nextPosition = moveMiniMapCursor(position, 0, step)
-    } else if (event.key === 'Home') {
-      nextPosition = INITIAL_POSITION
-    }
-
-    if (nextPosition) {
-      event.preventDefault()
-      onPositionChange(nextPosition)
-    }
-  }
-
   return (
     <section
       className="knowledge-earth-map-card knowledge-map-card"
-      aria-label="地球定位互动图"
+      aria-label="地球重要经纬线用途图"
     >
-      <header className="knowledge-earth-map-heading">
-        <div>
-          <span>当前定位</span>
-          <strong>{classification.formattedCoordinate}</strong>
-        </div>
-        <div
-          className="knowledge-earth-classifications"
-          aria-label="当前位置判读"
-        >
-          <span>{classification.latitudeHemisphere}</span>
-          <span>{classification.longitudeHemisphere}</span>
-          <span>{classification.latitudeZone}</span>
-          <span>{classification.earthZone}</span>
-        </div>
-      </header>
-
       <svg
         className="knowledge-earth-map"
         data-testid="knowledge-earth-map"
         viewBox={`0 ${EARTH_MAP_VIEWBOX_TOP} ${MINI_MAP_WIDTH} ${EARTH_MAP_VIEWBOX_HEIGHT}`}
-        role="application"
-        aria-label="世界经纬定位图。点击地图移动定位点；使用方向键移动5度，按住Shift移动15度，Home返回中国。"
-        tabIndex={0}
-        onClick={handleMapClick}
-        onKeyDown={handleMapKeyDown}
+        aria-label="世界重要经纬线分组图"
       >
         <rect
           className="knowledge-earth-map-ocean"
@@ -187,6 +158,55 @@ export function KnowledgeEarthMap({
             />
           ))}
         </g>
+        <g
+          className="knowledge-earth-map-coverage"
+          aria-hidden="true"
+          style={{ pointerEvents: 'none' }}
+        >
+          {coverageRegions.map((region) => (
+            <g
+              key={region.id}
+              data-coverage-region-id={region.id}
+              data-coverage-label={region.label}
+              style={{ color: region.color }}
+            >
+              {region.areas.map((area, index) => {
+                const rect = getCoverageAreaRect(area)
+                const labelPoint = area.labelPosition
+                  ? projectGeoPosition(area.labelPosition)
+                  : null
+
+                return (
+                  <g key={`${region.id}-${index}`}>
+                    <rect
+                      className="knowledge-earth-coverage-area"
+                      data-coverage-area-index={index}
+                      {...rect}
+                      fill="currentColor"
+                      fillOpacity="0.12"
+                    />
+                    {labelPoint ? (
+                      <text
+                        className="knowledge-earth-coverage-label"
+                        x={labelPoint.x}
+                        y={labelPoint.y}
+                        textAnchor="middle"
+                        fill="currentColor"
+                        stroke="var(--atlas-canvas-deep)"
+                        strokeWidth="3"
+                        fontSize="8"
+                        fontWeight="700"
+                        style={{ paintOrder: 'stroke' }}
+                      >
+                        {region.label}
+                      </text>
+                    ) : null}
+                  </g>
+                )
+              })}
+            </g>
+          ))}
+        </g>
         <g className="knowledge-earth-map-reference-lines">
           {geographyReferenceLines.map((line) => {
             const point = projectGeoPosition(
@@ -194,8 +214,11 @@ export function KnowledgeEarthMap({
                 ? { latitude: line.coordinate, longitude: 0 }
                 : { latitude: 0, longitude: line.coordinate },
             )!
-            const inTopic = line.topicId === topicId
-            const selected = line.id === referenceLineId
+            const lineColor = topicLineColors.get(line.id)
+            const inTopic = Boolean(lineColor)
+            const labelPosition = getReferenceLineLabelPosition(
+              line.anchorPosition,
+            )
             const lineProps =
               line.orientation === 'latitude'
                 ? { x1: 0, x2: MINI_MAP_WIDTH, y1: point.y, y2: point.y }
@@ -209,41 +232,42 @@ export function KnowledgeEarthMap({
             return (
               <g
                 key={line.id}
-                className={
-                  selected
-                    ? 'is-selected'
-                    : inTopic
-                      ? 'is-topic-line'
-                      : undefined
-                }
+                className={inTopic ? 'is-topic-line' : 'is-background-line'}
                 data-reference-line-id={line.id}
+                data-reference-line-topic-id={line.topicId}
                 data-reference-line-category={line.category}
-                style={{
-                  color: selected
-                    ? 'var(--atlas-focus)'
-                    : inTopic
-                      ? 'rgb(121 200 212 / 68%)'
-                      : 'rgb(139 171 183 / 26%)',
-                }}
-                role="button"
-                aria-label={`选择${line.name.zh}，${line.shortLabel}`}
-                tabIndex={0}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onSelectReferenceLine(line)
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== 'Enter' && event.key !== ' ') return
-                  event.preventDefault()
-                  event.stopPropagation()
-                  onSelectReferenceLine(line)
-                }}
+                style={
+                  {
+                    '--knowledge-earth-line-color': lineColor,
+                    color: lineColor ?? 'rgb(139 171 183 / 24%)',
+                  } as CSSProperties
+                }
+                role={onSelectTopic ? 'button' : undefined}
+                aria-label={
+                  onSelectTopic
+                    ? `切换到${line.topicId === topicId ? '当前' : ''}${line.name.zh}所属用途`
+                    : undefined
+                }
+                tabIndex={onSelectTopic ? 0 : undefined}
+                onClick={
+                  onSelectTopic ? () => onSelectTopic(line.topicId) : undefined
+                }
+                onKeyDown={
+                  onSelectTopic
+                    ? (event) => {
+                        if (event.key !== 'Enter' && event.key !== ' ') return
+                        event.preventDefault()
+                        onSelectTopic(line.topicId)
+                      }
+                    : undefined
+                }
               >
                 <line
                   className="knowledge-earth-reference-visible"
                   {...lineProps}
                   stroke="currentColor"
-                  strokeWidth={selected ? 1.7 : 0.8}
+                  strokeWidth={inTopic ? 1.8 : 0.8}
+                  vectorEffect="non-scaling-stroke"
                 />
                 <line
                   className="knowledge-earth-reference-hit"
@@ -251,25 +275,26 @@ export function KnowledgeEarthMap({
                   stroke="transparent"
                   strokeWidth="10"
                 />
+                {inTopic ? (
+                  <text
+                    className="knowledge-earth-reference-label"
+                    x={labelPosition.x}
+                    y={labelPosition.y}
+                    textAnchor={labelPosition.textAnchor}
+                    fill="currentColor"
+                    stroke="var(--atlas-canvas-deep)"
+                    strokeWidth="3"
+                    fontSize="7"
+                    fontWeight="700"
+                    style={{ paintOrder: 'stroke', pointerEvents: 'none' }}
+                  >
+                    {line.name.zh}
+                  </text>
+                ) : null}
                 <title>{line.shortLabel}</title>
               </g>
             )
           })}
-        </g>
-        <g
-          className="knowledge-earth-map-marker"
-          transform={`translate(${marker.x} ${marker.y})`}
-          color="var(--atlas-focus)"
-          aria-hidden="true"
-        >
-          <circle
-            r="4.5"
-            fill="var(--atlas-canvas-deep)"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-          <line x1="-8" x2="8" stroke="currentColor" />
-          <line y1="-8" y2="8" stroke="currentColor" />
         </g>
       </svg>
 

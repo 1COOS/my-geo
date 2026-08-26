@@ -8,6 +8,20 @@ import {
 } from './knowledgeRegions'
 
 describe('knowledge regions', () => {
+  it('provides reviewed lesson sections for every region', () => {
+    for (const region of knowledgeRegions) {
+      for (const section of [
+        region.naturalGeography,
+        region.humanGeography,
+        region.studyHighlights,
+      ]) {
+        expect(section.length).toBeGreaterThanOrEqual(2)
+        expect(section.length).toBeLessThanOrEqual(3)
+        expect(section.every((item) => item.trim().length > 0)).toBe(true)
+      }
+    }
+  })
+
   it('covers every country exactly once across 23 stable regions', () => {
     const assignedCodes = knowledgeRegions.flatMap(
       (region) => region.countryCodes,

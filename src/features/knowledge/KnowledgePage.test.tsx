@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import { KnowledgeChallengePage } from './KnowledgeChallengePage'
+import { KnowledgeEarthLineDetailPage } from './KnowledgeEarthLineDetailPage'
 import { KnowledgeEarthPage } from './KnowledgeEarthPage'
 import { KnowledgePage } from './KnowledgePage'
 import { KnowledgeRegionPage } from './KnowledgeRegionPage'
@@ -18,7 +19,12 @@ function getMapCountryPath(countryCode: string) {
 
 function LocationProbe() {
   const location = useLocation()
-  return <output data-testid="location-search">{location.search}</output>
+  return (
+    <output data-testid="location-search">
+      {location.pathname}
+      {location.search}
+    </output>
+  )
 }
 
 describe('knowledge pages', () => {
@@ -99,14 +105,16 @@ describe('knowledge pages', () => {
     ).toBe('#ff8a5b')
   })
 
-  it('opens the earth topic, restores URL state, and moves the locator with the keyboard', async () => {
+  it('colors the active earth lines, removes positioning, and switches topics from the map', async () => {
     const user = userEvent.setup()
     render(
-      <MemoryRouter
-        initialEntries={['/knowledge/earth?topic=hemispheres&line=equator']}
-      >
+      <MemoryRouter initialEntries={['/knowledge/earth?topic=hemispheres']}>
         <Routes>
           <Route path="/knowledge/earth" element={<KnowledgeEarthPage />} />
+          <Route
+            path="/knowledge/earth/lines/:lineId"
+            element={<KnowledgeEarthLineDetailPage />}
+          />
         </Routes>
         <LocationProbe />
       </MemoryRouter>,
@@ -122,20 +130,29 @@ describe('knowledge pages', () => {
       'aria-selected',
       'true',
     )
+    expect(screen.queryByText('当前定位')).toBeNull()
+    expect(screen.queryByLabelText('当前位置判读')).toBeNull()
+    expect(document.querySelector('.knowledge-earth-map-marker')).toBeNull()
     const referenceLines = screen.getByLabelText('重点经纬线')
-    expect(within(referenceLines).getAllByRole('button')).toHaveLength(3)
+    expect(within(referenceLines).getAllByRole('link')).toHaveLength(3)
+    const equatorLink = within(referenceLines).getByRole('link', {
+      name: '赤道0°',
+    })
+    expect(equatorLink).toHaveAttribute(
+      'href',
+      '/knowledge/earth/lines/equator',
+    )
     expect(
-      within(referenceLines).getByRole('button', { name: '赤道0°' }),
-    ).toHaveAttribute('aria-pressed', 'true')
+      equatorLink.style.getPropertyValue('--knowledge-earth-line-color'),
+    ).toBe('#62d9ff')
     expect(screen.queryByText('核心规则')).toBeNull()
     expect(screen.queryByText('容易混淆')).toBeNull()
     expect(screen.queryByText('判读示例')).toBeNull()
     expect(screen.queryByRole('link', { name: /在3D地球中观察/ })).toBeNull()
     expect(document.querySelector('.knowledge-earth-lesson')).toBeNull()
     expect(screen.getByTestId('location-search')).toHaveTextContent(
-      '?topic=hemispheres&line=equator',
+      '/knowledge/earth?topic=hemispheres',
     )
-    expect(screen.getByText('0.0° · 25.0°E')).toBeVisible()
 
     const map = screen.getByTestId('knowledge-earth-map')
     await waitFor(() =>
@@ -143,55 +160,180 @@ describe('knowledge pages', () => {
         map.querySelector('[data-landmass-id="antarctica"]'),
       ).toBeInTheDocument(),
     )
-    map.focus()
-    await user.keyboard('{ArrowDown}')
-    expect(screen.getByText('5.0°S · 25.0°E')).toBeVisible()
+    expect(
+      map.querySelectorAll(
+        '.knowledge-earth-map-reference-lines > .is-topic-line',
+      ),
+    ).toHaveLength(3)
+    expect(
+      map.querySelectorAll(
+        '.knowledge-earth-map-reference-lines > .is-background-line',
+      ),
+    ).toHaveLength(10)
+    expect(
+      map.querySelectorAll('.knowledge-earth-reference-label'),
+    ).toHaveLength(3)
+    expect(map.querySelectorAll('[data-coverage-region-id]')).toHaveLength(2)
+    expect(
+      map.querySelectorAll('.knowledge-earth-coverage-label'),
+    ).toHaveLength(2)
+    expect(
+      map.querySelectorAll(
+        '[data-coverage-region-id="western-hemisphere"] .knowledge-earth-coverage-area',
+      ),
+    ).toHaveLength(2)
+    const easternHemisphereCoverage = map.querySelector(
+      '[data-coverage-region-id="eastern-hemisphere"]',
+    )!
+    expect(
+      easternHemisphereCoverage.querySelector('.knowledge-earth-coverage-area'),
+    ).toHaveAttribute('fill', 'currentColor')
+    expect(
+      easternHemisphereCoverage.querySelector(
+        '.knowledge-earth-coverage-label',
+      ),
+    ).toHaveAttribute('fill', 'currentColor')
+    expect(map.querySelector('.knowledge-earth-map-coverage')).toHaveStyle({
+      pointerEvents: 'none',
+    })
+    expect(
+      Array.from(
+        map.querySelectorAll(
+          '.knowledge-earth-map-reference-lines > .is-topic-line .knowledge-earth-reference-visible',
+        ),
+      ).map((line) => line.getAttribute('stroke-width')),
+    ).toEqual(['1.8', '1.8', '1.8'])
+    expect(
+      new Set(
+        Array.from(
+          map.querySelectorAll(
+            '.knowledge-earth-map-reference-lines > .is-background-line .knowledge-earth-reference-visible',
+          ),
+        ).map((line) => line.getAttribute('stroke-width')),
+      ),
+    ).toEqual(new Set(['0.8']))
+    expect(map).not.toHaveAttribute('tabindex')
+    expect(map).not.toHaveAttribute('role', 'application')
+
+    const equatorMapLine = map.querySelector<SVGGElement>(
+      '[data-reference-line-id="equator"]',
+    )!
+    expect(
+      equatorMapLine.style.getPropertyValue('--knowledge-earth-line-color'),
+    ).toBe('#62d9ff')
 
     await user.click(screen.getByRole('tab', { name: '经度基准' }))
-    expect(within(referenceLines).getAllByRole('button')).toHaveLength(2)
-    await user.click(screen.getByRole('tab', { name: '半球界线' }))
-    expect(within(referenceLines).getAllByRole('button')).toHaveLength(3)
+    expect(map.querySelectorAll('[data-coverage-region-id]')).toHaveLength(2)
+    expect(map.querySelector('[data-coverage-label="西经区域"]')).not.toBeNull()
+    expect(map.querySelector('[data-coverage-label="东经区域"]')).not.toBeNull()
+
     await user.click(screen.getByRole('tab', { name: '纬度分区' }))
-    expect(within(referenceLines).getAllByRole('button')).toHaveLength(4)
-    expect(screen.getByTestId('location-search')).toHaveTextContent(
-      '?topic=latitude-zones',
-    )
-    expect(
-      within(referenceLines).getByRole('button', { name: '北纬30°线30°N' }),
-    ).toHaveAttribute('aria-pressed', 'false')
-    await user.click(
-      within(referenceLines).getByRole('button', {
-        name: '北纬30°线30°N',
-      }),
-    )
-    expect(
-      within(referenceLines).getByRole('button', { name: '北纬30°线30°N' }),
-    ).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByTestId('location-search')).toHaveTextContent(
-      '?topic=latitude-zones&line=north-low-middle-boundary',
-    )
-    await user.click(screen.getByRole('tab', { name: '五带界线' }))
-    expect(within(referenceLines).getAllByRole('button')).toHaveLength(4)
+    expect(map.querySelectorAll('[data-coverage-region-id]')).toHaveLength(3)
+    expect(map.querySelector('[data-coverage-label="低纬度"]')).not.toBeNull()
+    expect(map.querySelector('[data-coverage-label="中纬度"]')).not.toBeNull()
+    expect(map.querySelector('[data-coverage-label="高纬度"]')).not.toBeNull()
+
     await user.click(
       screen.getByRole('button', {
-        name: /选择南极圈，南极圈 66.5°S/,
+        name: '切换到北回归线所属用途',
       }),
     )
-    expect(screen.getByTestId('location-search')).toHaveTextContent(
-      '?topic=earth-zones&line=antarctic-circle',
+    expect(screen.getByRole('tab', { name: '五带界线' })).toHaveAttribute(
+      'aria-selected',
+      'true',
     )
+    expect(within(referenceLines).getAllByRole('link')).toHaveLength(4)
     expect(
-      within(referenceLines).getByRole('button', { name: '南极圈66.5°S' }),
-    ).toHaveAttribute('aria-pressed', 'true')
+      map.querySelectorAll('.knowledge-earth-reference-label'),
+    ).toHaveLength(4)
+    expect(map.querySelectorAll('[data-coverage-region-id]')).toHaveLength(5)
+    expect(screen.getByTestId('location-search')).toHaveTextContent(
+      '/knowledge/earth?topic=earth-zones',
+    )
   })
 
-  it('falls back to the default earth chapter for invalid URL state', () => {
+  it('redirects legacy earth-line URLs and renders sourced line details', async () => {
+    const user = userEvent.setup()
     render(
       <MemoryRouter
-        initialEntries={['/knowledge/earth?topic=unknown&line=equator']}
+        initialEntries={[
+          '/knowledge/earth?topic=earth-zones&line=tropic-of-cancer',
+        ]}
       >
         <Routes>
           <Route path="/knowledge/earth" element={<KnowledgeEarthPage />} />
+          <Route
+            path="/knowledge/earth/lines/:lineId"
+            element={<KnowledgeEarthLineDetailPage />}
+          />
+        </Routes>
+        <LocationProbe />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByLabelText('北回归线经纬线详情')).toBeVisible()
+    expect(screen.getByTestId('location-search')).toHaveTextContent(
+      '/knowledge/earth/lines/tropic-of-cancer',
+    )
+    expect(screen.getByText('Tropic of Cancer')).toBeVisible()
+    expect(screen.getAllByText('23.5°N').length).toBeGreaterThan(0)
+    expect(screen.getByText(/热带与北温带/)).toBeVisible()
+    expect(screen.getByText('核心规则')).toBeVisible()
+    expect(screen.getByText('容易混淆')).toBeVisible()
+    expect(screen.getByText('判读示例')).toBeVisible()
+    expect(screen.queryByText('资料来源')).toBeNull()
+    expect(
+      screen.getByRole('link', { name: /在3D地球上查看/ }),
+    ).toHaveAttribute(
+      'href',
+      '/explore?geography=earth-zones&line=tropic-of-cancer',
+    )
+    expect(screen.queryByLabelText('知识主题')).toBeNull()
+    expect(
+      within(screen.getByLabelText('五带分界线同组经纬线')).getAllByRole(
+        'link',
+      ),
+    ).toHaveLength(4)
+    expect(
+      screen.getByRole('link', { name: '北回归线23.5°N' }),
+    ).toHaveAttribute('aria-current', 'page')
+    expect(
+      screen
+        .getByTestId('knowledge-earth-map')
+        .querySelectorAll('.knowledge-earth-reference-label'),
+    ).toHaveLength(4)
+    const detailMap = screen.getByTestId('knowledge-earth-map')
+    expect(detailMap.querySelector('.is-selected')).toBeNull()
+    expect(
+      detailMap.querySelectorAll('[data-coverage-region-id]'),
+    ).toHaveLength(5)
+    expect(
+      new Set(
+        Array.from(
+          detailMap.querySelectorAll(
+            '.is-topic-line .knowledge-earth-reference-visible',
+          ),
+        ).map((item) => item.getAttribute('stroke-width')),
+      ),
+    ).toEqual(new Set(['1.8']))
+
+    await user.click(screen.getByRole('link', { name: '南极圈66.5°S' }))
+    expect(await screen.findByLabelText('南极圈经纬线详情')).toBeVisible()
+    expect(screen.getByTestId('location-search')).toHaveTextContent(
+      '/knowledge/earth/lines/antarctic-circle',
+    )
+    expect(screen.getByText('Antarctic Circle')).toBeVisible()
+  })
+
+  it('falls back from invalid earth and line routes', () => {
+    render(
+      <MemoryRouter initialEntries={['/knowledge/earth/lines/unknown']}>
+        <Routes>
+          <Route path="/knowledge/earth" element={<KnowledgeEarthPage />} />
+          <Route
+            path="/knowledge/earth/lines/:lineId"
+            element={<KnowledgeEarthLineDetailPage />}
+          />
         </Routes>
       </MemoryRouter>,
     )
@@ -201,10 +343,8 @@ describe('knowledge pages', () => {
       'true',
     )
     expect(
-      within(screen.getByLabelText('重点经纬线')).getAllByRole('button'),
+      within(screen.getByLabelText('重点经纬线')).getAllByRole('link'),
     ).toHaveLength(2)
-    expect(screen.queryByText('核心规则')).toBeNull()
-    expect(screen.queryByRole('link', { name: /在3D地球中观察/ })).toBeNull()
   })
 
   it('combines country card fields, opens inline detail, and follows cross-region neighbours', async () => {
@@ -221,13 +361,44 @@ describe('knowledge pages', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: '东亚', level: 1 }),
+      screen.getByRole('heading', { name: '东亚5国', level: 1 }),
     ).toBeVisible()
+    const regionHeader = document.querySelector<HTMLElement>(
+      '.knowledge-region-page-header',
+    )!
+    expect(
+      regionHeader.style.getPropertyValue('--knowledge-region-title-accent'),
+    ).toBe('#4cc9f0')
+    expect(within(regionHeader).getByText('5').tagName).toBe('STRONG')
+    expect(
+      document
+        .querySelector<HTMLElement>('.knowledge-country-grid')!
+        .style.getPropertyValue('--knowledge-country-columns-detail'),
+    ).toBe('5')
+    expect(screen.getByRole('link', { name: '← 返回亚洲' })).toHaveAttribute(
+      'href',
+      '/knowledge?continent=asia',
+    )
+    const regionMap = document.querySelector<HTMLElement>(
+      '.knowledge-region-map-strip',
+    )!
+    expect(within(regionMap).queryByRole('link')).toBeNull()
+    expect(within(regionMap).queryByText('WORLD POSITION')).toBeNull()
+    expect(document.querySelector('.knowledge-region-map-actions')).toBeNull()
+    expect(screen.queryByTestId('knowledge-region-best-score')).toBeNull()
+    expect(screen.queryByRole('link', { name: '开始区域挑战' })).toBeNull()
     expect(screen.queryByText('Asia · COUNTRY KNOWLEDGE')).toBeNull()
     expect(
-      screen.queryByText('位于亚洲东部，季风影响显著，人口与城市密集。'),
+      screen.getByText('位于亚洲东部，季风影响显著，人口与城市密集。'),
+    ).toBeVisible()
+    expect(screen.getByLabelText('东亚区域知识')).toBeVisible()
+    expect(screen.getByText('亚洲 · 区域知识')).toBeVisible()
+    expect(screen.getByText('自然地理')).toBeVisible()
+    expect(screen.getByText('人文地理')).toBeVisible()
+    expect(screen.getByText('学习要点')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: '关闭东亚区域知识' }),
     ).toBeNull()
-    expect(screen.getByLabelText('国家详情提示')).toBeVisible()
     expect(
       screen.getAllByRole('button', { name: /查看.*国家详情/ }),
     ).toHaveLength(5)
@@ -275,7 +446,16 @@ describe('knowledge pages', () => {
     expect(within(chinaCard).queryByText('北京')).toBeNull()
 
     await user.click(capitalControl)
-    expect(chinaCard).toHaveTextContent('北京')
+    const capitalField = within(chinaCard)
+      .getByText('北京')
+      .closest('.knowledge-country-card-capital') as HTMLElement
+    expect(capitalField).not.toBeNull()
+    expect(within(capitalField).getByText('北京').tagName).toBe('STRONG')
+    expect(within(capitalField).getByText('Beijing').tagName).toBe('SMALL')
+    expect(within(capitalField).queryByText('首都')).toBeNull()
+    expect(
+      Array.from(capitalField.children).map((item) => item.tagName),
+    ).toEqual(['STRONG', 'SMALL'])
     expect(flagControl).not.toBeDisabled()
     await user.click(countryControl)
     expect(chinaCard).toHaveTextContent('中国')
@@ -303,7 +483,7 @@ describe('knowledge pages', () => {
     ).toHaveLength(1)
 
     await user.click(screen.getByRole('button', { name: '查看中国国家详情' }))
-    expect(screen.queryByLabelText('国家详情提示')).toBeNull()
+    expect(screen.queryByLabelText('东亚区域知识')).toBeNull()
     expect(screen.getByLabelText('中国国家学习详情')).toBeVisible()
     expect(screen.getByText(/中华人民共和国/)).toBeVisible()
     expect(screen.getByText('2025 年')).toBeVisible()
@@ -319,7 +499,7 @@ describe('knowledge pages', () => {
     expect(getMapCountryPath('CN')).toHaveClass('is-country')
     expect(getMapCountryPath('JP')).toHaveClass('is-region')
     await user.click(screen.getByRole('button', { name: '关闭国家学习详情' }))
-    expect(screen.getByLabelText('国家详情提示')).toBeVisible()
+    expect(screen.getByLabelText('东亚区域知识')).toBeVisible()
     expect(document.querySelectorAll('path.is-country')).toHaveLength(0)
     expect(document.querySelectorAll('path.is-region')).toHaveLength(5)
     expect(getMapCountryPath('CN')).toHaveClass('is-region')
@@ -327,7 +507,7 @@ describe('knowledge pages', () => {
     await user.click(screen.getByRole('button', { name: '查看中国国家详情' }))
     await user.click(screen.getByRole('button', { name: '探索邻国阿富汗' }))
     expect(
-      screen.getByRole('heading', { name: '南亚', level: 1 }),
+      screen.getByRole('heading', { name: '南亚9国', level: 1 }),
     ).toBeVisible()
     expect(screen.getByLabelText('阿富汗国家学习详情')).toBeVisible()
     expect(document.querySelectorAll('path.is-country')).toHaveLength(1)
@@ -362,6 +542,35 @@ describe('knowledge pages', () => {
     expect(
       grid!.style.getPropertyValue('--knowledge-country-columns-compact'),
     ).toBe('2')
+  })
+
+  it('keeps multiple capital translations in matching display order', async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter initialEntries={['/knowledge/countries/southern-africa']}>
+        <Routes>
+          <Route
+            path="/knowledge/countries/:regionId"
+            element={<KnowledgeRegionPage />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('button', { name: '首都' }))
+    const southAfricaCard = screen
+      .getByRole('button', { name: '查看南非国家详情' })
+      .closest('article')!
+    const capitalField = southAfricaCard.querySelector<HTMLElement>(
+      '.knowledge-country-card-capital',
+    )!
+
+    expect(
+      within(capitalField).getByText('比勒陀利亚、布隆方丹、开普敦'),
+    ).toBeVisible()
+    expect(
+      within(capitalField).getByText('Pretoria / Bloemfontein / Cape Town'),
+    ).toBeVisible()
   })
 
   it('gives immediate feedback in the mixed regional challenge', async () => {

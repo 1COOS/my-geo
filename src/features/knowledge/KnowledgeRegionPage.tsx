@@ -17,6 +17,7 @@ import {
 import { CountryFlag } from '../../shared/components/CountryFlag'
 import { KnowledgeCountryDetail } from './KnowledgeCountryDetail'
 import { KnowledgeRegionMap } from './KnowledgeRegionMap'
+import { KnowledgeRegionOverviewCard } from './KnowledgeRegionOverviewCard'
 import { useKnowledgeProgress } from './useKnowledgeProgress'
 
 type CountryCardField = 'country' | 'flag' | 'capital'
@@ -38,7 +39,7 @@ export function KnowledgeRegionPage() {
   const [visibleCardFields, setVisibleCardFields] = useState<
     Set<CountryCardField>
   >(new Set<CountryCardField>(['flag']))
-  const { progressByRegion, persistenceStatus } = useKnowledgeProgress()
+  const { persistenceStatus } = useKnowledgeProgress()
 
   const regionCountries = useMemo(
     () => (region ? getCountriesForKnowledgeRegion(region.id) : []),
@@ -55,13 +56,15 @@ export function KnowledgeRegionPage() {
   )
     ? requestedCountry
     : undefined
-  const progress = progressByRegion.get(region.id)
   const showCountry = visibleCardFields.has('country')
   const showFlag = visibleCardFields.has('flag')
   const showCapital = visibleCardFields.has('capital')
+  const regionHeaderStyle = {
+    '--knowledge-region-title-accent': region.accent,
+  } as CSSProperties
   const countryGridStyle = {
     '--knowledge-country-columns-wide': Math.min(regionCountries.length, 5),
-    '--knowledge-country-columns-detail': Math.min(regionCountries.length, 4),
+    '--knowledge-country-columns-detail': Math.min(regionCountries.length, 5),
     '--knowledge-country-columns-tablet': Math.min(regionCountries.length, 3),
     '--knowledge-country-columns-compact': Math.min(regionCountries.length, 2),
   } as CSSProperties
@@ -92,28 +95,28 @@ export function KnowledgeRegionPage() {
   }
 
   return (
-    <main
-      className={
-        selectedCountry
-          ? 'knowledge-shell knowledge-region-shell has-country-selection'
-          : 'knowledge-shell knowledge-region-shell'
-      }
-    >
+    <main className="knowledge-shell knowledge-region-shell">
       <div className="knowledge-region-content">
         <section
           className="knowledge-region-study"
           aria-label={`${region.name.zh}国家学习`}
         >
+          <header
+            className="knowledge-region-page-header"
+            style={regionHeaderStyle}
+          >
+            <Link
+              className="knowledge-earth-detail-back"
+              to={`/knowledge?continent=${region.continentId}`}
+            >
+              ← 返回{continent.name.zh}
+            </Link>
+            <h1>
+              {region.name.zh}
+              <strong>{region.countryCodes.length}</strong>国
+            </h1>
+          </header>
           <div className="knowledge-region-map-strip">
-            <div className="knowledge-region-map-toolbar">
-              <div className="knowledge-region-map-identity">
-                <Link to={`/knowledge?continent=${region.continentId}`}>
-                  ← 返回{continent.name.zh}
-                </Link>
-                <span>WORLD POSITION</span>
-                <h1>{region.name.zh}</h1>
-              </div>
-            </div>
             <KnowledgeRegionMap
               continentId={region.continentId}
               regionId={region.id}
@@ -141,21 +144,6 @@ export function KnowledgeRegionPage() {
                   </button>
                 )
               })}
-            </div>
-            <div className="knowledge-region-map-actions">
-              <div>
-                <strong>{region.countryCodes.length}</strong>
-                <span>个国家</span>
-              </div>
-              <div>
-                <strong data-testid="knowledge-region-best-score">
-                  {progress?.bestScore ?? 0}%
-                </strong>
-                <span>{progress?.passedAt ? '已通过' : '最高成绩'}</span>
-              </div>
-              <Link to={`/knowledge/countries/${region.id}/challenge`}>
-                开始区域挑战
-              </Link>
             </div>
             {persistenceStatus === 'memory-only' ||
             persistenceStatus === 'error' ? (
@@ -197,12 +185,16 @@ export function KnowledgeRegionPage() {
                   ) : null}
                   {showCapital ? (
                     <span className="knowledge-country-card-capital">
-                      <small>首都</small>
                       <strong>
                         {country.capitals
                           .map((capital) => capital.name.zh)
                           .join('、') || '暂无资料'}
                       </strong>
+                      <small>
+                        {country.capitals
+                          .map((capital) => capital.name.en)
+                          .join(' / ') || 'No data'}
+                      </small>
                     </span>
                   ) : null}
                 </button>
@@ -220,15 +212,11 @@ export function KnowledgeRegionPage() {
           onSelectCountry={openCountry}
         />
       ) : (
-        <aside
-          className="knowledge-country-detail knowledge-country-detail-placeholder"
-          aria-label="国家详情提示"
-        >
-          <div>
-            <h2>选择一个国家查看详情</h2>
-            <p>点击左侧国家卡，查看首都、语言、货币和地理亮点。</p>
-          </div>
-        </aside>
+        <KnowledgeRegionOverviewCard
+          continentName={continent.name.zh}
+          countries={regionCountries}
+          region={region}
+        />
       )}
     </main>
   )

@@ -6,27 +6,30 @@ export type KnowledgeCardAction = {
   description: string
 }
 
-export type KnowledgeCardShellProps = {
+type KnowledgeCardShellBaseProps = {
   label: string
-  closeLabel: string
   identity: string
-  onClose: () => void
   children: ReactNode
   accent?: string
   className?: string
   footer?: ReactNode
 }
 
-export function KnowledgeCardShell({
-  label,
-  closeLabel,
-  identity,
-  onClose,
-  children,
-  accent,
-  className,
-  footer,
-}: KnowledgeCardShellProps) {
+type KnowledgeCardDismissalProps =
+  | {
+      closeLabel: string
+      onClose: () => void
+    }
+  | {
+      closeLabel?: never
+      onClose?: never
+    }
+
+export type KnowledgeCardShellProps = KnowledgeCardShellBaseProps &
+  KnowledgeCardDismissalProps
+
+export function KnowledgeCardShell(props: KnowledgeCardShellProps) {
+  const { label, identity, children, accent, className, footer } = props
   const contentRef = useRef<HTMLDivElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
 
@@ -45,8 +48,9 @@ export function KnowledgeCardShell({
   }, [identity])
 
   const closeCard = () => {
+    if (!props.onClose) return
     const opener = openerRef.current
-    onClose()
+    props.onClose()
     window.requestAnimationFrame(() => {
       if (opener?.isConnected) opener.focus({ preventScroll: true })
     })
@@ -62,14 +66,16 @@ export function KnowledgeCardShell({
           : undefined
       }
     >
-      <button
-        type="button"
-        className="country-detail-close"
-        aria-label={closeLabel}
-        onClick={closeCard}
-      >
-        ×
-      </button>
+      {props.onClose ? (
+        <button
+          type="button"
+          className="country-detail-close"
+          aria-label={props.closeLabel}
+          onClick={closeCard}
+        >
+          ×
+        </button>
+      ) : null}
       <div ref={contentRef} className="knowledge-card-content">
         {children}
       </div>

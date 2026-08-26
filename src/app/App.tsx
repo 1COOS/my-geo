@@ -21,6 +21,12 @@ const KnowledgeEarthPage = lazy(async () => {
   return { default: module.KnowledgeEarthPage }
 })
 
+const KnowledgeEarthLineDetailPage = lazy(async () => {
+  const module =
+    await import('../features/knowledge/KnowledgeEarthLineDetailPage')
+  return { default: module.KnowledgeEarthLineDetailPage }
+})
+
 const KnowledgeChallengePage = lazy(async () => {
   const module = await import('../features/knowledge/KnowledgeChallengePage')
   return { default: module.KnowledgeChallengePage }
@@ -47,6 +53,10 @@ export function App() {
                 <Route
                   path="/knowledge/earth"
                   element={<KnowledgeEarthPage />}
+                />
+                <Route
+                  path="/knowledge/earth/lines/:lineId"
+                  element={<KnowledgeEarthLineDetailPage />}
                 />
                 <Route
                   path="/knowledge/countries/:regionId"
