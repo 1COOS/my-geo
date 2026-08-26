@@ -9,6 +9,7 @@ import {
   getCameraFlightDuration,
   getCityLabelBudget,
   getCountryCodeForLayer,
+  getCountryPolygonState,
   getGlobeViewOffset,
   getOverviewCameraPosition,
   getMapLabelPlacement,
@@ -43,8 +44,23 @@ describe('country scene interaction', () => {
     }
 
     expect(getCountryCodeForLayer('polygon', chinaBoundary)).toBe('CN')
+    expect(
+      getCountryCodeForLayer('polygon', countryBoundaries.landmasses[0]),
+    ).toBeNull()
     expect(getCountryCodeForLayer('point', vaticanMarker)).toBe('VA')
     expect(getCountryCodeForLayer('globe', {})).toBeNull()
+  })
+
+  it('never treats a non-country landmass as selected or hovered', () => {
+    const antarctica = countryBoundaries.landmasses[0]
+    const china = countryBoundaries.features.find(
+      (boundary) => boundary.properties.code === 'CN',
+    )
+
+    expect(getCountryPolygonState(antarctica, null, null)).toBeNull()
+    expect(getCountryPolygonState(china, 'CN', null)).toBe('selected')
+    expect(getCountryPolygonState(china, null, 'CN')).toBe('hovered')
+    expect(getCountryPolygonState(china, null, null)).toBe('ordinary')
   })
 
   it('disables camera tweening for reduced motion', () => {

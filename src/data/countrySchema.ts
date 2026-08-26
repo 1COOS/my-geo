@@ -149,6 +149,11 @@ export const countrySourceRegistrySchema = z
 
 const polygonCoordinatesSchema = z.array(z.unknown()).min(1)
 
+const boundaryGeometrySchema = z.object({
+  type: z.enum(['Polygon', 'MultiPolygon']),
+  coordinates: polygonCoordinatesSchema,
+})
+
 export const countryBoundarySchema = z.object({
   type: z.literal('Feature'),
   properties: z.object({
@@ -156,19 +161,28 @@ export const countryBoundarySchema = z.object({
     nameZh: z.string().min(1),
     nameEn: z.string().min(1),
   }),
-  geometry: z.object({
-    type: z.enum(['Polygon', 'MultiPolygon']),
-    coordinates: polygonCoordinatesSchema,
+  geometry: boundaryGeometrySchema,
+})
+
+export const landmassSchema = z.object({
+  type: z.literal('Feature'),
+  properties: z.object({
+    id: z.literal('antarctica'),
+    nameZh: z.literal('南极洲'),
+    nameEn: z.literal('Antarctica'),
   }),
+  geometry: boundaryGeometrySchema,
 })
 
 export const countryBoundariesSchema = z.object({
   type: z.literal('FeatureCollection'),
   features: z.array(countryBoundarySchema).min(150),
+  landmasses: z.tuple([landmassSchema]),
 })
 
 export type Country = z.infer<typeof countrySchema>
 export type FeaturedCountry = z.infer<typeof featuredCountrySchema>
 export type CountrySource = z.infer<typeof countrySourceSchema>
 export type CountryBoundary = z.infer<typeof countryBoundarySchema>
+export type Landmass = z.infer<typeof landmassSchema>
 export type CountryBoundaries = z.infer<typeof countryBoundariesSchema>

@@ -100,6 +100,18 @@ export function getBoundaryCode(value: object | undefined) {
   return (value as CountryBoundary | undefined)?.properties.code ?? null
 }
 
+export function getCountryPolygonState(
+  value: object | undefined,
+  selectedCountryCode: string | null,
+  hoveredCountryCode: string | null,
+) {
+  const countryCode = getBoundaryCode(value)
+  if (!countryCode) return null
+  if (countryCode === selectedCountryCode) return 'selected' as const
+  if (countryCode === hoveredCountryCode) return 'hovered' as const
+  return 'ordinary' as const
+}
+
 export function getCityMarker(value: object | undefined) {
   return (value as CityMarker | undefined)?.markerType === 'city'
     ? (value as CityMarker)

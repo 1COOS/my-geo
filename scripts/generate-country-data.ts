@@ -391,6 +391,15 @@ const countriesByNumericCode = new Map(
   countries.map((country) => [country.numericCode, country]),
 )
 
+const antarcticaSourceFeature = rawFeaturesByNumericCode.get('010')
+if (
+  !antarcticaSourceFeature?.geometry ||
+  (antarcticaSourceFeature.geometry.type !== 'Polygon' &&
+    antarcticaSourceFeature.geometry.type !== 'MultiPolygon')
+) {
+  throw new Error('Missing World Atlas Antarctica geometry 010')
+}
+
 const cities: City[] = countries.flatMap((country) => {
   const capitalCities = country.capitals.map((capital, index) => {
     const alias =
@@ -542,6 +551,17 @@ const boundaries = {
       },
     ]
   }),
+  landmasses: [
+    {
+      type: 'Feature' as const,
+      properties: {
+        id: 'antarctica' as const,
+        nameZh: '南极洲' as const,
+        nameEn: 'Antarctica' as const,
+      },
+      geometry: antarcticaSourceFeature.geometry as BoundaryGeometry,
+    },
+  ] as const,
 }
 
 countryCatalogSchema.parse(countries)

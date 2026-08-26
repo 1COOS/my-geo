@@ -727,6 +727,13 @@
   stroke: rgb(137 165 170 / 34%);
 }
 
+.knowledge-region-map-landmasses path {
+  fill: rgb(62 92 98 / 58%);
+  stroke: rgb(137 165 170 / 34%);
+  stroke-width: 0.7;
+  vector-effect: non-scaling-stroke;
+}
+
 .knowledge-region-map-countries path.is-continent {
   fill: var(--knowledge-region-accent);
   fill-opacity: 0.48;

@@ -53,6 +53,12 @@ describe('knowledge pages', () => {
     expect(document.querySelector('.knowledge-map-summary')).toBeNull()
     expect(document.querySelector('.knowledge-region-progress')).toBeNull()
     await waitFor(() => expect(getMapCountryPath('CN')).toBeInTheDocument())
+    expect(
+      document.querySelector('[data-landmass-id="antarctica"]'),
+    ).toBeInTheDocument()
+    expect(
+      document.querySelector('[data-country-code="AQ"]'),
+    ).not.toBeInTheDocument()
     expect(getMapCountryPath('CN')).toHaveClass('is-continent')
     expect(getMapCountryPath('IN')).toHaveClass('is-continent')
     expect(getMapCountryPath('FR')).not.toHaveClass('is-continent')
@@ -132,6 +138,11 @@ describe('knowledge pages', () => {
     expect(screen.getByText('0.0° · 25.0°E')).toBeVisible()
 
     const map = screen.getByTestId('knowledge-earth-map')
+    await waitFor(() =>
+      expect(
+        map.querySelector('[data-landmass-id="antarctica"]'),
+      ).toBeInTheDocument(),
+    )
     map.focus()
     await user.keyboard('{ArrowDown}')
     expect(screen.getByText('5.0°S · 25.0°E')).toBeVisible()

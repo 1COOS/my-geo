@@ -9,6 +9,7 @@ import { countries } from '../../data/countries'
 import type {
   CountryBoundaries,
   CountryBoundary,
+  Landmass,
 } from '../../data/countrySchema'
 import type { GeoPosition } from '../../shared/types/geo'
 
@@ -106,8 +107,8 @@ export function formatGeoPosition(position: GeoPosition) {
   ).toFixed(1)}°${longitudeDirection}`
 }
 
-export function getBoundaryPath(boundary: CountryBoundary) {
-  return worldMiniMapPath(boundary as never) ?? ''
+export function getMapFeaturePath(feature: CountryBoundary | Landmass) {
+  return worldMiniMapPath(feature as never) ?? ''
 }
 
 function clampLatitude(latitude: number) {

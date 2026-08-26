@@ -131,6 +131,24 @@ describe('generated country catalogue', () => {
     ).toBe(false)
   })
 
+  it('keeps Antarctica as a validated non-country landmass', () => {
+    expect(countryBoundaries.landmasses).toHaveLength(1)
+    const [antarctica] = countryBoundaries.landmasses
+
+    expect(antarctica.properties).toEqual({
+      id: 'antarctica',
+      nameZh: '南极洲',
+      nameEn: 'Antarctica',
+    })
+    expect(geoContains(antarctica as never, [0, -85])).toBe(true)
+    expect(countries.some((country) => country.code === 'AQ')).toBe(false)
+    expect(
+      countryBoundaries.features.some(
+        (feature) => feature.properties.code === 'AQ',
+      ),
+    ).toBe(false)
+  })
+
   it('contains every authoritative capital and the reviewed priority-city allocation', () => {
     expect(capitalCities).toHaveLength(197)
     expect(cities).toHaveLength(338)

@@ -258,6 +258,12 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
 
   if (await scene.isVisible()) {
     await expect(page.getByTestId('world-mini-map')).toBeVisible()
+    await expect(
+      page.locator(
+        '.world-mini-map-landmasses [data-landmass-id="antarctica"]',
+      ),
+    ).toHaveCount(1)
+    await expect(page.locator('[data-country-code="AQ"]')).toHaveCount(0)
     const layerControl = page.getByRole('region', { name: '地球图层控制' })
     const capitals = layerControl.getByRole('button', { name: '首都' })
     const cities = layerControl.getByRole('button', { name: '城市' })
@@ -339,6 +345,9 @@ test('navigates the country knowledge atlas and deep-links back to the globe', a
     page.getByRole('heading', { name: '东亚', level: 1 }),
   ).toBeVisible()
   const knowledgeMap = page.locator('.knowledge-region-map')
+  await expect(
+    knowledgeMap.locator('[data-landmass-id="antarctica"]'),
+  ).toHaveCount(1)
   await expect(knowledgeMap.locator('path.is-region')).toHaveCount(5)
   await expect(knowledgeMap.locator('path.is-continent')).toHaveCount(0)
   const chinaCard = page

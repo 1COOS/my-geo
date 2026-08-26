@@ -95,6 +95,17 @@ if (boundaries.features.length !== 166 || boundaryCodes.size !== 166) {
     `Expected 166 unique country boundaries, received ${boundaries.features.length}`,
   )
 }
+const [antarctica] = boundaries.landmasses
+if (
+  antarctica.properties.id !== 'antarctica' ||
+  !geoContains(antarctica as never, [0, -85]) ||
+  boundaryCodes.has('AQ') ||
+  countries.some((country) => country.code === 'AQ')
+) {
+  throw new Error(
+    'Antarctica must be a non-country landmass containing the South Pole region',
+  )
+}
 const chinaBoundary = boundaries.features.find(
   (boundary) => boundary.properties.code === 'CN',
 )
@@ -649,5 +660,5 @@ for (const country of countries) {
 }
 
 console.log(
-  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${landmarks.length} landmarks, ${climateTypes.length} climate types, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} boundaries, and all local assets.`,
+  `Validated ${countries.length} complete country cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${landmarks.length} landmarks, ${climateTypes.length} climate types, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} country boundaries, ${boundaries.landmasses.length} non-country landmass, and all local assets.`,
 )

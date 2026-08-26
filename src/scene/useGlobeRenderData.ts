@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 
+import type { CountryBoundaries } from '../data/countrySchema'
 import { deserts } from '../data/deserts'
 import { getWaterbody } from '../data/waterbodies'
 import {
@@ -51,6 +52,21 @@ type UseGlobeRenderDataInput = Pick<
   | 'selectedReferenceLineId'
   | 'showGeographyLearningLayer'
 > & { labelItems: MapLabel[] }
+
+export function getGlobePolygonData(
+  countryBoundaries: CountryBoundaries | null,
+  visibleDesertFeatures: readonly object[],
+  visibleLakeSurfaceFeatures: readonly object[],
+  selectedSurfaceFeature: object | null,
+) {
+  return [
+    ...(countryBoundaries?.landmasses ?? []),
+    ...(countryBoundaries?.features ?? []),
+    ...visibleDesertFeatures,
+    ...visibleLakeSurfaceFeatures,
+    ...(selectedSurfaceFeature ? [selectedSurfaceFeature] : []),
+  ]
+}
 
 export function useGlobeRenderData({
   countryBoundaries,
@@ -348,12 +364,13 @@ export function useGlobeRenderData({
     [geographyPaths, linearPaths, mountainPaths, selectedTrenchPath],
   )
   const polygonsData = useMemo(
-    () => [
-      ...(countryBoundaries?.features ?? []),
-      ...visibleDesertFeatures,
-      ...visibleLakeSurfaceFeatures,
-      ...(selectedSurfaceFeature ? [selectedSurfaceFeature] : []),
-    ],
+    () =>
+      getGlobePolygonData(
+        countryBoundaries,
+        visibleDesertFeatures,
+        visibleLakeSurfaceFeatures,
+        selectedSurfaceFeature,
+      ),
     [
       countryBoundaries,
       selectedSurfaceFeature,

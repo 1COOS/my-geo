@@ -38,13 +38,13 @@ import type { MountainRangeGeometry } from '../data/mountainRangeSchema'
 import type { WaterbodyGeometry } from '../data/waterbodySchema'
 import type { CameraTarget, GeoPosition, GlobeView } from '../shared/types/geo'
 import {
-  getBoundaryCode,
   getCameraFlightDuration,
   getCityLabelBudget,
   getClimateMarker,
   getCityIdForLayer,
   getCityMarker,
   getCountryCodeForLayer,
+  getCountryPolygonState,
   getGlobeViewOffset,
   getLinearFeatureIdForLayer,
   getMapLabelPlacement,
@@ -1417,9 +1417,13 @@ function World({
           if (desertState === 'selected') return '#ffd878e8'
           if (desertState === 'hovered') return '#f6bc5dcc'
           if (desertState === 'ordinary') return '#c98a3a94'
-          const countryCode = getBoundaryCode(value)
-          if (countryCode === selectedCountryCode) return '#f2c75c'
-          if (countryCode === hoveredCountryCode) return '#68d7ff'
+          const countryState = getCountryPolygonState(
+            value,
+            selectedCountryCode,
+            hoveredCountryCode,
+          )
+          if (countryState === 'selected') return '#f2c75c'
+          if (countryState === 'hovered') return '#68d7ff'
           return showClimateLayer ? '#17659324' : '#176593'
         }}
         polygonSideColor={(value) => {
@@ -1440,7 +1444,11 @@ function World({
           )
           if (desertState === 'selected') return '#a8651ccc'
           if (desertState) return '#73451688'
-          return getBoundaryCode(value) === selectedCountryCode
+          return getCountryPolygonState(
+            value,
+            selectedCountryCode,
+            hoveredCountryCode,
+          ) === 'selected'
             ? '#b88927'
             : showClimateLayer
               ? '#0a355226'
@@ -1467,9 +1475,13 @@ function World({
           if (desertState === 'selected') return '#fff0bd'
           if (desertState === 'hovered') return '#ffe09a'
           if (desertState === 'ordinary') return '#e9ad58'
-          const countryCode = getBoundaryCode(value)
-          if (countryCode === selectedCountryCode) return '#fff1a8'
-          if (countryCode === hoveredCountryCode) return '#d8f7ff'
+          const countryState = getCountryPolygonState(
+            value,
+            selectedCountryCode,
+            hoveredCountryCode,
+          )
+          if (countryState === 'selected') return '#fff1a8'
+          if (countryState === 'hovered') return '#d8f7ff'
           return '#6cb4d4'
         }}
         polygonAltitude={(value) => {
@@ -1493,9 +1505,13 @@ function World({
           if (desertState === 'selected') return 0.042
           if (desertState === 'hovered') return 0.032
           if (desertState === 'ordinary') return 0.021
-          const countryCode = getBoundaryCode(value)
-          if (countryCode === selectedCountryCode) return 0.027
-          if (countryCode === hoveredCountryCode) return 0.017
+          const countryState = getCountryPolygonState(
+            value,
+            selectedCountryCode,
+            hoveredCountryCode,
+          )
+          if (countryState === 'selected') return 0.027
+          if (countryState === 'hovered') return 0.017
           return showClimateLayer ? 0.002 : 0.006
         }}
         polygonCapCurvatureResolution={quality === 'balanced' ? 2 : 4}

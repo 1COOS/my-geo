@@ -25,7 +25,7 @@ import type {
 import {
   findCountryAtPosition,
   formatGeoPosition,
-  getBoundaryPath,
+  getMapFeaturePath,
   invertMiniMapPoint,
   MICROSTATE_HIT_RADIUS,
   MINI_MAP_HEIGHT,
@@ -91,7 +91,16 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
       () =>
         (countryBoundaries?.features ?? []).map((boundary) => ({
           code: boundary.properties.code,
-          path: getBoundaryPath(boundary),
+          path: getMapFeaturePath(boundary),
+        })),
+      [countryBoundaries],
+    )
+    const landmassPaths = useMemo(
+      () =>
+        (countryBoundaries?.landmasses ?? []).map((landmass) => ({
+          id: landmass.properties.id,
+          name: landmass.properties.nameZh,
+          path: getMapFeaturePath(landmass),
         })),
       [countryBoundaries],
     )
@@ -368,6 +377,13 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
                 </g>
               </g>
             ) : null}
+            <g aria-hidden="true" className="world-mini-map-landmasses">
+              {landmassPaths.map(({ id, name, path }) => (
+                <path key={id} data-landmass-id={id} d={path}>
+                  <title>{name}</title>
+                </path>
+              ))}
+            </g>
             <g
               className={
                 showClimateLayer

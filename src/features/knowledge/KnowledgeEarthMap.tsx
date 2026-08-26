@@ -12,7 +12,7 @@ import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
 import { classifyGeoPosition } from '../../shared/lib/geoClassification'
 import type { GeoPosition } from '../../shared/types/geo'
 import {
-  getBoundaryPath,
+  getMapFeaturePath,
   invertMiniMapPoint,
   MINI_MAP_KEYBOARD_FAST_STEP,
   MINI_MAP_KEYBOARD_STEP,
@@ -47,7 +47,15 @@ export function KnowledgeEarthMap({
     () =>
       (countryBoundaries.data?.features ?? []).map((boundary) => ({
         code: boundary.properties.code,
-        path: getBoundaryPath(boundary),
+        path: getMapFeaturePath(boundary),
+      })),
+    [countryBoundaries.data],
+  )
+  const landmassPaths = useMemo(
+    () =>
+      (countryBoundaries.data?.landmasses ?? []).map((landmass) => ({
+        id: landmass.properties.id,
+        path: getMapFeaturePath(landmass),
       })),
     [countryBoundaries.data],
   )
@@ -152,6 +160,18 @@ export function KnowledgeEarthMap({
               y2={y}
               stroke="rgb(139 170 176 / 14%)"
               strokeWidth="0.45"
+            />
+          ))}
+        </g>
+        <g className="knowledge-earth-map-landmasses" aria-hidden="true">
+          {landmassPaths.map(({ id, path }) => (
+            <path
+              key={id}
+              data-landmass-id={id}
+              d={path}
+              fill="rgb(59 91 96 / 72%)"
+              stroke="rgb(151 183 187 / 34%)"
+              strokeWidth="0.32"
             />
           ))}
         </g>

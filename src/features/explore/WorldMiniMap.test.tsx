@@ -104,6 +104,37 @@ describe('WorldMiniMap', () => {
     expect(navigation.position.longitude).toBeCloseTo(-140, 4)
   })
 
+  it('renders Antarctica as a non-country landmass and navigates by coordinate', () => {
+    const { onNavigate } = renderMiniMap()
+    const map = screen.getByTestId('world-mini-map')
+    vi.spyOn(map, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      right: 360,
+      bottom: 180,
+      left: 0,
+      width: 360,
+      height: 180,
+      toJSON: () => ({}),
+    })
+    const antarctica = document.querySelector(
+      '[data-landmass-id="antarctica"]',
+    )!
+
+    expect(antarctica).toBeInTheDocument()
+    expect(antarctica).not.toHaveAttribute('data-country-code')
+    fireEvent.click(antarctica, { clientX: 180, clientY: 175 })
+
+    const navigation = onNavigate.mock.lastCall?.[0]
+    expect(navigation?.kind).toBe('coordinate')
+    if (navigation?.kind !== 'coordinate') {
+      throw new Error('Expected coordinate navigation')
+    }
+    expect(navigation.position.latitude).toBeCloseTo(-85, 4)
+    expect(navigation.position.longitude).toBeCloseTo(0, 4)
+  })
+
   it('updates the live marker through its imperative handle', () => {
     const { ref } = renderMiniMap()
     const marker = screen.getByTestId('world-mini-map-view-marker')

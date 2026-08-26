@@ -44,6 +44,14 @@ export function KnowledgeRegionMap({
       })),
     [boundaryResource.data],
   )
+  const landmassPaths = useMemo(
+    () =>
+      (boundaryResource.data?.landmasses ?? []).map((landmass) => ({
+        id: landmass.properties.id,
+        path: pathGenerator(landmass as never) ?? '',
+      })),
+    [boundaryResource.data],
+  )
   const microstateMarkers = useMemo(() => {
     const boundaryCodes = new Set(
       (boundaryResource.data?.features ?? []).map(
@@ -108,6 +116,11 @@ export function KnowledgeRegionMap({
           ))}
           {[85, 170, 255].map((y) => (
             <line key={`y-${y}`} x1={0} x2={MAP_WIDTH} y1={y} y2={y} />
+          ))}
+        </g>
+        <g aria-hidden="true" className="knowledge-region-map-landmasses">
+          {landmassPaths.map(({ id, path }) => (
+            <path key={id} data-landmass-id={id} d={path} />
           ))}
         </g>
         <g className="knowledge-region-map-countries">

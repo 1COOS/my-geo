@@ -50,9 +50,11 @@ Border codes outside the 195-country catalogue are not treated as sovereign coun
 - Source: `world-atlas@2.0.2`, derived from Natural Earth 4.1.0 Admin 0 data
 - Projects: <https://github.com/topojson/world-atlas> and <https://www.naturalearthdata.com/>
 - License: ISC for the World Atlas package; Natural Earth vector data is public domain
-- Use: 1:110m prototype country polygons converted from TopoJSON to local GeoJSON.
+- Use: 1:110m prototype country polygons and the non-country Antarctica landmass converted from TopoJSON to local GeoJSON.
 
 Natural Earth publishes Taiwan island as numeric feature `158`. My Geo incorporates that island polygon into China's numeric feature `156` when generating the local `CN` boundary; it does not create a separate country catalogue or knowledge-card entry. These boundaries are for internal product prototyping. Public release, especially in regulated jurisdictions, requires a separate map-compliance review.
+
+Natural Earth publishes Antarctica as numeric feature `010`. My Geo renders it as a non-interactive continental landmass on 2D and 3D maps; it is not added to the 195-country catalogue, search, country cards, challenges or learning progress.
 
 ## Capital coordinates
 

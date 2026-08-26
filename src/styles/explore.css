@@ -1381,6 +1381,18 @@
   stroke: rgb(131 162 168 / 34%);
 }
 
+.world-mini-map-landmasses path {
+  fill: rgb(48 78 84 / 74%);
+  stroke: rgb(131 162 168 / 34%);
+  stroke-width: 0.52;
+  vector-effect: non-scaling-stroke;
+}
+
+.world-mini-map-climate ~ .world-mini-map-landmasses path {
+  fill: rgb(8 18 22 / 6%);
+  stroke: rgb(237 243 242 / 55%);
+}
+
 .world-mini-map-countries.is-climate-visible path {
   fill: rgb(8 18 22 / 6%);
   stroke: rgb(237 243 242 / 55%);
