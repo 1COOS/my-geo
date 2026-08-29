@@ -174,6 +174,79 @@ describe('ExplorePage', () => {
     })
   })
 
+  it('opens waterbody and linear-feature deep links with their layers and camera targets', async () => {
+    window.history.replaceState({}, '', '/explore?waterbody=lake-baikal')
+    const { unmount } = render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    expect(await screen.findByLabelText('贝加尔湖水域知识卡')).toBeVisible()
+    await waitFor(() =>
+      expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+        showLakeLayer: true,
+        selectedWaterbodyId: 'lake-baikal',
+        selectedLinearFeatureId: null,
+        cameraTarget: {
+          position: { latitude: 53.5, longitude: 108.1 },
+          distance: 205,
+        },
+      }),
+    )
+
+    unmount()
+    window.history.replaceState({}, '', '/explore?linearFeature=amazon-system')
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    expect(await screen.findByLabelText('亚马孙河知识卡')).toBeVisible()
+    await waitFor(() =>
+      expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+        showRiverAndCanalLayer: true,
+        selectedLinearFeatureId: 'amazon-system',
+        selectedWaterbodyId: null,
+      }),
+    )
+  })
+
+  it('keeps country and geography ahead of water deep links', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/explore?country=CN&geography=earth-zones&line=tropic-of-cancer&waterbody=lake-baikal&linearFeature=amazon-system',
+    )
+    const { unmount } = render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    expect(await screen.findByLabelText('中国国家知识卡')).toBeVisible()
+    expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText('贝加尔湖水域知识卡'),
+    ).not.toBeInTheDocument()
+
+    unmount()
+    window.history.replaceState(
+      {},
+      '',
+      '/explore?country=XX&geography=earth-zones&line=tropic-of-cancer&waterbody=lake-baikal&linearFeature=amazon-system',
+    )
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    expect(await screen.findByLabelText('地球经纬线知识卡')).toBeVisible()
+    expect(
+      screen.queryByLabelText('贝加尔湖水域知识卡'),
+    ).not.toBeInTheDocument()
+  })
+
   it('shows the globe and control deck without page chrome or an open search field', async () => {
     render(
       <Tooltip.Provider>

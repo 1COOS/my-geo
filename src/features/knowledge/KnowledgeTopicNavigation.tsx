@@ -1,21 +1,33 @@
-import { Fragment } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 
 import {
   geographyReferenceLines,
   geographyTopics,
 } from '../../data/geographyLearning'
+import {
+  waterLearningObjectCount,
+  waterLearningLayers,
+} from '../../data/waterLearning'
 
-type KnowledgeTopicId = 'countries' | 'earth'
+type KnowledgeTopicId = 'countries' | 'earth' | 'water'
+type NavigationTopicId = KnowledgeTopicId | 'climate' | 'terrain'
 
 type KnowledgeTopicNavigationProps = {
   activeTopic: KnowledgeTopicId
 }
 
-const futureTopics = [
-  { name: '气候', note: '世界气候类型与分布规律' },
-  { name: '地形', note: '山脉、高原、平原与盆地' },
-  { name: '水域', note: '海洋、河流、湖泊与运河' },
+const futureTopics = {
+  climate: { name: '气候', note: '世界气候类型与分布规律' },
+  terrain: { name: '地形', note: '山脉、高原、平原与盆地' },
+} as const
+
+const topicOrder: NavigationTopicId[] = [
+  'countries',
+  'earth',
+  'climate',
+  'terrain',
+  'water',
 ]
 
 const availableTopics = {
@@ -33,8 +45,17 @@ const availableTopics = {
     note: '经纬判读与五带',
     to: '/knowledge/earth',
     stats: [
-      { value: String(geographyTopics.length), label: '类用途' },
-      { value: String(geographyReferenceLines.length), label: '条参考线' },
+      { value: String(geographyTopics.length), label: '用途' },
+      { value: String(geographyReferenceLines.length), label: '参考线' },
+    ],
+  },
+  water: {
+    title: '水域',
+    note: '海洋｜湖泊｜水域｜河流',
+    to: '/knowledge/water',
+    stats: [
+      { value: String(waterLearningLayers.length), label: '图层' },
+      { value: String(waterLearningObjectCount), label: '对象' },
     ],
   },
 } as const
@@ -42,14 +63,64 @@ const availableTopics = {
 export function KnowledgeTopicNavigation({
   activeTopic,
 }: KnowledgeTopicNavigationProps) {
+  const topicGridRef = useRef<HTMLDivElement>(null)
+  const activeCardRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const grid = topicGridRef.current
+    const activeCard = activeCardRef.current
+    if (!grid || !activeCard) return
+    const alignActiveCard = () => {
+      if (grid.scrollWidth <= grid.clientWidth) {
+        grid.scrollLeft = 0
+        return
+      }
+      grid.scrollLeft = Math.max(
+        0,
+        activeCard.offsetLeft + activeCard.offsetWidth - grid.clientWidth,
+      )
+    }
+    alignActiveCard()
+    const observer = new ResizeObserver(alignActiveCard)
+    observer.observe(grid)
+    return () => observer.disconnect()
+  }, [activeTopic])
+
   return (
     <section className="knowledge-topics" aria-label="知识主题">
-      <div className={`knowledge-topic-grid is-${activeTopic}-active`}>
-        {(Object.keys(availableTopics) as KnowledgeTopicId[]).map((topicId) => {
+      <div
+        ref={topicGridRef}
+        className={`knowledge-topic-grid is-${activeTopic}-active`}
+        style={{
+          gridTemplateColumns: topicOrder
+            .map((topicId) =>
+              topicId === activeTopic
+                ? 'minmax(18rem, 1.55fr)'
+                : 'minmax(9rem, 1fr)',
+            )
+            .join(' '),
+        }}
+      >
+        {topicOrder.map((topicId) => {
+          if (topicId === 'climate' || topicId === 'terrain') {
+            const topic = futureTopics[topicId]
+            return (
+              <article className="knowledge-topic-card is-locked" key={topicId}>
+                <div>
+                  <h3>{topic.name}</h3>
+                  <p>{topic.note}</p>
+                </div>
+              </article>
+            )
+          }
+
           const topic = availableTopics[topicId]
           if (topicId === activeTopic) {
             return (
-              <article className="knowledge-topic-card is-active" key={topicId}>
+              <article
+                ref={activeCardRef}
+                className="knowledge-topic-card is-active"
+                key={topicId}
+              >
                 <div className="knowledge-topic-copy">
                   <h1>{topic.title}</h1>
                   <p>{topic.note}</p>
@@ -85,15 +156,6 @@ export function KnowledgeTopicNavigation({
             </Link>
           )
         })}
-
-        {futureTopics.map((topic) => (
-          <article className="knowledge-topic-card is-locked" key={topic.name}>
-            <div>
-              <h3>{topic.name}</h3>
-              <p>{topic.note}</p>
-            </div>
-          </article>
-        ))}
       </div>
     </section>
   )

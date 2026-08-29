@@ -702,56 +702,6 @@ export function ExplorePage() {
     },
     [requestCameraTarget],
   )
-  const requestedCountryCode = useMemo(
-    () =>
-      new URLSearchParams(window.location.search).get('country')?.toUpperCase(),
-    [],
-  )
-  const handledCountryDeepLinkRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (
-      !requestedCountryCode ||
-      handledCountryDeepLinkRef.current === requestedCountryCode
-    ) {
-      return
-    }
-    handledCountryDeepLinkRef.current = requestedCountryCode
-    navigateToCountry(requestedCountryCode)
-  }, [navigateToCountry, requestedCountryCode])
-  const requestedGeographySelection = useMemo(() => {
-    const searchParams = new URLSearchParams(window.location.search)
-    return resolveGeographyExploreSelection(
-      searchParams.get('geography'),
-      searchParams.get('line'),
-    )
-  }, [])
-  const handledGeographyDeepLinkRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (
-      !requestedGeographySelection ||
-      getCountry(requestedCountryCode) ||
-      handledGeographyDeepLinkRef.current
-    ) {
-      return
-    }
-    handledGeographyDeepLinkRef.current =
-      requestedGeographySelection.kind === 'line'
-        ? `${requestedGeographySelection.topicId}:${requestedGeographySelection.referenceLineId}`
-        : `${requestedGeographySelection.focusTopicId}:overview`
-    if (requestedGeographySelection.kind === 'line') {
-      openGeographyTopic(
-        requestedGeographySelection.topicId,
-        requestedGeographySelection.referenceLineId,
-      )
-    } else {
-      openGeographyOverview(requestedGeographySelection.focusTopicId)
-    }
-  }, [
-    openGeographyOverview,
-    openGeographyTopic,
-    requestedCountryCode,
-    requestedGeographySelection,
-  ])
   const navigateToCity = useCallback(
     (cityId: string) => {
       const city = getCity(cityId)
@@ -801,6 +751,66 @@ export function ExplorePage() {
     },
     [requestCameraTarget],
   )
+  const requestedDeepLinks = useMemo(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    return {
+      countryCode: searchParams.get('country')?.toUpperCase(),
+      geography: resolveGeographyExploreSelection(
+        searchParams.get('geography'),
+        searchParams.get('line'),
+      ),
+      waterbodyId: searchParams.get('waterbody'),
+      linearFeatureId: searchParams.get('linearFeature'),
+    }
+  }, [])
+  const handledDeepLinkRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (handledDeepLinkRef.current) return
+    const timeoutId = window.setTimeout(() => {
+      const country = getCountry(requestedDeepLinks.countryCode)
+      if (country) {
+        handledDeepLinkRef.current = `country:${country.code}`
+        navigateToCountry(country.code)
+        return
+      }
+
+      if (requestedDeepLinks.geography) {
+        handledDeepLinkRef.current = 'geography'
+        if (requestedDeepLinks.geography.kind === 'line') {
+          openGeographyTopic(
+            requestedDeepLinks.geography.topicId,
+            requestedDeepLinks.geography.referenceLineId,
+          )
+        } else {
+          openGeographyOverview(requestedDeepLinks.geography.focusTopicId)
+        }
+        return
+      }
+
+      const waterbody = getWaterbody(requestedDeepLinks.waterbodyId)
+      if (waterbody) {
+        handledDeepLinkRef.current = `waterbody:${waterbody.id}`
+        navigateToWaterbody(waterbody.id)
+        return
+      }
+
+      const linearFeature = getLinearGeoFeature(
+        requestedDeepLinks.linearFeatureId,
+      )
+      if (linearFeature) {
+        handledDeepLinkRef.current = `linearFeature:${linearFeature.id}`
+        navigateToLinearFeature(linearFeature.id)
+      }
+    }, 0)
+    return () => window.clearTimeout(timeoutId)
+  }, [
+    navigateToCountry,
+    navigateToLinearFeature,
+    navigateToWaterbody,
+    openGeographyOverview,
+    openGeographyTopic,
+    requestedDeepLinks,
+  ])
   const navigateToMountainRange = useCallback(
     (rangeId: string) => {
       const range = getMountainRange(rangeId)

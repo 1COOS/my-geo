@@ -123,7 +123,7 @@ describe('knowledge pages', () => {
       screen.getByRole('heading', { name: '地球', level: 1 }),
     ).toBeVisible()
     expect(screen.getByLabelText('地球知识范围')).toHaveTextContent(
-      '4类用途13条参考线',
+      '4用途13参考线',
     )
     expect(screen.getByRole('tab', { name: '半球界线' })).toHaveAttribute(
       'aria-selected',

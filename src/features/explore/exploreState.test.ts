@@ -45,8 +45,18 @@ describe('exploreReducer', () => {
         value: { kind: 'overview', focusTopicId: null },
       },
     })
+    const oceanState = exploreReducer(initialExploreState, {
+      type: 'select',
+      selection: { kind: 'waterbody', waterbodyId: 'pacific-ocean' },
+    })
+    const riverState = exploreReducer(initialExploreState, {
+      type: 'select',
+      selection: { kind: 'linearFeature', featureId: 'amazon-system' },
+    })
 
     expect(lakeState.layers.lake).toBe(true)
+    expect(oceanState.layers.ocean).toBe(true)
+    expect(riverState.layers.riverAndCanal).toBe(true)
     expect(desertState.layers.desert).toBe(true)
     expect(geographyState.layers.geography).toBe(true)
   })

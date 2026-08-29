@@ -135,7 +135,10 @@ function layersForSelection(
   if (!selection) return layers
   if (selection.kind === 'waterbody') {
     const waterbody = getWaterbody(selection.waterbodyId)
-    return waterbody?.layer === 'lake' ? { ...layers, lake: true } : layers
+    return waterbody ? { ...layers, [waterbody.layer]: true } : layers
+  }
+  if (selection.kind === 'linearFeature') {
+    return { ...layers, riverAndCanal: true }
   }
   if (selection.kind === 'desert') return { ...layers, desert: true }
   if (selection.kind === 'landmark') return { ...layers, landmark: true }
