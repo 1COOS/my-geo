@@ -53,10 +53,15 @@ describe('exploreReducer', () => {
       type: 'select',
       selection: { kind: 'linearFeature', featureId: 'amazon-system' },
     })
+    const mountainState = exploreReducer(initialExploreState, {
+      type: 'select',
+      selection: { kind: 'mountainRange', rangeId: 'himalayas' },
+    })
 
     expect(lakeState.layers.lake).toBe(true)
     expect(oceanState.layers.ocean).toBe(true)
     expect(riverState.layers.riverAndCanal).toBe(true)
+    expect(mountainState.layers.mountain).toBe(true)
     expect(desertState.layers.desert).toBe(true)
     expect(geographyState.layers.geography).toBe(true)
   })

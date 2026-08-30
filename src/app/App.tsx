@@ -32,6 +32,11 @@ const KnowledgeWaterPage = lazy(async () => {
   return { default: module.KnowledgeWaterPage }
 })
 
+const KnowledgeExtremesPage = lazy(async () => {
+  const module = await import('../features/knowledge/KnowledgeExtremesPage')
+  return { default: module.KnowledgeExtremesPage }
+})
+
 const KnowledgeChallengePage = lazy(async () => {
   const module = await import('../features/knowledge/KnowledgeChallengePage')
   return { default: module.KnowledgeChallengePage }
@@ -78,6 +83,22 @@ export function App() {
                 />
                 <Route
                   path="/knowledge/water/linear-features/:linearFeatureId"
+                  element={<KnowledgeWaterPage />}
+                />
+                <Route
+                  path="/knowledge/extremes"
+                  element={<KnowledgeExtremesPage />}
+                />
+                <Route
+                  path="/knowledge/extremes/metrics/:metricId"
+                  element={<KnowledgeExtremesPage />}
+                />
+                <Route
+                  path="/knowledge/extremes/:legacyMetricId/:legacyEntryId"
+                  element={<KnowledgeExtremesPage />}
+                />
+                <Route
+                  path="/knowledge/water/groups/:groupId"
                   element={<KnowledgeWaterPage />}
                 />
                 <Route

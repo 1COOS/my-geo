@@ -10,8 +10,11 @@
 
 .knowledge-topic-card p {
   margin: 0;
-  font-size: var(--fs-b);
+  overflow: hidden;
+  font-size: var(--fs-m);
   line-height: var(--lh-b);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .knowledge-topic-stats {
@@ -388,13 +391,6 @@
   border-radius: var(--atlas-radius-panel);
 }
 
-.knowledge-topic-grid.is-earth-active {
-  grid-template-columns: minmax(9rem, 1fr) minmax(18rem, 1.55fr) repeat(
-      3,
-      minmax(9rem, 1fr)
-    );
-}
-
 .knowledge-topic-card {
   display: flex;
   gap: 0.75rem;
@@ -412,7 +408,7 @@
 }
 
 .knowledge-topic-card.is-active {
-  justify-content: space-between;
+  justify-content: flex-start;
   position: relative;
   background: var(--atlas-panel-raised);
   border-color: var(--atlas-border-soft);
@@ -425,10 +421,6 @@
   width: 3px;
   content: '';
   background: var(--atlas-accent);
-}
-
-.knowledge-topic-card.is-locked {
-  opacity: 0.54;
 }
 
 .knowledge-topic-card.is-available {
@@ -448,7 +440,7 @@
 .knowledge-topic-card h1,
 .knowledge-topic-card h3 {
   margin: 0 0 0.2rem;
-  font-size: 0.88rem;
+  font-size: 0.9375rem;
   color: var(--atlas-text);
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -457,25 +449,6 @@
 .knowledge-topic-card p,
 .knowledge-topic-stats span {
   color: var(--atlas-text-secondary);
-}
-
-.is-countries-active .is-active {
-  justify-content: flex-start;
-}
-
-.is-countries-active .is-active h1 {
-  font-size: 1.2rem;
-}
-
-.is-countries-active .is-active p {
-  font-size: var(--fs-m);
-  white-space: nowrap;
-}
-
-.knowledge-topic-stats i {
-  width: 1px;
-  height: 1.8rem;
-  background: var(--atlas-border);
 }
 
 .knowledge-earth {
@@ -571,7 +544,7 @@
   scrollbar-width: none;
 }
 
-.knowledge-continent-tabs button {
+.knowledge-continent-tabs :is(button, a[role='tab']) {
   display: flex;
   flex: none;
   gap: 0.35rem;
@@ -586,7 +559,7 @@
   border-radius: 0;
 }
 
-.knowledge-continent-tabs button::after {
+.knowledge-continent-tabs :is(button, a[role='tab'])::after {
   position: absolute;
   right: 0;
   bottom: -1px;
@@ -596,20 +569,39 @@
   background: transparent;
 }
 
-.knowledge-continent-tabs button:hover,
-.knowledge-continent-tabs button:focus-visible {
+.knowledge-continent-tabs :is(button, a[role='tab']):hover,
+.knowledge-continent-tabs :is(button, a[role='tab']):focus-visible {
   color: var(--atlas-text);
   border-color: transparent;
 }
 
-.knowledge-continent-tabs button[aria-selected='true'] {
+.knowledge-continent-tabs :is(button, a[role='tab'])[aria-selected='true'] {
   color: var(--atlas-text);
   background: transparent;
   border-color: transparent;
 }
 
-.knowledge-continent-tabs button[aria-selected='true']::after {
+.knowledge-continent-tabs
+  :is(button, a[role='tab'])[aria-selected='true']::after {
   background: var(--atlas-accent);
+}
+
+.world-extremes-map-markers > g:focus-visible,
+.world-extremes-category-overlays > g:focus-visible {
+  outline: none;
+}
+
+.world-extremes-map-markers
+  > g:is(:hover, :focus-visible)
+  .world-extremes-marker-hit {
+  stroke: #fff;
+}
+
+.world-extremes-category-overlays
+  > g:is(:hover, :focus-visible)
+  .world-extremes-category-visible {
+  stroke: #fff;
+  stroke-opacity: 1;
 }
 
 .knowledge-continent-tabs strong {

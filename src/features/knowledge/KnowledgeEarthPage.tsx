@@ -1,14 +1,15 @@
 import { Navigate, useSearchParams } from 'react-router-dom'
 
 import {
+  geographyTopics,
   getGeographyTopic,
   resolveGeographyLearningSelection,
 } from '../../data/geographyLearning'
 import type { GeographyTopicId } from '../../data/geographyLearningSchema'
-import { GeographyTopicNav } from '../geography-learning/GeographyLearningContent'
 import { KnowledgeEarthMap } from './KnowledgeEarthMap'
 import { KnowledgeEarthReferenceLinks } from './KnowledgeEarthReferenceLinks'
-import { KnowledgeTopicNavigation } from './KnowledgeTopicNavigation'
+import { KnowledgeMapWorkbenchPage } from './KnowledgeMapWorkbench'
+import { KnowledgePrimaryTabs } from './KnowledgePrimaryTabs'
 
 const DEFAULT_TOPIC_ID: GeographyTopicId = 'grid-reading'
 
@@ -45,23 +46,35 @@ export function KnowledgeEarthPage() {
   }
 
   return (
-    <main className="knowledge-shell knowledge-earth-shell">
-      <KnowledgeTopicNavigation activeTopic="earth" />
-
-      <section className="knowledge-earth" aria-label="地球经纬线学习">
-        <GeographyTopicNav
+    <KnowledgeMapWorkbenchPage
+      activeTopic="earth"
+      label="地球经纬线学习"
+      renderControls={(compact) => (
+        <KnowledgePrimaryTabs
+          activeId={selection.topicId}
+          compact={compact}
+          items={geographyTopics.map((topic) => ({
+            id: topic.id,
+            label: topic.shortName.zh,
+          }))}
           label="地球经纬线用途"
-          topicId={selection.topicId}
-          onSelectTopic={selectTopic}
+          onSelect={(id) => selectTopic(id as GeographyTopicId)}
         />
-
+      )}
+      renderMap={(compact) => (
         <KnowledgeEarthMap
           topicId={selection.topicId}
           onSelectTopic={selectTopic}
+          workbench
+          compact={compact}
         />
-
-        <KnowledgeEarthReferenceLinks topicId={selection.topicId} />
-      </section>
-    </main>
+      )}
+      renderResults={(compact) => (
+        <KnowledgeEarthReferenceLinks
+          topicId={selection.topicId}
+          compact={compact}
+        />
+      )}
+    />
   )
 }

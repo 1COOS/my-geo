@@ -13,64 +13,14 @@ const curriculumSourceId = 'moe-geography-curriculum-2022'
 const naturalEarthSourceId = 'natural-earth-physical-v5'
 const oceanSourceId = 'noaa-ocean-service'
 
-const lakeGroups = [
-  {
-    id: 'lake-asia',
-    name: '亚洲',
-    objectIds: [
-      'lake-baikal',
-      'lake-balkhash',
-      'qinghai-lake',
-      'tonle-sap',
-      'dead-sea',
-    ],
-  },
-  {
-    id: 'lake-europe',
-    name: '欧洲',
-    objectIds: ['lake-ladoga'],
-  },
-  {
-    id: 'lake-africa',
-    name: '非洲',
-    objectIds: [
-      'lake-victoria',
-      'lake-tanganyika',
-      'lake-malawi',
-      'lake-chad',
-      'lake-turkana',
-    ],
-  },
-  {
-    id: 'lake-north-america',
-    name: '北美洲',
-    objectIds: [
-      'lake-superior',
-      'lake-michigan',
-      'lake-huron',
-      'lake-erie',
-      'lake-ontario',
-      'great-bear-lake',
-      'great-slave-lake',
-    ],
-  },
-  {
-    id: 'lake-south-america',
-    name: '南美洲',
-    objectIds: ['lake-titicaca'],
-  },
-  {
-    id: 'lake-oceania',
-    name: '大洋洲',
-    objectIds: ['lake-eyre'],
-  },
-] as const
-
 const groups = [
   {
     id: 'ocean-oceans',
     layerId: 'ocean',
     name: '大洋',
+    nameEn: 'Oceans',
+    summary:
+      '五大洋彼此连通，共同构成世界海洋的主体，适合比较全球海陆分布和洋际位置。',
     objectKind: 'waterbody',
     objectIds: waterbodies
       .filter(
@@ -83,6 +33,9 @@ const groups = [
     id: 'ocean-seas',
     layerId: 'ocean',
     name: '海',
+    nameEn: 'Seas',
+    summary:
+      '海通常位于大洋边缘，并受到大陆、半岛和岛屿的包围程度及区域环境影响。',
     objectKind: 'waterbody',
     objectIds: waterbodies
       .filter(
@@ -94,6 +47,9 @@ const groups = [
     id: 'ocean-bays',
     layerId: 'ocean',
     name: '海湾',
+    nameEn: 'Gulfs and Bays',
+    summary:
+      '海湾是海水向陆地凹入的水域，观察重点是开口方向、周围陆地和所连接的海洋。',
     objectKind: 'waterbody',
     objectIds: waterbodies
       .filter(
@@ -103,15 +59,25 @@ const groups = [
       )
       .map((waterbody) => waterbody.id),
   },
-  ...lakeGroups.map((group) => ({
-    ...group,
-    layerId: 'lake' as const,
-    objectKind: 'waterbody' as const,
-  })),
+  {
+    id: 'world-lakes',
+    layerId: 'lake',
+    name: '世界湖泊',
+    nameEn: 'World Lakes',
+    summary:
+      '世界代表性湖泊分布在不同气候和地形区，可比较湖面面积、深度、补给和区域位置。',
+    objectKind: 'waterbody',
+    objectIds: waterbodies
+      .filter((waterbody) => waterbody.layer === 'lake')
+      .map((waterbody) => waterbody.id),
+  },
   {
     id: 'waterway-straits',
     layerId: 'waterway',
     name: '海峡',
+    nameEn: 'Straits',
+    summary:
+      '海峡连接两片较大水域并分隔两块陆地，地图判读应同时说明连接与分隔关系。',
     objectKind: 'waterbody',
     objectIds: waterbodies
       .filter((waterbody) => waterbody.kind === 'strait')
@@ -121,6 +87,9 @@ const groups = [
     id: 'waterway-trenches',
     layerId: 'waterway',
     name: '海沟',
+    nameEn: 'Trenches',
+    summary:
+      '海沟是狭长而深的海底凹地，常分布在板块俯冲带附近并联系火山地震活动。',
     objectKind: 'waterbody',
     objectIds: waterbodies
       .filter((waterbody) => waterbody.kind === 'trench')
@@ -130,6 +99,9 @@ const groups = [
     id: 'river-rivers',
     layerId: 'river',
     name: '河流',
+    nameEn: 'Rivers',
+    summary:
+      '主要河流连接源头、支流、流域和河口，可用于比较流向、长度与区域水文特征。',
     objectKind: 'linearFeature',
     objectIds: linearGeoFeatures
       .filter((feature) => feature.kind === 'river')
@@ -139,6 +111,9 @@ const groups = [
     id: 'river-canals',
     layerId: 'river',
     name: '运河',
+    nameEn: 'Canals',
+    summary:
+      '运河是人工开挖或改造的水道，观察重点是起点、终点及其连接的天然水系和海域。',
     objectKind: 'linearFeature',
     objectIds: linearGeoFeatures
       .filter((feature) => feature.kind === 'canal')
@@ -256,7 +231,7 @@ const catalog = waterLearningCatalogSchema.parse({
     },
     {
       id: 'waterway',
-      name: '水域',
+      name: '海峡·海沟',
       aliases: ['海峡', '海沟', '狭窄水道', '深海地形'],
       summary:
         '水域图层对应3D地球上的海峡和海沟。海峡强调两片水域与两块陆地的空间关系，海沟则用于认识深海地形和板块俯冲带。',
@@ -389,6 +364,15 @@ for (const feature of linearGeoFeatures) {
 }
 
 const layerById = new Map(catalog.layers.map((layer) => [layer.id, layer]))
+const groupById = new Map(catalog.groups.map((group) => [group.id, group]))
+const legacyGroupIds: Record<string, string> = {
+  'lake-asia': 'world-lakes',
+  'lake-europe': 'world-lakes',
+  'lake-africa': 'world-lakes',
+  'lake-north-america': 'world-lakes',
+  'lake-south-america': 'world-lakes',
+  'lake-oceania': 'world-lakes',
+}
 const legacyTopicLayers: Record<string, WaterLearningLayerId> = {
   'ocean-and-land': 'ocean',
   'lakes-and-wetlands': 'lake',
@@ -446,6 +430,28 @@ export function getWaterLayerLinearFeatures(layerId: WaterLearningLayerId) {
 
 export function getWaterObjectGroups(layerId: WaterLearningLayerId) {
   return waterLearningObjectGroups.filter((group) => group.layerId === layerId)
+}
+
+export function getWaterObjectGroup(groupId: string | null | undefined) {
+  if (!groupId) return undefined
+  return groupById.get(legacyGroupIds[groupId] ?? groupId)
+}
+
+export function resolveWaterObjectGroup(
+  layerId: WaterLearningLayerId,
+  groupId: string | null | undefined,
+) {
+  const group = getWaterObjectGroup(groupId)
+  return group?.layerId === layerId ? group : getWaterObjectGroups(layerId)[0]
+}
+
+export function getWaterObjectGroupForObject(
+  waterbodyId?: string,
+  linearFeatureId?: string,
+) {
+  const objectId = waterbodyId ?? linearFeatureId
+  const groupId = objectId ? objectMembership.get(objectId) : undefined
+  return getWaterObjectGroup(groupId)
 }
 
 export function getWaterObjectsForGroup(

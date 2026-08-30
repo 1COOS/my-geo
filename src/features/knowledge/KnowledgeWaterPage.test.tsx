@@ -21,6 +21,10 @@ function renderWaterPage(initialEntry: string) {
       <Routes>
         <Route path="/knowledge/water" element={<KnowledgeWaterPage />} />
         <Route
+          path="/knowledge/water/groups/:groupId"
+          element={<KnowledgeWaterPage />}
+        />
+        <Route
           path="/knowledge/water/waterbodies/:waterbodyId"
           element={<KnowledgeWaterPage />}
         />
@@ -34,36 +38,27 @@ function renderWaterPage(initialEntry: string) {
   )
 }
 
-function getObjectGroups() {
-  return screen.getByLabelText('水域对象分类')
-}
-
 describe('KnowledgeWaterPage', () => {
-  it('matches the country and earth overview contract with complete ocean groups', async () => {
+  it('renders the earth-style first level with layer tabs, a full map and group cards', async () => {
     renderWaterPage('/knowledge/water')
 
     expect(
-      screen.getByRole('heading', { name: '水域', level: 1 }),
+      await screen.findByRole('heading', { name: '江河湖海' }),
     ).toBeVisible()
-    expect(screen.getByLabelText('水域知识范围')).toHaveTextContent(
-      '4图层111对象',
-    )
+    expect(screen.queryByLabelText('水域知识范围')).toBeNull()
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       '海洋',
       '湖泊',
-      '水域',
+      '海峡·海沟',
       '河流',
     ])
     expect(screen.getByRole('tab', { name: '海洋' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
-    expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
-    expect(screen.getByTestId('knowledge-water-map')).toBeVisible()
-    expect(
-      screen.getByTestId('knowledge-water-map').closest('.knowledge-map-card'),
-    ).toHaveClass('knowledge-earth-map-card')
-
+    expect(screen.getByTestId('water-location')).toHaveTextContent(
+      '/knowledge/water?layer=ocean',
+    )
     await waitFor(() =>
       expect(
         screen
@@ -71,21 +66,22 @@ describe('KnowledgeWaterPage', () => {
           .querySelectorAll('[data-waterbody-id]'),
       ).toHaveLength(37),
     )
-    const groups = getObjectGroups()
-    expect(within(groups).getAllByRole('heading', { level: 2 })).toHaveLength(3)
-    expect(within(groups).getByRole('heading', { name: '大洋' })).toBeVisible()
-    expect(within(groups).getByRole('heading', { name: '海' })).toBeVisible()
-    expect(within(groups).getByRole('heading', { name: '海湾' })).toBeVisible()
-    expect(within(groups).getAllByRole('link')).toHaveLength(37)
+    const groups = screen.getByLabelText('海洋分组')
+    expect(within(groups).getAllByRole('link')).toHaveLength(3)
     expect(
-      within(groups).getByRole('link', { name: /太平洋\s+Pacific Ocean/ }),
-    ).toHaveAttribute(
-      'href',
-      '/knowledge/water/waterbodies/pacific-ocean?layer=ocean',
-    )
+      within(groups).getByTestId('knowledge-water-group-ocean-oceans'),
+    ).toHaveAttribute('href', '/knowledge/water/groups/ocean-oceans')
+    expect(within(groups).getByText('大洋')).toBeVisible()
+    expect(within(groups).getByText('海')).toBeVisible()
+    expect(within(groups).getByText('海湾')).toBeVisible()
+    expect(within(groups).getByText('Oceans')).toBeVisible()
+    expect(within(groups).getByText('Seas')).toBeVisible()
+    expect(within(groups).getByText('Gulfs and Bays')).toBeVisible()
+    expect(within(groups).queryByText(/五大洋彼此连通/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
   })
 
-  it('groups every lake by world region and synchronizes the layer URL', async () => {
+  it('uses one world-lakes group and opens its second-level overview', async () => {
     const user = userEvent.setup()
     renderWaterPage('/knowledge/water?layer=ocean')
 
@@ -97,101 +93,83 @@ describe('KnowledgeWaterPage', () => {
     await waitFor(() =>
       expect(map.querySelectorAll('[data-waterbody-id]')).toHaveLength(20),
     )
-    const groups = getObjectGroups()
-    expect(
-      within(groups)
-        .getAllByRole('heading', { level: 2 })
-        .map((heading) => heading.textContent),
-    ).toEqual(['亚洲', '欧洲', '非洲', '北美洲', '南美洲', '大洋洲'])
-    expect(within(groups).getAllByRole('link')).toHaveLength(20)
-    expect(within(groups).getByText('7 个对象')).toBeVisible()
-    expect(
-      within(groups).getByRole('link', { name: /贝加尔湖\s+Lake Baikal/ }),
-    ).toHaveAttribute(
-      'href',
-      '/knowledge/water/waterbodies/lake-baikal?layer=lake',
+    const groups = screen.getByLabelText('湖泊分组')
+    expect(within(groups).getAllByRole('link')).toHaveLength(1)
+    const worldLakes = within(groups).getByTestId(
+      'knowledge-water-group-world-lakes',
     )
+    expect(worldLakes).toHaveTextContent('世界湖泊20 个World Lakes')
+
+    await user.click(worldLakes)
+    expect(screen.getByTestId('water-location')).toHaveTextContent(
+      '/knowledge/water/groups/world-lakes',
+    )
+    expect(screen.queryByLabelText('知识主题')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('世界湖泊水域分组知识')).toBeVisible()
+    expect(screen.getByLabelText('世界湖泊水域分组知识')).toHaveTextContent(
+      '世界代表性湖泊分布在不同气候和地形区',
+    )
+    expect(screen.getByLabelText('世界湖泊对象名单')).toHaveTextContent(
+      '贝加尔湖',
+    )
+    expect(
+      within(screen.getByLabelText('世界湖泊对象')).getAllByRole('link'),
+    ).toHaveLength(20)
+    expect(
+      within(screen.getByLabelText('湖泊分组')).getAllByRole('link'),
+    ).toHaveLength(1)
   })
 
-  it('uses the same waterway and river divisions as the 3D layer deck', async () => {
+  it('replaces the group overview with an object card and restores it on close', async () => {
     const user = userEvent.setup()
-    renderWaterPage('/knowledge/water?layer=waterway')
+    renderWaterPage('/knowledge/water/groups/ocean-seas')
 
-    let map = screen.getByTestId('knowledge-water-map')
-    await waitFor(() =>
-      expect(map.querySelectorAll('[data-waterbody-id]')).toHaveLength(14),
-    )
-    expect(
-      within(getObjectGroups())
-        .getAllByRole('heading', { level: 2 })
-        .map((heading) => heading.textContent),
-    ).toEqual(['海峡', '海沟'])
-
-    await user.click(screen.getByRole('tab', { name: '河流' }))
-    map = screen.getByTestId('knowledge-water-map')
-    await waitFor(() =>
-      expect(
-        map.querySelectorAll('[data-linear-feature-kind="river"]'),
-      ).toHaveLength(30),
-    )
-    expect(
-      map.querySelectorAll('[data-linear-feature-kind="canal"]'),
-    ).toHaveLength(10)
-    expect(
-      map.querySelector('[data-linear-feature-id="suez-canal"] path'),
-    ).toHaveAttribute('stroke-dasharray', '3 2')
-    expect(
-      within(getObjectGroups())
-        .getAllByRole('heading', { level: 2 })
-        .map((heading) => heading.textContent),
-    ).toEqual(['河流', '运河'])
-    expect(within(getObjectGroups()).getAllByRole('link')).toHaveLength(40)
-  })
-
-  it('opens an earth-style detail with the map on the left and fixed knowledge card on the right', async () => {
-    const user = userEvent.setup()
-    renderWaterPage('/knowledge/water?layer=river')
+    expect(screen.getByLabelText('海水域分组知识')).toBeVisible()
+    const map = screen.getByTestId('knowledge-water-map')
+    expect(map.querySelectorAll('[data-group-member="true"]')).toHaveLength(26)
+    expect(map.querySelectorAll('[data-group-member="false"]')).toHaveLength(11)
 
     await user.click(
-      within(getObjectGroups()).getByRole('link', {
-        name: /亚马孙河\s+Amazon River/,
+      within(screen.getByLabelText('海对象')).getByRole('link', {
+        name: /地中海\s+Mediterranean Sea/,
       }),
     )
-    expect(await screen.findByLabelText('亚马孙河河流详情')).toBeVisible()
-    expect(screen.queryByLabelText('知识主题')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '← 返回河流' })).toHaveAttribute(
-      'href',
-      '/knowledge/water?layer=river',
+    expect(screen.getByTestId('water-location')).toHaveTextContent(
+      '/knowledge/water/groups/ocean-seas?object=mediterranean-sea',
     )
-    expect(screen.getByText('所属图层')).toBeVisible()
-    expect(screen.getByText('核心知识')).toBeVisible()
-    expect(screen.getByText('地图判读')).toBeVisible()
-    expect(screen.getByText('河流与运河')).toBeVisible()
-    expect(screen.getByText('容易混淆')).toBeVisible()
+    expect(await screen.findByLabelText('地中海海详情')).toBeVisible()
+    expect(screen.queryByLabelText('海水域分组知识')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '关闭地中海详情' }))
+    expect(screen.getByTestId('water-location')).toHaveTextContent(
+      '/knowledge/water/groups/ocean-seas',
+    )
+    expect(screen.getByLabelText('海水域分组知识')).toBeVisible()
+  })
+
+  it('moves map-selected objects to their real group and keeps 3D deep links', async () => {
+    const user = userEvent.setup()
+    renderWaterPage('/knowledge/water/groups/ocean-seas')
+
+    await user.click(
+      within(screen.getByTestId('knowledge-water-map')).getByRole('button', {
+        name: '查看墨西哥湾详情',
+      }),
+    )
+    expect(screen.getByTestId('water-location')).toHaveTextContent(
+      '/knowledge/water/groups/ocean-bays?object=gulf-of-mexico',
+    )
+    expect(await screen.findByLabelText('墨西哥湾海湾详情')).toBeVisible()
     expect(
       screen.getByRole('link', { name: /在3D地球上查看/ }),
-    ).toHaveAttribute('href', '/explore?linearFeature=amazon-system')
-    expect(
-      screen
-        .getByTestId('knowledge-water-map')
-        .querySelector('[data-linear-feature-id="amazon-system"]'),
-    ).toHaveAttribute('aria-current', 'true')
-
-    await user.click(screen.getByRole('button', { name: '关闭亚马孙河详情' }))
-    expect(screen.getByLabelText('知识主题')).toBeVisible()
-    expect(screen.getByTestId('water-location')).toHaveTextContent(
-      '/knowledge/water?layer=river',
-    )
+    ).toHaveAttribute('href', '/explore?waterbody=gulf-of-mexico')
   })
 
   it('canonicalizes legacy, mismatched and invalid URLs', async () => {
-    let view = renderWaterPage('/knowledge/water?topic=lakes-and-wetlands')
-    expect(await screen.findByRole('tab', { name: '湖泊' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    )
+    let view = renderWaterPage('/knowledge/water?layer=lake&group=lake-asia')
+    expect(await screen.findByLabelText('世界湖泊水域分组知识')).toBeVisible()
     expect(screen.getByTestId('water-location')).toHaveTextContent(
-      '/knowledge/water?layer=lake',
+      '/knowledge/water/groups/world-lakes',
     )
 
     view.unmount()
@@ -200,17 +178,26 @@ describe('KnowledgeWaterPage', () => {
     )
     expect(await screen.findByLabelText('白令海峡海峡详情')).toBeVisible()
     expect(screen.getByTestId('water-location')).toHaveTextContent(
-      '/knowledge/water/waterbodies/bering-strait?layer=waterway',
+      '/knowledge/water/groups/waterway-straits?object=bering-strait',
     )
 
     view.unmount()
-    renderWaterPage('/knowledge/water/linear-features/unknown?layer=river')
-    expect(await screen.findByRole('tab', { name: '河流' })).toHaveAttribute(
+    view = renderWaterPage(
+      '/knowledge/water/groups/ocean-seas?object=lake-baikal',
+    )
+    expect(await screen.findByLabelText('贝加尔湖湖泊详情')).toBeVisible()
+    expect(screen.getByTestId('water-location')).toHaveTextContent(
+      '/knowledge/water/groups/world-lakes?object=lake-baikal',
+    )
+
+    view.unmount()
+    renderWaterPage('/knowledge/water/groups/unknown?object=unknown')
+    expect(await screen.findByRole('tab', { name: '海洋' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
     expect(screen.getByTestId('water-location')).toHaveTextContent(
-      '/knowledge/water?layer=river',
+      '/knowledge/water?layer=ocean',
     )
   })
 })

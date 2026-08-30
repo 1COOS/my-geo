@@ -30,6 +30,8 @@ export const waterObjectGroupSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
   layerId: waterLearningLayerIdSchema,
   name: z.string().min(1),
+  nameEn: z.string().min(2),
+  summary: z.string().min(20),
   objectKind: z.enum(['waterbody', 'linearFeature']),
   objectIds: z.array(z.string().min(1)).min(1),
 })

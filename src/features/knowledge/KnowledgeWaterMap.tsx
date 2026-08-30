@@ -1,5 +1,4 @@
 import { useMemo, type KeyboardEvent } from 'react'
-import { Link } from 'react-router-dom'
 
 import {
   loadCountryBoundaries,
@@ -10,10 +9,10 @@ import type { Waterbody } from '../../data/waterbodySchema'
 import {
   getWaterLayerLinearFeatures,
   getWaterLayerWaterbodies,
-  getWaterObjectGroups,
   getWaterObjectsForGroup,
 } from '../../data/waterLearning'
 import type { WaterLearningLayerId } from '../../data/waterLearningSchema'
+import type { WaterObjectGroup } from '../../data/waterLearningSchema'
 import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
 import {
   getMapFeaturePath,
@@ -21,6 +20,7 @@ import {
   projectGeoPosition,
   worldMiniMapPath,
 } from '../explore/worldMiniMapUtils'
+import { KnowledgeCategoryCards } from './KnowledgeCategoryCards'
 
 export type SelectedWaterObject =
   | { kind: 'waterbody'; id: string }
@@ -30,13 +30,17 @@ export type SelectedWaterObject =
 type KnowledgeWaterMapProps = {
   layerId: WaterLearningLayerId
   selected: SelectedWaterObject
+  activeGroup?: WaterObjectGroup
+  workbench?: boolean
+  compact?: boolean
   onSelectWaterbody: (waterbodyId: string) => void
   onSelectLinearFeature: (featureId: string) => void
 }
 
 type KnowledgeWaterObjectRowsProps = {
-  layerId: WaterLearningLayerId
+  group: WaterObjectGroup
   selected: SelectedWaterObject
+  compact?: boolean
 }
 
 const WATER_MAP_TOP = 5
@@ -62,6 +66,9 @@ function getWaterbodyColor(waterbody: Waterbody) {
 export function KnowledgeWaterMap({
   layerId,
   selected,
+  activeGroup,
+  workbench = false,
+  compact = false,
   onSelectWaterbody,
   onSelectLinearFeature,
 }: KnowledgeWaterMapProps) {
@@ -78,6 +85,10 @@ export function KnowledgeWaterMap({
   )
   const waterbodies = getWaterLayerWaterbodies(layerId)
   const linearFeatures = getWaterLayerLinearFeatures(layerId)
+  const activeGroupObjectIds = useMemo(
+    () => new Set(activeGroup?.objectIds ?? []),
+    [activeGroup],
+  )
   const boundaryPaths = useMemo(
     () =>
       (countryBoundaries.data?.features ?? []).map((boundary) => ({
@@ -132,6 +143,14 @@ export function KnowledgeWaterMap({
     <section
       className="knowledge-earth-map-card knowledge-map-card"
       aria-label={`${layerId}水域图层世界地图`}
+      style={
+        workbench
+          ? {
+              width: compact ? 'min(100%, 24rem)' : 'min(100%, 70rem)',
+              marginInline: 'auto',
+            }
+          : undefined
+      }
     >
       <svg
         className="knowledge-earth-map"
@@ -195,6 +214,8 @@ export function KnowledgeWaterMap({
             const geometry = waterbodyGeometryById.get(waterbody.id)
             const selectedObject =
               selected?.kind === 'waterbody' && selected.id === waterbody.id
+            const inActiveGroup =
+              !activeGroup || activeGroupObjectIds.has(waterbody.id)
             const color = getWaterbodyColor(waterbody)
             const center = projectGeoPosition(waterbody.center)
             const geometryPath =
@@ -226,6 +247,7 @@ export function KnowledgeWaterMap({
                 role="button"
                 aria-label={`查看${waterbody.name.zh}详情`}
                 aria-current={selectedObject ? 'true' : undefined}
+                data-group-member={inActiveGroup ? 'true' : 'false'}
                 tabIndex={0}
                 onClick={() => onSelectWaterbody(waterbody.id)}
                 onKeyDown={(event) =>
@@ -233,7 +255,11 @@ export function KnowledgeWaterMap({
                     onSelectWaterbody(waterbody.id),
                   )
                 }
-                style={{ color, cursor: 'pointer' }}
+                style={{
+                  color,
+                  cursor: 'pointer',
+                  opacity: selectedObject || inActiveGroup ? 1 : 0.24,
+                }}
               >
                 <title>
                   {waterbody.name.zh} · {waterbody.name.en}
@@ -291,6 +317,8 @@ export function KnowledgeWaterMap({
             const geometry = linearGeometryById.get(feature.id)
             const selectedObject =
               selected?.kind === 'linearFeature' && selected.id === feature.id
+            const inActiveGroup =
+              !activeGroup || activeGroupObjectIds.has(feature.id)
             const path = geometry
               ? (worldMiniMapPath(geometry.lowDetailGeometry) ?? '')
               : ''
@@ -303,6 +331,7 @@ export function KnowledgeWaterMap({
                 role="button"
                 aria-label={`查看${feature.name.zh}详情`}
                 aria-current={selectedObject ? 'true' : undefined}
+                data-group-member={inActiveGroup ? 'true' : 'false'}
                 tabIndex={0}
                 onClick={() => onSelectLinearFeature(feature.id)}
                 onKeyDown={(event) =>
@@ -310,7 +339,10 @@ export function KnowledgeWaterMap({
                     onSelectLinearFeature(feature.id),
                   )
                 }
-                style={{ cursor: 'pointer' }}
+                style={{
+                  cursor: 'pointer',
+                  opacity: selectedObject || inActiveGroup ? 1 : 0.24,
+                }}
               >
                 <title>
                   {feature.name.zh} · {feature.name.en}
@@ -370,81 +402,53 @@ export function KnowledgeWaterMap({
   )
 }
 
-export function KnowledgeWaterObjectRows({
-  layerId,
-  selected,
-}: KnowledgeWaterObjectRowsProps) {
+export function KnowledgeWaterGroupRows({
+  groups,
+  activeGroupId,
+  compact = false,
+  label,
+}: {
+  groups: readonly WaterObjectGroup[]
+  activeGroupId?: string
+  compact?: boolean
+  label: string
+}) {
   return (
-    <div aria-label="水域对象分类">
-      {getWaterObjectGroups(layerId).map((group) => {
-        const objects = getWaterObjectsForGroup(group)
-        const headingId = `knowledge-water-group-${group.id}`
-        return (
-          <section
-            key={group.id}
-            aria-labelledby={headingId}
-            style={{ marginTop: '0.8rem' }}
-          >
-            <header
-              style={{
-                display: 'flex',
-                minHeight: '1.5rem',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                color: 'var(--atlas-text-secondary)',
-              }}
-            >
-              <h2 id={headingId} style={{ margin: 0, fontSize: '0.8rem' }}>
-                {group.name}
-              </h2>
-              <span style={{ fontSize: 'var(--fs-m)' }}>
-                {objects.length} 个对象
-              </span>
-            </header>
-            <div
-              className="knowledge-region-grid"
-              style={{ marginTop: '0.35rem', overflowX: 'auto' }}
-            >
-              {objects.map((object) => {
-                const active =
-                  selected?.kind === object.kind &&
-                  selected.id === object.value.id
-                const target =
-                  object.kind === 'waterbody'
-                    ? `/knowledge/water/waterbodies/${object.value.id}?layer=${layerId}`
-                    : `/knowledge/water/linear-features/${object.value.id}?layer=${layerId}`
-                return (
-                  <Link
-                    key={object.value.id}
-                    to={target}
-                    className="knowledge-region-card"
-                    aria-current={active ? 'page' : undefined}
-                    style={{
-                      flex: '0 0 10.75rem',
-                      minHeight: '4.4rem',
-                      padding: '0.65rem 0.75rem',
-                      color: active
-                        ? 'var(--atlas-text)'
-                        : 'var(--atlas-text-secondary)',
-                      background: active
-                        ? 'var(--atlas-panel-raised)'
-                        : 'transparent',
-                      borderRight: '1px solid var(--atlas-border-soft)',
-                    }}
-                  >
-                    <strong style={{ display: 'block' }}>
-                      {object.value.name.zh}
-                    </strong>
-                    <small style={{ display: 'block', marginTop: '0.18rem' }}>
-                      {object.value.name.en}
-                    </small>
-                  </Link>
-                )
-              })}
-            </div>
-          </section>
-        )
-      })}
-    </div>
+    <KnowledgeCategoryCards
+      compact={compact}
+      label={label}
+      items={groups.map((group) => ({
+        id: group.id,
+        title: group.name,
+        subtitle: group.nameEn,
+        meta: `${group.objectIds.length} 个`,
+        to: `/knowledge/water/groups/${group.id}`,
+        testId: `knowledge-water-group-${group.id}`,
+        current: group.id === activeGroupId,
+      }))}
+    />
+  )
+}
+
+export function KnowledgeWaterObjectRows({
+  group,
+  selected,
+  compact = false,
+}: KnowledgeWaterObjectRowsProps) {
+  const objects = getWaterObjectsForGroup(group)
+
+  return (
+    <KnowledgeCategoryCards
+      compact={compact}
+      label={`${group.name}对象`}
+      items={objects.map((object) => ({
+        id: object.value.id,
+        title: object.value.name.zh,
+        subtitle: object.value.name.en,
+        to: `/knowledge/water/groups/${group.id}?object=${object.value.id}`,
+        current:
+          selected?.kind === object.kind && selected.id === object.value.id,
+      }))}
+    />
   )
 }

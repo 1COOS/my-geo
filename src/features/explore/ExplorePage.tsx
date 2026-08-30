@@ -64,6 +64,7 @@ import { CountrySearch } from './CountrySearch'
 import { ClimateLearningPanel } from './ClimateLearningPanel'
 import type { PlaceSearchResult } from './countrySearchUtils'
 import { DesertDetailPanel } from './DesertDetailPanel'
+import { parseExploreDeepLinkPosition } from './exploreDeepLinks'
 import { GeographyLearningPanel } from './GeographyLearningPanel'
 import { LinearGeoFeatureDetailPanel } from './LinearGeoFeatureDetailPanel'
 import { LandmarkDetailPanel } from './LandmarkDetailPanel'
@@ -751,66 +752,6 @@ export function ExplorePage() {
     },
     [requestCameraTarget],
   )
-  const requestedDeepLinks = useMemo(() => {
-    const searchParams = new URLSearchParams(window.location.search)
-    return {
-      countryCode: searchParams.get('country')?.toUpperCase(),
-      geography: resolveGeographyExploreSelection(
-        searchParams.get('geography'),
-        searchParams.get('line'),
-      ),
-      waterbodyId: searchParams.get('waterbody'),
-      linearFeatureId: searchParams.get('linearFeature'),
-    }
-  }, [])
-  const handledDeepLinkRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (handledDeepLinkRef.current) return
-    const timeoutId = window.setTimeout(() => {
-      const country = getCountry(requestedDeepLinks.countryCode)
-      if (country) {
-        handledDeepLinkRef.current = `country:${country.code}`
-        navigateToCountry(country.code)
-        return
-      }
-
-      if (requestedDeepLinks.geography) {
-        handledDeepLinkRef.current = 'geography'
-        if (requestedDeepLinks.geography.kind === 'line') {
-          openGeographyTopic(
-            requestedDeepLinks.geography.topicId,
-            requestedDeepLinks.geography.referenceLineId,
-          )
-        } else {
-          openGeographyOverview(requestedDeepLinks.geography.focusTopicId)
-        }
-        return
-      }
-
-      const waterbody = getWaterbody(requestedDeepLinks.waterbodyId)
-      if (waterbody) {
-        handledDeepLinkRef.current = `waterbody:${waterbody.id}`
-        navigateToWaterbody(waterbody.id)
-        return
-      }
-
-      const linearFeature = getLinearGeoFeature(
-        requestedDeepLinks.linearFeatureId,
-      )
-      if (linearFeature) {
-        handledDeepLinkRef.current = `linearFeature:${linearFeature.id}`
-        navigateToLinearFeature(linearFeature.id)
-      }
-    }, 0)
-    return () => window.clearTimeout(timeoutId)
-  }, [
-    navigateToCountry,
-    navigateToLinearFeature,
-    navigateToWaterbody,
-    openGeographyOverview,
-    openGeographyTopic,
-    requestedDeepLinks,
-  ])
   const navigateToMountainRange = useCallback(
     (rangeId: string) => {
       const range = getMountainRange(rangeId)
@@ -837,6 +778,105 @@ export function ExplorePage() {
     },
     [requestCameraTarget],
   )
+  const requestedDeepLinks = useMemo(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    return {
+      countryCode: searchParams.get('country')?.toUpperCase(),
+      geography: resolveGeographyExploreSelection(
+        searchParams.get('geography'),
+        searchParams.get('line'),
+      ),
+      waterbodyId: searchParams.get('waterbody'),
+      linearFeatureId: searchParams.get('linearFeature'),
+      mountainRangeId: searchParams.get('mountainRange'),
+      desertId: searchParams.get('desert'),
+      position: parseExploreDeepLinkPosition(searchParams),
+    }
+  }, [])
+  const handledDeepLinkRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (handledDeepLinkRef.current) return
+    const timeoutId = window.setTimeout(() => {
+      const focusPosition = () => {
+        if (requestedDeepLinks.position) {
+          requestCameraTarget(requestedDeepLinks.position)
+        }
+      }
+      const country = getCountry(requestedDeepLinks.countryCode)
+      if (country) {
+        handledDeepLinkRef.current = `country:${country.code}`
+        navigateToCountry(country.code)
+        focusPosition()
+        return
+      }
+
+      if (requestedDeepLinks.geography) {
+        handledDeepLinkRef.current = 'geography'
+        if (requestedDeepLinks.geography.kind === 'line') {
+          openGeographyTopic(
+            requestedDeepLinks.geography.topicId,
+            requestedDeepLinks.geography.referenceLineId,
+          )
+        } else {
+          openGeographyOverview(requestedDeepLinks.geography.focusTopicId)
+        }
+        focusPosition()
+        return
+      }
+
+      const waterbody = getWaterbody(requestedDeepLinks.waterbodyId)
+      if (waterbody) {
+        handledDeepLinkRef.current = `waterbody:${waterbody.id}`
+        navigateToWaterbody(waterbody.id)
+        focusPosition()
+        return
+      }
+
+      const linearFeature = getLinearGeoFeature(
+        requestedDeepLinks.linearFeatureId,
+      )
+      if (linearFeature) {
+        handledDeepLinkRef.current = `linearFeature:${linearFeature.id}`
+        navigateToLinearFeature(linearFeature.id)
+        focusPosition()
+        return
+      }
+
+      const mountainRange = getMountainRange(requestedDeepLinks.mountainRangeId)
+      if (mountainRange) {
+        handledDeepLinkRef.current = `mountainRange:${mountainRange.id}`
+        navigateToMountainRange(mountainRange.id)
+        focusPosition()
+        return
+      }
+
+      const desert = getDesert(requestedDeepLinks.desertId)
+      if (desert) {
+        handledDeepLinkRef.current = `desert:${desert.id}`
+        navigateToDesert(desert.id)
+        focusPosition()
+        return
+      }
+
+      if (requestedDeepLinks.position) {
+        handledDeepLinkRef.current = 'coordinate'
+        clearSelection()
+        requestCameraTarget(requestedDeepLinks.position)
+      }
+    }, 0)
+    return () => window.clearTimeout(timeoutId)
+  }, [
+    clearSelection,
+    navigateToCountry,
+    navigateToDesert,
+    navigateToLinearFeature,
+    navigateToMountainRange,
+    navigateToWaterbody,
+    openGeographyOverview,
+    openGeographyTopic,
+    requestCameraTarget,
+    requestedDeepLinks,
+  ])
   const navigateToLandmark = useCallback(
     (landmarkId: string) => {
       const landmark = getLandmark(landmarkId)

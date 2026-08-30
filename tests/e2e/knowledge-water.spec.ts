@@ -7,106 +7,148 @@ const waterViewports = [
 ]
 
 for (const viewport of waterViewports) {
-  test(`matches the knowledge overview contract on ${viewport.name}`, async ({
+  test(`uses the two-level water atlas on ${viewport.name}`, async ({
     page,
   }) => {
     await page.setViewportSize(viewport)
     await page.goto('/knowledge/water')
 
-    await expect(page.getByRole('heading', { name: '水域' })).toBeVisible()
-    await expect(page.getByTestId('knowledge-water-map')).toBeVisible()
-    await expect(page.locator('[data-waterbody-id]')).toHaveCount(37)
-    await expect(page.getByLabel('水域对象分类').getByRole('link')).toHaveCount(
-      37,
-    )
-    await expect(page.getByRole('tab', { name: '海洋' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    )
-
-    const mapCard = page.locator('.knowledge-earth-map-card')
-    const mapBox = await mapCard.boundingBox()
-    expect(mapBox).not.toBeNull()
-    expect(mapBox!.width / mapBox!.height).toBeCloseTo(36 / 17, 1)
-
-    const overflow = await page.evaluate(() => ({
-      body: document.body.scrollWidth - innerWidth,
-      root: document.documentElement.scrollWidth - innerWidth,
-    }))
-    expect(overflow.body).toBeLessThanOrEqual(0)
-    expect(overflow.root).toBeLessThanOrEqual(0)
-
-    const activeTopic = page.locator('.knowledge-topic-card.is-active')
-    const topicGrid = page.locator('.knowledge-topic-grid')
-    const [activeBox, gridBox] = await Promise.all([
-      activeTopic.boundingBox(),
-      topicGrid.boundingBox(),
+    await expect(page).toHaveURL(/\/knowledge\/water\?layer=ocean$/)
+    await expect(page.getByRole('heading', { name: '江河湖海' })).toBeVisible()
+    await expect(page.getByRole('tab')).toHaveText([
+      '海洋',
+      '湖泊',
+      '海峡·海沟',
+      '河流',
     ])
-    expect(activeBox).not.toBeNull()
-    expect(gridBox).not.toBeNull()
-    expect(activeBox!.x).toBeGreaterThanOrEqual(gridBox!.x - 1)
-    expect(activeBox!.x + activeBox!.width).toBeLessThanOrEqual(
-      gridBox!.x + gridBox!.width + 1,
-    )
+    await expect(page.locator('[data-waterbody-id]')).toHaveCount(37)
+    await expect(page.getByLabel('海洋分组').getByRole('link')).toHaveCount(3)
+    const oceanGroups = page.getByLabel('海洋分组')
+    await expect(oceanGroups).toContainText('海湾6 个Gulfs and Bays')
+    await expect(oceanGroups).not.toContainText('海湾是海水向陆地凹入')
+    await expectNoPageScroll(page)
 
-    await page.getByRole('tab', { name: '水域' }).click()
-    await expect(page).toHaveURL(/\/knowledge\/water\?layer=waterway$/)
-    await expect(page.locator('[data-waterbody-id]')).toHaveCount(14)
+    const [mapBox, groupBox] = await Promise.all([
+      page.locator('.knowledge-earth-map-card').boundingBox(),
+      page.getByLabel('海洋分组').boundingBox(),
+    ])
+    expect(mapBox).not.toBeNull()
+    expect(groupBox).not.toBeNull()
+    expect(mapBox!.width / mapBox!.height).toBeCloseTo(36 / 17, 1)
+    expect(mapBox!.y + mapBox!.height).toBeLessThanOrEqual(groupBox!.y + 1)
+
+    await page.getByRole('tab', { name: '湖泊' }).click()
+    await expect(page).toHaveURL(/\/knowledge\/water\?layer=lake$/)
+    await expect(page.locator('[data-waterbody-id]')).toHaveCount(20)
+    const worldLakes = page.getByTestId('knowledge-water-group-world-lakes')
+    await expect(worldLakes).toContainText('世界湖泊20 个World Lakes')
+    await worldLakes.click()
+
+    await expect(page).toHaveURL(/\/knowledge\/water\/groups\/world-lakes$/)
+    await expect(page.getByLabel('知识主题')).toHaveCount(0)
     await expect(
-      page.getByLabel('水域对象分类').getByRole('heading', { level: 2 }),
-    ).toHaveText(['海峡', '海沟'])
+      page.getByRole('complementary', { name: '世界湖泊水域分组知识' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('complementary', { name: '世界湖泊水域分组知识' }),
+    ).toContainText('世界代表性湖泊分布在不同气候和地形区')
+    await expect(page.getByLabel('湖泊分组').getByRole('link')).toHaveCount(1)
+    await expect(
+      page.getByLabel('世界湖泊对象', { exact: true }).getByRole('link'),
+    ).toHaveCount(20)
+    await expect(page.locator('[data-group-member="true"]')).toHaveCount(20)
+    await expectNoPageScroll(page)
+
+    const [detailMapBox, detailGroupBox, objectBox] = await Promise.all([
+      page.locator('.knowledge-earth-map-card').boundingBox(),
+      page.getByLabel('湖泊分组').boundingBox(),
+      page.getByLabel('世界湖泊对象', { exact: true }).boundingBox(),
+    ])
+    expect(detailMapBox).not.toBeNull()
+    expect(detailGroupBox).not.toBeNull()
+    expect(objectBox).not.toBeNull()
+    expect(detailMapBox!.y + detailMapBox!.height).toBeLessThanOrEqual(
+      detailGroupBox!.y + 1,
+    )
+    expect(detailGroupBox!.y + detailGroupBox!.height).toBeLessThanOrEqual(
+      objectBox!.y + 1,
+    )
+    const overviewCard = page.getByRole('complementary', {
+      name: '世界湖泊水域分组知识',
+    })
+    await expect
+      .poll(async () => {
+        const cardBox = await overviewCard.boundingBox()
+        return cardBox ? cardBox.x + cardBox.width : Number.POSITIVE_INFINITY
+      })
+      .toBeLessThanOrEqual(viewport.width + 1)
+
+    await page
+      .getByLabel('世界湖泊对象', { exact: true })
+      .getByRole('link', { name: /贝加尔湖/ })
+      .click()
+    await expect(page).toHaveURL(/groups\/world-lakes\?object=lake-baikal$/)
+    await expect(
+      page.getByRole('complementary', { name: '贝加尔湖湖泊详情' }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: '关闭贝加尔湖详情' }).click()
+    await expect(page).toHaveURL(/\/knowledge\/water\/groups\/world-lakes$/)
+    await expect(
+      page.getByRole('complementary', { name: '世界湖泊水域分组知识' }),
+    ).toBeVisible()
   })
 }
 
-test('groups lakes by world region and keeps every 3D lake', async ({
+test('keeps group context and moves map-selected objects across groups', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1194, height: 834 })
-  await page.goto('/knowledge/water?layer=lake')
+  await page.goto('/knowledge/water/groups/ocean-seas')
 
-  await expect(page.locator('[data-waterbody-id]')).toHaveCount(20)
-  await expect(
-    page.getByLabel('水域对象分类').getByRole('heading', { level: 2 }),
-  ).toHaveText(['亚洲', '欧洲', '非洲', '北美洲', '南美洲', '大洋洲'])
-  await expect(page.getByLabel('水域对象分类').getByRole('link')).toHaveCount(
-    20,
-  )
-})
-
-test('opens an object detail and follows its 3D deep link', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1194, height: 834 })
-  await page.goto('/knowledge/water?layer=river')
-
-  await expect(page.locator('[data-linear-feature-kind="river"]')).toHaveCount(
-    30,
-  )
-  await expect(page.locator('[data-linear-feature-kind="canal"]')).toHaveCount(
-    10,
-  )
+  await expect(page.locator('[data-group-member="true"]')).toHaveCount(26)
+  await expect(page.locator('[data-group-member="false"]')).toHaveCount(11)
   await page
-    .getByLabel('水域对象分类')
-    .getByRole('link', { name: /亚马孙河/ })
+    .getByTestId('knowledge-water-map')
+    .getByRole('button', { name: '查看墨西哥湾详情' })
     .click()
-
   await expect(page).toHaveURL(
-    /\/knowledge\/water\/linear-features\/amazon-system\?layer=river$/,
+    /\/knowledge\/water\/groups\/ocean-bays\?object=gulf-of-mexico$/,
   )
   await expect(
-    page.getByRole('complementary', { name: '亚马孙河河流详情' }),
+    page.getByRole('complementary', { name: '墨西哥湾海湾详情' }),
   ).toBeVisible()
-  await expect(page.getByLabel('知识主题')).toHaveCount(0)
-  await expect(page.getByRole('link', { name: '← 返回河流' })).toBeVisible()
-  await expect(page.getByTestId('knowledge-water-map')).toBeInViewport()
-  await expect(page.getByText('所属图层')).toBeVisible()
-
-  await page.getByRole('link', { name: /在3D地球上查看/ }).click()
-  await expect(page).toHaveURL(/\/explore\?linearFeature=amazon-system$/)
-  await expect(page.getByLabel('亚马孙河知识卡')).toBeVisible()
   await expect(
-    page.getByRole('button', {
-      name: '河流图层：世界重要河流与人工运河',
-    }),
-  ).toHaveAttribute('aria-pressed', 'true')
+    page.getByRole('link', { name: /在3D地球上查看/ }),
+  ).toHaveAttribute('href', '/explore?waterbody=gulf-of-mexico')
 })
+
+test('redirects legacy water URLs into the canonical hierarchy', async ({
+  page,
+}) => {
+  await page.goto('/knowledge/water?layer=lake&group=lake-asia')
+  await expect(page).toHaveURL(/\/knowledge\/water\/groups\/world-lakes$/)
+
+  await page.goto('/knowledge/water/waterbodies/bering-strait?layer=ocean')
+  await expect(page).toHaveURL(
+    /\/knowledge\/water\/groups\/waterway-straits\?object=bering-strait$/,
+  )
+
+  await page.goto('/knowledge/water/groups/ocean-seas?object=lake-baikal')
+  await expect(page).toHaveURL(
+    /\/knowledge\/water\/groups\/world-lakes\?object=lake-baikal$/,
+  )
+})
+
+async function expectNoPageScroll(page: import('@playwright/test').Page) {
+  const scroll = await page.locator('main').evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  }))
+  expect(scroll.scrollHeight).toBeLessThanOrEqual(scroll.clientHeight)
+  const overflow = await page.evaluate(() => ({
+    body: document.body.scrollWidth - innerWidth,
+    root: document.documentElement.scrollWidth - innerWidth,
+  }))
+  expect(overflow.body).toBeLessThanOrEqual(0)
+  expect(overflow.root).toBeLessThanOrEqual(0)
+}

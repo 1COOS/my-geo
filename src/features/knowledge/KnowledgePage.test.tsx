@@ -36,18 +36,24 @@ describe('knowledge pages', () => {
     )
 
     expect(
-      screen.getByRole('heading', {
-        name: '国家',
-        level: 1,
-      }),
+      screen.getByRole('heading', { name: '国家首都', level: 1 }),
     ).toBeVisible()
-    expect(screen.getByLabelText('国家知识范围')).toHaveTextContent(
-      '195国家23地区',
-    )
+    expect(screen.queryByLabelText('国家知识范围')).toBeNull()
     expect(screen.getByRole('link', { name: /地球/ })).toHaveAttribute(
       'href',
       '/knowledge/earth',
     )
+    expect(screen.getByRole('link', { name: /之最/ })).toHaveAttribute(
+      'href',
+      '/knowledge/extremes',
+    )
+    expect(
+      within(screen.getByLabelText('知识主题'))
+        .getAllByRole('heading')
+        .map((heading) => heading.textContent),
+    ).toEqual(['地球经纬', '国家首都', '世界之最', '江河湖海'])
+    expect(screen.queryByText('气候')).toBeNull()
+    expect(screen.queryByText('地形')).toBeNull()
     expect(screen.queryByText('已开放')).toBeNull()
     expect(screen.queryByText('即将开放')).toBeNull()
     expect(screen.getByText('国家｜国旗｜首都')).toBeVisible()
@@ -120,11 +126,9 @@ describe('knowledge pages', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: '地球', level: 1 }),
+      screen.getByRole('heading', { name: '地球经纬', level: 1 }),
     ).toBeVisible()
-    expect(screen.getByLabelText('地球知识范围')).toHaveTextContent(
-      '4用途13参考线',
-    )
+    expect(screen.queryByLabelText('地球知识范围')).toBeNull()
     expect(screen.getByRole('tab', { name: '半球界线' })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -135,7 +139,7 @@ describe('knowledge pages', () => {
     const referenceLines = screen.getByLabelText('重点经纬线')
     expect(within(referenceLines).getAllByRole('link')).toHaveLength(3)
     const equatorLink = within(referenceLines).getByRole('link', {
-      name: '赤道0°',
+      name: /赤道.*0°/,
     })
     expect(equatorLink).toHaveAttribute(
       'href',
@@ -274,7 +278,7 @@ describe('knowledge pages', () => {
     expect(screen.getByTestId('location-search')).toHaveTextContent(
       '/knowledge/earth/lines/tropic-of-cancer',
     )
-    expect(screen.getByText('Tropic of Cancer')).toBeVisible()
+    expect(screen.getAllByText('Tropic of Cancer').length).toBeGreaterThan(0)
     expect(screen.getAllByText('23.5°N').length).toBeGreaterThan(0)
     expect(screen.getByText(/热带与北温带/)).toBeVisible()
     expect(screen.getByText('核心规则')).toBeVisible()
@@ -294,7 +298,7 @@ describe('knowledge pages', () => {
       ),
     ).toHaveLength(4)
     expect(
-      screen.getByRole('link', { name: '北回归线23.5°N' }),
+      screen.getByRole('link', { name: /北回归线.*23.5°N/ }),
     ).toHaveAttribute('aria-current', 'page')
     expect(
       screen
@@ -316,12 +320,14 @@ describe('knowledge pages', () => {
       ),
     ).toEqual(new Set(['1.8']))
 
-    await user.click(screen.getByRole('link', { name: '南极圈66.5°S' }))
+    await user.click(
+      screen.getByRole('link', { name: /南极圈.*66.5°S.*Antarctic Circle/ }),
+    )
     expect(await screen.findByLabelText('南极圈经纬线详情')).toBeVisible()
     expect(screen.getByTestId('location-search')).toHaveTextContent(
       '/knowledge/earth/lines/antarctic-circle',
     )
-    expect(screen.getByText('Antarctic Circle')).toBeVisible()
+    expect(screen.getAllByText('Antarctic Circle').length).toBeGreaterThan(0)
   })
 
   it('falls back from invalid earth and line routes', () => {

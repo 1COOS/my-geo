@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Link,
   Navigate,
@@ -11,159 +11,295 @@ import {
 import { getLinearGeoFeature } from '../../data/linearGeoFeatures'
 import {
   getWaterLearningLayer,
-  getWaterObjectLayerId,
+  getWaterObjectGroup,
+  getWaterObjectGroupForObject,
+  getWaterObjectGroups,
   resolveWaterLearningLayerId,
   waterLearningLayers,
 } from '../../data/waterLearning'
 import type { WaterLearningLayerId } from '../../data/waterLearningSchema'
 import { getWaterbody } from '../../data/waterbodies'
+import { KnowledgeMapWorkbenchPage } from './KnowledgeMapWorkbench'
+import { KnowledgePrimaryTabs } from './KnowledgePrimaryTabs'
 import {
+  KnowledgeWaterGroupRows,
   KnowledgeWaterMap,
   KnowledgeWaterObjectRows,
 } from './KnowledgeWaterMap'
+import { KnowledgeWaterGroupOverviewCard } from './KnowledgeWaterGroupOverviewCard'
 import { KnowledgeWaterObjectCard } from './KnowledgeWaterObjectCard'
-import { KnowledgeTopicNavigation } from './KnowledgeTopicNavigation'
+
+function getWaterLayerPath(layerId: WaterLearningLayerId) {
+  return `/knowledge/water?layer=${layerId}`
+}
+
+function getWaterGroupPath(groupId: string, objectId?: string) {
+  return `/knowledge/water/groups/${groupId}${objectId ? `?object=${objectId}` : ''}`
+}
+
+function useCompactLandscape() {
+  const [compact, setCompact] = useState(
+    () => window.matchMedia('(max-height: 520px)').matches,
+  )
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-height: 520px)')
+    const update = () => setCompact(media.matches)
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+
+  return compact
+}
 
 export function KnowledgeWaterPage() {
-  const shellRef = useRef<HTMLElement>(null)
-  const { waterbodyId, linearFeatureId } = useParams()
+  const { groupId, waterbodyId, linearFeatureId } = useParams()
+  const [searchParams] = useSearchParams()
+  const requestedObjectId = waterbodyId ?? linearFeatureId
+
+  if (requestedObjectId) {
+    const group = getWaterObjectGroupForObject(waterbodyId, linearFeatureId)
+    if (!group) {
+      return (
+        <Navigate
+          to={getWaterLayerPath(
+            resolveWaterLearningLayerId(searchParams.get('layer')),
+          )}
+          replace
+        />
+      )
+    }
+    return (
+      <Navigate to={getWaterGroupPath(group.id, requestedObjectId)} replace />
+    )
+  }
+
+  return groupId ? (
+    <KnowledgeWaterGroupPage groupId={groupId} />
+  ) : (
+    <KnowledgeWaterOverviewPage />
+  )
+}
+
+function KnowledgeWaterOverviewPage() {
   const [searchParams] = useSearchParams()
   const location = useLocation()
   const navigate = useNavigate()
   const layerParam = searchParams.get('layer')
   const legacyTopicParam = searchParams.get('topic')
-  const requestedLayerId = resolveWaterLearningLayerId(
-    layerParam,
-    legacyTopicParam,
+  const legacyGroupParam = searchParams.get('group')
+  const layerId = resolveWaterLearningLayerId(layerParam, legacyTopicParam)
+  const layer = getWaterLearningLayer(layerId)!
+  const groups = getWaterObjectGroups(layerId)
+  const legacyGroup = getWaterObjectGroup(legacyGroupParam)
+
+  if (legacyGroup) {
+    return <Navigate to={getWaterGroupPath(legacyGroup.id)} replace />
+  }
+
+  const canonicalSearch = new URLSearchParams({ layer: layerId }).toString()
+  if (
+    legacyTopicParam ||
+    legacyGroupParam ||
+    (layerParam !== null && !getWaterLearningLayer(layerParam)) ||
+    searchParams.toString() !== canonicalSearch
+  ) {
+    return <Navigate to={`${location.pathname}?${canonicalSearch}`} replace />
+  }
+
+  const openWaterbody = (id: string) => {
+    const group = getWaterObjectGroupForObject(id)
+    if (group) void navigate(getWaterGroupPath(group.id, id))
+  }
+  const openLinearFeature = (id: string) => {
+    const group = getWaterObjectGroupForObject(undefined, id)
+    if (group) void navigate(getWaterGroupPath(group.id, id))
+  }
+
+  return (
+    <KnowledgeMapWorkbenchPage
+      activeTopic="water"
+      label="水域对象学习"
+      renderControls={(compact) => (
+        <KnowledgePrimaryTabs
+          activeId={layerId}
+          compact={compact}
+          getTo={(item) => getWaterLayerPath(item.id as WaterLearningLayerId)}
+          items={waterLearningLayers.map((item) => ({
+            id: item.id,
+            label: item.name,
+          }))}
+          label="水域图层"
+        />
+      )}
+      renderMap={(compact) => (
+        <KnowledgeWaterMap
+          layerId={layerId}
+          selected={null}
+          workbench
+          compact={compact}
+          onSelectWaterbody={openWaterbody}
+          onSelectLinearFeature={openLinearFeature}
+        />
+      )}
+      renderResults={(compact) => (
+        <KnowledgeWaterGroupRows
+          groups={groups}
+          compact={compact}
+          label={`${layer.name}分组`}
+        />
+      )}
+    />
   )
-  const objectLayerId = getWaterObjectLayerId(waterbodyId, linearFeatureId)
-  const hasObjectRoute = Boolean(waterbodyId || linearFeatureId)
+}
+
+function KnowledgeWaterGroupPage({ groupId }: { groupId: string }) {
+  const shellRef = useRef<HTMLElement>(null)
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const compact = useCompactLandscape()
+  const group = getWaterObjectGroup(groupId)
+  const objectId = searchParams.get('object')
+
   useEffect(() => {
-    if (!hasObjectRoute) return
     const shell = shellRef.current
     if (!shell) return
     if (typeof shell.scrollTo === 'function') shell.scrollTo({ top: 0 })
     else shell.scrollTop = 0
-  }, [hasObjectRoute, linearFeatureId, waterbodyId])
+  }, [group?.id, objectId])
 
-  if (legacyTopicParam && !layerParam) {
-    return (
-      <Navigate to={`${location.pathname}?layer=${requestedLayerId}`} replace />
-    )
-  }
+  if (!group) return <Navigate to={getWaterLayerPath('ocean')} replace />
 
-  if (layerParam && !getWaterLearningLayer(layerParam)) {
-    return <Navigate to={`${location.pathname}?layer=ocean`} replace />
-  }
-
-  if (hasObjectRoute && !objectLayerId) {
-    return (
-      <Navigate to={`/knowledge/water?layer=${requestedLayerId}`} replace />
-    )
-  }
-
-  if (objectLayerId && objectLayerId !== requestedLayerId) {
-    return (
-      <Navigate to={`${location.pathname}?layer=${objectLayerId}`} replace />
-    )
-  }
-
-  const layerId = objectLayerId ?? requestedLayerId
-  const layer = getWaterLearningLayer(layerId)!
-  const waterbody = waterbodyId ? getWaterbody(waterbodyId) : undefined
-  const linearFeature = linearFeatureId
-    ? getLinearGeoFeature(linearFeatureId)
-    : undefined
+  const layer = getWaterLearningLayer(group.layerId)!
+  const groups = getWaterObjectGroups(group.layerId)
+  const objectGroup = getWaterObjectGroupForObject(objectId ?? undefined)
+  const waterbody = objectId ? getWaterbody(objectId) : undefined
+  const linearFeature = objectId ? getLinearGeoFeature(objectId) : undefined
   const selected = waterbody
     ? ({ kind: 'waterbody', id: waterbody.id } as const)
     : linearFeature
       ? ({ kind: 'linearFeature', id: linearFeature.id } as const)
       : null
-  const selectLayer = (nextLayerId: WaterLearningLayerId) => {
-    void navigate(`/knowledge/water?layer=${nextLayerId}`)
-  }
-  const selectWaterbody = (id: string) => {
-    void navigate(`/knowledge/water/waterbodies/${id}?layer=${layerId}`)
-  }
-  const selectLinearFeature = (id: string) => {
-    void navigate(`/knowledge/water/linear-features/${id}?layer=${layerId}`)
-  }
-  const overviewTarget = `/knowledge/water?layer=${layerId}`
 
-  if (selected) {
+  if (objectId && !objectGroup) {
+    return <Navigate to={getWaterGroupPath(group.id)} replace />
+  }
+  if (objectId && objectGroup?.id !== group.id) {
     return (
-      <main
-        ref={shellRef}
-        className="knowledge-shell knowledge-region-shell has-country-selection knowledge-earth-detail-shell"
-      >
-        <div className="knowledge-region-content knowledge-earth-detail-content">
-          <section
-            className="knowledge-earth-detail-study"
-            aria-label={`${layer.name}对象地图`}
-          >
-            <Link className="knowledge-earth-detail-back" to={overviewTarget}>
-              ← 返回{layer.name}
-            </Link>
-            <KnowledgeWaterMap
-              layerId={layerId}
-              selected={selected}
-              onSelectWaterbody={selectWaterbody}
-              onSelectLinearFeature={selectLinearFeature}
-            />
-            <KnowledgeWaterObjectRows layerId={layerId} selected={selected} />
-          </section>
-        </div>
-
-        {waterbody ? (
-          <KnowledgeWaterObjectCard
-            object={waterbody}
-            objectType="waterbody"
-            layer={layer}
-            onClose={() => void navigate(overviewTarget)}
-          />
-        ) : (
-          <KnowledgeWaterObjectCard
-            object={linearFeature!}
-            objectType="linearFeature"
-            layer={layer}
-            onClose={() => void navigate(overviewTarget)}
-          />
-        )}
-      </main>
+      <Navigate to={getWaterGroupPath(objectGroup!.id, objectId)} replace />
+    )
+  }
+  if (searchParams.toString() !== (objectId ? `object=${objectId}` : '')) {
+    return (
+      <Navigate
+        to={getWaterGroupPath(group.id, objectId ?? undefined)}
+        replace
+      />
     )
   }
 
+  const openWaterbody = (id: string) => {
+    const nextGroup = getWaterObjectGroupForObject(id)
+    if (nextGroup) void navigate(getWaterGroupPath(nextGroup.id, id))
+  }
+  const openLinearFeature = (id: string) => {
+    const nextGroup = getWaterObjectGroupForObject(undefined, id)
+    if (nextGroup) void navigate(getWaterGroupPath(nextGroup.id, id))
+  }
+  const overviewTarget = getWaterGroupPath(group.id)
+
   return (
-    <main ref={shellRef} className="knowledge-shell knowledge-earth-shell">
-      <KnowledgeTopicNavigation activeTopic="water" />
-
-      <section className="knowledge-earth" aria-label="水域对象学习">
-        <div
-          className="knowledge-continent-tabs knowledge-earth-topic-tabs"
-          role="tablist"
-          aria-label="水域图层"
+    <main
+      ref={shellRef}
+      className="knowledge-shell knowledge-region-shell has-country-selection knowledge-earth-detail-shell knowledge-water-group-shell"
+      data-compact-workbench={compact ? 'true' : 'false'}
+      style={{
+        overflowY: 'hidden',
+        paddingBottom: compact ? '0.45rem' : '0.75rem',
+      }}
+    >
+      <div
+        className="knowledge-region-content knowledge-earth-detail-content"
+        style={{ height: '100%', minHeight: 0 }}
+      >
+        <section
+          className="knowledge-earth-detail-study"
+          aria-label={`${group.name}对象地图`}
+          style={{
+            display: 'grid',
+            height: '100%',
+            minHeight: 0,
+            gridTemplateRows: compact
+              ? '2.75rem minmax(0, 1fr) 3.25rem 3.5rem'
+              : '2.75rem minmax(0, 1fr) 4.4rem 4.4rem',
+            gap: compact ? '0.4rem' : '0.5rem',
+          }}
         >
-          {waterLearningLayers.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={item.id === layerId}
-              onClick={() => selectLayer(item.id)}
+          <header className="knowledge-region-page-header">
+            <Link
+              className="knowledge-earth-detail-back"
+              to={getWaterLayerPath(group.layerId)}
             >
-              <strong>{item.name}</strong>
-            </button>
-          ))}
-        </div>
+              ← 返回{layer.name}
+            </Link>
+            <h1>
+              {group.name}
+              <strong>{group.objectIds.length}</strong>个对象
+            </h1>
+          </header>
 
-        <KnowledgeWaterMap
-          layerId={layerId}
-          selected={null}
-          onSelectWaterbody={selectWaterbody}
-          onSelectLinearFeature={selectLinearFeature}
+          <div
+            style={{
+              display: 'flex',
+              minWidth: 0,
+              minHeight: 0,
+              overflow: 'hidden',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <KnowledgeWaterMap
+              layerId={group.layerId}
+              selected={selected}
+              activeGroup={group}
+              workbench
+              compact={compact}
+              onSelectWaterbody={openWaterbody}
+              onSelectLinearFeature={openLinearFeature}
+            />
+          </div>
+
+          <KnowledgeWaterGroupRows
+            groups={groups}
+            activeGroupId={group.id}
+            compact={compact}
+            label={`${layer.name}分组`}
+          />
+          <KnowledgeWaterObjectRows
+            group={group}
+            selected={selected}
+            compact={compact}
+          />
+        </section>
+      </div>
+
+      {waterbody ? (
+        <KnowledgeWaterObjectCard
+          object={waterbody}
+          objectType="waterbody"
+          layer={layer}
+          onClose={() => void navigate(overviewTarget)}
         />
-        <KnowledgeWaterObjectRows layerId={layerId} selected={null} />
-      </section>
+      ) : linearFeature ? (
+        <KnowledgeWaterObjectCard
+          object={linearFeature}
+          objectType="linearFeature"
+          layer={layer}
+          onClose={() => void navigate(overviewTarget)}
+        />
+      ) : (
+        <KnowledgeWaterGroupOverviewCard group={group} layer={layer} />
+      )}
     </main>
   )
 }

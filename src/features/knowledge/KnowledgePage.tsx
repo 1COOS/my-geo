@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 
 import {
   getKnowledgeRegionsForContinent,
@@ -7,7 +7,9 @@ import {
   type KnowledgeContinentId,
 } from '../../data/knowledgeRegions'
 import { KnowledgeRegionMap } from './KnowledgeRegionMap'
-import { KnowledgeTopicNavigation } from './KnowledgeTopicNavigation'
+import { KnowledgeCategoryCards } from './KnowledgeCategoryCards'
+import { KnowledgeMapWorkbenchPage } from './KnowledgeMapWorkbench'
+import { KnowledgePrimaryTabs } from './KnowledgePrimaryTabs'
 
 export function KnowledgePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -20,59 +22,53 @@ export function KnowledgePage() {
   const regions = getKnowledgeRegionsForContinent(continentId)
 
   return (
-    <main className="knowledge-shell">
-      <KnowledgeTopicNavigation activeTopic="countries" />
-
-      <section className="knowledge-regions" aria-label="按区域认识世界">
+    <KnowledgeMapWorkbenchPage
+      activeTopic="countries"
+      label="按区域认识世界"
+      renderControls={(compact) => (
+        <KnowledgePrimaryTabs
+          activeId={continentId}
+          compact={compact}
+          getTo={(item) => `/knowledge?continent=${item.id}`}
+          items={knowledgeContinents.map((item) => ({
+            id: item.id,
+            label: item.name.zh,
+            secondary: item.name.en,
+          }))}
+          label="大洲"
+        />
+      )}
+      renderMap={(compact) => (
         <div
-          className="knowledge-continent-tabs"
-          role="tablist"
-          aria-label="大洲"
+          className="knowledge-map-card"
+          style={{
+            width: compact ? 'min(100%, 24rem)' : 'min(100%, 70rem)',
+            marginInline: 'auto',
+          }}
         >
-          {knowledgeContinents.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={item.id === continentId}
-              onClick={() => setSearchParams({ continent: item.id })}
-            >
-              <strong>{item.name.zh}</strong>
-              <span>{item.name.en}</span>
-            </button>
-          ))}
+          <KnowledgeRegionMap
+            continentId={continentId}
+            onSelectContinent={(nextContinentId) =>
+              setSearchParams({ continent: nextContinentId })
+            }
+          />
         </div>
-
-        <div className="knowledge-region-workspace">
-          <div className="knowledge-map-card">
-            <KnowledgeRegionMap
-              continentId={continentId}
-              onSelectContinent={(nextContinentId) =>
-                setSearchParams({ continent: nextContinentId })
-              }
-            />
-          </div>
-          <div className="knowledge-region-grid">
-            {regions.map((region) => (
-              <Link
-                key={region.id}
-                to={`/knowledge/countries/${region.id}`}
-                className="knowledge-region-card"
-                data-testid={`knowledge-region-${region.id}`}
-                style={
-                  { '--region-accent': region.accent } as React.CSSProperties
-                }
-              >
-                <div className="knowledge-region-heading">
-                  <h3>{region.name.zh}</h3>
-                  <strong>{region.countryCodes.length} 国</strong>
-                </div>
-                <p>{region.name.en}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-    </main>
+      )}
+      renderResults={(compact) => (
+        <KnowledgeCategoryCards
+          compact={compact}
+          label={`${knowledgeContinents.find((item) => item.id === continentId)!.name.zh}区域`}
+          items={regions.map((region) => ({
+            id: region.id,
+            title: region.name.zh,
+            subtitle: region.name.en,
+            meta: `${region.countryCodes.length} 国`,
+            to: `/knowledge/countries/${region.id}`,
+            accent: region.accent,
+            testId: `knowledge-region-${region.id}`,
+          }))}
+        />
+      )}
+    />
   )
 }

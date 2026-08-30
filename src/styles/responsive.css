@@ -3,10 +3,6 @@
     grid-template-columns: 1.45fr repeat(4, 1fr);
   }
 
-  .knowledge-topic-grid.is-earth-active {
-    grid-template-columns: 1fr 1.45fr repeat(3, 1fr);
-  }
-
   .knowledge-country-grid {
     grid-template-columns: repeat(
       var(--knowledge-country-columns-tablet),
@@ -149,7 +145,7 @@
     font-size: 1.25rem;
   }
 
-  .knowledge-continent-tabs button {
+  .knowledge-continent-tabs :is(button, a[role='tab']) {
     min-height: 2.8rem;
     padding: 0.45rem 0.55rem;
   }

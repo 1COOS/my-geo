@@ -72,15 +72,17 @@ test('matches selected-continent map colors to the learning region cards', async
     const tab = page.getByRole('tab', { name: selection.tab })
     await tab.click()
     await expect(tab).toHaveAttribute('aria-selected', 'true')
-    await expect(page.locator('.knowledge-region-card')).toHaveCount(
+    await expect(page.locator('.knowledge-category-grid a')).toHaveCount(
       selection.regionCount,
     )
 
     const cardColors = await page
-      .locator('.knowledge-region-card')
+      .locator('.knowledge-category-grid a')
       .evaluateAll((cards) =>
         cards.map((card) =>
-          getComputedStyle(card).getPropertyValue('--region-accent').trim(),
+          getComputedStyle(card)
+            .getPropertyValue('--knowledge-earth-line-color')
+            .trim(),
         ),
       )
     const mapColors = await page
@@ -118,29 +120,29 @@ test('keeps the continent map stable above a single row of region cards', async 
   await expect(countrySubtitle).toBeVisible()
   await expect(countrySubtitle).toHaveCSS('font-size', '12px')
   await expect(countrySubtitle).toHaveCSS('white-space', 'nowrap')
-  await expect(page.getByLabel('国家知识范围')).toContainText('195国家23地区')
+  await expect(page.getByLabel('国家知识范围')).toHaveCount(0)
   await expect(page.getByText('经纬判读与五带')).toBeVisible()
-  const countryHeaderLayout = await page
-    .locator('.knowledge-topic-card.is-active')
-    .evaluate((card) => {
-      const copy = card
-        .querySelector('.knowledge-topic-copy')!
-        .getBoundingClientRect()
-      const stats = card
-        .querySelector('.knowledge-topic-stats')!
-        .getBoundingClientRect()
-      const firstStat = card.querySelector('.knowledge-topic-stats > div')!
-      const value = firstStat.querySelector('strong')!.getBoundingClientRect()
-      const label = firstStat.querySelector('span')!.getBoundingClientRect()
-      return {
-        copyToStatsGap: stats.left - copy.right,
-        labelGap: label.left - value.right,
-      }
-    })
-  expect(countryHeaderLayout.copyToStatsGap).toBeGreaterThanOrEqual(0)
-  expect(countryHeaderLayout.copyToStatsGap).toBeLessThanOrEqual(12)
-  expect(countryHeaderLayout.labelGap).toBeGreaterThanOrEqual(3)
-  expect(countryHeaderLayout.labelGap).toBeLessThanOrEqual(5)
+  const topicHeader = await page
+    .locator('.knowledge-topic-card')
+    .evaluateAll((cards) =>
+      cards.map((card) => ({
+        width: card.getBoundingClientRect().width,
+        title: getComputedStyle(card.querySelector('h1, h3')!).fontSize,
+        subtitle: getComputedStyle(card.querySelector('p')!).fontSize,
+        icons: card.querySelectorAll('svg').length,
+      })),
+    )
+  expect(Math.max(...topicHeader.map((item) => item.width))).toBeCloseTo(
+    Math.min(...topicHeader.map((item) => item.width)),
+    0,
+  )
+  expect(new Set(topicHeader.map((item) => item.title))).toEqual(
+    new Set(['15px']),
+  )
+  expect(new Set(topicHeader.map((item) => item.subtitle))).toEqual(
+    new Set(['12px']),
+  )
+  expect(topicHeader.every((item) => item.icons === 1)).toBe(true)
   await expect(page.getByText('已开放')).toHaveCount(0)
   await expect(page.getByText('即将开放')).toHaveCount(0)
   await expect(page.locator('.knowledge-map-summary')).toHaveCount(0)
@@ -148,10 +150,10 @@ test('keeps the continent map stable above a single row of region cards', async 
   await expect(page.locator('.knowledge-region-progress')).toHaveCount(0)
 
   const mapCard = page.locator('.knowledge-map-card')
-  const regionGrid = page.locator('.knowledge-region-grid')
+  const regionGrid = page.locator('.knowledge-category-grid')
   const continentTabs = page.getByRole('tablist', { name: '大洲' })
   const tabLayout = await continentTabs.evaluate((element) => {
-    const button = element.querySelector('button')!
+    const button = element.querySelector<HTMLElement>('[role="tab"]')!
     const chinese = button.querySelector('strong')!.getBoundingClientRect()
     const english = button.querySelector('span')!.getBoundingClientRect()
     const style = getComputedStyle(element)
@@ -179,14 +181,15 @@ test('keeps the continent map stable above a single row of region cards', async 
   expect(asiaGridBox!.y).toBeGreaterThanOrEqual(
     asiaMapBox!.y + asiaMapBox!.height,
   )
-  await expect(regionGrid.locator('.knowledge-region-card')).toHaveCount(5)
+  await expect(regionGrid.getByRole('link')).toHaveCount(5)
   await expect(regionGrid.locator('.knowledge-region-index')).toHaveCount(0)
 
-  const firstCard = regionGrid.locator('.knowledge-region-card').first()
+  const firstCard = regionGrid.getByRole('link').first()
   const firstCardLayout = await firstCard.evaluate((element) => {
-    const title = element.querySelector('h3')!.getBoundingClientRect()
-    const count = element.querySelector('strong')!.getBoundingClientRect()
-    const english = element.querySelector('p')!
+    const title = element.querySelector('strong')!.getBoundingClientRect()
+    const labels = element.querySelectorAll('small')
+    const count = labels[0].getBoundingClientRect()
+    const english = labels[1]
     const englishBox = english.getBoundingClientRect()
     return {
       countIsRightOfTitle: count.x > title.x,
@@ -196,12 +199,16 @@ test('keeps the continent map stable above a single row of region cards', async 
       englishStartsBelowHeading:
         englishBox.y >= Math.max(title.bottom, count.bottom),
       englishWhiteSpace: getComputedStyle(english).whiteSpace,
+      borderRadius: getComputedStyle(element).borderRadius,
+      borderLeftWidth: getComputedStyle(element).borderLeftWidth,
     }
   })
   expect(firstCardLayout.countIsRightOfTitle).toBe(true)
   expect(firstCardLayout.headingCenterDelta).toBeLessThan(3)
   expect(firstCardLayout.englishStartsBelowHeading).toBe(true)
   expect(firstCardLayout.englishWhiteSpace).toBe('nowrap')
+  expect(firstCardLayout.borderRadius).toBe('6px')
+  expect(firstCardLayout.borderLeftWidth).toBe('3px')
 
   const longEnglishName = regionGrid.getByText('South-eastern Asia')
   const longEnglishLayout = await longEnglishName.evaluate((element) => ({
@@ -224,13 +231,13 @@ test('keeps the continent map stable above a single row of region cards', async 
   const americasMapBox = await mapCard.boundingBox()
   expect(americasMapBox).not.toBeNull()
   expect(americasMapBox!.height).toBeCloseTo(asiaMapBox!.height, 1)
-  await expect(regionGrid.locator('.knowledge-region-card')).toHaveCount(4)
+  await expect(regionGrid.getByRole('link')).toHaveCount(4)
 
   await page.getByRole('tab', { name: /大洋洲/ }).click()
   const oceaniaMapBox = await mapCard.boundingBox()
   expect(oceaniaMapBox).not.toBeNull()
   expect(oceaniaMapBox!.height).toBeCloseTo(asiaMapBox!.height, 1)
-  await expect(regionGrid.locator('.knowledge-region-card')).toHaveCount(4)
+  await expect(regionGrid.getByRole('link')).toHaveCount(4)
 })
 
 test('keeps compact region cards readable in a horizontal scroller', async ({
@@ -242,8 +249,8 @@ test('keeps compact region cards readable in a horizontal scroller', async ({
   const topicGridBox = await page.locator('.knowledge-topic-grid').boundingBox()
   expect(topicGridBox).not.toBeNull()
   expect(topicGridBox!.height).toBeLessThanOrEqual(maxReadableTopicGridHeight)
-  const regionGrid = page.locator('.knowledge-region-grid')
-  const firstCard = regionGrid.locator('.knowledge-region-card').first()
+  const regionGrid = page.locator('.knowledge-category-grid')
+  const firstCard = regionGrid.getByRole('link').first()
   const dimensions = await regionGrid.evaluate((element) => ({
     clientWidth: element.clientWidth,
     scrollWidth: element.scrollWidth,
@@ -252,5 +259,5 @@ test('keeps compact region cards readable in a horizontal scroller', async ({
 
   expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth)
   expect(firstCardBox).not.toBeNull()
-  expect(firstCardBox!.width).toBeGreaterThanOrEqual(250)
+  expect(firstCardBox!.width).toBeGreaterThanOrEqual(175)
 })

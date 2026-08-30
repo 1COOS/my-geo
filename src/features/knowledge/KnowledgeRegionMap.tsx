@@ -1,4 +1,3 @@
-import { geoEquirectangular, geoPath } from 'd3-geo'
 import { useMemo, type CSSProperties } from 'react'
 
 import { countries } from '../../data/countries'
@@ -9,18 +8,14 @@ import {
   type KnowledgeRegionId,
 } from '../../data/knowledgeRegions'
 import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
+import {
+  getKnowledgeWorldMapPath,
+  KNOWLEDGE_WORLD_MAP_HEIGHT as MAP_HEIGHT,
+  KNOWLEDGE_WORLD_MAP_WIDTH as MAP_WIDTH,
+  projectKnowledgeWorldPosition,
+} from './knowledgeWorldMap'
 
-const MAP_WIDTH = 720
-const MAP_HEIGHT = 340
 const MICROSTATE_RADIUS = 4
-const projection = geoEquirectangular()
-  .scale(MAP_WIDTH / (2 * Math.PI))
-  .translate([MAP_WIDTH / 2, MAP_HEIGHT / 2])
-  .clipExtent([
-    [0, 0],
-    [MAP_WIDTH, MAP_HEIGHT],
-  ])
-const pathGenerator = geoPath(projection)
 
 type KnowledgeRegionMapProps = {
   continentId: KnowledgeContinentId
@@ -40,7 +35,7 @@ export function KnowledgeRegionMap({
     () =>
       (boundaryResource.data?.features ?? []).map((feature) => ({
         code: feature.properties.code,
-        path: pathGenerator(feature as never) ?? '',
+        path: getKnowledgeWorldMapPath(feature),
       })),
     [boundaryResource.data],
   )
@@ -48,7 +43,7 @@ export function KnowledgeRegionMap({
     () =>
       (boundaryResource.data?.landmasses ?? []).map((landmass) => ({
         id: landmass.properties.id,
-        path: pathGenerator(landmass as never) ?? '',
+        path: getKnowledgeWorldMapPath(landmass),
       })),
     [boundaryResource.data],
   )
@@ -60,10 +55,7 @@ export function KnowledgeRegionMap({
     )
     return countries.flatMap((country) => {
       if (boundaryCodes.has(country.code)) return []
-      const point = projection([
-        country.center.longitude,
-        country.center.latitude,
-      ])
+      const point = projectKnowledgeWorldPosition(country.center)
       const region = knowledgeRegionByCountryCode.get(country.code)
       return point && region ? [{ country, point, region }] : []
     })

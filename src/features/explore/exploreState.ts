@@ -140,6 +140,7 @@ function layersForSelection(
   if (selection.kind === 'linearFeature') {
     return { ...layers, riverAndCanal: true }
   }
+  if (selection.kind === 'mountainRange') return { ...layers, mountain: true }
   if (selection.kind === 'desert') return { ...layers, desert: true }
   if (selection.kind === 'landmark') return { ...layers, landmark: true }
   if (selection.kind === 'geography') return { ...layers, geography: true }

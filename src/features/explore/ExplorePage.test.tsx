@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import '../../app/i18n'
 import type { GeoPosition } from '../../shared/types/geo'
 import { ExplorePage } from './ExplorePage'
+import { parseExploreDeepLinkPosition } from './exploreDeepLinks'
 
 const globePropsMock = vi.fn()
 const climateRasterMocks = vi.hoisted(() => ({
@@ -208,6 +209,89 @@ describe('ExplorePage', () => {
         showRiverAndCanalLayer: true,
         selectedLinearFeatureId: 'amazon-system',
         selectedWaterbodyId: null,
+      }),
+    )
+  })
+
+  it('opens mountain and desert deep links and lets record coordinates override the camera target', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/explore?mountainRange=himalayas&latitude=27.9881&longitude=86.925',
+    )
+    const { unmount } = render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    expect(await screen.findByLabelText('喜马拉雅山脉知识卡')).toBeVisible()
+    await waitFor(() =>
+      expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+        showMountainLayer: true,
+        selectedMountainRangeId: 'himalayas',
+        cameraTarget: {
+          position: { latitude: 27.9881, longitude: 86.925 },
+        },
+      }),
+    )
+
+    unmount()
+    window.history.replaceState(
+      {},
+      '',
+      '/explore?desert=sahara&latitude=23&longitude=13',
+    )
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    expect(await screen.findByLabelText('撒哈拉沙漠知识卡')).toBeVisible()
+    await waitFor(() =>
+      expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+        showDesertLayer: true,
+        selectedDesertId: 'sahara',
+        cameraTarget: {
+          position: { latitude: 23, longitude: 13 },
+        },
+      }),
+    )
+  })
+
+  it('supports coordinate-only deep links and rejects incomplete or out-of-range coordinates', async () => {
+    expect(
+      parseExploreDeepLinkPosition(
+        new URLSearchParams('latitude=23.5&longitude=47.5'),
+      ),
+    ).toEqual({ latitude: 23.5, longitude: 47.5 })
+    expect(
+      parseExploreDeepLinkPosition(new URLSearchParams('latitude=23.5')),
+    ).toBeUndefined()
+    expect(
+      parseExploreDeepLinkPosition(
+        new URLSearchParams('latitude=91&longitude=47.5'),
+      ),
+    ).toBeUndefined()
+
+    window.history.replaceState({}, '', '/explore?latitude=23.5&longitude=47.5')
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    expect(await screen.findByTestId('mock-globe-scene')).toBeVisible()
+    await waitFor(() =>
+      expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+        selectedCountryCode: null,
+        selectedWaterbodyId: null,
+        selectedLinearFeatureId: null,
+        selectedMountainRangeId: null,
+        selectedDesertId: null,
+        cameraTarget: {
+          position: { latitude: 23.5, longitude: 47.5 },
+        },
       }),
     )
   })

@@ -312,7 +312,7 @@ test('switches between exploration and knowledge without scene teardown errors',
   const exploreLink = page.getByRole('link', { name: '探索地球' })
   await knowledgeLink.click()
   await expect(
-    page.getByRole('heading', { name: '国家', level: 1 }),
+    page.getByRole('heading', { name: '国家首都', level: 1 }),
   ).toBeVisible()
 
   await exploreLink.click()
@@ -321,7 +321,7 @@ test('switches between exploration and knowledge without scene teardown errors',
 
   await knowledgeLink.click()
   await expect(
-    page.getByRole('heading', { name: '国家', level: 1 }),
+    page.getByRole('heading', { name: '国家首都', level: 1 }),
   ).toBeVisible()
 
   expect(pageErrors).toEqual([])
@@ -334,7 +334,7 @@ test('navigates the country knowledge atlas and deep-links back to the globe', a
   await page.goto('/knowledge')
 
   await expect(
-    page.getByRole('heading', { name: '国家', level: 1 }),
+    page.getByRole('heading', { name: '国家首都', level: 1 }),
   ).toBeVisible()
   await expect(page.getByTestId('knowledge-region-east-asia')).toContainText(
     '5 国',
@@ -515,9 +515,9 @@ for (const viewport of [
     await page.goto('/knowledge/earth?topic=hemispheres')
 
     await expect(
-      page.getByRole('heading', { name: '地球', level: 1 }),
+      page.getByRole('heading', { name: '地球经纬', level: 1 }),
     ).toBeVisible()
-    await expect(page.locator('.knowledge-topic-card')).toHaveCount(5)
+    await expect(page.locator('.knowledge-topic-card')).toHaveCount(4)
     await expect(
       page.getByRole('tab', { name: '半球界线', exact: true }),
     ).toHaveAttribute('aria-selected', 'true')
@@ -620,7 +620,7 @@ for (const viewport of [
           '.knowledge-earth-reference-label, .knowledge-earth-coverage-label',
         ),
       ).map((label) => label.getBoundingClientRect())
-      const tablist = document.querySelector('.knowledge-earth-topic-tabs')!
+      const tablist = document.querySelector('.knowledge-primary-tabs')!
       const tab = tablist.querySelector('button')!
       return {
         mapCard: {
@@ -664,7 +664,7 @@ for (const viewport of [
     expect(geometry.minLineButtonHeight).toBeGreaterThanOrEqual(
       viewport.height <= 520 ? 56 : 64,
     )
-    expect(geometry.firstRowLineCount).toBe(viewport.height <= 520 ? 2 : 4)
+    expect(geometry.firstRowLineCount).toBe(4)
     expect(geometry.labelsInsideMap).toBe(true)
     expect(geometry.tablistBorderBottomWidth).toBe('0px')
     expect(geometry.tabDisplay).toBe('flex')
@@ -742,9 +742,7 @@ for (const viewport of [
       countryDetailCardBox!.width,
       0,
     )
-    expect(detailLayoutBefore.firstRowLineCount).toBe(
-      viewport.height <= 520 ? 2 : 4,
-    )
+    expect(detailLayoutBefore.firstRowLineCount).toBe(4)
     expect(detailLayoutBefore.pageOverflows).toBe(false)
 
     await siblingLines.getByRole('link', { name: '南极圈 66.5°S' }).click()
@@ -1491,7 +1489,7 @@ for (const viewport of [
     await page.goto('/knowledge')
 
     await expect(
-      page.getByRole('heading', { name: '国家', level: 1 }),
+      page.getByRole('heading', { name: '国家首都', level: 1 }),
     ).toBeVisible()
     const geometry = await page
       .locator('.knowledge-shell')
