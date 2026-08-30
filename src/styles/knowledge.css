@@ -1,43 +1,31 @@
-.knowledge-topics,
 .knowledge-regions {
   max-width: 92rem;
   margin: 0 auto 1rem;
 }
 
-.knowledge-topics {
-  margin-top: 0;
-}
-
-.knowledge-topic-card p {
-  margin: 0;
-  overflow: hidden;
-  font-size: var(--fs-m);
-  line-height: var(--lh-b);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.knowledge-topic-stats {
+.knowledge-question-hub-stats {
   display: flex;
   flex: none;
   gap: 0.8rem;
   align-items: center;
 }
 
-.knowledge-topic-stats > div {
+.knowledge-question-hub-stats > div {
   display: flex;
   gap: 0.25rem;
   align-items: end;
 }
 
-.knowledge-topic-stats strong {
+.knowledge-question-hub-stats strong {
   font-size: 1.35rem;
   line-height: 1;
+  color: var(--atlas-progress);
 }
 
-.knowledge-topic-stats span {
+.knowledge-question-hub-stats span {
   font-size: var(--fs-m);
   font-weight: 700;
+  color: var(--atlas-text-secondary);
 }
 
 .knowledge-region-map-strip > div:first-child {
@@ -295,13 +283,23 @@
   margin: 0 auto 1rem;
 }
 
-.knowledge-question-hub-overview.knowledge-topic-card {
+.knowledge-question-hub-overview {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 1.25rem;
   padding: 1rem 1.2rem;
   align-items: center;
+  background: var(--atlas-panel-raised);
   border: 1px solid var(--atlas-border);
+}
+
+.knowledge-question-hub-overview::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  content: '';
+  background: var(--atlas-accent);
 }
 
 .knowledge-question-hub-copy > p,
@@ -379,76 +377,6 @@
 
 .knowledge-question-continent-progress strong.is-passed {
   color: var(--atlas-progress);
-}
-
-.knowledge-topic-grid {
-  display: grid;
-  grid-template-columns: minmax(18rem, 1.55fr) repeat(4, minmax(9rem, 1fr));
-  gap: 0;
-  overflow: hidden;
-  background: var(--atlas-panel-muted);
-  border: 1px solid var(--atlas-border);
-  border-radius: var(--atlas-radius-panel);
-}
-
-.knowledge-topic-card {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  min-height: 4.75rem;
-  padding: 0.6rem 0.8rem;
-  background: transparent;
-  border: 0;
-  border-right: 1px solid var(--atlas-border-soft);
-  border-radius: 0;
-}
-
-.knowledge-topic-card:last-child {
-  border-right: 0;
-}
-
-.knowledge-topic-card.is-active {
-  justify-content: flex-start;
-  position: relative;
-  background: var(--atlas-panel-raised);
-  border-color: var(--atlas-border-soft);
-  box-shadow: none;
-}
-
-.knowledge-topic-card.is-active::before {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  content: '';
-  background: var(--atlas-accent);
-}
-
-.knowledge-topic-card.is-available {
-  cursor: pointer;
-}
-
-.knowledge-topic-card.is-available:hover,
-.knowledge-topic-card.is-available:focus-visible {
-  color: var(--atlas-text);
-  background: var(--atlas-accent-soft);
-}
-
-.knowledge-topic-stats strong {
-  color: var(--atlas-progress);
-}
-
-.knowledge-topic-card h1,
-.knowledge-topic-card h3 {
-  margin: 0 0 0.2rem;
-  font-size: 0.9375rem;
-  color: var(--atlas-text);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.knowledge-topic-card p,
-.knowledge-topic-stats span {
-  color: var(--atlas-text-secondary);
 }
 
 .knowledge-earth {

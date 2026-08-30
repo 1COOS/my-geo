@@ -118,8 +118,8 @@ function KnowledgeWaterOverviewPage() {
 
   return (
     <KnowledgeMapWorkbenchPage
-      activeTopic="water"
       label="水域对象学习"
+      title="江河湖海"
       renderControls={(compact) => (
         <KnowledgePrimaryTabs
           activeId={layerId}

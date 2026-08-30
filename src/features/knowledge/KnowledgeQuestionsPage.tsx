@@ -30,7 +30,7 @@ export function KnowledgeQuestionsPage() {
   return (
     <main className="knowledge-shell knowledge-question-hub-shell">
       <section
-        className="knowledge-question-hub-overview knowledge-topic-card is-active"
+        className="knowledge-question-hub-overview"
         aria-labelledby="knowledge-question-hub-title"
       >
         <div className="knowledge-question-hub-copy">
@@ -38,10 +38,7 @@ export function KnowledgeQuestionsPage() {
           <h1 id="knowledge-question-hub-title">知识问答</h1>
           <span>按大洲选择难度，从最常见的国家开始。</span>
         </div>
-        <div
-          className="knowledge-question-hub-stats knowledge-topic-stats"
-          aria-label="知识问答范围"
-        >
+        <div className="knowledge-question-hub-stats" aria-label="知识问答范围">
           <div>
             <strong>{countries.length}</strong>
             <span>国家</span>

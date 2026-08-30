@@ -44,7 +44,7 @@ describe('KnowledgeWaterPage', () => {
 
     expect(
       await screen.findByRole('heading', { name: '江河湖海' }),
-    ).toBeVisible()
+    ).toHaveClass('sr-only')
     expect(screen.queryByLabelText('水域知识范围')).toBeNull()
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       '海洋',

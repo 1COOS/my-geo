@@ -37,27 +37,13 @@ describe('knowledge pages', () => {
 
     expect(
       screen.getByRole('heading', { name: '国家首都', level: 1 }),
-    ).toBeVisible()
+    ).toHaveClass('sr-only')
     expect(screen.queryByLabelText('国家知识范围')).toBeNull()
-    expect(screen.getByRole('link', { name: /地球/ })).toHaveAttribute(
-      'href',
-      '/knowledge/earth',
-    )
-    expect(screen.getByRole('link', { name: /之最/ })).toHaveAttribute(
-      'href',
-      '/knowledge/extremes',
-    )
-    expect(
-      within(screen.getByLabelText('知识主题'))
-        .getAllByRole('heading')
-        .map((heading) => heading.textContent),
-    ).toEqual(['地球经纬', '国家首都', '世界之最', '江河湖海'])
+    expect(screen.queryByLabelText('知识主题')).not.toBeInTheDocument()
     expect(screen.queryByText('气候')).toBeNull()
     expect(screen.queryByText('地形')).toBeNull()
     expect(screen.queryByText('已开放')).toBeNull()
     expect(screen.queryByText('即将开放')).toBeNull()
-    expect(screen.getByText('国家｜国旗｜首都')).toBeVisible()
-    expect(screen.getByText('经纬判读与五带')).toBeVisible()
     expect(document.querySelector('.knowledge-region-index')).toBeNull()
     expect(screen.getByTestId('knowledge-region-east-asia')).toBeVisible()
     expect(screen.queryByText('尚未挑战')).toBeNull()
@@ -127,7 +113,7 @@ describe('knowledge pages', () => {
 
     expect(
       screen.getByRole('heading', { name: '地球经纬', level: 1 }),
-    ).toBeVisible()
+    ).toHaveClass('sr-only')
     expect(screen.queryByLabelText('地球知识范围')).toBeNull()
     expect(screen.getByRole('tab', { name: '半球界线' })).toHaveAttribute(
       'aria-selected',

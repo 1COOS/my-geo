@@ -14,7 +14,9 @@ for (const viewport of waterViewports) {
     await page.goto('/knowledge/water')
 
     await expect(page).toHaveURL(/\/knowledge\/water\?layer=ocean$/)
-    await expect(page.getByRole('heading', { name: '江河湖海' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '江河湖海' })).toHaveClass(
+      'sr-only',
+    )
     await expect(page.getByRole('tab')).toHaveText([
       '海洋',
       '湖泊',

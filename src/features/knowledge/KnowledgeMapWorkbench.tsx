@@ -1,13 +1,8 @@
 import { useEffect, useState, type ReactNode, type RefObject } from 'react'
 
-import {
-  KnowledgeTopicNavigation,
-  type KnowledgeTopicId,
-} from './KnowledgeTopicNavigation'
-
 type KnowledgeMapWorkbenchPageProps = {
-  activeTopic: KnowledgeTopicId
   label: string
+  title: string
   shellRef?: RefObject<HTMLElement | null>
   renderControls: (compact: boolean) => ReactNode
   renderMap: (compact: boolean) => ReactNode
@@ -19,8 +14,8 @@ function getCompactLandscape() {
 }
 
 export function KnowledgeMapWorkbenchPage({
-  activeTopic,
   label,
+  title,
   shellRef,
   renderControls,
   renderMap,
@@ -47,7 +42,7 @@ export function KnowledgeMapWorkbenchPage({
         paddingBottom: compact ? '0.45rem' : '0.75rem',
       }}
     >
-      <KnowledgeTopicNavigation activeTopic={activeTopic} compact={compact} />
+      <h1 className="sr-only">{title}</h1>
 
       <section
         className="knowledge-earth knowledge-map-workbench"

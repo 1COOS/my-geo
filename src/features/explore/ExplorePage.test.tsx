@@ -48,6 +48,16 @@ vi.mock('../../shared/lib/webgl', () => ({
   supportsWebGL: () => supportsWebGLMock(),
 }))
 
+async function openLayerPanel(user: ReturnType<typeof userEvent.setup>) {
+  const trigger = screen.getByRole('button', {
+    name: /图层，已开启 \d+ 项/,
+  })
+  if (trigger.getAttribute('aria-expanded') !== 'true') {
+    await user.click(trigger)
+  }
+  return screen.getByRole('region', { name: '图层选择' })
+}
+
 describe('ExplorePage', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/explore')
@@ -332,6 +342,7 @@ describe('ExplorePage', () => {
   })
 
   it('shows the globe and control deck without page chrome or an open search field', async () => {
+    const user = userEvent.setup()
     render(
       <Tooltip.Provider>
         <ExplorePage />
@@ -361,6 +372,16 @@ describe('ExplorePage', () => {
     expect(
       screen.getByRole('region', { name: '地球图层控制' }),
     ).toBeInTheDocument()
+    const trigger = screen.getByRole('button', { name: '图层，已开启 0 项' })
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('region', { name: '图层选择' })).toBeNull()
+    const panel = await openLayerPanel(user)
+    expect(
+      within(panel)
+        .getAllByRole('heading', { level: 2 })
+        .map((heading) => heading.textContent),
+    ).toEqual(['标注', '地球知识', '水域', '地貌与文化'])
+    expect(within(panel).getAllByRole('button')).toHaveLength(11)
     expect(screen.getByRole('button', { name: '首都' })).toHaveAttribute(
       'aria-pressed',
       'false',
@@ -432,6 +453,34 @@ describe('ExplorePage', () => {
       screen.queryByRole('combobox', { name: '搜索地点' }),
     ).not.toBeInTheDocument()
     expect(trigger).toHaveFocus()
+  })
+
+  it('keeps layer and search panels mutually exclusive and restores focus', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    const layerTrigger = screen.getByRole('button', {
+      name: '图层，已开启 0 项',
+    })
+    await user.click(layerTrigger)
+    expect(screen.getByRole('region', { name: '图层选择' })).toBeVisible()
+
+    const searchTrigger = screen.getByRole('button', { name: '搜索地点' })
+    await user.click(searchTrigger)
+    expect(screen.queryByRole('region', { name: '图层选择' })).toBeNull()
+    expect(screen.getByRole('combobox', { name: '搜索地点' })).toHaveFocus()
+
+    await user.keyboard('{Escape}')
+    expect(searchTrigger).toHaveFocus()
+
+    await user.click(layerTrigger)
+    await user.click(await screen.findByTestId('mock-globe-scene'))
+    expect(screen.queryByRole('region', { name: '图层选择' })).toBeNull()
+    expect(layerTrigger).toHaveFocus()
   })
 
   it('closes the search dialog when the globe area is clicked', async () => {
@@ -575,6 +624,7 @@ describe('ExplorePage', () => {
 
     expect(getProps()).toMatchObject({ showCapitals: false, showCities: false })
 
+    await openLayerPanel(user)
     await user.click(screen.getByRole('button', { name: '首都' }))
     expect(getProps()).toMatchObject({ showCapitals: true, showCities: false })
     expect(screen.getByRole('button', { name: '首都' })).toHaveAttribute(
@@ -613,13 +663,18 @@ describe('ExplorePage', () => {
         selectedCountryCode: string | null
       }
 
+    await openLayerPanel(user)
     await user.click(screen.getByRole('button', { name: '海洋' }))
     expect(getProps()).toMatchObject({
       showOceanLayer: true,
       showLakeLayer: false,
       showWaterwayLayer: false,
     })
-    const lakeToggle = screen.getByRole('button', {
+    let lakeToggle = screen.getByRole('button', {
+      name: '湖泊图层：世界著名淡水与咸水湖泊',
+    })
+    await openLayerPanel(user)
+    lakeToggle = screen.getByRole('button', {
       name: '湖泊图层：世界著名淡水与咸水湖泊',
     })
     await user.click(lakeToggle)
@@ -654,6 +709,10 @@ describe('ExplorePage', () => {
     expect(getProps()).toMatchObject({ selectedWaterbodyId: 'bohai-sea' })
     expect(screen.getByText('中国东北部沿海、黄海西北部')).toBeInTheDocument()
 
+    await openLayerPanel(user)
+    lakeToggle = screen.getByRole('button', {
+      name: '湖泊图层：世界著名淡水与咸水湖泊',
+    })
     await user.click(lakeToggle)
     expect(getProps()).toMatchObject({ showLakeLayer: false })
     await user.click(screen.getByRole('button', { name: '搜索地点' }))
@@ -672,6 +731,10 @@ describe('ExplorePage', () => {
       screen.queryByText(/水位、季节和长期环境变化/),
     ).not.toBeInTheDocument()
 
+    await openLayerPanel(user)
+    lakeToggle = screen.getByRole('button', {
+      name: '湖泊图层：世界著名淡水与咸水湖泊',
+    })
     await user.click(lakeToggle)
     expect(getProps()).toMatchObject({
       showLakeLayer: false,
@@ -702,6 +765,7 @@ describe('ExplorePage', () => {
         selectedCountryCode: string | null
       }
 
+    await openLayerPanel(user)
     await user.click(
       screen.getByRole('button', {
         name: '河流图层：世界重要河流与人工运河',
@@ -747,6 +811,7 @@ describe('ExplorePage', () => {
         selectedCountryCode: string | null
       }
 
+    await openLayerPanel(user)
     const toggle = screen.getByRole('button', {
       name: '山脉图层：世界著名山脉与最高峰',
     })
@@ -784,15 +849,14 @@ describe('ExplorePage', () => {
         selectedCountryCode: string | null
       }
 
-    const toggle = screen.getByRole('button', {
-      name: '沙漠图层：世界主要沙漠与荒漠景观',
-    })
     await user.click(screen.getByRole('button', { name: '搜索地点' }))
     const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, '撒哈拉{Enter}')
     expect(await screen.findByLabelText('撒哈拉沙漠知识卡')).toBeInTheDocument()
     expect(screen.getByText(/9,200,000 km²/)).toBeInTheDocument()
-    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.getByRole('button', { name: '图层，已开启 1 项' }),
+    ).toBeInTheDocument()
     expect(getProps()).toMatchObject({
       showDesertLayer: true,
       selectedDesertId: 'sahara',
@@ -800,6 +864,11 @@ describe('ExplorePage', () => {
       selectedCountryCode: null,
     })
 
+    await openLayerPanel(user)
+    const toggle = screen.getByRole('button', {
+      name: '沙漠图层：世界主要沙漠与荒漠景观',
+    })
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
     await user.click(toggle)
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByLabelText('撒哈拉沙漠知识卡')).toBeInTheDocument()
@@ -824,16 +893,15 @@ describe('ExplorePage', () => {
         selectedCountryCode: string | null
       }
 
-    const toggle = screen.getByRole('button', {
-      name: '名胜古迹图层：世界著名文化与历史遗产',
-    })
     await user.click(screen.getByRole('button', { name: '搜索地点' }))
     const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, '长城{Enter}')
 
     expect(await screen.findByLabelText('长城古迹知识卡')).toBeInTheDocument()
     expect(screen.getByText('公元前7世纪至明代')).toBeInTheDocument()
-    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.getByRole('button', { name: '图层，已开启 1 项' }),
+    ).toBeInTheDocument()
     expect(getProps()).toMatchObject({
       showLandmarkLayer: true,
       selectedLandmarkId: 'great-wall',
@@ -841,6 +909,11 @@ describe('ExplorePage', () => {
       selectedCountryCode: null,
     })
 
+    await openLayerPanel(user)
+    const toggle = screen.getByRole('button', {
+      name: '名胜古迹图层：世界著名文化与历史遗产',
+    })
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
     await user.click(toggle)
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByLabelText('长城古迹知识卡')).toBeInTheDocument()
@@ -872,7 +945,8 @@ describe('ExplorePage', () => {
         }) => void
       }
 
-    const toggle = screen.getByRole('button', {
+    await openLayerPanel(user)
+    let toggle = screen.getByRole('button', {
       name: '经纬图层：经度基准、半球界线、纬度分区线与五带分界线',
     })
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
@@ -964,6 +1038,10 @@ describe('ExplorePage', () => {
     expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
     expect(toggle).toHaveAttribute('aria-pressed', 'true')
 
+    await openLayerPanel(user)
+    toggle = screen.getByRole('button', {
+      name: '经纬图层：经度基准、半球界线、纬度分区线与五带分界线',
+    })
     await user.click(toggle)
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
     expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
@@ -999,7 +1077,8 @@ describe('ExplorePage', () => {
         selectedClimatePosition: GeoPosition | null
         onSelectClimatePosition: (position: GeoPosition) => void
       }
-    const toggle = screen.getByRole('button', {
+    await openLayerPanel(user)
+    let toggle = screen.getByRole('button', {
       name: '世界气候类型教学图层',
     })
 
@@ -1034,6 +1113,10 @@ describe('ExplorePage', () => {
     expect(getProps().selectedClimateTypeId).toBeNull()
     await waitFor(() => expect(getProps().climateBoundaryRasterUrl).toBeNull())
 
+    await openLayerPanel(user)
+    toggle = screen.getByRole('button', {
+      name: '世界气候类型教学图层',
+    })
     await user.click(toggle)
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByLabelText('世界气候类型知识卡')).toBeInTheDocument()
@@ -1182,6 +1265,7 @@ describe('ExplorePage', () => {
         onHoverCity: (cityId: string | null) => void
       }
 
+    await openLayerPanel(user)
     await user.click(screen.getByRole('button', { name: '城市' }))
     act(() => getProps().onHoverCity('cn-shanghai'))
     expect(getProps().hoveredCityId).toBe('cn-shanghai')

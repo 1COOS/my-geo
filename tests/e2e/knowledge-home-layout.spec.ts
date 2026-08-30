@@ -1,7 +1,5 @@
 import { expect, test } from '@playwright/test'
 
-const maxReadableTopicGridHeight = 96
-
 const knowledgeMapViewports = [
   { name: '1440 desktop', width: 1440, height: 900 },
   { name: 'iPad landscape', width: 1194, height: 834 },
@@ -113,36 +111,8 @@ test('keeps the continent map stable above a single row of region cards', async 
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/knowledge')
 
-  const topicGridBox = await page.locator('.knowledge-topic-grid').boundingBox()
-  expect(topicGridBox).not.toBeNull()
-  expect(topicGridBox!.height).toBeLessThanOrEqual(maxReadableTopicGridHeight)
-  const countrySubtitle = page.getByText('国家｜国旗｜首都')
-  await expect(countrySubtitle).toBeVisible()
-  await expect(countrySubtitle).toHaveCSS('font-size', '12px')
-  await expect(countrySubtitle).toHaveCSS('white-space', 'nowrap')
+  await expect(page.locator('.knowledge-topic-grid')).toHaveCount(0)
   await expect(page.getByLabel('国家知识范围')).toHaveCount(0)
-  await expect(page.getByText('经纬判读与五带')).toBeVisible()
-  const topicHeader = await page
-    .locator('.knowledge-topic-card')
-    .evaluateAll((cards) =>
-      cards.map((card) => ({
-        width: card.getBoundingClientRect().width,
-        title: getComputedStyle(card.querySelector('h1, h3')!).fontSize,
-        subtitle: getComputedStyle(card.querySelector('p')!).fontSize,
-        icons: card.querySelectorAll('svg').length,
-      })),
-    )
-  expect(Math.max(...topicHeader.map((item) => item.width))).toBeCloseTo(
-    Math.min(...topicHeader.map((item) => item.width)),
-    0,
-  )
-  expect(new Set(topicHeader.map((item) => item.title))).toEqual(
-    new Set(['15px']),
-  )
-  expect(new Set(topicHeader.map((item) => item.subtitle))).toEqual(
-    new Set(['12px']),
-  )
-  expect(topicHeader.every((item) => item.icons === 1)).toBe(true)
   await expect(page.getByText('已开放')).toHaveCount(0)
   await expect(page.getByText('即将开放')).toHaveCount(0)
   await expect(page.locator('.knowledge-map-summary')).toHaveCount(0)
@@ -246,9 +216,7 @@ test('keeps compact region cards readable in a horizontal scroller', async ({
   await page.setViewportSize({ width: 430, height: 800 })
   await page.goto('/knowledge')
 
-  const topicGridBox = await page.locator('.knowledge-topic-grid').boundingBox()
-  expect(topicGridBox).not.toBeNull()
-  expect(topicGridBox!.height).toBeLessThanOrEqual(maxReadableTopicGridHeight)
+  await expect(page.locator('.knowledge-topic-grid')).toHaveCount(0)
   const regionGrid = page.locator('.knowledge-category-grid')
   const firstCard = regionGrid.getByRole('link').first()
   const dimensions = await regionGrid.evaluate((element) => ({

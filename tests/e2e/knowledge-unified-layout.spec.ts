@@ -9,16 +9,28 @@ const viewports = [
 const pages = [
   {
     name: 'earth',
+    topic: '地球经纬',
     url: '/knowledge/earth?topic=grid-reading',
     tabs: '地球经纬线用途',
   },
-  { name: 'countries', url: '/knowledge?continent=asia', tabs: '大洲' },
+  {
+    name: 'countries',
+    topic: '国家首都',
+    url: '/knowledge?continent=asia',
+    tabs: '大洲',
+  },
   {
     name: 'extremes',
+    topic: '世界之最',
     url: '/knowledge/extremes?category=country-scale',
     tabs: '世界之最类别',
   },
-  { name: 'water', url: '/knowledge/water?layer=ocean', tabs: '水域图层' },
+  {
+    name: 'water',
+    topic: '江河湖海',
+    url: '/knowledge/water?layer=ocean',
+    tabs: '水域图层',
+  },
 ]
 
 for (const viewport of viewports) {
@@ -42,28 +54,38 @@ for (const viewport of viewports) {
 
     for (const definition of pages) {
       await page.goto(definition.url)
-      await expect(page.locator('.knowledge-topic-card')).toHaveCount(4)
-      const header = await page
-        .locator('.knowledge-topic-card')
-        .evaluateAll((cards) =>
-          cards.map((card) => ({
-            width: card.getBoundingClientRect().width,
-            title: getComputedStyle(card.querySelector('h1, h3')!).fontSize,
-            subtitle: getComputedStyle(card.querySelector('p')!).fontSize,
-            icons: card.querySelectorAll('svg').length,
-          })),
-        )
-      expect(Math.max(...header.map((item) => item.width))).toBeCloseTo(
-        Math.min(...header.map((item) => item.width)),
-        0,
+      await expect(page.locator('.knowledge-topic-card')).toHaveCount(0)
+
+      const knowledgeTrigger = page.getByRole('button', { name: '知识体系' })
+      await knowledgeTrigger.click()
+      const submenu = page.getByRole('navigation', { name: '知识二级菜单' })
+      await expect(submenu.getByRole('link')).toHaveText([
+        '地球经纬',
+        '国家首都',
+        '世界之最',
+        '江河湖海',
+      ])
+      await expect(
+        submenu.getByRole('link', { name: definition.topic }),
+      ).toHaveAttribute('aria-current', 'page')
+      const [triggerBox, submenuBox] = await Promise.all([
+        knowledgeTrigger.boundingBox(),
+        submenu.boundingBox(),
+      ])
+      expect(triggerBox).not.toBeNull()
+      expect(submenuBox).not.toBeNull()
+      expect(submenuBox!.x).toBeGreaterThanOrEqual(
+        triggerBox!.x + triggerBox!.width,
       )
-      expect(new Set(header.map((item) => item.title))).toEqual(
-        new Set(['15px']),
+      expect(submenuBox!.x + submenuBox!.width).toBeLessThanOrEqual(
+        viewport.width,
       )
-      expect(new Set(header.map((item) => item.subtitle))).toEqual(
-        new Set(['12px']),
+      expect(submenuBox!.y + submenuBox!.height).toBeLessThanOrEqual(
+        viewport.height,
       )
-      expect(header.every((item) => item.icons === 1)).toBe(true)
+      await page.keyboard.press('Escape')
+      await expect(submenu).toHaveCount(0)
+      await expect(knowledgeTrigger).toBeFocused()
 
       const tablist = page.getByRole('tablist', { name: definition.tabs })
       const activeTab = tablist.locator('[aria-selected="true"]')
@@ -81,8 +103,8 @@ for (const viewport of viewports) {
       expect(tabs.flexBasis).toBe('auto')
       expect(tabs.minWidth).toBe('max-content')
 
-      const [topicBox, mapBox] = await Promise.all([
-        page.locator('.knowledge-topic-grid').boundingBox(),
+      const [controlsBox, mapBox] = await Promise.all([
+        page.locator('.knowledge-map-workbench-controls').boundingBox(),
         page.locator('.knowledge-map-card').boundingBox(),
       ])
       const categoryCards = page.locator('.knowledge-category-grid')
@@ -92,10 +114,12 @@ for (const viewport of viewports) {
         radius: getComputedStyle(element).borderRadius,
         leftBorder: getComputedStyle(element).borderLeftWidth,
       }))
-      expect(topicBox).not.toBeNull()
+      expect(controlsBox).not.toBeNull()
       expect(mapBox).not.toBeNull()
-      expect(topicBox!.x).toBeCloseTo(mapBox!.x, 0)
-      expect(topicBox!.width).toBeCloseTo(mapBox!.width, 0)
+      expect(controlsBox!.width).toBeGreaterThanOrEqual(mapBox!.width)
+      expect(controlsBox!.y + controlsBox!.height).toBeLessThanOrEqual(
+        mapBox!.y,
+      )
       expect(mapBox!.width / mapBox!.height).toBeCloseTo(36 / 17, 1)
       await expectNoPageScroll(page)
       measurements.push({

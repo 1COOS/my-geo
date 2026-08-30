@@ -1,8 +1,4 @@
 @media (max-width: 1080px) {
-  .knowledge-topic-grid {
-    grid-template-columns: 1.45fr repeat(4, 1fr);
-  }
-
   .knowledge-country-grid {
     grid-template-columns: repeat(
       var(--knowledge-country-columns-tablet),
@@ -27,56 +23,12 @@
     padding: 0.32rem;
     border-radius: 0.9rem;
   }
-
-  .control-button {
-    flex: none;
-    justify-content: center;
-    width: 2.7rem;
-    min-width: 2.7rem;
-    min-height: 2.7rem;
-    padding: 0;
-  }
-
-  .control-button > span:last-child {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .control-button svg {
-    width: 1.2rem;
-    height: 1.2rem;
-  }
-}
-
-@media (max-width: 430px) {
-  .control-button > span:last-child {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .control-button svg {
-    width: 1.25rem;
-    height: 1.25rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .knowledge-region-card,
-  .app-navigation-link {
+  .app-navigation-link,
+  .knowledge-subnavigation-link {
     transition: none;
   }
 
@@ -132,16 +84,15 @@
     padding: 0.7rem 0.75rem 1.5rem 4.05rem;
   }
 
-  .knowledge-topics,
   .knowledge-regions {
     margin-bottom: 1rem;
   }
 
-  .knowledge-topic-stats {
+  .knowledge-question-hub-stats {
     gap: 0.5rem;
   }
 
-  .knowledge-topic-stats strong {
+  .knowledge-question-hub-stats strong {
     font-size: 1.25rem;
   }
 
@@ -284,12 +235,6 @@
   .knowledge-country-display-controls button {
     min-height: 2.75rem;
   }
-  .layer-control {
-    left: max(4rem, env(safe-area-inset-left));
-    max-width: calc(100% - var(--scene-reserve) - 4rem);
-    border-radius: var(--atlas-radius-compact);
-  }
-
   .control-dock {
     border-radius: var(--atlas-radius-compact);
   }
@@ -307,14 +252,6 @@
 
   .landscape-runtime.is-touch-device .country-search-field {
     height: 2.75rem;
-  }
-
-  .landscape-runtime.is-touch-device .layer-control-heading {
-    display: none;
-  }
-
-  .landscape-runtime.is-touch-device .layer-toggle-dot {
-    display: none;
   }
 
   .landscape-runtime.is-touch-device .climate-fact-grid,
@@ -372,23 +309,6 @@
     max-height: none;
   }
 
-  .landscape-runtime.is-touch-device .control-button > span:last-child {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .landscape-runtime.is-touch-device .control-button svg {
-    width: 1.2rem;
-    height: 1.2rem;
-  }
-
   .landscape-runtime.is-touch-device .country-detail-handle {
     display: none;
   }
@@ -421,22 +341,16 @@
   }
   .landscape-runtime.is-touch-device .layer-control {
     right: var(--scene-reserve);
-    left: var(--edge-left);
-    gap: 0;
-    width: auto;
-    max-width: calc(100% - var(--scene-reserve) - var(--edge-left));
-    padding: 0.2rem;
-    border-radius: var(--atlas-radius-compact);
+    left: auto;
+    width: fit-content;
+    max-width: calc(100% - var(--scene-reserve) - 4.25rem);
   }
 
-  .landscape-runtime.is-touch-device .layer-control-options {
-    overflow: hidden;
-    justify-content: flex-start;
-    overflow-x: auto;
+  .landscape-runtime.is-touch-device .layer-control-panel {
+    width: min(22rem, var(--middle-slot-width));
   }
 
   .landscape-runtime.is-touch-device .layer-toggle {
-    gap: 0;
     min-height: 2.75rem;
     padding: 0.4rem 0.55rem;
     font-size: var(--fs-m);
@@ -446,14 +360,6 @@
     gap: 0.3rem;
     padding: 0.32rem;
     border-radius: var(--atlas-radius-compact);
-  }
-
-  .landscape-runtime.is-touch-device .control-button {
-    flex: none;
-    padding: 0;
-    width: 2.75rem;
-    min-width: 2.75rem;
-    min-height: 2.75rem;
   }
 
   .landscape-runtime.is-touch-device .country-detail {
@@ -570,18 +476,6 @@
     place-items: center;
   }
 
-  .control-button {
-    flex: 1;
-    justify-content: center;
-    min-width: 0;
-    padding-inline: 0.48rem;
-  }
-
-  .control-button > span:last-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .country-detail-heading {
     grid-template-columns: 3.45rem minmax(0, 1fr);
   }
@@ -611,30 +505,6 @@
 }
 
 @media (max-width: 760px), (max-height: 520px) {
-  .knowledge-topic-grid {
-    display: flex;
-    gap: 0;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-  }
-
-  .knowledge-topic-card {
-    flex: 0 0 14rem;
-    min-height: 4.5rem;
-    padding: 0.5rem 0.65rem;
-    scroll-snap-align: start;
-    border-right: 1px solid var(--atlas-border-soft);
-    border-bottom: 0;
-  }
-
-  .knowledge-topic-card.is-active {
-    flex-basis: 22rem;
-  }
-
-  .knowledge-topic-card:last-child {
-    border-right: 0;
-  }
-
   .knowledge-region-grid {
     overflow-x: auto;
   }

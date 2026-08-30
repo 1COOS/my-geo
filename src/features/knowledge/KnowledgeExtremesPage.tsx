@@ -106,8 +106,8 @@ function KnowledgeExtremesOverviewPage() {
 
   return (
     <KnowledgeMapWorkbenchPage
-      activeTopic="extremes"
       label="世界之最知识"
+      title="世界之最"
       renderControls={(compact) => (
         <KnowledgePrimaryTabs
           activeId={category.id}

@@ -41,13 +41,9 @@ describe('KnowledgeExtremesPage', () => {
 
     expect(
       await screen.findByRole('heading', { name: '世界之最' }),
-    ).toBeVisible()
+    ).toHaveClass('sr-only')
     expect(screen.queryByLabelText('世界之最知识范围')).not.toBeInTheDocument()
-    expect(
-      within(screen.getByLabelText('知识主题'))
-        .getAllByRole('heading')
-        .map((heading) => heading.textContent),
-    ).toEqual(['地球经纬', '国家首都', '世界之最', '江河湖海'])
+    expect(screen.queryByLabelText('知识主题')).not.toBeInTheDocument()
     expect(screen.getByTestId('extremes-location')).toHaveTextContent(
       '/knowledge/extremes?category=country-scale',
     )

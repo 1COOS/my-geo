@@ -47,8 +47,8 @@ export function KnowledgeEarthPage() {
 
   return (
     <KnowledgeMapWorkbenchPage
-      activeTopic="earth"
       label="地球经纬线学习"
+      title="地球经纬"
       renderControls={(compact) => (
         <KnowledgePrimaryTabs
           activeId={selection.topicId}

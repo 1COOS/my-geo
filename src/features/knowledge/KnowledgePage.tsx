@@ -23,8 +23,8 @@ export function KnowledgePage() {
 
   return (
     <KnowledgeMapWorkbenchPage
-      activeTopic="countries"
       label="按区域认识世界"
+      title="国家首都"
       renderControls={(compact) => (
         <KnowledgePrimaryTabs
           activeId={continentId}

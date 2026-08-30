@@ -9,6 +9,18 @@ async function openCountrySearch(page: Page) {
   return search
 }
 
+async function openLayerControl(page: Page) {
+  const control = page.getByRole('region', { name: '地球图层控制' })
+  const trigger = control.getByRole('button', {
+    name: /图层，已开启 \d+ 项/,
+  })
+  if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+    await trigger.click()
+  }
+  await expect(control.getByRole('region', { name: '图层选择' })).toBeVisible()
+  return control
+}
+
 async function waitForKnowledgeCardSettled(card: Locator) {
   await expect
     .poll(() =>
@@ -26,6 +38,14 @@ async function expectFramedFlag(
   expectedNaturalAspectRatio?: number,
 ) {
   await expect(frame).toBeVisible()
+  await expect
+    .poll(() =>
+      frame.evaluate(
+        (element) =>
+          element.querySelector<HTMLImageElement>('img')?.naturalWidth ?? 0,
+      ),
+    )
+    .toBeGreaterThan(0)
   const metrics = await frame.evaluate((element) => {
     const image = element.querySelector('img')
     if (!image) throw new Error('Flag frame is missing its image')
@@ -202,26 +222,16 @@ async function expectSelectedMountainRoute(
   await expect(label).toHaveText(labelName)
 }
 
-async function expectLayerToolbarSingleLine(page: Page) {
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
-  const layout = await layerControl.evaluate((element) => {
-    const options = element.querySelector<HTMLElement>(
-      '.layer-control-options',
-    )!
-    const buttonTops = Array.from(
-      options.querySelectorAll<HTMLButtonElement>('button'),
-      (button) => button.getBoundingClientRect().top,
-    )
-    return {
-      clientWidth: options.clientWidth,
-      scrollWidth: options.scrollWidth,
-      buttonCount: buttonTops.length,
-      rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
-    }
-  })
-  expect(layout.buttonCount).toBe(11)
-  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
-  expect(layout.rowSpread).toBeLessThan(2)
+async function expectLayerPanelGrouped(page: Page) {
+  const layerControl = await openLayerControl(page)
+  const panel = layerControl.getByRole('region', { name: '图层选择' })
+  await expect(panel.getByRole('heading', { level: 2 })).toHaveText([
+    '标注',
+    '地球知识',
+    '水域',
+    '地貌与文化',
+  ])
+  await expect(panel.getByRole('button')).toHaveCount(11)
 }
 
 function parseMiniMapTransform(transform: string | null) {
@@ -264,7 +274,7 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
       ),
     ).toHaveCount(1)
     await expect(page.locator('[data-country-code="AQ"]')).toHaveCount(0)
-    const layerControl = page.getByRole('region', { name: '地球图层控制' })
+    const layerControl = await openLayerControl(page)
     const capitals = layerControl.getByRole('button', { name: '首都' })
     const cities = layerControl.getByRole('button', { name: '城市' })
     const rivers = layerControl.getByRole('button', {
@@ -308,21 +318,23 @@ test('switches between exploration and knowledge without scene teardown errors',
   if (await fallback.isVisible()) return
   await expect(scene).toBeVisible()
 
-  const knowledgeLink = page.getByRole('link', { name: '知识体系' })
+  const knowledgeButton = page.getByRole('button', { name: '知识体系' })
   const exploreLink = page.getByRole('link', { name: '探索地球' })
-  await knowledgeLink.click()
+  await knowledgeButton.click()
+  await page.getByRole('link', { name: '国家首都' }).click()
   await expect(
     page.getByRole('heading', { name: '国家首都', level: 1 }),
-  ).toBeVisible()
+  ).toHaveClass('sr-only')
 
   await exploreLink.click()
   await waitForSceneOrFallback(page)
   await expect(page.getByTestId('globe-scene')).toBeVisible()
 
-  await knowledgeLink.click()
+  await knowledgeButton.click()
+  await page.getByRole('link', { name: '国家首都' }).click()
   await expect(
     page.getByRole('heading', { name: '国家首都', level: 1 }),
-  ).toBeVisible()
+  ).toHaveClass('sr-only')
 
   expect(pageErrors).toEqual([])
   expect(consoleErrors).toEqual([])
@@ -335,7 +347,7 @@ test('navigates the country knowledge atlas and deep-links back to the globe', a
 
   await expect(
     page.getByRole('heading', { name: '国家首都', level: 1 }),
-  ).toBeVisible()
+  ).toHaveClass('sr-only')
   await expect(page.getByTestId('knowledge-region-east-asia')).toContainText(
     '5 国',
   )
@@ -516,8 +528,8 @@ for (const viewport of [
 
     await expect(
       page.getByRole('heading', { name: '地球经纬', level: 1 }),
-    ).toBeVisible()
-    await expect(page.locator('.knowledge-topic-card')).toHaveCount(4)
+    ).toHaveClass('sr-only')
+    await expect(page.locator('.knowledge-topic-card')).toHaveCount(0)
     await expect(
       page.getByRole('tab', { name: '半球界线', exact: true }),
     ).toHaveAttribute('aria-selected', 'true')
@@ -1490,7 +1502,7 @@ for (const viewport of [
 
     await expect(
       page.getByRole('heading', { name: '国家首都', level: 1 }),
-    ).toBeVisible()
+    ).toHaveClass('sr-only')
     const geometry = await page
       .locator('.knowledge-shell')
       .evaluate((shell) => ({
@@ -1773,7 +1785,8 @@ test('keeps the global fullscreen control active across app routes', async ({
   const exitFullscreen = page.getByRole('button', { name: '退出全屏' })
   await expect(exitFullscreen).toHaveAttribute('aria-pressed', 'true')
 
-  await page.getByRole('link', { name: '知识体系' }).click()
+  await page.getByRole('button', { name: '知识体系' }).click()
+  await page.getByRole('link', { name: '国家首都' }).click()
   await expect(page).toHaveURL(/\/knowledge$/)
   await expect(exitFullscreen).toBeVisible()
 
@@ -2017,7 +2030,7 @@ test('keeps phone landscape controls separated and country details usable', asyn
 
   const map = page.getByTestId('world-mini-map')
   const controls = page.getByRole('navigation', { name: '地球显示控制' })
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layerControl = await openLayerControl(page)
   await expect(map).toBeVisible()
   await expect(page.getByRole('button', { name: '定位图' })).toBeHidden()
   await expect(controls).toBeVisible()
@@ -2026,13 +2039,25 @@ test('keeps phone landscape controls separated and country details usable', asyn
   const mapBox = await map.boundingBox()
   const controlsBox = await controls.boundingBox()
   const layerControlBox = await layerControl.boundingBox()
+  const layerPanelBox = await layerControl
+    .getByRole('region', { name: '图层选择' })
+    .boundingBox()
   expect(mapBox).not.toBeNull()
   expect(controlsBox).not.toBeNull()
   expect(layerControlBox).not.toBeNull()
+  expect(layerPanelBox).not.toBeNull()
   expect(mapBox!.x + mapBox!.width).toBeLessThanOrEqual(controlsBox!.x)
   expect(layerControlBox!.x).toBeGreaterThanOrEqual(11)
   expect(layerControlBox!.y).toBeGreaterThanOrEqual(11)
   expect(layerControlBox!.y + layerControlBox!.height).toBeLessThan(mapBox!.y)
+  expect(layerPanelBox!.x).toBeGreaterThanOrEqual(mapBox!.x + mapBox!.width)
+  expect(layerPanelBox!.x + layerPanelBox!.width).toBeLessThanOrEqual(832)
+  expect(layerPanelBox!.y).toBeGreaterThanOrEqual(
+    layerControlBox!.y + layerControlBox!.height,
+  )
+  expect(layerPanelBox!.y + layerPanelBox!.height).toBeLessThanOrEqual(
+    controlsBox!.y,
+  )
 
   const search = await openCountrySearch(page)
   await expect(search).toBeVisible()
@@ -2157,15 +2182,9 @@ for (const viewport of [
           height: (label as HTMLElement).getBoundingClientRect().height,
         })),
       )
-    if (viewport.width <= 1120) {
-      expect(
-        controlLabels.every(({ width, height }) => width <= 1 && height <= 1),
-      ).toBe(true)
-    } else {
-      expect(
-        controlLabels.every(({ width, height }) => width > 1 && height > 1),
-      ).toBe(true)
-    }
+    expect(
+      controlLabels.every(({ width, height }) => width <= 1 && height <= 1),
+    ).toBe(true)
   })
 }
 
@@ -2256,7 +2275,7 @@ test('toggles adaptive capital and city labels and opens a selected city', async
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layerControl = await openLayerControl(page)
   const capitalToggle = layerControl.getByRole('button', { name: '首都' })
   const cityToggle = layerControl.getByRole('button', { name: '城市' })
   const labels = page.locator('.city-label:not([hidden])')
@@ -2306,7 +2325,7 @@ test('toggles waterbody layers, searches a sea, and replaces its selected range'
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layerControl = await openLayerControl(page)
   const oceanToggle = layerControl.getByRole('button', { name: '海洋' })
   const waterwayToggle = layerControl.getByRole('button', { name: '水域' })
   await expect(oceanToggle).toHaveAttribute('aria-pressed', 'false')
@@ -2355,7 +2374,7 @@ test('shows the lake layer and opens the Lake Baikal knowledge card', async ({
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layerControl = await openLayerControl(page)
   const lakeToggle = layerControl.getByRole('button', {
     name: '湖泊图层：世界著名淡水与咸水湖泊',
   })
@@ -2365,6 +2384,7 @@ test('shows the lake layer and opens the Lake Baikal knowledge card', async ({
   const search = await openCountrySearch(page)
   await search.fill('贝加尔湖')
   await search.press('Enter')
+  await openLayerControl(page)
 
   const card = page.getByRole('complementary', {
     name: '贝加尔湖水域知识卡',
@@ -2394,6 +2414,7 @@ test('shows the lake layer and opens the Lake Baikal knowledge card', async ({
 
   await card.getByRole('button', { name: '关闭水域知识卡' }).click()
   await expect(card).toHaveCount(0)
+  await openLayerControl(page)
   await expect(lakeToggle).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('.waterbody-label.is-lake')).toHaveCount(20)
   await page.getByRole('button', { name: '自动旋转：开' }).click()
@@ -2447,7 +2468,7 @@ test('shows river and canal paths and keeps linear feature selection exclusive',
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layerControl = await openLayerControl(page)
   await layerControl
     .getByRole('button', {
       name: '河流图层：世界重要河流与人工运河',
@@ -2521,7 +2542,7 @@ test('shows mountain ridges, highest peaks, and replaces global selection', asyn
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layerControl = await openLayerControl(page)
   const mountainToggle = layerControl.getByRole('button', {
     name: '山脉图层：世界著名山脉与最高峰',
   })
@@ -2532,6 +2553,7 @@ test('shows mountain ridges, highest peaks, and replaces global selection', asyn
     .toBeGreaterThan(0)
 
   await selectPlace(page, '珠穆朗玛峰')
+  await openLayerControl(page)
   const himalayaCard = page.getByRole('complementary', {
     name: '喜马拉雅山脉知识卡',
   })
@@ -2575,7 +2597,7 @@ test('shows desert regions only while the layer is active', async ({
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layerControl = await openLayerControl(page)
   const desertToggle = layerControl.getByRole('button', {
     name: '沙漠图层：世界主要沙漠与荒漠景观',
   })
@@ -2592,6 +2614,7 @@ test('shows desert regions only while the layer is active', async ({
   await expect(page.locator('.desert-label')).toHaveCount(0)
 
   await selectPlace(page, '撒哈拉')
+  await openLayerControl(page)
   const saharaCard = page.getByRole('complementary', {
     name: '撒哈拉沙漠知识卡',
   })
@@ -2609,6 +2632,7 @@ test('shows desert regions only while the layer is active', async ({
   await expect(page.locator('.desert-label')).toHaveCount(0)
 
   await selectPlace(page, '戈壁')
+  await openLayerControl(page)
   await expect(desertToggle).toHaveAttribute('aria-pressed', 'true')
   await expect(
     page.getByRole('complementary', { name: '戈壁沙漠知识卡' }),
@@ -2629,7 +2653,7 @@ test('shows landmark points, searches the Great Wall, and keeps its card after h
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layerControl = await openLayerControl(page)
   const landmarkToggle = layerControl.getByRole('button', {
     name: '名胜古迹图层：世界著名文化与历史遗产',
   })
@@ -2648,6 +2672,7 @@ test('shows landmark points, searches the Great Wall, and keeps its card after h
   const search = await openCountrySearch(page)
   await search.fill('长城')
   await search.press('Enter')
+  await openLayerControl(page)
 
   const card = page.getByRole('complementary', { name: '长城古迹知识卡' })
   await expect(card).toBeVisible()
@@ -2662,6 +2687,7 @@ test('shows landmark points, searches the Great Wall, and keeps its card after h
   ).toBeLessThanOrEqual(16)
   await expect(page.locator('[data-landmark-id="great-wall"]')).toBeVisible()
 
+  await openLayerControl(page)
   await landmarkToggle.click()
   await expect(landmarkToggle).toHaveAttribute('aria-pressed', 'false')
   await expect(page.locator('.landmark-label')).toHaveCount(0)
@@ -2669,12 +2695,14 @@ test('shows landmark points, searches the Great Wall, and keeps its card after h
 
   await card.getByRole('button', { name: '关闭长城古迹知识卡' }).click()
   await expect(card).toHaveCount(0)
+  await openLayerControl(page)
   await expect(landmarkToggle).toHaveAttribute('aria-pressed', 'false')
 
   const reopenedSearch = await openCountrySearch(page)
   await reopenedSearch.fill('长城')
   await reopenedSearch.press('Enter')
   await expect(card).toBeVisible()
+  await openLayerControl(page)
   await expect(landmarkToggle).toHaveAttribute('aria-pressed', 'true')
 
   await card.getByRole('button', { name: '探索中国' }).click()
@@ -2692,7 +2720,7 @@ test('shows synchronized geography reference lines and opens curriculum knowledg
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layerControl = await openLayerControl(page)
   const toggle = layerControl.getByRole('button', {
     name: '经纬图层：经度基准、半球界线、纬度分区线与五带分界线',
   })
@@ -2805,6 +2833,7 @@ test('shows synchronized geography reference lines and opens curriculum knowledg
 
   await page.setViewportSize({ width: 1280, height: 720 })
 
+  await openLayerControl(page)
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   await expect(card).toBeVisible()
@@ -2815,6 +2844,7 @@ test('shows synchronized geography reference lines and opens curriculum knowledg
   await search.fill('东西半球')
   await expect(page.getByText('地理知识', { exact: true })).toBeVisible()
   await search.press('Enter')
+  await openLayerControl(page)
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
   await expect(card.getByRole('heading', { name: '地球经纬线' })).toBeVisible()
   await expect(card.getByLabel('半球界线经纬线')).toHaveAttribute(
@@ -2833,6 +2863,7 @@ test('renders and classifies the synchronized world climate layer', async ({
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
+  await openLayerControl(page)
   const toggle = page.getByRole('button', {
     name: '世界气候类型教学图层',
   })
@@ -2936,6 +2967,7 @@ test('renders and classifies the synchronized world climate layer', async ({
     '/climate/highlight-boundaries/low/tropical-rainforest.png',
   )
 
+  await openLayerControl(page)
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   await expect(card).toBeVisible()
@@ -2949,6 +2981,7 @@ test('renders and classifies the synchronized world climate layer', async ({
   await search.fill('地中海气候')
   await expect(page.getByText('气候知识', { exact: true })).toBeVisible()
   await search.press('Enter')
+  await openLayerControl(page)
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
   await expect(card.getByRole('heading', { name: '地中海气候' })).toBeVisible()
   await expect(climateImage).toHaveAttribute(
@@ -2992,7 +3025,7 @@ for (const viewport of [
     const { fallback } = await waitForSceneOrFallback(page)
     if (await fallback.isVisible()) return
 
-    await expectLayerToolbarSingleLine(page)
+    await expectLayerPanelGrouped(page)
     const toggle = page.getByRole('button', {
       name: '经纬图层：经度基准、半球界线、纬度分区线与五带分界线',
     })
@@ -3014,6 +3047,7 @@ for (const viewport of [
       viewport.height + 1,
     )
 
+    await openLayerControl(page)
     await page.getByRole('button', { name: '世界气候类型教学图层' }).click()
     const climateCard = page.getByRole('complementary', {
       name: '世界气候类型知识卡',
@@ -3045,7 +3079,7 @@ test('keeps geographic paths stable and suppresses hover while dragging', async 
   await page.getByRole('button', { name: '自动旋转：开' }).click()
   await expect(page.getByRole('button', { name: '自动旋转：关' })).toBeVisible()
 
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
+  const layerControl = await openLayerControl(page)
   const riverToggle = layerControl.getByRole('button', {
     name: '河流图层：世界重要河流与人工运河',
   })
@@ -3085,6 +3119,7 @@ test('keeps geographic paths stable and suppresses hover while dragging', async 
   await expect(page.getByRole('tooltip')).toHaveCount(0)
   await page.mouse.up()
 
+  await openLayerControl(page)
   await expect(riverToggle).toHaveAttribute('aria-pressed', 'true')
   await expect(mountainToggle).toHaveAttribute('aria-pressed', 'true')
   await expect
@@ -3130,7 +3165,7 @@ for (const viewport of [
     const { fallback } = await waitForSceneOrFallback(page)
     if (await fallback.isVisible()) return
 
-    await expectLayerToolbarSingleLine(page)
+    await expectLayerPanelGrouped(page)
 
     await selectPlace(page, '科林斯运河')
     await expect(page.getByLabel('科林斯运河知识卡')).toBeVisible()
@@ -3141,7 +3176,7 @@ for (const viewport of [
       page.getByRole('complementary', { name: '阿尔卑斯山脉知识卡' }),
     ).toBeVisible()
     await expectSelectedMountainRoute(page, 'alps', '阿尔卑斯山脉')
-    await expectLayerToolbarSingleLine(page)
+    await expectLayerPanelGrouped(page)
   })
 }
 
@@ -3169,6 +3204,7 @@ test('keeps capital labels synchronized during automatic rotation', async ({
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
+  await openLayerControl(page)
   await page.getByRole('button', { name: '首都' }).click()
   const marker = page.getByTestId('world-mini-map-view-marker')
   const labelLayer = page.locator('.globe-city-labels')
@@ -3425,33 +3461,38 @@ test('keeps the layer panel inside an iPad landscape safe area', async ({
   const { fallback } = await waitForSceneOrFallback(page)
   if (await fallback.isVisible()) return
 
-  const layerControl = page.getByRole('region', { name: '地球图层控制' })
-  const box = await layerControl.boundingBox()
-  expect(box).not.toBeNull()
-  expect(box!.x).toBeGreaterThanOrEqual(11)
-  expect(box!.y).toBeGreaterThanOrEqual(11)
-  expect(box!.x + box!.width).toBeLessThanOrEqual(1194 - 11)
-  expect(box!.y + box!.height).toBeLessThanOrEqual(834 - 11)
-  const toolbarLayout = await layerControl.evaluate((element) => {
-    const options = element.querySelector<HTMLElement>(
-      '.layer-control-options',
-    )!
-    const buttonTops = Array.from(
-      options.querySelectorAll<HTMLButtonElement>('button'),
-      (button) => button.getBoundingClientRect().top,
-    )
-    return {
-      clientWidth: options.clientWidth,
-      scrollWidth: options.scrollWidth,
-      buttonCount: buttonTops.length,
-      rowSpread: Math.max(...buttonTops) - Math.min(...buttonTops),
-    }
+  const layerControl = await openLayerControl(page)
+  const trigger = layerControl.getByRole('button', {
+    name: '图层，已开启 0 项',
   })
-  expect(toolbarLayout.buttonCount).toBe(11)
-  expect(toolbarLayout.scrollWidth).toBeLessThanOrEqual(
-    toolbarLayout.clientWidth + 1,
-  )
-  expect(toolbarLayout.rowSpread).toBeLessThan(2)
+  const panel = layerControl.getByRole('region', { name: '图层选择' })
+  const [triggerBox, panelBox] = await Promise.all([
+    trigger.boundingBox(),
+    panel.boundingBox(),
+  ])
+  expect(triggerBox).not.toBeNull()
+  expect(panelBox).not.toBeNull()
+  expect(triggerBox!.x).toBeGreaterThanOrEqual(11)
+  expect(triggerBox!.y).toBeGreaterThanOrEqual(11)
+  expect(triggerBox!.x + triggerBox!.width).toBeLessThanOrEqual(1194 - 11)
+  expect(panelBox!.x).toBeGreaterThanOrEqual(58)
+  expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(1194 - 11)
+  expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(834 - 11)
+  await expect(panel.getByRole('heading', { level: 2 })).toHaveText([
+    '标注',
+    '地球知识',
+    '水域',
+    '地貌与文化',
+  ])
+  await expect(panel.getByRole('button')).toHaveCount(11)
+  const minimumTargetHeight = await panel
+    .getByRole('button')
+    .evaluateAll((buttons) =>
+      Math.min(
+        ...buttons.map((button) => button.getBoundingClientRect().height),
+      ),
+    )
+  expect(minimumTargetHeight).toBeGreaterThanOrEqual(44)
 
   await layerControl.getByRole('button', { name: '首都' }).click()
   await layerControl.getByRole('button', { name: '城市' }).click()

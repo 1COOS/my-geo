@@ -45,7 +45,7 @@ for (const viewport of extremesViewports) {
     )
     await expect(
       page.getByRole('heading', { name: '世界之最', level: 1 }),
-    ).toBeVisible()
+    ).toHaveClass('sr-only')
     await expect(page.getByLabel('世界之最知识范围')).toHaveCount(0)
     await expect(page.getByRole('tab')).toHaveText([
       '国家尺度',
