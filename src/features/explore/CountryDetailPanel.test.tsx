@@ -83,8 +83,9 @@ describe('CountryDetailPanel', () => {
     expect(screen.getByText(/中华人民共和国/)).toBeInTheDocument()
     expect(screen.getAllByText('北京').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('约 14.1亿 人')).toBeInTheDocument()
-    expect(screen.getByText('2025 年')).toBeInTheDocument()
-    expect(screen.getByText('人民币（CNY）')).toBeInTheDocument()
+    expect(screen.queryByText('2025 年')).not.toBeInTheDocument()
+    expect(screen.getByText('人民币')).toBeInTheDocument()
+    expect(screen.getByText(/CNY/)).toBeInTheDocument()
     expect(screen.queryByText('次区域')).not.toBeInTheDocument()
     expect(screen.queryByText('Eastern Asia')).not.toBeInTheDocument()
     const facts = document.querySelector('.knowledge-country-facts')
@@ -93,7 +94,13 @@ describe('CountryDetailPanel', () => {
       Array.from(facts!.querySelectorAll(':scope > div > dt')).map(
         (label) => label.textContent,
       ),
-    ).toEqual(['首都', '人口', '货币', '面积', '语言'])
+    ).toEqual(['面积', '人口', '首都', '货币', '语言'])
+    expect(facts!.querySelectorAll(':scope > div > dt svg')).toHaveLength(5)
+    expect(
+      Array.from(facts!.querySelectorAll(':scope > div > dt .sr-only')).map(
+        (label) => label.textContent,
+      ),
+    ).toEqual(['面积', '人口', '首都', '货币', '语言'])
     expect(facts!.querySelector('.is-languages')).toHaveClass(
       'knowledge-country-fact',
       'is-languages',
@@ -112,18 +119,63 @@ describe('CountryDetailPanel', () => {
     expect(screen.getByText(/梵蒂冈城国/)).toBeInTheDocument()
     expect(screen.getByText('0.44 km²')).toBeInTheDocument()
     expect(screen.getByText('约 882 人')).toBeInTheDocument()
-    expect(screen.getByText('2024 年')).toBeInTheDocument()
+    expect(screen.queryByText('2024 年')).not.toBeInTheDocument()
     expect(screen.getByText('拉丁语')).toBeInTheDocument()
     expect(screen.queryByText('海陆属性')).not.toBeInTheDocument()
     expect(screen.queryByText('更多内容制作中')).not.toBeInTheDocument()
   })
 
-  it('renders all capitals for a multi-capital country', () => {
+  it('keeps multiple capitals compact and expandable', async () => {
     renderCountry('ZA')
+    const capitalFact = document.querySelector('.is-capital')
+    expect(capitalFact).not.toBeNull()
 
-    expect(screen.getAllByText('比勒陀利亚').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText('布隆方丹').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText('开普敦').length).toBeGreaterThanOrEqual(1)
+    expect(capitalFact).toHaveTextContent('比勒陀利亚')
+    expect(capitalFact).not.toHaveTextContent('布隆方丹')
+    expect(capitalFact).not.toHaveTextContent('开普敦')
+
+    const expand = screen.getByRole('button', {
+      name: '查看全部首都（3）',
+    })
+    expect(expand).toHaveTextContent('+2')
+    await userEvent.click(expand)
+
+    expect(capitalFact).toHaveTextContent('布隆方丹')
+    expect(capitalFact).toHaveTextContent('开普敦')
+  })
+
+  it('uses the compact Sri Lanka heading hierarchy', () => {
+    renderCountry('LK')
+
+    const heading = document.querySelector('.knowledge-country-summary-heading')
+    expect(heading).not.toBeNull()
+    expect(heading).toHaveTextContent('斯里兰卡')
+    expect(heading).toHaveTextContent('LK · LKA')
+    expect(heading).toHaveTextContent('Sri Lanka')
+    expect(heading).toHaveTextContent('南亚 · 斯里兰卡民主社会主义共和国')
+    expect(heading).not.toHaveTextContent('亚洲')
+    expect(heading).not.toHaveTextContent(
+      'Democratic Socialist Republic of Sri Lanka',
+    )
+    const englishLine = heading!.querySelector('p')
+    expect(
+      Array.from(englishLine!.children).map((item) => item.textContent),
+    ).toEqual(['Sri Lanka', '·', 'LK · LKA'])
+    expect(
+      screen.getByText('Democratic Socialist Republic of Sri Lanka'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /在知识体系中学习/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /在知识体系中学习/ }),
+    ).toHaveTextContent('')
+    expect(
+      screen
+        .getByRole('link', { name: /在知识体系中学习/ })
+        .querySelector('svg'),
+    ).not.toBeNull()
+    expect(document.querySelector('.knowledge-card-footer')).toBeNull()
   })
 
   it('renders a friendly empty state for a country without capital data', () => {
@@ -181,16 +233,22 @@ describe('CountryDetailPanel', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows every language while keeping long currency lists expandable', async () => {
+  it('keeps long language and currency lists expandable', async () => {
     renderCountry('ZW')
 
+    expect(screen.queryByText('卡兰加语')).not.toBeInTheDocument()
+    expect(
+      document.querySelectorAll('.knowledge-language-list > li'),
+    ).toHaveLength(2)
+    const languageExpand = screen.getByRole('button', {
+      name: '查看全部语言（15）',
+    })
+    expect(languageExpand).toHaveTextContent('+13')
+    await userEvent.click(languageExpand)
     expect(screen.getByText('卡兰加语')).toBeInTheDocument()
     expect(
       document.querySelectorAll('.knowledge-language-list > li'),
     ).toHaveLength(15)
-    expect(
-      screen.queryByRole('button', { name: '查看全部语言（15）' }),
-    ).not.toBeInTheDocument()
     expect(screen.queryByText('欧元')).not.toBeInTheDocument()
 
     const currencyExpand = screen.getByRole('button', {
@@ -200,7 +258,8 @@ describe('CountryDetailPanel', () => {
     await userEvent.click(currencyExpand)
 
     expect(currencyExpand).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByText('欧元（EUR）')).toBeInTheDocument()
+    expect(screen.getByText('欧元')).toBeInTheDocument()
+    expect(screen.getByText(/EUR/)).toBeInTheDocument()
   })
 
   it('switches to a city knowledge card with population and reasons', async () => {

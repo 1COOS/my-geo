@@ -322,10 +322,10 @@ describe('country scene interaction', () => {
     expect(new Set(allCities.map((city) => city.id)).size).toBe(338)
   })
 
-  it('places the globe center at 48 percent of the viewport height', () => {
+  it('places the globe center at 50 percent of the viewport height', () => {
     const offset = getGlobeViewOffset(1000, 800)
 
-    expect(GLOBE_VERTICAL_CENTER_RATIO).toBe(0.48)
+    expect(GLOBE_VERTICAL_CENTER_RATIO).toBe(0.5)
     expect(offset).toMatchObject({
       fullWidth: 1000,
       fullHeight: 800,
@@ -333,7 +333,7 @@ describe('country scene interaction', () => {
       width: 1000,
       height: 800,
     })
-    expect(offset.offsetY).toBeCloseTo(16)
+    expect(offset.offsetY).toBe(0)
   })
 
   it('centers the globe and labels inside the measured safe rectangle', () => {
@@ -341,7 +341,7 @@ describe('country scene interaction', () => {
     const offset = getGlobeViewOffset(1000, 800, insets)
 
     expect(offset.offsetX).toBe(-36)
-    expect(offset.offsetY).toBeCloseTo(66)
+    expect(offset.offsetY).toBe(50)
 
     expect(
       getMapLabelPlacement({

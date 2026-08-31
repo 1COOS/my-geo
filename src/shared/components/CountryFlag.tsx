@@ -4,6 +4,7 @@ type CountryFlagProps = {
   src: string
   alt: string
   className?: string
+  style?: CSSProperties
 }
 
 type LoadedFlagSize = {
@@ -13,7 +14,7 @@ type LoadedFlagSize = {
 
 const flagSlotAspectRatio = 3 / 2
 
-export function CountryFlag({ src, alt, className }: CountryFlagProps) {
+export function CountryFlag({ src, alt, className, style }: CountryFlagProps) {
   const [loadedSize, setLoadedSize] = useState<LoadedFlagSize>()
   const frameClassName = className
     ? `country-flag-frame ${className}`
@@ -41,7 +42,7 @@ export function CountryFlag({ src, alt, className }: CountryFlagProps) {
   }
 
   return (
-    <span className={frameClassName}>
+    <span className={frameClassName} style={style}>
       <img
         className="country-flag-image"
         src={src}

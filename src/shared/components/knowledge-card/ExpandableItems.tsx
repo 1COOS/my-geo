@@ -1,17 +1,28 @@
-import { useId, useState, type ReactNode } from 'react'
+import { useId, useState, type CSSProperties, type ReactNode } from 'react'
 
 export type ExpandableItemsProps<T> = {
   items: T[]
   previewCount: number
   expandLabel: string
   renderItems: (items: T[]) => ReactNode
+  compactCount?: boolean
 }
+
+const compactToggleStyle = {
+  width: 'auto',
+  minHeight: '1.5rem',
+  padding: '0.08rem 0.3rem',
+  marginTop: '0.22rem',
+  justifyContent: 'flex-start',
+  borderRadius: '0.2rem',
+} satisfies CSSProperties
 
 export function ExpandableItems<T>({
   items,
   previewCount,
   expandLabel,
   renderItems,
+  compactCount = false,
 }: ExpandableItemsProps<T>) {
   const [expanded, setExpanded] = useState(false)
   const contentId = useId()
@@ -32,10 +43,17 @@ export function ExpandableItems<T>({
               ? `收起${expandLabel}`
               : `查看全部${expandLabel}（${items.length}）`
           }
+          style={compactCount ? compactToggleStyle : undefined}
           onClick={() => setExpanded((current) => !current)}
         >
-          <span>{expanded ? '收起' : `查看全部（${items.length}）`}</span>
-          <span aria-hidden="true">⌄</span>
+          <span>
+            {expanded
+              ? '收起'
+              : compactCount
+                ? `+${items.length - previewCount}`
+                : `查看全部（${items.length}）`}
+          </span>
+          {compactCount ? null : <span aria-hidden="true">⌄</span>}
         </button>
       ) : null}
     </div>

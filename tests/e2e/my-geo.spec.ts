@@ -856,6 +856,7 @@ for (const viewport of [
   { name: '1440 desktop', width: 1440, height: 900, touch: false },
   { name: 'iPad landscape', width: 1194, height: 834, touch: true },
   { name: 'phone landscape', width: 844, height: 390, touch: true },
+  { name: 'smallest landscape', width: 568, height: 320, touch: true },
   { name: 'small landscape', width: 667, height: 375, touch: true },
 ]) {
   test(`keeps country knowledge cards identical on ${viewport.name}`, async ({
@@ -919,12 +920,17 @@ for (const viewport of [
 
       return {
         body: fontSize('.knowledge-country-highlights li'),
+        code: fontSize('.knowledge-country-summary-copy > p > span:last-child'),
+        englishName: fontSize(
+          '.knowledge-country-summary-copy > p > span:first-child',
+        ),
         factLabel: fontSize('.knowledge-country-facts dt'),
         factValue: fontSize('.knowledge-country-facts dd'),
-        officialName: fontSize('.knowledge-country-detail-heading small'),
+        officialName: fontSize('.knowledge-country-summary-copy small'),
       }
     })
     expect(typography.officialName).toBeGreaterThanOrEqual(12)
+    expect(typography.englishName).toBe(typography.code)
     expect(typography.factLabel).toBeGreaterThanOrEqual(12)
     expect(typography.factValue).toBeGreaterThanOrEqual(13)
     expect(typography.body).toBeGreaterThanOrEqual(14)
@@ -932,28 +938,75 @@ for (const viewport of [
     await expect(knowledgeCard.getByText('Eastern Asia')).toHaveCount(0)
     await expect(
       knowledgeCard.locator('.knowledge-country-facts > div > dt'),
-    ).toHaveText(['首都', '人口', '货币', '面积', '语言'])
-    const [factsBox, currencyBox, areaBox, languagesBox] = await Promise.all([
+    ).toHaveText(['面积', '人口', '首都', '货币', '语言'])
+    await expect(knowledgeCard.getByText('2025 年')).toHaveCount(0)
+    const [
+      contentBox,
+      headingBox,
+      factsBox,
+      areaBox,
+      populationBox,
+      capitalBox,
+      currencyBox,
+      languagesBox,
+      actionBox,
+    ] = await Promise.all([
+      knowledgeCard.locator('.knowledge-card-content').boundingBox(),
+      knowledgeCard.locator('.knowledge-country-summary-heading').boundingBox(),
       knowledgeCard.locator('.knowledge-country-facts').boundingBox(),
+      knowledgeCard.locator('.knowledge-country-fact.is-area').boundingBox(),
+      knowledgeCard
+        .locator('.knowledge-country-fact.is-population')
+        .boundingBox(),
+      knowledgeCard.locator('.knowledge-country-fact.is-capital').boundingBox(),
       knowledgeCard
         .locator('.knowledge-country-fact.is-currency')
         .boundingBox(),
-      knowledgeCard.locator('.knowledge-country-fact.is-area').boundingBox(),
       knowledgeCard
         .locator('.knowledge-country-fact.is-languages')
         .boundingBox(),
+      knowledgeCard.getByRole('link', { name: /在3D地球上查看/ }).boundingBox(),
     ])
+    expect(contentBox).not.toBeNull()
+    expect(headingBox).not.toBeNull()
     expect(factsBox).not.toBeNull()
-    expect(currencyBox).not.toBeNull()
     expect(areaBox).not.toBeNull()
+    expect(populationBox).not.toBeNull()
+    expect(capitalBox).not.toBeNull()
+    expect(currencyBox).not.toBeNull()
     expect(languagesBox).not.toBeNull()
-    expect(currencyBox!.x).toBeLessThan(areaBox!.x)
-    expect(currencyBox!.y).toBeCloseTo(areaBox!.y, 0)
+    expect(actionBox).not.toBeNull()
+    expect(headingBox!.height).toBeLessThanOrEqual(125)
+    expect(areaBox!.x).toBeLessThan(populationBox!.x)
+    expect(areaBox!.y).toBeCloseTo(populationBox!.y, 0)
+    expect(capitalBox!.x).toBeLessThan(currencyBox!.x)
+    expect(capitalBox!.y).toBeCloseTo(currencyBox!.y, 0)
     expect(languagesBox!.x).toBeCloseTo(factsBox!.x + 1, 0)
     expect(languagesBox!.width).toBeCloseTo(factsBox!.width - 2, 0)
+    expect(currencyBox!.y + currencyBox!.height).toBeLessThanOrEqual(
+      contentBox!.y + contentBox!.height + 1,
+    )
+    if (viewport.width >= 844) {
+      expect(languagesBox!.y + languagesBox!.height).toBeLessThanOrEqual(
+        contentBox!.y + contentBox!.height + 1,
+      )
+    }
+    expect(actionBox!.y).toBeLessThanOrEqual(knowledgeBox!.y + 13)
+    expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(
+      knowledgeBox!.x + knowledgeBox!.width - 11,
+    )
+    await expect(knowledgeCard.locator('.knowledge-card-footer')).toHaveCount(0)
     await expect(
       knowledgeCard.getByRole('link', { name: /在3D地球上查看/ }),
     ).toHaveAttribute('href', '/explore?country=CN')
+    await expect(
+      knowledgeCard.getByRole('link', { name: /在3D地球上查看/ }),
+    ).toHaveText('')
+    await expect(
+      knowledgeCard
+        .getByRole('link', { name: /在3D地球上查看/ })
+        .locator('svg'),
+    ).toHaveCount(1)
     await expect(
       knowledgeCard.getByRole('button', { name: /探索城市/ }),
     ).toHaveCount(0)
@@ -3698,7 +3751,8 @@ test('searches China and opens the featured knowledge card', async ({
     '/flags/cn.svg',
   )
   await expect(card.getByRole('button', { name: '探索城市北京' })).toBeVisible()
-  await expect(card.getByText('人民币（CNY）')).toBeVisible()
+  await expect(card.getByText('人民币', { exact: true })).toBeVisible()
+  await expect(card.getByText(/Chinese yuan · CNY/)).toBeVisible()
   await expect(card.getByText('中国香港')).toBeVisible()
   await expect(card.getByText('中国澳门')).toBeVisible()
   await expect(

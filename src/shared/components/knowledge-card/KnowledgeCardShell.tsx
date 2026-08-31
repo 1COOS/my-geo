@@ -12,13 +12,15 @@ type KnowledgeCardShellBaseProps = {
   children: ReactNode
   accent?: string
   className?: string
+  cornerAction?: ReactNode
   footer?: ReactNode
 }
 
 export type KnowledgeCardShellProps = KnowledgeCardShellBaseProps
 
 export function KnowledgeCardShell(props: KnowledgeCardShellProps) {
-  const { label, identity, children, accent, className, footer } = props
+  const { label, identity, children, accent, className, cornerAction, footer } =
+    props
   const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export function KnowledgeCardShell(props: KnowledgeCardShellProps) {
           : undefined
       }
     >
+      {cornerAction}
       <div ref={contentRef} className="knowledge-card-content">
         {children}
       </div>
