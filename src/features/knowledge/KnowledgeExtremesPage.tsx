@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   Link,
   Navigate,
@@ -21,6 +21,7 @@ import type {
   WorldExtremeEntry,
   WorldExtremeMetric,
 } from '../../data/worldExtremesSchema'
+import { useViewportProfile } from '../../shared/hooks/useViewportProfile'
 import { KnowledgeCategoryCards } from './KnowledgeCategoryCards'
 import { KnowledgeExtremeDetailCard } from './KnowledgeExtremeDetailCard'
 import { KnowledgeExtremeMetricOverviewCard } from './KnowledgeExtremeMetricOverviewCard'
@@ -40,21 +41,6 @@ function getExtremeOverviewPath(categoryId: string) {
 
 function getExtremeMetricPath(metricId: string, entryId?: string) {
   return `/knowledge/extremes/metrics/${metricId}${entryId ? `?entry=${entryId}` : ''}`
-}
-
-function useCompactLandscape() {
-  const [compact, setCompact] = useState(
-    () => window.matchMedia('(max-height: 520px)').matches,
-  )
-
-  useEffect(() => {
-    const media = window.matchMedia('(max-height: 520px)')
-    const update = () => setCompact(media.matches)
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [])
-
-  return compact
 }
 
 export function KnowledgeExtremesPage() {
@@ -145,7 +131,7 @@ function KnowledgeExtremeMetricPage({ metricId }: { metricId: string }) {
   const shellRef = useRef<HTMLElement>(null)
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const compact = useCompactLandscape()
+  const compact = useViewportProfile() === 'compact-landscape'
   const metric = getWorldExtremeMetric(metricId)
   const entryParam = searchParams.get('entry')
 
@@ -248,11 +234,7 @@ function KnowledgeExtremeMetricPage({ metricId }: { metricId: string }) {
       </div>
 
       {entry ? (
-        <KnowledgeExtremeDetailCard
-          metric={metric}
-          entry={entry}
-          onClose={() => void navigate(getExtremeMetricPath(metric.id))}
-        />
+        <KnowledgeExtremeDetailCard metric={metric} entry={entry} />
       ) : (
         <KnowledgeExtremeMetricOverviewCard
           accent={getWorldExtremeMetricColor(metric.id)}

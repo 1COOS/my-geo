@@ -674,7 +674,7 @@ for (const viewport of [
     expect(geometry.map.width).toBeCloseTo(geometry.mapCard.width - 2, 0)
     expect(geometry.map.height).toBeCloseTo(geometry.mapCard.height - 2, 0)
     expect(geometry.minLineButtonHeight).toBeGreaterThanOrEqual(
-      viewport.height <= 520 ? 56 : 64,
+      viewport.height <= 600 ? 56 : 64,
     )
     expect(geometry.firstRowLineCount).toBe(4)
     expect(geometry.labelsInsideMap).toBe(true)
@@ -1007,7 +1007,7 @@ test('frames the flag in a globe country hover tooltip', async ({ page }) => {
     sceneBox!.y + sceneBox!.height / 2,
   )
 
-  const tooltip = page.getByRole('tooltip')
+  const tooltip = page.locator('.country-hover-tooltip')
   await expect(tooltip).toBeVisible({ timeout: 10_000 })
   await expectFramedFlag(tooltip.locator('.country-flag-frame'))
 })
@@ -1400,7 +1400,7 @@ for (const viewport of [
     await page.setViewportSize(viewport)
 
     const columnLimit =
-      viewport.height <= 520 || viewport.width <= 760
+      viewport.height <= 600 || viewport.width <= 760
         ? 2
         : viewport.width <= 1080
           ? 3
@@ -1647,7 +1647,7 @@ for (const viewport of [
     expect(gridBefore.x).toBeCloseTo(mapBefore.x, 0)
     expect(gridBefore.right).toBeCloseTo(mapBefore.x + mapBefore.width, 0)
     expect(gridBefore.firstRowCount).toBe(
-      viewport.height <= 520 ? 2 : viewport.width <= 1080 ? 3 : 5,
+      viewport.height <= 600 ? 2 : viewport.width <= 1080 ? 3 : 5,
     )
 
     const chinaCard = page
@@ -1745,14 +1745,15 @@ for (const viewport of [
     expect(gridAfter.x).toBeCloseTo(mapAfter.x, 0)
     expect(gridAfter.right).toBeCloseTo(mapAfter.x + mapAfter.width, 0)
     expect(gridAfter.firstRowCount).toBe(
-      viewport.height <= 520 ? 2 : viewport.width <= 1080 ? 3 : 5,
+      viewport.height <= 600 ? 2 : viewport.width <= 1080 ? 3 : 5,
     )
     expect(mapAfter.x + mapAfter.width).toBeLessThanOrEqual(detailBox!.x + 1)
     expect(gridAfter.x + gridAfter.width).toBeLessThanOrEqual(detailBox!.x + 1)
     expect(detailBox!.width).toBeCloseTo(regionCardBox!.width, 0)
 
-    await page.getByRole('button', { name: '关闭国家学习详情' }).click()
-    await expect(page.getByLabel('东亚区域知识')).toBeVisible()
+    await expect(
+      detail.getByRole('button', { name: '关闭国家学习详情' }),
+    ).toHaveCount(0)
   })
 }
 
@@ -1933,6 +1934,73 @@ test('enters landscape automatically and preserves the mounted experience', asyn
   await expect(scene.or(fallback)).toBeVisible({ timeout: 15_000 })
 })
 
+test('adapts persistent knowledge-card width on ultrawide touch phones', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    })
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      value: 'MacIntel',
+    })
+  })
+
+  for (const viewport of [
+    { width: 568, height: 320, cardWidth: 240 },
+    { width: 740, height: 360, cardWidth: 259 },
+    { width: 844, height: 390, cardWidth: 320 },
+    { width: 956, height: 440, cardWidth: 352 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/explore')
+
+    const card = page.getByLabel('3D 地球使用说明')
+    const controls = page.getByRole('navigation', { name: '地球显示控制' })
+    const layerTrigger = page.getByRole('button', {
+      name: /图层，已开启 \d+ 项/,
+    })
+    const miniMap = page.getByLabel('2D 世界定位图')
+    await expect(card).toBeVisible()
+    await waitForKnowledgeCardSettled(card)
+    const [cardBox, controlsBox, layerBox, miniMapBox] = await Promise.all([
+      card.boundingBox(),
+      controls.boundingBox(),
+      layerTrigger.boundingBox(),
+      miniMap.boundingBox(),
+    ])
+    expect(cardBox).not.toBeNull()
+    expect(controlsBox).not.toBeNull()
+    expect(layerBox).not.toBeNull()
+    expect(miniMapBox).not.toBeNull()
+    expect(
+      Math.abs(cardBox!.width - viewport.cardWidth),
+      `${viewport.width}×${viewport.height} card width`,
+    ).toBeLessThanOrEqual(2)
+    expect(miniMapBox!.x + miniMapBox!.width).toBeLessThanOrEqual(
+      controlsBox!.x,
+    )
+    expect(controlsBox!.x + controlsBox!.width).toBeLessThanOrEqual(cardBox!.x)
+    expect(
+      Math.abs(
+        controlsBox!.x + controlsBox!.width - layerBox!.x - layerBox!.width,
+      ),
+    ).toBeLessThanOrEqual(1)
+  }
+
+  await page.goto('/knowledge/countries/east-asia')
+  const knowledgeCard = page.getByLabel('东亚区域知识')
+  await expect(knowledgeCard).toBeVisible()
+  await waitForKnowledgeCardSettled(knowledgeCard)
+  expect((await knowledgeCard.boundingBox())!.width).toBeCloseTo(352, 0)
+  await expect(knowledgeCard.getByRole('heading', { name: '东亚' })).toHaveCSS(
+    'font-size',
+    '20px',
+  )
+})
+
 test('suppresses touch context menus while preserving search editing', async ({
   page,
 }) => {
@@ -2089,7 +2157,7 @@ test('keeps phone landscape controls separated and country details usable', asyn
   expect(controlsBox!.x + controlsBox!.width).toBeLessThanOrEqual(cardBox!.x)
   await expect(
     card.getByRole('button', { name: '关闭国家知识卡' }),
-  ).toBeVisible()
+  ).toHaveCount(0)
   await expect(card.getByText('约 14.1亿 人')).toBeVisible()
 
   const shanghai = card.getByRole('button', { name: '探索城市上海' })
@@ -2112,7 +2180,7 @@ for (const viewport of [
   { width: 1440, height: 900 },
   { width: 1024, height: 768 },
 ]) {
-  test(`expands a ${viewport.width}px desktop stage until country details open`, async ({
+  test(`reserves the ${viewport.width}px desktop stage for persistent knowledge cards`, async ({
     page,
   }) => {
     await page.setViewportSize(viewport)
@@ -2122,11 +2190,17 @@ for (const viewport of [
     if (await fallback.isVisible()) return
 
     const initialSceneBox = await scene.boundingBox()
+    const initialGuideBox = await page
+      .getByLabel('3D 地球使用说明')
+      .boundingBox()
     expect(initialSceneBox).not.toBeNull()
+    expect(initialGuideBox).not.toBeNull()
     expect(initialSceneBox!.x).toBeLessThanOrEqual(1)
     expect(initialSceneBox!.y).toBeLessThanOrEqual(1)
     expect(initialSceneBox!.height).toBeGreaterThanOrEqual(viewport.height - 1)
-    expect(initialSceneBox!.width).toBeGreaterThan(viewport.width * 0.9)
+    expect(initialSceneBox!.x + initialSceneBox!.width).toBeLessThanOrEqual(
+      initialGuideBox!.x,
+    )
 
     const search = await openCountrySearch(page)
     await search.fill('中国')
@@ -2134,22 +2208,30 @@ for (const viewport of [
 
     const card = page.getByLabel('中国国家知识卡')
     const controls = page.getByRole('navigation', { name: '地球显示控制' })
+    const layerTrigger = page.getByRole('button', {
+      name: /图层，已开启 \d+ 项/,
+    })
     const map = page.getByTestId('world-mini-map')
     await expect
       .poll(
         async () => (await card.boundingBox())?.y ?? Number.POSITIVE_INFINITY,
       )
       .toBeLessThanOrEqual(13)
-    const [sceneBox, cardBox, controlsBox, mapBox] = await Promise.all([
-      scene.boundingBox(),
-      card.boundingBox(),
-      controls.boundingBox(),
-      map.boundingBox(),
-    ])
+    const [sceneBox, cardBox, controlsBox, mapBox, layerBox] =
+      await Promise.all([
+        scene.boundingBox(),
+        card.boundingBox(),
+        controls.boundingBox(),
+        map.boundingBox(),
+        layerTrigger.boundingBox(),
+      ])
     expect(sceneBox).not.toBeNull()
     expect(cardBox).not.toBeNull()
     expect(controlsBox).not.toBeNull()
     expect(mapBox).not.toBeNull()
+    expect(layerBox).not.toBeNull()
+    expect(sceneBox!.width).toBeCloseTo(initialSceneBox!.width, 0)
+    expect(cardBox!.width).toBeCloseTo(initialGuideBox!.width, 0)
     expect(
       await page.evaluate(() => ({
         page: window.scrollY,
@@ -2170,9 +2252,11 @@ for (const viewport of [
     expect(mapBox!.x + mapBox!.width).toBeLessThanOrEqual(controlsBox!.x)
     expect(controlsBox!.x + controlsBox!.width).toBeLessThanOrEqual(cardBox!.x)
 
-    const middleSlotCenter = (mapBox!.x + mapBox!.width + cardBox!.x) / 2
-    const controlsCenter = controlsBox!.x + controlsBox!.width / 2
-    expect(Math.abs(controlsCenter - middleSlotCenter)).toBeLessThanOrEqual(2)
+    expect(
+      Math.abs(
+        controlsBox!.x + controlsBox!.width - layerBox!.x - layerBox!.width,
+      ),
+    ).toBeLessThanOrEqual(1)
 
     const controlLabels = await controls
       .locator('.control-button > span:last-child')
@@ -2262,8 +2346,10 @@ test('keeps the 2D map synchronized with country and globe navigation', async ({
     mapBox!.x + mapBox!.width * (40 / 360),
     mapBox!.y + mapBox!.height * 0.5,
   )
-  await expect(page.getByLabel('中国国家知识卡')).toHaveCount(0)
-  await expect(map.locator('.is-selected')).toHaveCount(0)
+  await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
+  await expect(map.locator('[data-country-code="CN"]')).toHaveClass(
+    /is-selected/,
+  )
 })
 
 test('toggles adaptive capital and city labels and opens a selected city', async ({
@@ -2412,12 +2498,13 @@ test('shows the lake layer and opens the Lake Baikal knowledge card', async ({
   await expect(page.locator('.waterbody-label.is-lake')).toHaveCount(20)
   await expect(page.locator('[data-waterbody-id="lake-baikal"]')).toBeVisible()
 
-  await card.getByRole('button', { name: '关闭水域知识卡' }).click()
-  await expect(card).toHaveCount(0)
+  await expect(
+    card.getByRole('button', { name: '关闭水域知识卡' }),
+  ).toHaveCount(0)
+  await expect(card).toBeVisible()
   await openLayerControl(page)
   await expect(lakeToggle).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('.waterbody-label.is-lake')).toHaveCount(20)
-  await page.getByRole('button', { name: '自动旋转：开' }).click()
   await expect(page.getByRole('button', { name: '自动旋转：关' })).toBeVisible()
 
   for (const lake of [
@@ -2451,9 +2538,9 @@ test('shows the lake layer and opens the Lake Baikal knowledge card', async ({
     expect(leader.width).toBeGreaterThan(10)
     expect(leader.content).not.toBe('none')
 
-    await lakeCard.getByRole('button', { name: '关闭水域知识卡' }).click()
-    await expect(lakeCard).toHaveCount(0)
-    await lakeLabel.click()
+    await expect(
+      lakeCard.getByRole('button', { name: '关闭水域知识卡' }),
+    ).toHaveCount(0)
     await expect(lakeCard).toBeVisible()
   }
 })
@@ -2526,10 +2613,12 @@ test('shows river and canal paths and keeps linear feature selection exclusive',
   await expect(corinthCard).toBeVisible()
   await expectSelectedLinearFeatureRoute(page, 'corinth-canal', '科林斯运河')
 
-  await corinthCard.getByRole('button', { name: '关闭运河知识卡' }).click()
-  await expect(page.getByTestId('selected-linear-feature-overlay')).toHaveCount(
-    0,
-  )
+  await expect(
+    corinthCard.getByRole('button', { name: '关闭运河知识卡' }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByTestId('selected-linear-feature-overlay'),
+  ).toBeVisible()
 })
 
 test('shows mountain ridges, highest peaks, and replaces global selection', async ({
@@ -2693,8 +2782,9 @@ test('shows landmark points, searches the Great Wall, and keeps its card after h
   await expect(page.locator('.landmark-label')).toHaveCount(0)
   await expect(card).toBeVisible()
 
-  await card.getByRole('button', { name: '关闭长城古迹知识卡' }).click()
-  await expect(card).toHaveCount(0)
+  await expect(
+    card.getByRole('button', { name: '关闭长城古迹知识卡' }),
+  ).toHaveCount(0)
   await openLayerControl(page)
   await expect(landmarkToggle).toHaveAttribute('aria-pressed', 'false')
 
@@ -3730,7 +3820,7 @@ test('uses the mobile bottom sheet for country details', async ({ page }) => {
   expect(box!.y + box!.height).toBeGreaterThanOrEqual(843)
   await expect(
     page.getByRole('button', { name: '关闭国家知识卡' }),
-  ).toBeVisible()
+  ).toHaveCount(0)
   await expect(card.getByText('面积')).toBeVisible()
 })
 

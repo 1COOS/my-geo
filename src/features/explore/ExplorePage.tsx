@@ -66,6 +66,7 @@ import { ClimateLearningPanel } from './ClimateLearningPanel'
 import type { PlaceSearchResult } from './countrySearchUtils'
 import { DesertDetailPanel } from './DesertDetailPanel'
 import { parseExploreDeepLinkPosition } from './exploreDeepLinks'
+import { ExploreGuideCard } from './ExploreGuideCard'
 import { GeographyLearningPanel } from './GeographyLearningPanel'
 import { LinearGeoFeatureDetailPanel } from './LinearGeoFeatureDetailPanel'
 import { LandmarkDetailPanel } from './LandmarkDetailPanel'
@@ -330,6 +331,7 @@ function LayerControl({
     <section
       ref={containerRef}
       className="layer-control"
+      data-scene-overlay="layers"
       aria-label="地球图层控制"
     >
       <button
@@ -833,9 +835,6 @@ export function ExplorePage() {
     },
     [requestCameraTarget],
   )
-  const clearSelection = useCallback(() => {
-    dispatch({ type: 'clearSelection' })
-  }, [])
   const navigateToWaterbody = useCallback(
     (waterbodyId: string) => {
       const waterbody = getWaterbody(waterbodyId)
@@ -970,13 +969,11 @@ export function ExplorePage() {
 
       if (requestedDeepLinks.position) {
         handledDeepLinkRef.current = 'coordinate'
-        clearSelection()
         requestCameraTarget(requestedDeepLinks.position)
       }
     }, 0)
     return () => window.clearTimeout(timeoutId)
   }, [
-    clearSelection,
     navigateToCountry,
     navigateToDesert,
     navigateToLinearFeature,
@@ -1039,10 +1036,9 @@ export function ExplorePage() {
         return
       }
 
-      clearSelection()
       requestCameraTarget(navigation.position)
     },
-    [clearSelection, navigateToCountry, requestCameraTarget],
+    [navigateToCountry, requestCameraTarget],
   )
   const handleViewCenterChange = useCallback((view: GlobeView) => {
     currentViewCenterRef.current = view.position
@@ -1140,20 +1136,7 @@ export function ExplorePage() {
     climateSelection === null
 
   return (
-    <main
-      className={
-        selectedCountry ||
-        selectedWaterbody ||
-        selectedLinearFeature ||
-        selectedMountainRange ||
-        selectedDesert ||
-        selectedLandmark ||
-        geographySelection ||
-        climateSelection
-          ? 'explore-shell has-country-detail'
-          : 'explore-shell'
-      }
-    >
+    <main className="explore-shell has-country-detail">
       {webGLAvailable ? (
         <Suspense
           fallback={
@@ -1310,7 +1293,7 @@ export function ExplorePage() {
         onNavigate={handleMiniMapNavigation}
       />
 
-      <div className="control-deck">
+      <div className="control-deck" data-scene-overlay="controls">
         <div ref={controlDeckRef} className="control-deck-content">
           {searchOpen ? (
             <section
@@ -1420,7 +1403,6 @@ export function ExplorePage() {
           selectedCity={selectedCity}
           onSelectCity={navigateToCity}
           onBackToCountry={() => dispatch({ type: 'backToCountry' })}
-          onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />
       ) : null}
@@ -1428,7 +1410,6 @@ export function ExplorePage() {
         <WaterbodyDetailPanel
           key={selectedWaterbody.id}
           waterbody={selectedWaterbody}
-          onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />
       ) : null}
@@ -1436,7 +1417,6 @@ export function ExplorePage() {
         <LinearGeoFeatureDetailPanel
           key={selectedLinearFeature.id}
           feature={selectedLinearFeature}
-          onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />
       ) : null}
@@ -1444,7 +1424,6 @@ export function ExplorePage() {
         <MountainRangeDetailPanel
           key={selectedMountainRange.id}
           range={selectedMountainRange}
-          onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />
       ) : null}
@@ -1452,7 +1431,6 @@ export function ExplorePage() {
         <DesertDetailPanel
           key={selectedDesert.id}
           desert={selectedDesert}
-          onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />
       ) : null}
@@ -1460,7 +1438,6 @@ export function ExplorePage() {
         <LandmarkDetailPanel
           key={selectedLandmark.id}
           landmark={selectedLandmark}
-          onClose={clearSelection}
           onSelectCountry={navigateToCountry}
         />
       ) : null}
@@ -1470,9 +1447,6 @@ export function ExplorePage() {
           viewCenter={committedViewCenter}
           onSelectLine={openGeographyLine}
           onShowOverview={openGeographyOverview}
-          onClose={() => {
-            dispatch({ type: 'clearSelection' })
-          }}
         />
       ) : null}
       {climateSelection ? (
@@ -1480,9 +1454,9 @@ export function ExplorePage() {
           selection={climateSelection}
           onSelectType={selectClimateType}
           onShowOverview={() => dispatch({ type: 'showClimateOverview' })}
-          onClose={() => dispatch({ type: 'clearSelection' })}
         />
       ) : null}
+      {selection === null ? <ExploreGuideCard /> : null}
     </main>
   )
 }

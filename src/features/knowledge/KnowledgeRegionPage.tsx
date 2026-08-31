@@ -198,7 +198,6 @@ export function KnowledgeRegionPage() {
         <KnowledgeCountryDetail
           country={selectedCountry}
           regionId={region.id}
-          onClose={() => setSearchParams({})}
           onSelectCountry={openCountry}
         />
       ) : (

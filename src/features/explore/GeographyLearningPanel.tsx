@@ -22,7 +22,6 @@ type GeographyLearningPanelProps = {
   viewCenter: GeoPosition
   onSelectLine: (referenceLineId: ReferenceLineId) => void
   onShowOverview: (focusTopicId?: GeographyTopicId | null) => void
-  onClose: () => void
 }
 
 function GeographyOverviewCard({
@@ -192,7 +191,6 @@ export function GeographyLearningPanel({
   viewCenter,
   onSelectLine,
   onShowOverview,
-  onClose,
 }: GeographyLearningPanelProps) {
   const line =
     selection.kind === 'line'
@@ -203,14 +201,12 @@ export function GeographyLearningPanel({
   return (
     <DetailPanelShell
       label="地球经纬线知识卡"
-      closeLabel="关闭地球经纬线知识卡"
       identity={
         selection.kind === 'line'
           ? `geography-line-${selection.referenceLineId}`
           : `geography-overview-${selection.focusTopicId ?? 'all'}`
       }
       accent="#d291ff"
-      onClose={onClose}
     >
       <div className="geography-learning-heading">
         <div className="geography-learning-orbit" aria-hidden="true">

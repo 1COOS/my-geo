@@ -15,9 +15,7 @@ export type CountryKnowledgeCardProps = {
   cities: City[]
   selectedCity?: City
   label: string
-  closeLabel: string
   identity: string
-  onClose: () => void
   onSelectCountry: (countryCode: string) => void
   onSelectCity?: (cityId: string) => void
   onBackToCountry?: () => void
@@ -45,9 +43,7 @@ export function CountryKnowledgeCard({
   cities,
   selectedCity,
   label,
-  closeLabel,
   identity,
-  onClose,
   onSelectCountry,
   onSelectCity,
   onBackToCountry,
@@ -70,9 +66,7 @@ export function CountryKnowledgeCard({
   return (
     <KnowledgeCardShell
       label={label}
-      closeLabel={closeLabel}
       identity={identity}
-      onClose={onClose}
       className="country-knowledge-card"
       footer={footer}
     >

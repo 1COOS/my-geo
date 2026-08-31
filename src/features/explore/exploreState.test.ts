@@ -90,7 +90,6 @@ describe('exploreReducer', () => {
       layer: 'geography',
       visible: false,
     })
-    const closed = exploreReducer(hidden, { type: 'clearSelection' })
 
     expect(overview.selection).toEqual({
       kind: 'geography',
@@ -106,8 +105,6 @@ describe('exploreReducer', () => {
     })
     expect(hidden.layers.geography).toBe(false)
     expect(hidden.selection).toEqual(line.selection)
-    expect(closed.selection).toBeNull()
-    expect(closed.layers.geography).toBe(false)
   })
 
   it('clears hidden-layer hover without clearing the current selection', () => {
@@ -134,7 +131,7 @@ describe('exploreReducer', () => {
     expect(hidden.selection).toEqual({ kind: 'country', countryCode: 'CN' })
   })
 
-  it('returns from a city to its country and clears every selection', () => {
+  it('returns from a city to its country', () => {
     const cityState = exploreReducer(initialExploreState, {
       type: 'select',
       selection: {
@@ -144,13 +141,10 @@ describe('exploreReducer', () => {
       },
     })
     const countryState = exploreReducer(cityState, { type: 'backToCountry' })
-    const cleared = exploreReducer(countryState, { type: 'clearSelection' })
 
     expect(countryState.selection).toEqual({
       kind: 'country',
       countryCode: 'CN',
     })
-    expect(cleared.selection).toBeNull()
-    expect(cleared.hover).toBeNull()
   })
 })

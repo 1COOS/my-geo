@@ -6,11 +6,9 @@ import { DetailPanelShell } from './DetailPanelShell'
 
 export function LandmarkDetailPanel({
   landmark,
-  onClose,
   onSelectCountry,
 }: {
   landmark: Landmark
-  onClose: () => void
   onSelectCountry: (countryCode: string) => void
 }) {
   const country = countriesByCode.get(landmark.countryCode)
@@ -18,10 +16,8 @@ export function LandmarkDetailPanel({
   return (
     <DetailPanelShell
       label={`${landmark.name.zh}古迹知识卡`}
-      closeLabel={`关闭${landmark.name.zh}古迹知识卡`}
       identity={landmark.id}
       accent="#ffc85c"
-      onClose={onClose}
     >
       <div className="waterbody-detail-heading landmark-heading">
         <span className="landmark-symbol" aria-hidden="true" />

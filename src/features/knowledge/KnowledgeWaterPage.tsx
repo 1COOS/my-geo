@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   Link,
   Navigate,
@@ -19,6 +19,7 @@ import {
 } from '../../data/waterLearning'
 import type { WaterLearningLayerId } from '../../data/waterLearningSchema'
 import { getWaterbody } from '../../data/waterbodies'
+import { useViewportProfile } from '../../shared/hooks/useViewportProfile'
 import { KnowledgeMapWorkbenchPage } from './KnowledgeMapWorkbench'
 import { KnowledgePrimaryTabs } from './KnowledgePrimaryTabs'
 import {
@@ -35,21 +36,6 @@ function getWaterLayerPath(layerId: WaterLearningLayerId) {
 
 function getWaterGroupPath(groupId: string, objectId?: string) {
   return `/knowledge/water/groups/${groupId}${objectId ? `?object=${objectId}` : ''}`
-}
-
-function useCompactLandscape() {
-  const [compact, setCompact] = useState(
-    () => window.matchMedia('(max-height: 520px)').matches,
-  )
-
-  useEffect(() => {
-    const media = window.matchMedia('(max-height: 520px)')
-    const update = () => setCompact(media.matches)
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [])
-
-  return compact
 }
 
 export function KnowledgeWaterPage() {
@@ -157,7 +143,7 @@ function KnowledgeWaterGroupPage({ groupId }: { groupId: string }) {
   const shellRef = useRef<HTMLElement>(null)
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const compact = useCompactLandscape()
+  const compact = useViewportProfile() === 'compact-landscape'
   const group = getWaterObjectGroup(groupId)
   const objectId = searchParams.get('object')
 
@@ -206,8 +192,6 @@ function KnowledgeWaterGroupPage({ groupId }: { groupId: string }) {
     const nextGroup = getWaterObjectGroupForObject(undefined, id)
     if (nextGroup) void navigate(getWaterGroupPath(nextGroup.id, id))
   }
-  const overviewTarget = getWaterGroupPath(group.id)
-
   return (
     <main
       ref={shellRef}
@@ -288,14 +272,12 @@ function KnowledgeWaterGroupPage({ groupId }: { groupId: string }) {
           object={waterbody}
           objectType="waterbody"
           layer={layer}
-          onClose={() => void navigate(overviewTarget)}
         />
       ) : linearFeature ? (
         <KnowledgeWaterObjectCard
           object={linearFeature}
           objectType="linearFeature"
           layer={layer}
-          onClose={() => void navigate(overviewTarget)}
         />
       ) : (
         <KnowledgeWaterGroupOverviewCard group={group} layer={layer} />

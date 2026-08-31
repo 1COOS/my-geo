@@ -15,14 +15,12 @@ type ClimateLearningPanelProps = {
   selection: ClimateKnowledgeSelection
   onSelectType: (climateTypeId: ClimateTypeId) => void
   onShowOverview: () => void
-  onClose: () => void
 }
 
 export function ClimateLearningPanel({
   selection,
   onSelectType,
   onShowOverview,
-  onClose,
 }: ClimateLearningPanelProps) {
   const climateType =
     selection.kind === 'type' ? getClimateType(selection.climateTypeId) : null
@@ -31,14 +29,12 @@ export function ClimateLearningPanel({
   return (
     <DetailPanelShell
       label="世界气候类型知识卡"
-      closeLabel="关闭世界气候类型知识卡"
       identity={
         selection.kind === 'type'
           ? `climate-${selection.climateTypeId}`
           : 'climate-overview'
       }
       accent={climateType?.color ?? '#79c8d4'}
-      onClose={onClose}
     >
       <header className="climate-learning-heading">
         <div>

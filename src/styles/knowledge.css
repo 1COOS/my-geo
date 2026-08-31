@@ -269,12 +269,19 @@
   isolation: isolate;
   width: 100%;
   height: 100dvh;
-  padding: 1.4rem 1.65rem 3rem 5.65rem;
+  padding: clamp(0.85rem, 1.6vw, 1.4rem) clamp(0.8rem, 1.8vw, 1.65rem)
+    clamp(1.25rem, 3vw, 3rem)
+    calc(
+      max(var(--layout-edge), env(safe-area-inset-left)) +
+        var(--navigation-rail-size) + var(--layout-gap)
+    );
   overflow-x: hidden;
   overflow-y: auto;
   color: var(--atlas-text);
   background: var(--atlas-canvas);
   scrollbar-color: var(--atlas-border) transparent;
+  container-name: knowledge-page;
+  container-type: inline-size;
 }
 
 .knowledge-question-hub-overview,
@@ -698,10 +705,10 @@
 
 .knowledge-region-shell {
   --knowledge-detail-gap: 0.9rem;
-  --edge-top: max(0.75rem, env(safe-area-inset-top));
-  --edge-right: max(0.75rem, env(safe-area-inset-right));
-  --edge-bottom: max(0.75rem, env(safe-area-inset-bottom));
-  --detail-column: clamp(15rem, 35vw, 24rem);
+  --edge-top: max(var(--layout-edge), env(safe-area-inset-top));
+  --edge-right: max(var(--layout-edge), env(safe-area-inset-right));
+  --edge-bottom: max(var(--layout-edge), env(safe-area-inset-bottom));
+  --detail-column: var(--detail-panel-size);
 
   padding-top: max(0.75rem, env(safe-area-inset-top));
   padding-bottom: 1.2rem;

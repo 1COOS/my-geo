@@ -885,7 +885,7 @@
   bottom: var(--edge-bottom);
   left: calc(var(--edge-left) + var(--mini-map-width) + var(--layout-gap));
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   pointer-events: none;
 }
 
@@ -968,12 +968,11 @@
 }
 
 .explore-shell {
-  --edge-top: max(0.75rem, env(safe-area-inset-top));
-  --edge-right: max(0.75rem, env(safe-area-inset-right));
-  --edge-bottom: max(0.75rem, env(safe-area-inset-bottom));
-  --edge-left: max(0.75rem, env(safe-area-inset-left));
-  --layout-gap: 0.75rem;
-  --mini-map-width: 15.75rem;
+  --edge-top: max(var(--layout-edge), env(safe-area-inset-top));
+  --edge-right: max(var(--layout-edge), env(safe-area-inset-right));
+  --edge-bottom: max(var(--layout-edge), env(safe-area-inset-bottom));
+  --edge-left: max(var(--layout-edge), env(safe-area-inset-left));
+  --mini-map-width: clamp(11rem, 18vw, 15.75rem);
   --middle-slot-width: calc(
     100vw - var(--edge-left) - var(--edge-right) - var(--mini-map-width) -
       var(--detail-column) - var(--layout-gap) - var(--layout-gap)
@@ -992,7 +991,7 @@
 }
 
 .explore-shell.has-country-detail {
-  --detail-column: clamp(15rem, 35vw, 24rem);
+  --detail-column: var(--detail-panel-size);
 }
 
 .explore-shell::before {

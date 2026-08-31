@@ -1,8 +1,9 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, type CSSProperties } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { ExplorePage } from '../features/explore/ExplorePage'
+import { useViewportProfile } from '../shared/hooks/useViewportProfile'
 import { AppNavigation } from './AppNavigation'
 import { LandscapeGuard } from './LandscapeGuard'
 
@@ -48,11 +49,29 @@ const KnowledgeQuestionsPage = lazy(async () => {
 })
 
 export function App() {
+  const viewportProfile = useViewportProfile()
+  const responsiveTokens =
+    viewportProfile === 'compact-landscape'
+      ? ({
+          '--layout-gap': 'clamp(0.3rem, 0.8vw, 0.5rem)',
+          '--navigation-rail-size': '3.2rem',
+          '--detail-panel-size': 'clamp(15rem, 36vw, 18.5rem)',
+        } as CSSProperties)
+      : viewportProfile === 'balanced'
+        ? ({
+            '--detail-panel-size': 'clamp(16rem, 34vw, 22rem)',
+          } as CSSProperties)
+        : undefined
+
   return (
     <Tooltip.Provider delayDuration={300}>
       <LandscapeGuard>
         <BrowserRouter>
-          <div className="app-shell">
+          <div
+            className="app-shell"
+            data-viewport-profile={viewportProfile}
+            style={responsiveTokens}
+          >
             <AppNavigation />
             <Suspense
               fallback={

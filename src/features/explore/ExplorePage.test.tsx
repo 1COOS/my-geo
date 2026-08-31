@@ -1,5 +1,12 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -177,12 +184,68 @@ describe('ExplorePage', () => {
     )
 
     expect(await screen.findByTestId('mock-globe-scene')).toBeInTheDocument()
+    const guide = screen.getByLabelText('3D 地球使用说明')
+    expect(
+      within(guide).getByRole('heading', { name: '转动地球，发现世界' }),
+    ).toBeInTheDocument()
+    expect(within(guide).getByText(/滚轮或双指开合/)).toBeInTheDocument()
+    expect(within(guide).getByText(/搜索、图层和定位图/)).toBeInTheDocument()
+    expect(within(guide).queryByRole('button')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
     expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
       showGeographyLearningLayer: false,
       selectedGeographyTopicId: null,
       selectedReferenceLineId: null,
     })
+  })
+
+  it('keeps the selected card while the mini map moves to a coordinate', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    await user.click(screen.getByRole('button', { name: '搜索地点' }))
+    await user.type(
+      screen.getByRole('combobox', { name: '搜索地点' }),
+      '中国{Enter}',
+    )
+    const map = screen.getByTestId('world-mini-map')
+    vi.spyOn(map, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      right: 360,
+      bottom: 180,
+      left: 0,
+      width: 360,
+      height: 180,
+      toJSON: () => ({}),
+    })
+
+    fireEvent.click(map, { clientX: 1, clientY: 90 })
+
+    expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
+    expect(screen.queryByLabelText('3D 地球使用说明')).not.toBeInTheDocument()
+    expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+      selectedCountryCode: 'CN',
+    })
+  })
+
+  it('keeps reset behavior focused on China rather than restoring the guide', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    await user.click(screen.getByRole('button', { name: '重置视角' }))
+
+    expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
+    expect(screen.queryByLabelText('3D 地球使用说明')).not.toBeInTheDocument()
   })
 
   it('opens waterbody and linear-feature deep links with their layers and camera targets', async () => {
@@ -292,6 +355,7 @@ describe('ExplorePage', () => {
     )
 
     expect(await screen.findByTestId('mock-globe-scene')).toBeVisible()
+    expect(screen.getByLabelText('3D 地球使用说明')).toBeVisible()
     await waitFor(() =>
       expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
         selectedCountryCode: null,
@@ -558,7 +622,6 @@ describe('ExplorePage', () => {
     )
     expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: '关闭国家知识卡' }))
     await user.click(screen.getByRole('button', { name: '搜索地点' }))
     await user.clear(screen.getByRole('combobox', { name: '搜索地点' }))
     await user.type(
@@ -743,11 +806,13 @@ describe('ExplorePage', () => {
     expect(screen.getByLabelText('贝加尔湖水域知识卡')).toBeInTheDocument()
 
     await user.click(lakeToggle)
-    await user.click(screen.getByRole('button', { name: '关闭水域知识卡' }))
     expect(getProps()).toMatchObject({
       showLakeLayer: true,
-      selectedWaterbodyId: null,
+      selectedWaterbodyId: 'lake-baikal',
     })
+    expect(
+      screen.queryByRole('button', { name: '关闭水域知识卡' }),
+    ).not.toBeInTheDocument()
   })
 
   it('toggles river and canal layers and keeps all place selection mutually exclusive', async () => {
@@ -968,7 +1033,7 @@ describe('ExplorePage', () => {
       within(categories).getAllByRole('heading', { level: 3 }),
     ).toHaveLength(4)
     expect(within(categories).getAllByRole('button')).toHaveLength(13)
-    expect(within(card).getAllByRole('button')).toHaveLength(14)
+    expect(within(card).getAllByRole('button')).toHaveLength(13)
     expect(within(card).queryByText(/条重点线/)).toBeNull()
     expect(
       within(card).queryByText(/用纬线和经线为地球表面建立坐标/),
@@ -1032,10 +1097,9 @@ describe('ExplorePage', () => {
       selectedReferenceLineId: null,
     })
 
-    await user.click(
-      within(card).getByRole('button', { name: '关闭地球经纬线知识卡' }),
-    )
-    expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
+    expect(
+      within(card).queryByRole('button', { name: '关闭地球经纬线知识卡' }),
+    ).not.toBeInTheDocument()
     expect(toggle).toHaveAttribute('aria-pressed', 'true')
 
     await openLayerPanel(user)
@@ -1044,7 +1108,7 @@ describe('ExplorePage', () => {
     })
     await user.click(toggle)
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
-    expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('地球经纬线知识卡')).toBeInTheDocument()
 
     await user.click(toggle)
     const reopenedCard = screen.getByLabelText('地球经纬线知识卡')
@@ -1170,7 +1234,9 @@ describe('ExplorePage', () => {
     expect(getProps().showClimateLayer).toBe(true)
     expect(getProps().selectedClimateTypeId).toBeNull()
     await waitFor(() => expect(getProps().climateBoundaryRasterUrl).toBeNull())
-    await user.click(screen.getByRole('button', { name: '关闭国家知识卡' }))
+    expect(
+      screen.queryByRole('button', { name: '关闭国家知识卡' }),
+    ).not.toBeInTheDocument()
   })
 
   it('searches a reference line, activates its layer, and replaces it with a country card', async () => {

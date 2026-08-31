@@ -93,11 +93,9 @@ for (const viewport of waterViewports) {
     await expect(
       page.getByRole('complementary', { name: '贝加尔湖湖泊详情' }),
     ).toBeVisible()
-    await page.getByRole('button', { name: '关闭贝加尔湖详情' }).click()
-    await expect(page).toHaveURL(/\/knowledge\/water\/groups\/world-lakes$/)
     await expect(
-      page.getByRole('complementary', { name: '世界湖泊水域分组知识' }),
-    ).toBeVisible()
+      page.getByRole('button', { name: '关闭贝加尔湖详情' }),
+    ).toHaveCount(0)
   })
 }
 

@@ -489,13 +489,9 @@ describe('knowledge pages', () => {
     expect(document.querySelectorAll('path.is-region')).toHaveLength(4)
     expect(getMapCountryPath('CN')).toHaveClass('is-country')
     expect(getMapCountryPath('JP')).toHaveClass('is-region')
-    await user.click(screen.getByRole('button', { name: '关闭国家学习详情' }))
-    expect(screen.getByLabelText('东亚区域知识')).toBeVisible()
-    expect(document.querySelectorAll('path.is-country')).toHaveLength(0)
-    expect(document.querySelectorAll('path.is-region')).toHaveLength(5)
-    expect(getMapCountryPath('CN')).toHaveClass('is-region')
-
-    await user.click(screen.getByRole('button', { name: '查看中国国家详情' }))
+    expect(
+      screen.queryByRole('button', { name: '关闭国家学习详情' }),
+    ).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '探索邻国阿富汗' }))
     expect(
       screen.getByRole('heading', { name: '南亚9国', level: 1 }),

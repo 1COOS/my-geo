@@ -160,7 +160,7 @@ describe('KnowledgeExtremesPage', () => {
     ).toEqual(['surface', 'linear'])
   })
 
-  it('uses a persistent metric overview and restores it after object details close', async () => {
+  it('uses persistent metric and object knowledge cards', async () => {
     const user = userEvent.setup()
     renderExtremes('/knowledge/extremes/metrics/deepest-lake')
 
@@ -190,13 +190,11 @@ describe('KnowledgeExtremesPage', () => {
     expect(screen.getByTestId('extremes-location')).toHaveTextContent(
       '/knowledge/extremes/metrics/deepest-lake?entry=lake-tanganyika',
     )
-    await user.click(
-      screen.getByRole('button', { name: '关闭坦噶尼喀湖世界之最详情' }),
-    )
-    expect(screen.getByTestId('extremes-location')).toHaveTextContent(
-      '/knowledge/extremes/metrics/deepest-lake',
-    )
-    expect(screen.getByLabelText('最深的湖泊指标知识')).toBeVisible()
+    expect(
+      screen.queryByRole('button', {
+        name: '关闭坦噶尼喀湖世界之最详情',
+      }),
+    ).not.toBeInTheDocument()
   })
 
   it('keeps metric cards available and retries failed category geometry', async () => {

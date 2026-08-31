@@ -15,7 +15,6 @@ function renderCountry(code: string, onSelectCountry = vi.fn()) {
         country={country!}
         cities={getCitiesForCountry(code)}
         selectedCity={undefined}
-        onClose={vi.fn()}
         onSelectCountry={onSelectCountry}
         onSelectCity={vi.fn()}
         onBackToCountry={vi.fn()}
@@ -35,7 +34,6 @@ function renderCountryData(
         country={country}
         cities={getCitiesForCountry(country.code)}
         selectedCity={undefined}
-        onClose={vi.fn()}
         onSelectCountry={onSelectCountry}
         onSelectCity={vi.fn()}
         onBackToCountry={vi.fn()}
@@ -58,7 +56,6 @@ function renderSelectedCity(code: string, cityId: string) {
         country={country!}
         cities={cities}
         selectedCity={city}
-        onClose={vi.fn()}
         onSelectCountry={vi.fn()}
         onSelectCity={vi.fn()}
         onBackToCountry={onBackToCountry}

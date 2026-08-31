@@ -120,7 +120,7 @@ describe('KnowledgeWaterPage', () => {
     ).toHaveLength(1)
   })
 
-  it('replaces the group overview with an object card and restores it on close', async () => {
+  it('replaces the group overview with a persistent object card', async () => {
     const user = userEvent.setup()
     renderWaterPage('/knowledge/water/groups/ocean-seas')
 
@@ -139,12 +139,9 @@ describe('KnowledgeWaterPage', () => {
     )
     expect(await screen.findByLabelText('地中海海详情')).toBeVisible()
     expect(screen.queryByLabelText('海水域分组知识')).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: '关闭地中海详情' }))
-    expect(screen.getByTestId('water-location')).toHaveTextContent(
-      '/knowledge/water/groups/ocean-seas',
-    )
-    expect(screen.getByLabelText('海水域分组知识')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: '关闭地中海详情' }),
+    ).not.toBeInTheDocument()
   })
 
   it('moves map-selected objects to their real group and keeps 3D deep links', async () => {

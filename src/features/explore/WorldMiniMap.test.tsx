@@ -69,6 +69,8 @@ describe('WorldMiniMap', () => {
     expect(screen.queryByText('世界定位图')).not.toBeInTheDocument()
     expect(screen.queryByText('当前视角')).not.toBeInTheDocument()
     expect(screen.queryByText('选中国家')).not.toBeInTheDocument()
+    expect(screen.getByText('POSITION')).toBeInTheDocument()
+    expect(screen.queryByText('WORLD POSITION')).not.toBeInTheDocument()
   })
 
   it('navigates countries and coordinates from pointer clicks', () => {

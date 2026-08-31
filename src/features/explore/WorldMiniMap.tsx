@@ -227,6 +227,7 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
     return (
       <aside
         className={expanded ? 'world-mini-map is-expanded' : 'world-mini-map'}
+        data-scene-overlay="mini-map"
         aria-label="2D 世界定位图"
       >
         <button
@@ -246,7 +247,7 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
         <div id="world-mini-map-card" className="world-mini-map-card">
           <header className="world-mini-map-header">
             <div>
-              <span>WORLD POSITION</span>
+              <span>POSITION</span>
             </div>
             <output ref={coordinateLabelRef} aria-live="off">
               {formatGeoPosition(viewCenterRef.current)}

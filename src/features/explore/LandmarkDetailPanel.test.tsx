@@ -13,7 +13,6 @@ describe('LandmarkDetailPanel', () => {
     render(
       <LandmarkDetailPanel
         landmark={landmark}
-        onClose={vi.fn()}
         onSelectCountry={onSelectCountry}
       />,
     )

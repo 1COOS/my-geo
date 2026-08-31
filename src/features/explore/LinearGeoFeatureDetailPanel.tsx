@@ -11,20 +11,16 @@ const lengthFormatter = new Intl.NumberFormat('zh-CN', {
 
 export function LinearGeoFeatureDetailPanel({
   feature,
-  onClose,
   onSelectCountry,
 }: {
   feature: LinearGeoFeature
-  onClose: () => void
   onSelectCountry: (countryCode: string) => void
 }) {
   return (
     <DetailPanelShell
       label={`${feature.name.zh}知识卡`}
-      closeLabel={`关闭${linearGeoFeatureKindLabels[feature.kind]}知识卡`}
       identity={feature.id}
       accent={feature.kind === 'canal' ? '#f7bf4f' : '#36dced'}
-      onClose={onClose}
     >
       <div className="waterbody-detail-heading linear-feature-heading">
         <span

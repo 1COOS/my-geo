@@ -11,11 +11,10 @@ describe('ClimateLearningPanel', () => {
         selection={{ kind: 'overview' }}
         onSelectType={onSelectType}
         onShowOverview={vi.fn()}
-        onClose={vi.fn()}
       />,
     )
     expect(screen.getByLabelText('13类世界气候图例')).toBeInTheDocument()
-    expect(screen.getAllByRole('button')).toHaveLength(14)
+    expect(screen.getAllByRole('button')).toHaveLength(13)
     fireEvent.click(screen.getByRole('button', { name: '地中海气候' }))
     expect(onSelectType).toHaveBeenCalledWith('mediterranean')
   })
@@ -34,7 +33,6 @@ describe('ClimateLearningPanel', () => {
         }}
         onSelectType={vi.fn()}
         onShowOverview={vi.fn()}
-        onClose={vi.fn()}
       />,
     )
     expect(screen.getByLabelText('气候坐标判读')).toHaveTextContent(
@@ -55,7 +53,6 @@ describe('ClimateLearningPanel', () => {
         }}
         onSelectType={vi.fn()}
         onShowOverview={vi.fn()}
-        onClose={vi.fn()}
       />,
     )
     expect(screen.getByText('海洋区域，无陆地气候类型')).toBeInTheDocument()

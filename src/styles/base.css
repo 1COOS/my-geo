@@ -30,6 +30,10 @@
   --fs-s: 0.8125rem;
   --fs-b: 0.875rem;
   --lh-b: 1.6;
+  --layout-edge: 0.75rem;
+  --layout-gap: clamp(0.4rem, 0.9vw, 0.75rem);
+  --navigation-rail-size: clamp(3.2rem, 4.2vw, 3.55rem);
+  --detail-panel-size: clamp(17rem, 30vw, 24rem);
   font-family:
     Inter, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', system-ui,
     sans-serif;
@@ -37,6 +41,8 @@
   background: var(--atlas-canvas-deep);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   color-scheme: dark;
 }
 
@@ -115,21 +121,11 @@ body,
   overflow: hidden;
 }
 
-body {
-  min-height: 100dvh;
-  overflow: hidden;
-}
-
 button:focus-visible,
 a:focus-visible,
 [role='application']:focus-visible {
   outline: 3px solid var(--atlas-focus);
   outline-offset: 3px;
-}
-
-body {
-  color: var(--atlas-text);
-  background: var(--atlas-canvas-deep);
 }
 
 button,

@@ -85,6 +85,7 @@ import {
 import { advanceGlobeLabelFrame } from './globeFrameScheduling'
 import { GlobeCameraControls } from './GlobeCameraControls'
 import { GlobeDomOverlay } from './GlobeDomOverlay'
+import { useSceneLayoutMetrics } from './sceneLayoutMetricsState'
 import {
   getLabelGroup,
   getLabelPriority,
@@ -429,6 +430,7 @@ function World({
   } | null>(null)
   const suppressGeographyClickRef = useRef(false)
   const { camera, gl, scene, size } = useThree()
+  const sceneLayout = useSceneLayoutMetrics()
   const touchDevice = useMemo(() => navigator.maxTouchPoints > 0, [])
   const rendererSize = useMemo(
     () => new Vector2(size.width, size.height),
@@ -899,6 +901,7 @@ function World({
         labelHeight: height,
         viewportWidth: size.width,
         viewportHeight: size.height,
+        viewportInsets: sceneLayout.overlayInsets,
         isLake: item.type === 'waterbody' && item.waterbody.layer === 'lake',
       })
       const projection = labelProjectionRef.current
@@ -914,6 +917,7 @@ function World({
       selectedMountainRangeId,
       size.height,
       size.width,
+      sceneLayout.overlayInsets,
     ],
   )
 
@@ -1147,7 +1151,11 @@ function World({
 
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return
-    const viewOffset = getGlobeViewOffset(size.width, size.height)
+    const viewOffset = getGlobeViewOffset(
+      size.width,
+      size.height,
+      sceneLayout.overlayInsets,
+    )
     camera.setViewOffset(
       viewOffset.fullWidth,
       viewOffset.fullHeight,
@@ -1173,6 +1181,7 @@ function World({
     layoutSelectedMountainPeak,
     size.height,
     size.width,
+    sceneLayout.overlayInsets,
     syncPointOfView,
   ])
 

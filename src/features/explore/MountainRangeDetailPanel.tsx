@@ -10,20 +10,16 @@ const numberFormatter = new Intl.NumberFormat('zh-CN', {
 
 export function MountainRangeDetailPanel({
   range,
-  onClose,
   onSelectCountry,
 }: {
   range: MountainRange
-  onClose: () => void
   onSelectCountry: (countryCode: string) => void
 }) {
   return (
     <DetailPanelShell
       label={`${range.name.zh}知识卡`}
-      closeLabel={`关闭${range.name.zh}知识卡`}
       identity={range.id}
       accent="#d99b52"
-      onClose={onClose}
     >
       <div className="waterbody-detail-heading mountain-range-heading">
         <span className="mountain-range-symbol" aria-hidden="true" />

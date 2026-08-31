@@ -10,20 +10,16 @@ const numberFormatter = new Intl.NumberFormat('zh-CN', {
 
 export function DesertDetailPanel({
   desert,
-  onClose,
   onSelectCountry,
 }: {
   desert: Desert
-  onClose: () => void
   onSelectCountry: (countryCode: string) => void
 }) {
   return (
     <DetailPanelShell
       label={`${desert.name.zh}知识卡`}
-      closeLabel={`关闭${desert.name.zh}知识卡`}
       identity={desert.id}
       accent="#e9ad58"
-      onClose={onClose}
     >
       <div className="waterbody-detail-heading desert-heading">
         <span className="desert-symbol" aria-hidden="true" />

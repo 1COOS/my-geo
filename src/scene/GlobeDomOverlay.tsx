@@ -12,6 +12,7 @@ import { getWaterbody, waterbodyKindLabels } from '../data/waterbodies'
 import { CountryFlag } from '../shared/components/CountryFlag'
 import { getWaterbodyLabelState } from './countrySceneInteraction'
 import type { GlobeWorldProps } from './GlobeScene'
+import { SceneLayoutMetricsProvider } from './sceneLayoutMetrics'
 import type { GlobeLabelData } from './useGlobeLabelData'
 
 type GlobeDomOverlayProps = {
@@ -45,6 +46,7 @@ export function GlobeDomOverlay({
   selectedMountainPeakRef,
 }: GlobeDomOverlayProps) {
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
   const hoveredCountry = getCountry(props.hoveredCountryCode)
   const hoveredCity = getCity(props.hoveredCityId)
   const hoveredWaterbody = getWaterbody(props.hoveredWaterbodyId)
@@ -64,6 +66,7 @@ export function GlobeDomOverlay({
 
   return (
     <div
+      ref={viewportRef}
       className="globe-canvas"
       data-testid="globe-scene"
       data-climate-highlight-id={
@@ -94,7 +97,9 @@ export function GlobeDomOverlay({
         props.onHoverLandmark(null)
       }}
     >
-      {children}
+      <SceneLayoutMetricsProvider viewportRef={viewportRef}>
+        {children}
+      </SceneLayoutMetricsProvider>
       {selectedLinearFeature || selectedMountainRange ? (
         <svg
           ref={selectedLinearFeatureOverlayRef}

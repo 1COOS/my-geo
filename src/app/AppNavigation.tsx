@@ -214,7 +214,11 @@ function KnowledgeMenu() {
 
 export function AppNavigation() {
   return (
-    <nav className="app-navigation" aria-label="My Geo 主导航">
+    <nav
+      className="app-navigation"
+      data-scene-overlay="navigation"
+      aria-label="My Geo 主导航"
+    >
       <div className="app-navigation-brand" aria-hidden="true">
         <img src="/icons/my-geo-mark.svg" alt="" draggable={false} />
       </div>

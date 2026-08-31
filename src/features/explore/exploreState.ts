@@ -55,7 +55,6 @@ export type ExploreAction =
   | { type: 'setLayer'; layer: LayerId; visible: boolean }
   | { type: 'select'; selection: ExploreSelection }
   | { type: 'hover'; hover: ExploreHover }
-  | { type: 'clearSelection' }
   | { type: 'clearHover' }
   | { type: 'backToCountry' }
   | { type: 'selectClimateType'; climateTypeId: ClimateTypeId }
@@ -174,9 +173,6 @@ export function exploreReducer(
   }
   if (action.type === 'hover') return { ...state, hover: action.hover }
   if (action.type === 'clearHover') return { ...state, hover: null }
-  if (action.type === 'clearSelection') {
-    return { ...state, selection: null, hover: null }
-  }
   if (action.type === 'backToCountry') {
     if (state.selection?.kind !== 'city') return state
     return {

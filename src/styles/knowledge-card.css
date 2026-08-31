@@ -1,5 +1,6 @@
 .knowledge-card-shell {
   --knowledge-card-accent: var(--atlas-accent);
+  --knowledge-card-title-size: 1.25rem;
 
   position: fixed;
   z-index: 55;
@@ -7,7 +8,7 @@
   right: var(--edge-right, max(0.75rem, env(safe-area-inset-right)));
   bottom: var(--edge-bottom, max(0.75rem, env(safe-area-inset-bottom)));
   display: flex;
-  width: var(--detail-column, clamp(15rem, 35vw, 24rem));
+  width: var(--detail-column, var(--detail-panel-size));
   min-width: 0;
   padding: 0;
   overflow: hidden;
@@ -20,6 +21,10 @@
   box-shadow: var(--atlas-shadow);
 }
 
+.explore-shell .knowledge-card-shell {
+  z-index: 10;
+}
+
 .knowledge-card-shell small {
   font-size: inherit;
 }
@@ -30,24 +35,6 @@
   padding: 1rem;
   overflow-y: auto;
   scrollbar-gutter: stable;
-}
-
-.knowledge-card-shell .country-detail-close {
-  position: absolute;
-  z-index: 4;
-  top: 1rem;
-  right: 1rem;
-  float: none;
-  margin: 0;
-  color: var(--atlas-text-secondary);
-  background: var(--atlas-panel);
-}
-
-.knowledge-card-shell .country-detail-close:hover,
-.knowledge-card-shell .country-detail-close:focus-visible {
-  color: var(--atlas-text);
-  background: var(--atlas-accent-soft);
-  border-color: var(--knowledge-card-accent);
 }
 
 .knowledge-card-footer {
@@ -75,7 +62,7 @@
 .knowledge-region-overview-heading h2 {
   margin-top: 0.25rem;
   color: var(--atlas-text);
-  font-size: 1.55rem;
+  font-size: var(--knowledge-card-title-size);
   font-weight: 600;
 }
 
@@ -164,7 +151,6 @@
   display: flex;
   min-height: 0;
   gap: 0.85rem;
-  padding-right: 3.25rem;
   align-items: center;
 }
 
@@ -185,7 +171,7 @@
 .country-knowledge-card .knowledge-country-detail-heading h2 {
   margin: 0.18rem 0;
   color: var(--atlas-text);
-  font-size: 1.45rem;
+  font-size: var(--knowledge-card-title-size);
   font-weight: 600;
 }
 
@@ -378,7 +364,6 @@
     .climate-learning-heading
   ) {
   min-height: 3.25rem;
-  padding-right: 3.25rem;
 }
 
 .knowledge-card-shell
@@ -401,8 +386,51 @@
   display: flex;
   min-height: 0;
   gap: 0.85rem;
-  padding-right: 3.25rem;
   align-items: center;
+}
+
+.explore-guide-note,
+.explore-guide-tools {
+  margin: 0;
+}
+
+.explore-guide-list,
+.explore-guide-tools {
+  display: grid;
+  padding: 0;
+  gap: 0.55rem;
+  list-style: none;
+}
+
+.explore-guide-list li,
+.explore-guide-tools > div {
+  display: grid;
+  grid-template-columns: 3.75rem minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+}
+
+.explore-guide-list strong,
+.explore-guide-tools dt {
+  color: var(--knowledge-card-accent);
+  font-weight: 700;
+}
+
+.explore-guide-list span,
+.explore-guide-tools dd,
+.explore-guide-note {
+  color: var(--atlas-text-secondary);
+  line-height: var(--lh-b);
+}
+
+.explore-guide-tools dd {
+  margin: 0;
+}
+
+.explore-guide-note {
+  padding-top: 0.8rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--atlas-border-soft);
 }
 
 .knowledge-card-shell:not(.country-knowledge-card)
@@ -412,7 +440,7 @@
     .climate-learning-heading h2
   ) {
   margin: 0.18rem 0;
-  font-size: 1.45rem;
+  font-size: var(--knowledge-card-title-size);
   font-weight: 600;
 }
 
@@ -527,11 +555,6 @@
 @media (orientation: landscape) and (max-height: 600px) {
   .knowledge-card-content {
     padding: 0.75rem;
-  }
-
-  .knowledge-card-shell .country-detail-close {
-    top: 0.75rem;
-    right: 0.75rem;
   }
 
   .knowledge-card-footer {

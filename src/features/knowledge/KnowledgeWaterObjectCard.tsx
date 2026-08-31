@@ -15,14 +15,12 @@ type KnowledgeWaterObjectCardProps = {
   object: Waterbody | LinearGeoFeature
   objectType: 'waterbody' | 'linearFeature'
   layer: WaterLearningLayer
-  onClose: () => void
 }
 
 export function KnowledgeWaterObjectCard({
   object,
   objectType,
   layer,
-  onClose,
 }: KnowledgeWaterObjectCardProps) {
   const waterbody = objectType === 'waterbody' ? (object as Waterbody) : null
   const feature =
@@ -46,10 +44,8 @@ export function KnowledgeWaterObjectCard({
   return (
     <KnowledgeCardShell
       label={`${object.name.zh}${kindLabel}详情`}
-      closeLabel={`关闭${object.name.zh}详情`}
       identity={object.id}
       accent={accent}
-      onClose={onClose}
       footer={
         <Link className="knowledge-card-action" to={exploreTarget}>
           <span>在3D地球上查看</span>

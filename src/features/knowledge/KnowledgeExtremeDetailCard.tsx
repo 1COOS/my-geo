@@ -17,13 +17,11 @@ import {
 type KnowledgeExtremeDetailCardProps = {
   metric: WorldExtremeMetric
   entry: WorldExtremeEntry
-  onClose: () => void
 }
 
 export function KnowledgeExtremeDetailCard({
   metric,
   entry,
-  onClose,
 }: KnowledgeExtremeDetailCardProps) {
   const sources = entry.sourceIds.flatMap((sourceId) => {
     const source = getWorldExtremeSource(sourceId)
@@ -34,11 +32,9 @@ export function KnowledgeExtremeDetailCard({
   return (
     <KnowledgeCardShell
       label={`${entry.name.zh}世界之最详情`}
-      closeLabel={`关闭${entry.name.zh}世界之最详情`}
       identity={`${metric.id}:${entry.id}`}
       accent={rankColor}
       className="world-extreme-detail-card"
-      onClose={onClose}
       footer={
         <Link
           className="knowledge-card-action"

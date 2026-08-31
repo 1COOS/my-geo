@@ -141,15 +141,9 @@ for (const viewport of extremesViewports) {
     ).toHaveText(['1', '2', '3'])
     await expectNoPageScroll(page)
 
-    await detailCard
-      .getByRole('button', { name: '关闭俄罗斯世界之最详情' })
-      .click()
-    await expect(page).toHaveURL(
-      /\/knowledge\/extremes\/metrics\/largest-country-area$/,
-    )
     await expect(
-      page.getByRole('complementary', { name: '面积最大的国家指标知识' }),
-    ).toBeVisible()
+      detailCard.getByRole('button', { name: '关闭俄罗斯世界之最详情' }),
+    ).toHaveCount(0)
   })
 }
 

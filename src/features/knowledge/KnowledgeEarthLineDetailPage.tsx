@@ -1,4 +1,4 @@
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 
 import {
   formatReferenceLineCoordinate,
@@ -12,7 +12,6 @@ import { getKnowledgeEarthLineColor } from './knowledgeEarthLinePresentation'
 
 export function KnowledgeEarthLineDetailPage() {
   const { lineId } = useParams()
-  const navigate = useNavigate()
   const line = getReferenceLine(lineId)
 
   if (!line) return <Navigate to="/knowledge/earth" replace />
@@ -43,11 +42,9 @@ export function KnowledgeEarthLineDetailPage() {
 
       <KnowledgeCardShell
         label={`${line.name.zh}经纬线详情`}
-        closeLabel={`关闭${line.name.zh}经纬线详情`}
         identity={line.id}
         accent={lineColor}
         className="knowledge-earth-line-detail-card"
-        onClose={() => void navigate(backTarget)}
         footer={
           <Link className="knowledge-card-action" to={exploreTarget}>
             <span>在3D地球上查看</span>

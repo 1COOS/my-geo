@@ -1,4 +1,4 @@
-@media (max-width: 1080px) {
+@container knowledge-page (max-width: 67.5rem) {
   .knowledge-country-grid {
     grid-template-columns: repeat(
       var(--knowledge-country-columns-tablet),
@@ -7,7 +7,24 @@
   }
 }
 
-@media (max-width: 900px), (max-height: 520px) {
+@container knowledge-page (max-width: 47.5rem) {
+  .knowledge-country-grid {
+    grid-template-columns: repeat(
+      var(--knowledge-country-columns-compact),
+      minmax(0, 1fr)
+    );
+  }
+
+  .knowledge-question-hub-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-question-hub-stats {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 900px), (max-height: 600px) {
   .selected-linear-feature-route-outer {
     stroke-width: 8px;
   }
@@ -26,12 +43,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .knowledge-region-card,
-  .app-navigation-link,
-  .knowledge-subnavigation-link {
-    transition: none;
-  }
-
   .knowledge-region-card:hover,
   .knowledge-region-card:focus-visible {
     transform: none;
@@ -59,7 +70,7 @@
   }
 }
 
-@media (max-height: 520px) {
+@media (max-height: 600px) {
   .app-navigation-brand {
     min-height: 2.15rem;
     margin-bottom: 0.1rem;
@@ -379,6 +390,13 @@
   }
 }
 
+@media (orientation: landscape) and (min-width: 840px) and (max-height: 600px) and (min-aspect-ratio: 2/1) {
+  .landscape-runtime.is-touch-device
+    :is(.explore-shell, .knowledge-region-shell) {
+    --detail-column: clamp(20rem, 37vw, 22rem);
+  }
+}
+
 @media (max-width: 760px) {
   .explore-shell::before {
     background:
@@ -391,7 +409,7 @@
   }
 
   .control-deck {
-    right: max(0.75rem, env(safe-area-inset-right));
+    right: var(--scene-reserve);
     bottom: max(0.75rem, env(safe-area-inset-bottom));
     left: max(0.75rem, env(safe-area-inset-left));
   }
@@ -495,16 +513,9 @@
     gap: 0.9rem;
     overflow-x: auto;
   }
-
-  .knowledge-country-grid {
-    grid-template-columns: repeat(
-      var(--knowledge-country-columns-compact),
-      minmax(0, 1fr)
-    );
-  }
 }
 
-@media (max-width: 760px), (max-height: 520px) {
+@media (max-width: 760px), (max-height: 600px) {
   .knowledge-region-grid {
     overflow-x: auto;
   }

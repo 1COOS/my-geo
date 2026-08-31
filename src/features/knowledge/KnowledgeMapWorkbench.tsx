@@ -1,4 +1,6 @@
-import { useEffect, useState, type ReactNode, type RefObject } from 'react'
+import type { ReactNode, RefObject } from 'react'
+
+import { useViewportProfile } from '../../shared/hooks/useViewportProfile'
 
 type KnowledgeMapWorkbenchPageProps = {
   label: string
@@ -9,10 +11,6 @@ type KnowledgeMapWorkbenchPageProps = {
   renderResults: (compact: boolean) => ReactNode
 }
 
-function getCompactLandscape() {
-  return window.matchMedia('(max-height: 520px)').matches
-}
-
 export function KnowledgeMapWorkbenchPage({
   label,
   title,
@@ -21,14 +19,7 @@ export function KnowledgeMapWorkbenchPage({
   renderMap,
   renderResults,
 }: KnowledgeMapWorkbenchPageProps) {
-  const [compact, setCompact] = useState(getCompactLandscape)
-
-  useEffect(() => {
-    const media = window.matchMedia('(max-height: 520px)')
-    const update = () => setCompact(media.matches)
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [])
+  const compact = useViewportProfile() === 'compact-landscape'
 
   return (
     <main
@@ -37,9 +28,9 @@ export function KnowledgeMapWorkbenchPage({
       data-compact-workbench={compact ? 'true' : 'false'}
       style={{
         display: 'flex',
+        paddingBottom: compact ? '0.45rem' : '0.75rem',
         overflowY: 'hidden',
         flexDirection: 'column',
-        paddingBottom: compact ? '0.45rem' : '0.75rem',
       }}
     >
       <h1 className="sr-only">{title}</h1>
@@ -52,11 +43,11 @@ export function KnowledgeMapWorkbenchPage({
           flex: '1 1 auto',
           width: '100%',
           minHeight: 0,
-          margin: '0 auto',
           gridTemplateRows: compact
             ? '2.125rem minmax(0, 1fr) 3.625rem'
             : '2.9rem minmax(0, 1fr) 5.5rem',
           gap: compact ? '0.4rem' : '0.6rem',
+          margin: '0 auto',
         }}
       >
         <div

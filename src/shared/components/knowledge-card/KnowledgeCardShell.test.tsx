@@ -1,6 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { useState } from 'react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { KnowledgeCardShell } from './KnowledgeCardShell'
@@ -37,10 +35,8 @@ describe('KnowledgeCardShell', () => {
     const { container, rerender } = render(
       <KnowledgeCardShell
         label="测试知识卡"
-        closeLabel="关闭测试知识卡"
         identity="first"
         accent="#d291ff"
-        onClose={vi.fn()}
         footer={<span>底部操作</span>}
       >
         <p>第一项内容</p>
@@ -56,13 +52,7 @@ describe('KnowledgeCardShell', () => {
     )!
     content.scrollTop = 80
     rerender(
-      <KnowledgeCardShell
-        label="测试知识卡"
-        closeLabel="关闭测试知识卡"
-        identity="second"
-        accent="#d291ff"
-        onClose={vi.fn()}
-      >
+      <KnowledgeCardShell label="测试知识卡" identity="second" accent="#d291ff">
         <p>第二项内容</p>
       </KnowledgeCardShell>,
     )
@@ -72,37 +62,5 @@ describe('KnowledgeCardShell', () => {
     if (originalScrollTo) {
       Object.defineProperty(HTMLElement.prototype, 'scrollTo', originalScrollTo)
     } else Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo')
-  })
-
-  it('returns focus to the opener after closing', async () => {
-    function Harness() {
-      const [open, setOpen] = useState(false)
-      return (
-        <>
-          <button type="button" onClick={() => setOpen(true)}>
-            打开知识卡
-          </button>
-          {open ? (
-            <KnowledgeCardShell
-              label="测试知识卡"
-              closeLabel="关闭测试知识卡"
-              identity="focus"
-              onClose={() => setOpen(false)}
-            >
-              <p>内容</p>
-            </KnowledgeCardShell>
-          ) : null}
-        </>
-      )
-    }
-
-    const user = userEvent.setup()
-    render(<Harness />)
-    const opener = screen.getByRole('button', { name: '打开知识卡' })
-
-    await user.click(opener)
-    await user.click(screen.getByRole('button', { name: '关闭测试知识卡' }))
-
-    await waitFor(() => expect(opener).toHaveFocus())
   })
 })

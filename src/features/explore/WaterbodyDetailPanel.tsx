@@ -11,17 +11,14 @@ const numberFormatter = new Intl.NumberFormat('zh-CN', {
 
 export function WaterbodyDetailPanel({
   waterbody,
-  onClose,
   onSelectCountry,
 }: {
   waterbody: Waterbody
-  onClose: () => void
   onSelectCountry: (countryCode: string) => void
 }) {
   return (
     <DetailPanelShell
       label={`${waterbody.name.zh}水域知识卡`}
-      closeLabel="关闭水域知识卡"
       identity={waterbody.id}
       accent={
         waterbody.layer === 'lake'
@@ -30,7 +27,6 @@ export function WaterbodyDetailPanel({
             ? '#aa7cff'
             : '#31e4ff'
       }
-      onClose={onClose}
     >
       <div className="waterbody-detail-heading">
         <span

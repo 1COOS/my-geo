@@ -7,7 +7,7 @@ import type { LandmarkMarker } from './landmarkSceneInteraction'
 export const OVERVIEW_CAMERA_DISTANCE = 425
 export const CITY_CAMERA_DISTANCE = 190
 export const WATERBODY_CAMERA_DISTANCE = 225
-export const GLOBE_VERTICAL_CENTER_RATIO = 0.45
+export const GLOBE_VERTICAL_CENTER_RATIO = 0.5
 export const LAKE_LABEL_VERTICAL_OFFSET = 40
 export const MAP_LABEL_VIEWPORT_MARGIN = 12
 
@@ -31,12 +31,32 @@ export function getOverviewCameraPosition(
   }
 }
 
-export function getGlobeViewOffset(width: number, height: number) {
+export type ViewportInsets = {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
+const zeroViewportInsets: ViewportInsets = {
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+}
+
+export function getGlobeViewOffset(
+  width: number,
+  height: number,
+  insets: ViewportInsets = zeroViewportInsets,
+) {
   return {
     fullWidth: width,
     fullHeight: height,
-    offsetX: 0,
-    offsetY: height * (0.5 - GLOBE_VERTICAL_CENTER_RATIO),
+    offsetX: (insets.right - insets.left) / 2,
+    offsetY:
+      height * (0.5 - GLOBE_VERTICAL_CENTER_RATIO) +
+      (insets.bottom - insets.top) / 2,
     width,
     height,
   }
@@ -210,6 +230,7 @@ type MapLabelPlacementInput = {
   labelHeight: number
   viewportWidth: number
   viewportHeight: number
+  viewportInsets?: ViewportInsets
   isLake: boolean
 }
 
@@ -220,29 +241,39 @@ export function getMapLabelPlacement({
   labelHeight,
   viewportWidth,
   viewportHeight,
+  viewportInsets = zeroViewportInsets,
   isLake,
 }: MapLabelPlacementInput) {
+  const minX = viewportInsets.left + labelWidth / 2 + MAP_LABEL_VIEWPORT_MARGIN
+  const maxX =
+    viewportWidth -
+    viewportInsets.right -
+    labelWidth / 2 -
+    MAP_LABEL_VIEWPORT_MARGIN
+  const minY = viewportInsets.top + labelHeight / 2 + MAP_LABEL_VIEWPORT_MARGIN
+  const maxY =
+    viewportHeight -
+    viewportInsets.bottom -
+    labelHeight / 2 -
+    MAP_LABEL_VIEWPORT_MARGIN
+  const clamp = (value: number, minimum: number, maximum: number) =>
+    minimum <= maximum
+      ? Math.max(minimum, Math.min(maximum, value))
+      : (minimum + maximum) / 2
+  const placedX = clamp(x, minX, maxX)
+  const placedY = clamp(isLake ? y - LAKE_LABEL_VERTICAL_OFFSET : y, minY, maxY)
+
   if (!isLake) {
     return {
-      x,
-      y,
+      x: placedX,
+      y: placedY,
       leaderLength: 0,
       leaderAngleDegrees: 0,
     }
   }
 
-  const placedX = Math.max(
-    labelWidth / 2 + MAP_LABEL_VIEWPORT_MARGIN,
-    Math.min(viewportWidth - labelWidth / 2 - MAP_LABEL_VIEWPORT_MARGIN, x),
-  )
-  const placedY = Math.max(
-    labelHeight / 2 + MAP_LABEL_VIEWPORT_MARGIN,
-    Math.min(
-      viewportHeight - labelHeight / 2 - MAP_LABEL_VIEWPORT_MARGIN,
-      y - LAKE_LABEL_VERTICAL_OFFSET,
-    ),
-  )
-  const leaderStartY = placedY + labelHeight / 2
+  const lakePlacedY = Math.max(minY, Math.min(maxY, placedY))
+  const leaderStartY = lakePlacedY + labelHeight / 2
   const leaderDeltaX = x - placedX
   const leaderDeltaY = y - leaderStartY
   const leaderLength =
@@ -250,7 +281,7 @@ export function getMapLabelPlacement({
 
   return {
     x: placedX,
-    y: placedY,
+    y: lakePlacedY,
     leaderLength,
     leaderAngleDegrees:
       leaderLength > 0
