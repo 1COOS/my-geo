@@ -81,21 +81,13 @@ describe('generated country catalogue', () => {
     }
   })
 
-  it('provides sourced country profiles with 50 reviewed signatures', () => {
+  it('provides sourced profiles with optional reviewed signatures', () => {
     const signatureCountries = countries.filter(
       (country) => country.profile.signature,
     )
-    expect(signatureCountries).toHaveLength(50)
+    expect(signatureCountries.length).toBeGreaterThan(0)
 
     for (const country of countries) {
-      expect(country.profile.resources.keywords.length).toBeGreaterThan(0)
-      expect(country.profile.resources.groups.length).toBeGreaterThan(0)
-      expect(country.profile.people.ethnicGroups.length).toBeGreaterThan(0)
-      expect(country.profile.people.religions.length).toBeGreaterThan(0)
-      expect(country.profile.economy.agriculture.length).toBeGreaterThan(0)
-      expect(country.profile.economy.industry.length).toBeGreaterThan(0)
-      expect(country.profile.economy.tourism.length).toBeGreaterThan(0)
-
       const sourceIds = [
         ...country.profile.resources.sourceIds,
         ...country.profile.people.sourceIds,
@@ -106,21 +98,121 @@ describe('generated country catalogue', () => {
         sourceIds.every((sourceId) => countrySourcesById.has(sourceId)),
       ).toBe(true)
 
-      const demographicItems = [
-        ...country.profile.people.ethnicGroups,
-        ...country.profile.people.religions,
-      ]
       if (country.profile.signature) {
-        expect(country.profile.signature.length).toBeGreaterThanOrEqual(3)
+        expect(country.profile.signature.length).toBeGreaterThanOrEqual(1)
         expect(
-          demographicItems.some((item) => item.sharePercent !== undefined),
-        ).toBe(true)
-      } else {
-        expect(
-          demographicItems.every((item) => item.sharePercent === undefined),
-        ).toBe(true)
+          new Set(country.profile.signature.map((item) => item.title)).size,
+        ).toBe(country.profile.signature.length)
       }
     }
+  })
+
+  it('repairs known profile defects and uses concrete signature titles', () => {
+    const afghanistan = countries.find((country) => country.code === 'AF')!
+    expect(
+      afghanistan.profile.people.religions.map((item) => item.name),
+    ).toEqual(['伊斯兰教', '什叶派'])
+
+    const russia = countries.find((country) => country.code === 'RU')!
+    expect(russia.profile.people.religions.map((item) => item.name)).toEqual([
+      '俄罗斯东正教',
+      '伊斯兰教',
+    ])
+
+    const algeria = countries.find((country) => country.code === 'DZ')!
+    expect(
+      algeria.profile.people.ethnicGroups.map((item) => item.name),
+    ).toEqual(['阿拉伯人', '阿马齐格人'])
+    expect(algeria.profile.people.religions.map((item) => item.name)).toEqual([
+      '伊斯兰教',
+    ])
+
+    const mali = countries.find((country) => country.code === 'ML')!
+    expect(mali.profile.people.religions.map((item) => item.name)).toEqual([
+      '伊斯兰教',
+      '基督教',
+    ])
+    const guinea = countries.find((country) => country.code === 'GN')!
+    expect(guinea.profile.people.religions.map((item) => item.name)).toEqual([
+      '伊斯兰教',
+      '基督教',
+    ])
+    const cameroon = countries.find((country) => country.code === 'CM')!
+    expect(
+      cameroon.profile.people.religions.map((item) => item.name),
+    ).toContain('泛灵信仰')
+
+    const demographicNames = countries.flatMap((country) => [
+      ...country.profile.people.ethnicGroups.map((item) => item.name),
+      ...country.profile.people.religions.map((item) => item.name),
+    ])
+    expect(demographicNames.join('\n')).not.toMatch(
+      /动画家|动画主义|不到|未具体说明|未表示|未指明|未归属|无神论者|不可知论者|拒绝回答/,
+    )
+
+    const australia = countries.find((country) => country.code === 'AU')!
+    expect(australia.profile.signature?.map((item) => item.title)).toEqual(
+      expect.arrayContaining(['袋鼠', '考拉', '鸭嘴兽', '大堡礁']),
+    )
+
+    const allSignatureTitles = countries.flatMap(
+      (country) => country.profile.signature?.map((item) => item.title) ?? [],
+    )
+    expect(allSignatureTitles).not.toContain('地理名片')
+    expect(allSignatureTitles).not.toContain('大陆国家')
+    expect(allSignatureTitles).not.toContain('独特动物')
+  })
+
+  it('rebuilds complete critical resources from the pinned source', () => {
+    const resources = (code: string) =>
+      countries
+        .find((country) => country.code === code)!
+        .profile.resources.groups.flatMap((group) => group.items)
+
+    expect(resources('RU')).toEqual(
+      expect.arrayContaining([
+        '石油',
+        '天然气',
+        '煤',
+        '铝土矿',
+        '稀土',
+        '木材',
+      ]),
+    )
+    expect(resources('US')).toEqual(
+      expect.arrayContaining(['石油', '天然气', '煤', '铀', '木材', '耕地']),
+    )
+    expect(resources('CA')).toEqual(
+      expect.arrayContaining([
+        '石油',
+        '天然气',
+        '煤',
+        '水电',
+        '铀',
+        '木材',
+        '渔业资源',
+      ]),
+    )
+    expect(resources('CN')).toEqual(
+      expect.arrayContaining(['石油', '天然气', '煤', '铀', '水电', '耕地']),
+    )
+    expect(resources('JP')).toEqual(['渔业资源'])
+    expect(resources('KH')).toEqual(expect.arrayContaining(['石油', '天然气']))
+    expect(resources('VN')).toEqual(expect.arrayContaining(['石油', '天然气']))
+    expect(resources('TJ')).toContain('褐煤')
+    expect(resources('TJ')).not.toContain('煤')
+    expect(resources('AD')).toContain('矿泉水')
+    expect(resources('AD')).not.toContain('水资源')
+    expect(resources('KI')).not.toContain('磷酸盐')
+    expect(resources('LU')).not.toContain('铁矿石')
+    expect(resources('PW')).toEqual(
+      expect.arrayContaining(['黄金', '深海矿产']),
+    )
+
+    const chinaMinerals = countries
+      .find((country) => country.code === 'CN')!
+      .profile.resources.groups.find((group) => group.label === '矿产')!.items
+    expect(chinaMinerals.length).toBeGreaterThan(5)
   })
 
   it('separates sovereign borders from the approved adjacent regions', () => {

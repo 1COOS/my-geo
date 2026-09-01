@@ -28,17 +28,21 @@ Reference sites retain their own copyright. My Geo stores short original Chinese
   `c8cfe21cd019d7748a6b0d57a75d6a77f5ec6ac6`.
 - Use: natural resources, major ethnic groups, religions, agricultural
   products, industries, national symbols and short geography notes.
-- Coverage: all 195 catalogue countries receive local resource, people and
-  economy profiles. The 50 countries in the reviewed major-city set also
-  receive sourced country-signature items and may show dated demographic
-  estimates.
+- Resource provenance: `scripts/country-resource-source.json` stores the exact
+  195-country `Natural resources` text and source path extracted from the pinned
+  Factbook commit. A reviewed bilingual vocabulary rebuilds resource groups
+  from that snapshot; normal builds never fetch the upstream repository.
+- Coverage: all 195 catalogue countries are reviewed for local resource,
+  people and economy profiles. Empty or low-confidence categories are omitted.
+  Country-signature items are optional and come only from the reviewed local
+  landmark catalogue or explicit country-specific editorial entries.
 
 My Geo commits normalized Chinese profile data and never queries the Factbook
 at runtime. The Chinese summaries are repository-authored teaching text rather
 than copied source prose. Ethnic and religious categories follow the cited
 source's statistical vocabulary and should not be interpreted as legal,
-political or value classifications. Percentages are approximate and shown only
-with their source estimate year.
+political or value classifications. Only complete single-value percentages are
+kept; estimate years remain provenance metadata and are not displayed.
 
 ## 经纬网与义务教育地理知识
 

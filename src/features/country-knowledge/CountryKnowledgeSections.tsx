@@ -327,16 +327,20 @@ function PeopleChapter({
         items={country.languages}
         renderItem={(language) => language.name.zh}
       />
-      <InfoItemsRow
-        label="民族"
-        items={profile.ethnicGroups}
-        renderItem={formatDemographicItem}
-      />
-      <InfoItemsRow
-        label="宗教"
-        items={profile.religions}
-        renderItem={formatDemographicItem}
-      />
+      {profile.ethnicGroups.length > 0 ? (
+        <InfoItemsRow
+          label="民族"
+          items={profile.ethnicGroups}
+          renderItem={formatDemographicItem}
+        />
+      ) : null}
+      {profile.religions.length > 0 ? (
+        <InfoItemsRow
+          label="宗教"
+          items={profile.religions}
+          renderItem={formatDemographicItem}
+        />
+      ) : null}
     </>
   )
 }
@@ -476,32 +480,10 @@ function compactSummary(values: Array<string | undefined>) {
 }
 
 function getResourceRows(profile: CountryProfile['resources']): KnowledgeRow[] {
-  const buckets = new Map<string, string[]>()
-  const add = (label: string, item: string) => {
-    const values = buckets.get(label) ?? []
-    if (!values.includes(item) && values.length < 3) values.push(item)
-    buckets.set(label, values)
-  }
-
-  for (const group of profile.groups) {
-    for (const item of group.items) {
-      if (/资源相对有限|^无$|^没有$/.test(item)) continue
-      if (/石油|天然气|煤|水电|铀/.test(item)) add('能源', item)
-      else if (/森林|木材|木料/.test(item)) add('森林', item)
-      else if (/淡水|水资源|河流|湖泊/.test(item)) add('淡水', item)
-      else if (/鱼|渔业|海洋/.test(item)) add('渔业', item)
-      else if (/耕地|土地|土壤|牧场/.test(item)) add('土地', item)
-      else if (/港口/.test(item)) add('港口', item)
-      else if (group.label.includes('矿产')) add('矿产', item)
-    }
-  }
-
-  return ['能源', '矿产', '森林', '淡水', '土地', '渔业', '港口'].flatMap(
-    (label) => {
-      const items = buckets.get(label)
-      return items && items.length > 0 ? [{ label, items }] : []
-    },
-  )
+  return profile.groups.map((group) => ({
+    label: group.label,
+    items: group.label === '矿产' ? group.items.slice(0, 5) : group.items,
+  }))
 }
 
 function getEconomyRows(profile: CountryProfile['economy']): KnowledgeRow[] {

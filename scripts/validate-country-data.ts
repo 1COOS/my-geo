@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { access, readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 
 import { geoContains } from 'd3-geo'
 
@@ -10,6 +11,7 @@ import { climateLayerManifest } from '../src/data/climateRaster'
 import {
   countryBoundariesSchema,
   countryCatalogSchema,
+  countryProfileSchema,
   countrySourceRegistrySchema,
 } from '../src/data/countrySchema'
 import { cityCatalogSchema } from '../src/data/citySchema'
@@ -52,6 +54,13 @@ import {
   capitalChineseNames,
   FEATURED_COUNTRY_CODES,
 } from './country-content'
+import { assertCountryProfileContentQuality } from './country-profile-quality'
+import resourceSourceJson from './country-resource-source.json'
+import {
+  buildCountryResourceProfile,
+  getCriticalResourceCoverage,
+  type CountryResourceSource,
+} from './country-resource-content'
 
 const projectRoot = path.resolve(import.meta.dirname, '..')
 const svgViewBoxPattern = /\bviewBox\s*=\s*["']([^"']+)["']/i
@@ -94,6 +103,56 @@ const sources = countrySourceRegistrySchema.parse(
     path.join(projectRoot, 'src/data/generated/country-sources.json'),
   ),
 )
+const sourceProfiles = Object.fromEntries(
+  Object.entries(
+    (await readJson(
+      path.join(projectRoot, 'scripts/country-profile-content.json'),
+    )) as Record<string, unknown>,
+  ).map(([countryCode, profile]) => [
+    countryCode,
+    countryProfileSchema.parse(profile),
+  ]),
+)
+const generatedProfiles = Object.fromEntries(
+  countries.map((country) => [country.code, country.profile]),
+)
+const resourceSources = resourceSourceJson.countries as Record<
+  string,
+  CountryResourceSource
+>
+const resourceSourceCodes = Object.keys(resourceSources).sort()
+const countryCatalogCodes = countries.map((country) => country.code).sort()
+assertCountryProfileContentQuality(sourceProfiles, 'source profile')
+assertCountryProfileContentQuality(generatedProfiles, 'generated profile')
+if (JSON.stringify(sourceProfiles) !== JSON.stringify(generatedProfiles)) {
+  throw new Error('Generated country profiles do not match reviewed source')
+}
+if (!isDeepStrictEqual(resourceSourceCodes, countryCatalogCodes)) {
+  throw new Error(
+    `Resource source catalogue mismatch: expected ${countryCatalogCodes.length}, received ${resourceSourceCodes.length}`,
+  )
+}
+for (const country of countries) {
+  const source = resourceSources[country.code]
+  if (!source) throw new Error(`Missing resource source for ${country.code}`)
+  const rebuilt = buildCountryResourceProfile(
+    source,
+    resourceSourceJson.sourceId,
+  )
+  if (!isDeepStrictEqual(rebuilt, country.profile.resources)) {
+    throw new Error(`Resource source mismatch for ${country.code}`)
+  }
+  const displayedItems = country.profile.resources.groups.flatMap(
+    (group) => group.items,
+  )
+  for (const requiredItem of getCriticalResourceCoverage(source.raw)) {
+    if (!displayedItems.includes(requiredItem)) {
+      throw new Error(
+        `Missing critical resource ${requiredItem} on ${country.code}`,
+      )
+    }
+  }
+}
 
 const featuredCodes = countries
   .filter((country) => country.featured)
@@ -667,12 +726,6 @@ for (const country of countries) {
       }
     }
   }
-  const isPriorityCountry = priorityCountryCodes.includes(country.code)
-  if (Boolean(country.profile.signature) !== isPriorityCountry) {
-    throw new Error(
-      `Country signature coverage mismatch for ${country.code}: expected ${isPriorityCountry}`,
-    )
-  }
   const profileSourceIds = [
     ...country.profile.resources.sourceIds,
     ...country.profile.people.sourceIds,
@@ -683,22 +736,6 @@ for (const country of countries) {
     if (!sourceIds.has(sourceId)) {
       throw new Error(`Unknown profile source ${sourceId} on ${country.code}`)
     }
-  }
-  const demographicItems = [
-    ...country.profile.people.ethnicGroups,
-    ...country.profile.people.religions,
-  ]
-  if (
-    !isPriorityCountry &&
-    demographicItems.some((item) => item.sharePercent !== undefined)
-  ) {
-    throw new Error(`Non-priority demographic share found on ${country.code}`)
-  }
-  if (
-    isPriorityCountry &&
-    !demographicItems.some((item) => item.sharePercent !== undefined)
-  ) {
-    throw new Error(`Missing priority demographic shares on ${country.code}`)
   }
   for (const borderCode of country.borderCountryCodes) {
     if (!countryCodes.has(borderCode)) {

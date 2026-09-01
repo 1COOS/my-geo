@@ -51,7 +51,7 @@ describe('CountryKnowledgeSections', () => {
     expect(
       screen.queryByRole('button', { name: /查看全部主要民族/ }),
     ).toBeNull()
-    expect(screen.getByText('苗族')).toBeVisible()
+    expect(screen.getByText('维吾尔族')).toBeVisible()
     expect(screen.getByText(/汉族 约91\.1%/)).toBeVisible()
     expect(screen.queryByText(/2021/)).toBeNull()
 
@@ -60,6 +60,12 @@ describe('CountryKnowledgeSections', () => {
     expect(people).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByText('能源')).toBeVisible()
     expect(screen.getByText('矿产')).toBeVisible()
+    const resourcesSection = document.querySelector(
+      '.knowledge-country-chapter.is-resources',
+    )
+    expect(resourcesSection).toHaveTextContent('铁矿石')
+    expect(resourcesSection).toHaveTextContent('锌')
+    expect(resourcesSection).not.toHaveTextContent('铅')
 
     await userEvent.click(resources)
     expect(resources).toHaveAttribute('aria-expanded', 'false')
@@ -150,5 +156,29 @@ describe('CountryKnowledgeSections', () => {
 
     expect(screen.queryByRole('button', { name: /自然资源/ })).toBeNull()
     expect(screen.getByRole('button', { name: /经济产业/ })).toBeVisible()
+  })
+
+  it('hides empty demographic rows and renders every reviewed signature', async () => {
+    const { rerender } = render(
+      <CountryKnowledgeSections
+        key="BD"
+        country={country('BD')}
+        cities={getCitiesForCountry('BD')}
+        onSelectCountry={vi.fn()}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: /民族文化/ }))
+    expect(screen.queryByText('民族', { exact: true })).toBeNull()
+    expect(screen.getByText('宗教', { exact: true })).toBeVisible()
+
+    rerender(
+      <CountrySignatureLabels signature={country('AU').profile.signature} />,
+    )
+    for (const label of ['袋鼠', '考拉', '鸭嘴兽', '大堡礁', '悉尼歌剧院']) {
+      expect(screen.getByText(label, { exact: true })).toBeVisible()
+    }
+    expect(
+      document.querySelectorAll('.knowledge-country-signature-labels li'),
+    ).toHaveLength(5)
   })
 })

@@ -102,7 +102,7 @@ describe('CountryDetailPanel', () => {
       ),
     ).toEqual(['面积', '人口', '首都', '货币'])
     expect(facts!.querySelector('.is-languages')).toBeNull()
-    expect(screen.getByText('阶梯地形')).toBeInTheDocument()
+    expect(screen.getByText('珠穆朗玛峰')).toBeInTheDocument()
     expect(screen.getByText('大熊猫')).toBeInTheDocument()
     expect(screen.queryByText('国家名片')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /民族文化/ })).toHaveAttribute(

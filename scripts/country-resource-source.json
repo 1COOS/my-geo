@@ -1,0 +1,759 @@
+{
+  "sourceId": "cia-world-factbook",
+  "version": "c8cfe21cd019d7748a6b0d57a75d6a77f5ec6ac6",
+  "countries": {
+    "AD": {
+      "raw": "hydropower, mineral water, timber, iron ore, lead",
+      "sourcePath": "europe/an.json"
+    },
+    "AE": {
+      "raw": "petroleum, natural gas",
+      "sourcePath": "middle-east/ae.json"
+    },
+    "AF": {
+      "raw": "natural gas, petroleum, coal, copper, chromite, talc, barites, sulfur, lead, zinc, iron ore, salt, precious and semiprecious stones, arable land",
+      "sourcePath": "south-asia/af.json"
+    },
+    "AG": {
+      "raw": "NEGL; pleasant climate fosters tourism",
+      "sourcePath": "central-america-n-caribbean/ac.json"
+    },
+    "AL": {
+      "raw": "petroleum, natural gas, coal, bauxite, chromite, copper, iron ore, nickel, salt, timber, hydropower, arable land",
+      "sourcePath": "europe/al.json"
+    },
+    "AM": {
+      "raw": "small deposits of gold, copper, molybdenum, zinc, bauxite",
+      "sourcePath": "central-asia/am.json"
+    },
+    "AO": {
+      "raw": "petroleum, diamonds, iron ore, phosphates, copper, feldspar, gold, bauxite, uranium",
+      "sourcePath": "africa/ao.json"
+    },
+    "AR": {
+      "raw": "fertile plains of the pampas, lead, zinc, tin, copper, iron ore, manganese, petroleum, uranium, arable land",
+      "sourcePath": "south-america/ar.json"
+    },
+    "AT": {
+      "raw": "oil, coal, lignite, timber, iron ore, copper, zinc, antimony, magnesite, tungsten, graphite, salt, hydropower",
+      "sourcePath": "europe/au.json"
+    },
+    "AU": {
+      "raw": "alumina, coal, iron ore, copper, lithium, tin, gold, silver, uranium, nickel, tungsten, rare earth elements, mineral sands, lead, zinc, diamonds, opals, natural gas, petroleum",
+      "sourcePath": "australia-oceania/as.json"
+    },
+    "AZ": {
+      "raw": "petroleum, natural gas, iron ore, nonferrous metals, bauxite",
+      "sourcePath": "central-asia/aj.json"
+    },
+    "BA": {
+      "raw": "coal, iron ore, antimony, bauxite, copper, lead, zinc, chromite, cobalt, manganese, nickel, clay, gypsum, salt, sand, timber, hydropower",
+      "sourcePath": "europe/bk.json"
+    },
+    "BB": {
+      "raw": "petroleum, fish, natural gas",
+      "sourcePath": "central-america-n-caribbean/bb.json"
+    },
+    "BD": {
+      "raw": "natural gas, arable land, timber, coal",
+      "sourcePath": "south-asia/bg.json"
+    },
+    "BE": {
+      "raw": "construction materials, silica sand, carbonates, arable land",
+      "sourcePath": "europe/be.json"
+    },
+    "BF": {
+      "raw": "gold, manganese, zinc, limestone, marble, phosphates, pumice, salt",
+      "sourcePath": "africa/uv.json"
+    },
+    "BG": {
+      "raw": "bauxite, copper, lead, zinc, coal, timber, arable land",
+      "sourcePath": "europe/bu.json"
+    },
+    "BH": {
+      "raw": "oil, associated and nonassociated natural gas, fish, pearls",
+      "sourcePath": "middle-east/ba.json"
+    },
+    "BI": {
+      "raw": "nickel, uranium, rare earth oxides, peat, cobalt, copper, platinum, vanadium, arable land, hydropower, niobium, tantalum, gold, tin, tungsten, kaolin, limestone",
+      "sourcePath": "africa/by.json"
+    },
+    "BJ": {
+      "raw": "small offshore oil deposits, limestone, marble, timber",
+      "sourcePath": "africa/bn.json"
+    },
+    "BN": {
+      "raw": "petroleum, natural gas, timber",
+      "sourcePath": "east-n-southeast-asia/bx.json"
+    },
+    "BO": {
+      "raw": "lithium, tin, natural gas, petroleum, zinc, tungsten, antimony, silver, iron, lead, gold, timber, hydropower",
+      "sourcePath": "south-america/bl.json"
+    },
+    "BR": {
+      "raw": "alumina, bauxite, beryllium, gold, iron ore, manganese, nickel, niobium, phosphates, platinum, tantalum, tin, rare earth elements, uranium, petroleum, hydropower, timber",
+      "sourcePath": "south-america/br.json"
+    },
+    "BS": {
+      "raw": "salt, aragonite, timber, arable land",
+      "sourcePath": "central-america-n-caribbean/bf.json"
+    },
+    "BT": {
+      "raw": "timber, hydropower, gypsum, calcium carbonate",
+      "sourcePath": "south-asia/bt.json"
+    },
+    "BW": {
+      "raw": "diamonds, copper, nickel, salt, soda ash, potash, coal, iron ore, silver",
+      "sourcePath": "africa/bc.json"
+    },
+    "BY": {
+      "raw": "timber, peat deposits, small quantities of oil and natural gas, granite, dolomitic limestone, marl, chalk, sand, gravel, clay",
+      "sourcePath": "europe/bo.json"
+    },
+    "BZ": {
+      "raw": "arable land potential, timber, fish, hydropower",
+      "sourcePath": "central-america-n-caribbean/bh.json"
+    },
+    "CA": {
+      "raw": "bauxite, iron ore, nickel, zinc, copper, gold, lead, uranium, rare earth elements, molybdenum, potash, diamonds, silver, fish, timber, wildlife, coal, petroleum, natural gas, hydropower",
+      "sourcePath": "north-america/ca.json"
+    },
+    "CD": {
+      "raw": "cobalt, copper, niobium, tantalum, petroleum, industrial and gem diamonds, gold, silver, zinc, manganese, tin, uranium, coal, hydropower, timber",
+      "sourcePath": "africa/cg.json"
+    },
+    "CF": {
+      "raw": "diamonds, uranium, timber, gold, oil, hydropower",
+      "sourcePath": "africa/ct.json"
+    },
+    "CG": {
+      "raw": "petroleum, timber, potash, lead, zinc, uranium, copper, phosphates, gold, magnesium, natural gas, hydropower",
+      "sourcePath": "africa/cf.json"
+    },
+    "CH": {
+      "raw": "hydropower potential, timber, salt",
+      "sourcePath": "europe/sz.json"
+    },
+    "CI": {
+      "raw": "petroleum, natural gas, diamonds, manganese, iron ore, cobalt, bauxite, copper, gold, nickel, tantalum, silica sand, clay, cocoa beans, coffee, palm oil, hydropower",
+      "sourcePath": "africa/iv.json"
+    },
+    "CL": {
+      "raw": "copper, timber, iron ore, nitrates, precious metals, molybdenum, hydropower",
+      "sourcePath": "south-america/ci.json"
+    },
+    "CM": {
+      "raw": "petroleum, bauxite, iron ore, timber, hydropower",
+      "sourcePath": "africa/cm.json"
+    },
+    "CN": {
+      "raw": "coal, iron ore, helium, petroleum, natural gas, arsenic, bismuth, cobalt, cadmium, ferrosilicon, gallium, germanium, hafnium, indium, lithium, mercury, tantalum, tellurium, tin, titanium, tungsten, antimony, manganese, magnesium, molybdenum, selenium, strontium, vanadium, magnetite, aluminum, lead, zinc, rare earth elements, uranium, hydropower potential (world's largest), arable land",
+      "sourcePath": "east-n-southeast-asia/ch.json"
+    },
+    "CO": {
+      "raw": "petroleum, natural gas, coal, iron ore, nickel, gold, copper, emeralds, hydropower",
+      "sourcePath": "south-america/co.json"
+    },
+    "CR": {
+      "raw": "hydropower",
+      "sourcePath": "central-america-n-caribbean/cs.json"
+    },
+    "CU": {
+      "raw": "cobalt, nickel, iron ore, chromium, copper, salt, timber, silica, petroleum, arable land",
+      "sourcePath": "central-america-n-caribbean/cu.json"
+    },
+    "CV": {
+      "raw": "salt, basalt rock, limestone, kaolin, fish, clay, gypsum",
+      "sourcePath": "africa/cv.json"
+    },
+    "CY": {
+      "raw": "copper, pyrites, asbestos, gypsum, timber, salt, marble, clay earth pigment",
+      "sourcePath": "europe/cy.json"
+    },
+    "CZ": {
+      "raw": "hard coal, soft coal, kaolin, clay, graphite, timber, arable land",
+      "sourcePath": "europe/ez.json"
+    },
+    "DE": {
+      "raw": "coal, lignite, natural gas, iron ore, copper, nickel, uranium, potash, salt, construction materials, timber, arable land",
+      "sourcePath": "europe/gm.json"
+    },
+    "DJ": {
+      "raw": "potential geothermal power, gold, clay, granite, limestone, marble, salt, diatomite, gypsum, pumice, petroleum",
+      "sourcePath": "africa/dj.json"
+    },
+    "DK": {
+      "raw": "petroleum, natural gas, fish, arable land, salt, limestone, chalk, stone, gravel and sand",
+      "sourcePath": "europe/da.json"
+    },
+    "DM": {
+      "raw": "timber, hydropower, arable land",
+      "sourcePath": "central-america-n-caribbean/do.json"
+    },
+    "DO": {
+      "raw": "nickel, bauxite, gold, silver, arable land",
+      "sourcePath": "central-america-n-caribbean/dr.json"
+    },
+    "DZ": {
+      "raw": "petroleum, natural gas, iron ore, phosphates, uranium, lead, zinc",
+      "sourcePath": "africa/ag.json"
+    },
+    "EC": {
+      "raw": "petroleum, fish, timber, hydropower",
+      "sourcePath": "south-america/ec.json"
+    },
+    "EE": {
+      "raw": "oil shale, peat, rare earth elements, phosphorite, clay, limestone, sand, dolomite, arable land, sea mud",
+      "sourcePath": "europe/en.json"
+    },
+    "EG": {
+      "raw": "petroleum, natural gas, iron ore, phosphates, manganese, limestone, gypsum, talc, asbestos, lead, rare earth elements, zinc",
+      "sourcePath": "africa/eg.json"
+    },
+    "ER": {
+      "raw": "gold, potash, zinc, copper, salt, possibly oil and natural gas, fish",
+      "sourcePath": "africa/er.json"
+    },
+    "ES": {
+      "raw": "coal, lignite, iron ore, copper, lead, zinc, uranium, tungsten, mercury, pyrites, magnesite, fluorspar, gypsum, sepiolite, kaolin, potash, hydropower, arable land",
+      "sourcePath": "europe/sp.json"
+    },
+    "ET": {
+      "raw": "small reserves of gold, platinum, copper, potash, natural gas, hydropower",
+      "sourcePath": "africa/et.json"
+    },
+    "FI": {
+      "raw": "timber, iron ore, copper, lead, zinc, chromite, nickel, gold, silver, limestone",
+      "sourcePath": "europe/fi.json"
+    },
+    "FJ": {
+      "raw": "timber, fish, gold, copper, offshore oil potential, hydropower",
+      "sourcePath": "australia-oceania/fj.json"
+    },
+    "FM": {
+      "raw": "timber, marine products, deep-seabed minerals, phosphate",
+      "sourcePath": "australia-oceania/fm.json"
+    },
+    "FR": {
+      "raw": "<em>metropolitan France:</em> coal, iron ore, bauxite, zinc, uranium, antimony, arsenic, potash, feldspar, fluorspar, gypsum, timber, arable land, fish; <em>French Guiana</em><em>:</em> gold deposits, petroleum, kaolin, niobium, tantalum, clay",
+      "sourcePath": "europe/fr.json"
+    },
+    "GA": {
+      "raw": "petroleum, natural gas, diamond, niobium, manganese, uranium, gold, timber, iron ore, hydropower",
+      "sourcePath": "africa/gb.json"
+    },
+    "GB": {
+      "raw": "coal, petroleum, natural gas, iron ore, lead, zinc, gold, tin, limestone, salt, clay, chalk, gypsum, potash, silica sand, slate, arable land",
+      "sourcePath": "europe/uk.json"
+    },
+    "GD": {
+      "raw": "timber, tropical fruit",
+      "sourcePath": "central-america-n-caribbean/gj.json"
+    },
+    "GE": {
+      "raw": "timber, hydropower, manganese deposits, iron ore, copper, minor coal and oil deposits; coastal climate and soils allow for important tea and citrus growth",
+      "sourcePath": "central-asia/gg.json"
+    },
+    "GH": {
+      "raw": "gold, timber, industrial diamonds, bauxite, manganese, fish, rubber, hydropower, petroleum, silver, salt, limestone",
+      "sourcePath": "africa/gh.json"
+    },
+    "GM": {
+      "raw": "fish, clay, silica sand, titanium (rutile and ilmenite), tin, zircon",
+      "sourcePath": "africa/ga.json"
+    },
+    "GN": {
+      "raw": "bauxite, iron ore, diamonds, gold, uranium, hydropower, fish, salt",
+      "sourcePath": "africa/gv.json"
+    },
+    "GQ": {
+      "raw": "petroleum, natural gas, timber, gold, bauxite, diamonds, tantalum, sand and gravel, clay",
+      "sourcePath": "africa/ek.json"
+    },
+    "GR": {
+      "raw": "lignite, petroleum, iron ore, bauxite, lead, zinc, nickel, magnesite, marble, salt, hydropower potential",
+      "sourcePath": "europe/gr.json"
+    },
+    "GT": {
+      "raw": "petroleum, nickel, rare woods, fish, chicle, hydropower",
+      "sourcePath": "central-america-n-caribbean/gt.json"
+    },
+    "GW": {
+      "raw": "fish, timber, phosphates, bauxite, clay, granite, limestone, unexploited deposits of petroleum",
+      "sourcePath": "africa/pu.json"
+    },
+    "GY": {
+      "raw": "bauxite, gold, diamonds, hardwood timber, shrimp, fish",
+      "sourcePath": "south-america/gy.json"
+    },
+    "HN": {
+      "raw": "timber, gold, silver, copper, lead, zinc, iron ore, antimony, coal, fish, hydropower",
+      "sourcePath": "central-america-n-caribbean/ho.json"
+    },
+    "HR": {
+      "raw": "oil, some coal, bauxite, low-grade iron ore, calcium, gypsum, natural asphalt, silica, mica, clays, salt, hydropower",
+      "sourcePath": "europe/hr.json"
+    },
+    "HT": {
+      "raw": "bauxite, copper, calcium carbonate, gold, marble, hydropower, arable land",
+      "sourcePath": "central-america-n-caribbean/ha.json"
+    },
+    "HU": {
+      "raw": "bauxite, coal, natural gas, fertile soils, arable land",
+      "sourcePath": "europe/hu.json"
+    },
+    "ID": {
+      "raw": "petroleum, tin, natural gas, nickel, timber, bauxite, copper, fertile soils, coal, gold, silver",
+      "sourcePath": "east-n-southeast-asia/id.json"
+    },
+    "IE": {
+      "raw": "natural gas, peat, copper, lead, zinc, silver, barite, gypsum, limestone, dolomite",
+      "sourcePath": "europe/ei.json"
+    },
+    "IL": {
+      "raw": "timber, potash, copper ore, natural gas, phosphate rock, magnesium bromide, clays, sand",
+      "sourcePath": "middle-east/is.json"
+    },
+    "IN": {
+      "raw": "coal (fourth-largest reserves in the world), antimony, iron ore, lead, manganese, mica, bauxite, rare earth elements, titanium ore, chromite, natural gas, diamonds, petroleum, limestone, arable land",
+      "sourcePath": "south-asia/in.json"
+    },
+    "IQ": {
+      "raw": "petroleum, natural gas, phosphates, sulfur",
+      "sourcePath": "middle-east/iz.json"
+    },
+    "IR": {
+      "raw": "petroleum, natural gas, coal, chromium, copper, iron ore, lead, manganese, zinc, sulfur",
+      "sourcePath": "middle-east/ir.json"
+    },
+    "IS": {
+      "raw": "fish, hydropower, geothermal power, diatomite",
+      "sourcePath": "europe/ic.json"
+    },
+    "IT": {
+      "raw": "coal, antimony, mercury, zinc, potash, marble, barite, asbestos, pumice, fluorspar, feldspar, pyrite (sulfur), natural gas and crude oil reserves, fish, arable land",
+      "sourcePath": "europe/it.json"
+    },
+    "JM": {
+      "raw": "bauxite, alumina, gypsum, limestone",
+      "sourcePath": "central-america-n-caribbean/jm.json"
+    },
+    "JO": {
+      "raw": "phosphates, potash, shale oil",
+      "sourcePath": "middle-east/jo.json"
+    },
+    "JP": {
+      "raw": "negligible mineral resources, fish",
+      "sourcePath": "east-n-southeast-asia/ja.json"
+    },
+    "KE": {
+      "raw": "limestone, soda ash, salt, gemstones, fluorspar, zinc, diatomite, gypsum, wildlife, hydropower",
+      "sourcePath": "africa/ke.json"
+    },
+    "KG": {
+      "raw": "abundant hydropower; gold, rare earth metals; locally exploitable coal, oil, and natural gas; other deposits of nepheline, mercury, bismuth, lead, and zinc",
+      "sourcePath": "central-asia/kg.json"
+    },
+    "KH": {
+      "raw": "oil and gas, timber, gemstones, iron ore, manganese, phosphates, hydropower potential, arable land",
+      "sourcePath": "east-n-southeast-asia/cb.json"
+    },
+    "KI": {
+      "raw": "phosphate (production discontinued in 1979), coconuts (copra), fish",
+      "sourcePath": "australia-oceania/kr.json"
+    },
+    "KM": { "raw": "fish", "sourcePath": "africa/cn.json" },
+    "KN": {
+      "raw": "arable land",
+      "sourcePath": "central-america-n-caribbean/sc.json"
+    },
+    "KP": {
+      "raw": "coal, iron ore, limestone, magnesite, graphite, copper, zinc, lead, precious metals, hydropower",
+      "sourcePath": "east-n-southeast-asia/kn.json"
+    },
+    "KR": {
+      "raw": "coal, tungsten, graphite, molybdenum, lead, hydropower potential",
+      "sourcePath": "east-n-southeast-asia/ks.json"
+    },
+    "KW": {
+      "raw": "petroleum, fish, shrimp, natural gas",
+      "sourcePath": "middle-east/ku.json"
+    },
+    "KZ": {
+      "raw": "major deposits of petroleum, natural gas, coal, iron ore, manganese, chrome ore, nickel, cobalt, copper, molybdenum, lead, zinc, bauxite, gold, uranium",
+      "sourcePath": "central-asia/kz.json"
+    },
+    "LA": {
+      "raw": "timber, hydropower, gypsum, tin, gold, gemstones",
+      "sourcePath": "east-n-southeast-asia/la.json"
+    },
+    "LB": {
+      "raw": "limestone, iron ore, salt, water-surplus state in a water-deficit region, arable land",
+      "sourcePath": "middle-east/le.json"
+    },
+    "LC": {
+      "raw": "forests, sandy beaches, minerals (pumice), mineral springs, geothermal potential",
+      "sourcePath": "central-america-n-caribbean/st.json"
+    },
+    "LI": {
+      "raw": "hydroelectric potential, arable land",
+      "sourcePath": "europe/ls.json"
+    },
+    "LK": {
+      "raw": "limestone, graphite, mineral sands, gems, phosphates, clay, hydropower, arable land",
+      "sourcePath": "south-asia/ce.json"
+    },
+    "LR": {
+      "raw": "iron ore, timber, diamonds, gold, hydropower",
+      "sourcePath": "africa/li.json"
+    },
+    "LS": {
+      "raw": "water, agricultural and grazing land, diamonds, sand, clay, building stone",
+      "sourcePath": "africa/lt.json"
+    },
+    "LT": { "raw": "peat, arable land, amber", "sourcePath": "europe/lh.json" },
+    "LU": {
+      "raw": "iron ore (no longer exploited), arable land",
+      "sourcePath": "europe/lu.json"
+    },
+    "LV": {
+      "raw": "peat, limestone, dolomite, amber, hydropower, timber, arable land",
+      "sourcePath": "europe/lg.json"
+    },
+    "LY": {
+      "raw": "petroleum, natural gas, gypsum",
+      "sourcePath": "africa/ly.json"
+    },
+    "MA": {
+      "raw": "phosphates, iron ore, manganese, lead, zinc, fish, salt",
+      "sourcePath": "africa/mo.json"
+    },
+    "MC": { "raw": "none", "sourcePath": "europe/mn.json" },
+    "MD": {
+      "raw": "lignite, phosphorites, gypsum, limestone, arable land",
+      "sourcePath": "europe/md.json"
+    },
+    "ME": {
+      "raw": "bauxite, hydroelectricity",
+      "sourcePath": "europe/mj.json"
+    },
+    "MG": {
+      "raw": "graphite, chromite, coal, bauxite, rare earth elements, salt, quartz, tar sands, semiprecious stones, mica, fish, hydropower",
+      "sourcePath": "africa/ma.json"
+    },
+    "MH": {
+      "raw": "coconut products, marine products, deep seabed minerals",
+      "sourcePath": "australia-oceania/rm.json"
+    },
+    "MK": {
+      "raw": "low-grade iron ore, copper, lead, zinc, chromite, manganese, nickel, tungsten, gold, silver, asbestos, gypsum, timber, arable land",
+      "sourcePath": "europe/mk.json"
+    },
+    "ML": {
+      "raw": "gold, phosphates, kaolin, salt, limestone, uranium, gypsum, granite, hydropower",
+      "sourcePath": "africa/ml.json"
+    },
+    "MM": {
+      "raw": "petroleum, timber, tin, antimony, zinc, copper, tungsten, lead, coal, marble, limestone, precious stones, natural gas, hydropower, arable land",
+      "sourcePath": "east-n-southeast-asia/bm.json"
+    },
+    "MN": {
+      "raw": "oil, coal, copper, molybdenum, tungsten, phosphates, tin, nickel, zinc, fluorspar, gold, silver, iron",
+      "sourcePath": "east-n-southeast-asia/mg.json"
+    },
+    "MR": {
+      "raw": "iron ore, gypsum, copper, phosphate, diamonds, gold, oil, fish",
+      "sourcePath": "africa/mr.json"
+    },
+    "MT": {
+      "raw": "limestone, salt, arable land",
+      "sourcePath": "europe/mt.json"
+    },
+    "MU": { "raw": "arable land, fish", "sourcePath": "africa/mp.json" },
+    "MV": { "raw": "fish", "sourcePath": "south-asia/mv.json" },
+    "MW": {
+      "raw": "limestone, arable land, hydropower, unexploited deposits of uranium, coal, and bauxite",
+      "sourcePath": "africa/mi.json"
+    },
+    "MX": {
+      "raw": "petroleum, silver, antimony, copper, gold, lead, zinc, natural gas, timber",
+      "sourcePath": "north-america/mx.json"
+    },
+    "MY": {
+      "raw": "tin, petroleum, timber, copper, iron ore, natural gas, bauxite",
+      "sourcePath": "east-n-southeast-asia/my.json"
+    },
+    "MZ": {
+      "raw": "coal, titanium, natural gas, hydropower, tantalum, graphite",
+      "sourcePath": "africa/mz.json"
+    },
+    "NA": {
+      "raw": "diamonds, copper, uranium, gold, silver, lead, tin, lithium, cadmium, tungsten, zinc, salt, hydropower, fish",
+      "sourcePath": "africa/wa.json"
+    },
+    "NE": {
+      "raw": "uranium, coal, iron ore, tin, phosphates, gold, molybdenum, gypsum, salt, petroleum",
+      "sourcePath": "africa/ng.json"
+    },
+    "NG": {
+      "raw": "natural gas, petroleum, tin, iron ore, coal, limestone, niobium, lead, zinc, arable land",
+      "sourcePath": "africa/ni.json"
+    },
+    "NI": {
+      "raw": "gold, silver, copper, tungsten, lead, zinc, timber, fish",
+      "sourcePath": "central-america-n-caribbean/nu.json"
+    },
+    "NL": {
+      "raw": "natural gas, petroleum, peat, limestone, salt, sand and gravel, arable land",
+      "sourcePath": "europe/nl.json"
+    },
+    "NO": {
+      "raw": "petroleum, natural gas, iron ore, copper, lead, zinc, titanium, pyrites, nickel, fish, timber, hydropower",
+      "sourcePath": "europe/no.json"
+    },
+    "NP": {
+      "raw": "quartz, water, timber, hydropower, scenic beauty, small deposits of lignite, copper, cobalt, iron ore",
+      "sourcePath": "south-asia/np.json"
+    },
+    "NR": {
+      "raw": "phosphates, fish",
+      "sourcePath": "australia-oceania/nr.json"
+    },
+    "NZ": {
+      "raw": "natural gas, iron ore, sand, coal, timber, hydropower, gold, limestone",
+      "sourcePath": "australia-oceania/nz.json"
+    },
+    "OM": {
+      "raw": "petroleum, copper, asbestos, some marble, limestone, chromium, gypsum, natural gas",
+      "sourcePath": "middle-east/mu.json"
+    },
+    "PA": {
+      "raw": "copper, mahogany forests, shrimp, hydropower",
+      "sourcePath": "central-america-n-caribbean/pm.json"
+    },
+    "PE": {
+      "raw": "copper, silver, gold, petroleum, timber, fish, iron ore, coal, phosphate, potash, hydropower, natural gas",
+      "sourcePath": "south-america/pe.json"
+    },
+    "PG": {
+      "raw": "gold, copper, silver, natural gas, timber, oil, fisheries",
+      "sourcePath": "east-n-southeast-asia/pp.json"
+    },
+    "PH": {
+      "raw": "timber, petroleum, nickel, cobalt, silver, gold, salt, copper",
+      "sourcePath": "east-n-southeast-asia/rp.json"
+    },
+    "PK": {
+      "raw": "arable land, extensive natural gas reserves, limited petroleum, poor quality coal, iron ore, copper, salt, limestone",
+      "sourcePath": "south-asia/pk.json"
+    },
+    "PL": {
+      "raw": "coal, sulfur, copper, natural gas, silver, lead, salt, amber, arable land",
+      "sourcePath": "europe/pl.json"
+    },
+    "PS": { "raw": "arable land", "sourcePath": "middle-east/we.json" },
+    "PT": {
+      "raw": "fish, forests (cork), iron ore, copper, zinc, tin, tungsten, silver, gold, uranium, marble, clay, gypsum, salt, arable land, hydropower",
+      "sourcePath": "europe/po.json"
+    },
+    "PW": {
+      "raw": "forests, minerals (especially gold), marine products, deep-seabed minerals",
+      "sourcePath": "australia-oceania/ps.json"
+    },
+    "PY": {
+      "raw": "hydropower, timber, iron ore, manganese, limestone",
+      "sourcePath": "south-america/pa.json"
+    },
+    "QA": {
+      "raw": "petroleum, fish, natural gas",
+      "sourcePath": "middle-east/qa.json"
+    },
+    "RO": {
+      "raw": "petroleum (reserves declining), timber, natural gas, coal, iron ore, salt, arable land, hydropower",
+      "sourcePath": "europe/ro.json"
+    },
+    "RS": {
+      "raw": "oil, gas, coal, iron ore, copper, zinc, antimony, chromite, gold, silver, magnesium, pyrite, limestone, marble, salt, arable land",
+      "sourcePath": "europe/ri.json"
+    },
+    "RU": {
+      "raw": "wide natural-resource base including major deposits of oil, natural gas, coal, and many strategic minerals, bauxite, reserves of rare earth elements, timber",
+      "sourcePath": "central-asia/rs.json"
+    },
+    "RW": {
+      "raw": "gold, cassiterite (tin ore), wolframite (tungsten ore), methane, hydropower, arable land",
+      "sourcePath": "africa/rw.json"
+    },
+    "SA": {
+      "raw": "petroleum, natural gas, iron ore, gold, copper",
+      "sourcePath": "middle-east/sa.json"
+    },
+    "SB": {
+      "raw": "fish, forests, gold, bauxite, phosphates, lead, zinc, nickel",
+      "sourcePath": "australia-oceania/bp.json"
+    },
+    "SC": {
+      "raw": "fish, coconuts (copra), cinnamon trees",
+      "sourcePath": "africa/se.json"
+    },
+    "SD": {
+      "raw": "petroleum; small reserves of iron ore, copper, chromium ore, zinc, tungsten, mica, silver, gold; hydropower",
+      "sourcePath": "africa/su.json"
+    },
+    "SE": {
+      "raw": "iron ore, copper, lead, zinc, gold, silver, tungsten, uranium, arsenic, feldspar, timber, hydropower",
+      "sourcePath": "europe/sw.json"
+    },
+    "SG": {
+      "raw": "fish, deepwater ports",
+      "sourcePath": "east-n-southeast-asia/sn.json"
+    },
+    "SI": {
+      "raw": "lignite, lead, zinc, building stone, hydropower, forests",
+      "sourcePath": "europe/si.json"
+    },
+    "SK": {
+      "raw": "lignite, small amounts of iron ore, copper and manganese ore; salt; arable land",
+      "sourcePath": "europe/lo.json"
+    },
+    "SL": {
+      "raw": "diamonds, titanium ore, bauxite, iron ore, gold, chromite",
+      "sourcePath": "africa/sl.json"
+    },
+    "SM": { "raw": "building stone", "sourcePath": "europe/sm.json" },
+    "SN": {
+      "raw": "fish, phosphates, iron ore",
+      "sourcePath": "africa/sg.json"
+    },
+    "SO": {
+      "raw": "uranium and largely unexploited reserves of iron ore, tin, gypsum, bauxite, copper, salt, natural gas, likely oil reserves",
+      "sourcePath": "africa/so.json"
+    },
+    "SR": {
+      "raw": "timber, hydropower, fish, kaolin, shrimp, bauxite, gold, and small amounts of nickel, copper, platinum, iron ore",
+      "sourcePath": "south-america/ns.json"
+    },
+    "SS": {
+      "raw": "hydropower, fertile agricultural land, gold, diamonds, petroleum, hardwoods, limestone, iron ore, copper, chromium ore, zinc, tungsten, mica, silver",
+      "sourcePath": "africa/od.json"
+    },
+    "ST": { "raw": "fish, hydropower", "sourcePath": "africa/tp.json" },
+    "SV": {
+      "raw": "hydropower, geothermal power, petroleum, arable land",
+      "sourcePath": "central-america-n-caribbean/es.json"
+    },
+    "SY": {
+      "raw": "petroleum, phosphates, chrome and manganese ores, asphalt, iron ore, rock salt, marble, gypsum, hydropower",
+      "sourcePath": "middle-east/sy.json"
+    },
+    "SZ": {
+      "raw": "asbestos, coal, clay, cassiterite, hydropower, forests, small gold and diamond deposits, quarry stone, and talc",
+      "sourcePath": "africa/wz.json"
+    },
+    "TD": {
+      "raw": "petroleum, uranium, natron, kaolin, fish (Lake Chad), gold, limestone, sand and gravel, salt",
+      "sourcePath": "africa/cd.json"
+    },
+    "TG": {
+      "raw": "phosphates, limestone, marble, arable land",
+      "sourcePath": "africa/to.json"
+    },
+    "TH": {
+      "raw": "tin, rubber, natural gas, tungsten, tantalum, timber, lead, fish, gypsum, lignite, fluorite, arable land",
+      "sourcePath": "east-n-southeast-asia/th.json"
+    },
+    "TJ": {
+      "raw": "hydropower, some petroleum, uranium, mercury, brown coal, lead, zinc, antimony, tungsten, silver, gold",
+      "sourcePath": "central-asia/ti.json"
+    },
+    "TL": {
+      "raw": "gold, petroleum, natural gas, manganese, marble",
+      "sourcePath": "east-n-southeast-asia/tt.json"
+    },
+    "TM": {
+      "raw": "petroleum, natural gas, sulfur, salt",
+      "sourcePath": "central-asia/tx.json"
+    },
+    "TN": {
+      "raw": "petroleum, phosphates, iron ore, lead, zinc, salt",
+      "sourcePath": "africa/ts.json"
+    },
+    "TO": {
+      "raw": "arable land, fish",
+      "sourcePath": "australia-oceania/tn.json"
+    },
+    "TR": {
+      "raw": "coal, iron ore, copper, chromium, antimony, mercury, gold, barite, borate, celestite (strontium), emery, feldspar, limestone, magnesite, marble, perlite, pumice, pyrites (sulfur), clay, arable land, hydropower",
+      "sourcePath": "middle-east/tu.json"
+    },
+    "TT": {
+      "raw": "petroleum, natural gas, asphalt",
+      "sourcePath": "central-america-n-caribbean/td.json"
+    },
+    "TV": {
+      "raw": "fish, coconut (copra)",
+      "sourcePath": "australia-oceania/tv.json"
+    },
+    "TZ": {
+      "raw": "hydropower, tin, phosphates, iron ore, coal, diamonds, gemstones (including tanzanite, found only in Tanzania), gold, natural gas, nickel",
+      "sourcePath": "africa/tz.json"
+    },
+    "UA": {
+      "raw": "iron ore, coal, manganese, natural gas, oil, salt, sulfur, graphite, titanium, magnesium, kaolin, nickel, mercury, timber, arable land",
+      "sourcePath": "europe/up.json"
+    },
+    "UG": {
+      "raw": "copper, cobalt, hydropower, limestone, salt, arable land, gold",
+      "sourcePath": "africa/ug.json"
+    },
+    "US": {
+      "raw": "coal, copper, lead, molybdenum, phosphates, rare earth elements, uranium, bauxite, gold, iron, mercury, nickel, potash, silver, tungsten, zinc, petroleum, natural gas, timber, arable land",
+      "sourcePath": "north-america/us.json"
+    },
+    "UY": {
+      "raw": "arable land, hydropower, minor minerals, fish",
+      "sourcePath": "south-america/uy.json"
+    },
+    "UZ": {
+      "raw": "natural gas, petroleum, coal, gold, uranium, silver, copper, lead and zinc, tungsten, molybdenum",
+      "sourcePath": "central-asia/uz.json"
+    },
+    "VA": { "raw": "none", "sourcePath": "europe/vt.json" },
+    "VC": {
+      "raw": "hydropower, arable land",
+      "sourcePath": "central-america-n-caribbean/vc.json"
+    },
+    "VE": {
+      "raw": "petroleum, natural gas, iron ore, gold, bauxite, other minerals, hydropower, diamonds",
+      "sourcePath": "south-america/ve.json"
+    },
+    "VN": {
+      "raw": "antimony, phosphates, coal, manganese, rare earth elements, bauxite, chromate, offshore oil and gas deposits, timber, hydropower, arable land",
+      "sourcePath": "east-n-southeast-asia/vm.json"
+    },
+    "VU": {
+      "raw": "manganese, hardwood forests, fish",
+      "sourcePath": "australia-oceania/nh.json"
+    },
+    "WS": {
+      "raw": "hardwood forests, fish, hydropower",
+      "sourcePath": "australia-oceania/ws.json"
+    },
+    "YE": {
+      "raw": "petroleum, fish, rock salt, marble; small deposits of coal, gold, lead, nickel, and copper; fertile soil in west",
+      "sourcePath": "middle-east/ym.json"
+    },
+    "ZA": {
+      "raw": "gold, chromium, antimony, coal, iron ore, manganese, nickel, phosphates, tin, rare earth elements, uranium, gem diamonds, platinum, copper, vanadium, salt, natural gas",
+      "sourcePath": "africa/sf.json"
+    },
+    "ZM": {
+      "raw": "copper, cobalt, zinc, lead, coal, emeralds, gold, silver, uranium, hydropower",
+      "sourcePath": "africa/za.json"
+    },
+    "ZW": {
+      "raw": "coal, chromium ore, asbestos, gold, nickel, copper, iron ore, vanadium, lithium, tin, platinum group metals",
+      "sourcePath": "africa/zi.json"
+    }
+  }
+}

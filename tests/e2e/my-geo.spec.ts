@@ -3767,7 +3767,9 @@ test('searches China and opens the featured knowledge card', async ({
     '/flags/cn.svg',
   )
   await expect(card.getByText('大熊猫', { exact: true })).toBeVisible()
-  await expect(card.getByText('阶梯地形', { exact: true })).toBeVisible()
+  await expect(card.getByText('珠穆朗玛峰', { exact: true })).toBeVisible()
+  await expect(card.getByText('长城', { exact: true })).toBeVisible()
+  await expect(card.getByText('故宫', { exact: true })).toBeVisible()
   await expect(card.getByText('国家名片')).toHaveCount(0)
   await expect(card.getByRole('button', { name: /民族文化/ })).toHaveAttribute(
     'aria-expanded',
@@ -3780,6 +3782,36 @@ test('searches China and opens the featured knowledge card', async ({
   await expect(card.getByText('中国香港')).toBeVisible()
   await expect(card.getByText('中国澳门')).toBeVisible()
   await expect(card.getByText(/大熊猫主要生活/)).toHaveCount(0)
+})
+
+test('wraps every reviewed signature label without a display limit', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 568, height: 320 })
+  await page.goto('/explore?country=AU')
+
+  const card = page.getByLabel('澳大利亚国家知识卡')
+  const labels = card.locator('.knowledge-country-signature-labels li')
+  await expect(labels).toHaveText([
+    '袋鼠',
+    '考拉',
+    '鸭嘴兽',
+    '大堡礁',
+    '悉尼歌剧院',
+  ])
+  const rows = await labels.evaluateAll(
+    (items) =>
+      new Set(items.map((item) => Math.round(item.getBoundingClientRect().top)))
+        .size,
+  )
+  expect(rows).toBeGreaterThan(1)
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(0)
 })
 
 test('resets the globe view to China', async ({ page }) => {
