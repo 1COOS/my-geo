@@ -305,6 +305,16 @@ export const countrySources: CountrySource[] = [
     license: 'Creative Commons Attribution 4.0 International (CC BY 4.0)',
   },
   {
+    id: 'cia-world-factbook',
+    name: 'The World Factbook country profiles',
+    publisher: 'U.S. Central Intelligence Agency / factbook.json mirror',
+    version: 'factbook.json c8cfe21cd019d7748a6b0d57a75d6a77f5ec6ac6',
+    accessedAt: '2026-08-31',
+    url: 'https://github.com/factbook/factbook.json/tree/c8cfe21cd019d7748a6b0d57a75d6a77f5ec6ac6',
+    license:
+      'U.S. Government public-domain source data; repository-authored Chinese summaries',
+  },
+  {
     id: 'vatican-population',
     name: 'Vatican City population statistics',
     publisher: 'Governorate of Vatican City State',

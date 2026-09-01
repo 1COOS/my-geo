@@ -157,6 +157,9 @@ async function writeFormattedJson(filePath: string, value: unknown) {
 const citySource = await readJson<CitySource[]>(
   path.join(projectRoot, 'node_modules/world-cities-json/data/cities.json'),
 )
+const countryProfileContent = await readJson<
+  Record<string, Country['profile']>
+>(path.join(projectRoot, 'scripts/country-profile-content.json'))
 
 const topology = await readJson<
   Topology<{ countries: GeometryCollection<Record<string, unknown>> }>
@@ -265,6 +268,10 @@ const countries: Country[] = sourceCountries.map((country) => {
   if (!population) {
     throw new Error(`Missing reviewed population for ${country.cca2}`)
   }
+  const profile = countryProfileContent[country.cca2]
+  if (!profile) {
+    throw new Error(`Missing country profile for ${country.cca2}`)
+  }
 
   const borderCountryCodes = country.borders.flatMap((borderCode) => {
     const countryCode = sovereignCountryCodesByAlpha3.get(borderCode)
@@ -358,6 +365,7 @@ const countries: Country[] = sourceCountries.map((country) => {
     adjacentRegions,
     flagAsset: `/flags/${country.cca2.toLowerCase()}.svg`,
     hasGeometry: availableGeometryCodes.has(country.ccn3.padStart(3, '0')),
+    profile,
   }
 
   for (const capital of baseCountry.capitals) {

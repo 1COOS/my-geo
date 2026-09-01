@@ -48,6 +48,71 @@ export const countryHighlightSchema = z.object({
   sourceIds: z.array(z.string().min(1)).min(1),
 })
 
+const sourcedCountryProfileSectionSchema = z.object({
+  summary: z.string().min(1),
+  keywords: z.array(z.string().min(1)).min(1).max(3),
+  sourceIds: z.array(z.string().min(1)).min(1),
+})
+
+export const countryResourceProfileSchema =
+  sourcedCountryProfileSectionSchema.extend({
+    groups: z
+      .array(
+        z.object({
+          label: z.string().min(1),
+          items: z.array(z.string().min(1)).min(1).max(7),
+        }),
+      )
+      .min(1)
+      .max(3),
+  })
+
+export const countryDemographicItemSchema = z
+  .object({
+    name: z.string().min(1),
+    sharePercent: z.number().min(0).max(100).optional(),
+    estimateYear: z.number().int().min(1900).max(2100).optional(),
+  })
+  .refine(
+    (item) =>
+      (item.sharePercent === undefined) === (item.estimateYear === undefined),
+    { message: 'Demographic share and estimate year must appear together' },
+  )
+
+export const countryPeopleProfileSchema =
+  sourcedCountryProfileSectionSchema.extend({
+    ethnicGroups: z.array(countryDemographicItemSchema).min(1).max(6),
+    religions: z.array(countryDemographicItemSchema).min(1).max(6),
+  })
+
+export const countryEconomyProfileSchema =
+  sourcedCountryProfileSectionSchema.extend({
+    agriculture: z.array(z.string().min(1)).min(1).max(5),
+    industry: z.array(z.string().min(1)).min(1).max(5),
+    tourism: z.array(z.string().min(1)).min(1).max(3),
+  })
+
+export const countrySignatureItemSchema = z.object({
+  kind: z.enum([
+    'nature',
+    'geography',
+    'landmark',
+    'product',
+    'engineering',
+    'achievement',
+  ]),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  sourceIds: z.array(z.string().min(1)).min(1),
+})
+
+export const countryProfileSchema = z.object({
+  resources: countryResourceProfileSchema,
+  people: countryPeopleProfileSchema,
+  economy: countryEconomyProfileSchema,
+  signature: z.array(countrySignatureItemSchema).min(3).max(5).optional(),
+})
+
 const countryBaseSchema = z.object({
   code: countryCodeSchema,
   alpha3Code: countryAlpha3CodeSchema,
@@ -69,6 +134,7 @@ const countryBaseSchema = z.object({
   adjacentRegions: z.array(adjacentRegionSchema),
   flagAsset: z.string().regex(/^\/flags\/[a-z]{2}\.svg$/),
   hasGeometry: z.boolean(),
+  profile: countryProfileSchema,
 })
 
 export const basicCountrySchema = countryBaseSchema.extend({
@@ -181,6 +247,8 @@ export const countryBoundariesSchema = z.object({
 })
 
 export type Country = z.infer<typeof countrySchema>
+export type CountryProfile = z.infer<typeof countryProfileSchema>
+export type CountrySignatureItem = z.infer<typeof countrySignatureItemSchema>
 export type FeaturedCountry = z.infer<typeof featuredCountrySchema>
 export type CountrySource = z.infer<typeof countrySourceSchema>
 export type CountryBoundary = z.infer<typeof countryBoundarySchema>

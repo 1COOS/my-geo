@@ -81,6 +81,48 @@ describe('generated country catalogue', () => {
     }
   })
 
+  it('provides sourced country profiles with 50 reviewed signatures', () => {
+    const signatureCountries = countries.filter(
+      (country) => country.profile.signature,
+    )
+    expect(signatureCountries).toHaveLength(50)
+
+    for (const country of countries) {
+      expect(country.profile.resources.keywords.length).toBeGreaterThan(0)
+      expect(country.profile.resources.groups.length).toBeGreaterThan(0)
+      expect(country.profile.people.ethnicGroups.length).toBeGreaterThan(0)
+      expect(country.profile.people.religions.length).toBeGreaterThan(0)
+      expect(country.profile.economy.agriculture.length).toBeGreaterThan(0)
+      expect(country.profile.economy.industry.length).toBeGreaterThan(0)
+      expect(country.profile.economy.tourism.length).toBeGreaterThan(0)
+
+      const sourceIds = [
+        ...country.profile.resources.sourceIds,
+        ...country.profile.people.sourceIds,
+        ...country.profile.economy.sourceIds,
+        ...(country.profile.signature?.flatMap((item) => item.sourceIds) ?? []),
+      ]
+      expect(
+        sourceIds.every((sourceId) => countrySourcesById.has(sourceId)),
+      ).toBe(true)
+
+      const demographicItems = [
+        ...country.profile.people.ethnicGroups,
+        ...country.profile.people.religions,
+      ]
+      if (country.profile.signature) {
+        expect(country.profile.signature.length).toBeGreaterThanOrEqual(3)
+        expect(
+          demographicItems.some((item) => item.sharePercent !== undefined),
+        ).toBe(true)
+      } else {
+        expect(
+          demographicItems.every((item) => item.sharePercent === undefined),
+        ).toBe(true)
+      }
+    }
+  })
+
   it('separates sovereign borders from the approved adjacent regions', () => {
     const countryCodes = new Set(countries.map((country) => country.code))
     for (const country of countries) {

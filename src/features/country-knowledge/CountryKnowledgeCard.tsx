@@ -1,16 +1,19 @@
 import type { CSSProperties } from 'react'
 import { Link, useInRouterContext } from 'react-router-dom'
 
-import { countriesByCode } from '../../data/countries'
 import type { City, CitySelectionReason } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
 import { BookIcon, GlobeIcon } from '../../shared/components/AppNavigationIcons'
 import { CountryFlag } from '../../shared/components/CountryFlag'
-import { ExpandableItems } from '../../shared/components/knowledge-card/ExpandableItems'
 import {
   KnowledgeCardShell,
   type KnowledgeCardAction,
 } from '../../shared/components/knowledge-card/KnowledgeCardShell'
+
+import {
+  CountryKnowledgeSections,
+  CountrySignatureLabels,
+} from './CountryKnowledgeSections'
 
 export type CountryKnowledgeCardProps = {
   country: Country
@@ -40,8 +43,7 @@ const cityReasonLabels: Record<CitySelectionReason, string> = {
   regional_center: '区域中心',
 }
 
-type CountryFactKind =
-  'area' | 'population' | 'capital' | 'currency' | 'language'
+type CountryFactKind = 'area' | 'population' | 'capital' | 'currency'
 
 const countryFactIconPaths: Record<CountryFactKind, string[]> = {
   area: [
@@ -64,11 +66,10 @@ const countryFactIconPaths: Record<CountryFactKind, string[]> = {
     'M16 9v10',
   ],
   currency: ['M12 3v18', 'M16.5 7H9.8a3 3 0 0 0 0 6h4.4a3 3 0 0 1 0 6H7.5'],
-  language: ['M4 5h16v11H9l-5 4z', 'M8 9h8', 'M8 12h5'],
 }
 
 const summaryHeadingStyle = {
-  gap: '0.5rem',
+  gap: '0.85rem',
 } satisfies CSSProperties
 const summaryCopyStyle = { minWidth: 0, flex: 1 } satisfies CSSProperties
 const summaryEnglishLineStyle = {
@@ -89,7 +90,7 @@ const summaryOfficialNameStyle = {
   fontSize: 'var(--fs-m)',
   lineHeight: 1.35,
 } satisfies CSSProperties
-const summaryFactsStyle = { marginTop: '0.15rem' } satisfies CSSProperties
+const summaryFactsStyle = { marginTop: '0.7rem' } satisfies CSSProperties
 const summaryFlagStyle = { width: '3.8rem' } satisfies CSSProperties
 const cornerActionStyle = {
   position: 'absolute',
@@ -137,9 +138,6 @@ function countryFactStyle(kind: CountryFactKind): CSSProperties {
       kind === 'area' || kind === 'capital'
         ? '1px solid var(--atlas-border-soft)'
         : 0,
-    ...(kind === 'language'
-      ? { gridColumn: '1 / -1', minHeight: 0, borderBottom: 0 }
-      : undefined),
   }
 }
 
@@ -280,7 +278,10 @@ function CountryDetailView({
               {country.code} · {country.alpha3Code}
             </span>
           </p>
-          <small style={summaryOfficialNameStyle}>
+          <small
+            style={summaryOfficialNameStyle}
+            title={country.officialName.en}
+          >
             {country.subregion.zh} · {country.officialName.zh}
           </small>
         </div>
@@ -319,23 +320,14 @@ function CountryDetailView({
           <CountryFactKey kind="capital" label="首都" />
           <dd style={factValueStyle}>
             {country.capitals.length > 0 ? (
-              <ExpandableItems
-                key={`${country.code}:capitals`}
-                items={country.capitals}
-                previewCount={1}
-                expandLabel="首都"
-                compactCount
-                renderItems={(capitals) => (
-                  <span className="knowledge-fact-value-list">
-                    {capitals.map((capital) => (
-                      <span key={`${capital.name.en}-${capital.latitude}`}>
-                        <strong>{capital.name.zh}</strong>
-                        <small>{capital.name.en}</small>
-                      </span>
-                    ))}
+              <span className="knowledge-fact-value-list">
+                {country.capitals.map((capital) => (
+                  <span key={`${capital.name.en}-${capital.latitude}`}>
+                    <strong>{capital.name.zh}</strong>
+                    <small>{capital.name.en}</small>
                   </span>
-                )}
-              />
+                ))}
+              </span>
             ) : (
               <span className="country-detail-muted">暂无首都资料</span>
             )}
@@ -347,170 +339,29 @@ function CountryDetailView({
         >
           <CountryFactKey kind="currency" label="货币" />
           <dd style={factValueStyle}>
-            <ExpandableItems
-              key={`${country.code}:currencies`}
-              items={country.currencies}
-              previewCount={1}
-              expandLabel="货币"
-              compactCount
-              renderItems={(currencies) => (
-                <ul className="knowledge-fact-list">
-                  {currencies.map((currency) => (
-                    <li key={currency.code}>
-                      <strong>{currency.name.zh}</strong>
-                      <small>
-                        {currency.name.en} · {currency.code} · {currency.symbol}
-                      </small>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            />
-          </dd>
-        </div>
-        <div
-          className="knowledge-country-fact is-languages"
-          style={countryFactStyle('language')}
-        >
-          <CountryFactKey kind="language" label="语言" />
-          <dd style={factValueStyle}>
-            <ExpandableItems
-              key={`${country.code}:languages`}
-              items={country.languages}
-              previewCount={2}
-              expandLabel="语言"
-              compactCount
-              renderItems={(languages) => (
-                <ul className="knowledge-language-list">
-                  {languages.map((language) => (
-                    <li key={language.code}>
-                      <strong>{language.name.zh}</strong>
-                      <small>{language.name.en}</small>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            />
+            <ul className="knowledge-fact-list">
+              {country.currencies.map((currency) => (
+                <li key={currency.code}>
+                  <strong>{currency.name.zh}</strong>
+                  <small>
+                    {currency.name.en} · {currency.code} · {currency.symbol}
+                  </small>
+                </li>
+              ))}
+            </ul>
           </dd>
         </div>
       </dl>
 
-      <section className="knowledge-country-section knowledge-country-cities">
-        <h3>首都与主要城市</h3>
-        <ExpandableItems
-          key={`${country.code}:cities`}
-          items={cities}
-          previewCount={3}
-          expandLabel="主要城市"
-          renderItems={(visibleCities) => (
-            <ul className="city-list">
-              {visibleCities.map((city) => (
-                <li key={city.id}>
-                  {onSelectCity ? (
-                    <button
-                      type="button"
-                      onClick={() => onSelectCity(city.id)}
-                      aria-label={`探索城市${city.name.zh}`}
-                    >
-                      <CityRow city={city} />
-                    </button>
-                  ) : (
-                    <div className="city-list-static">
-                      <CityRow city={city} />
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        />
-      </section>
+      <CountrySignatureLabels signature={country.profile.signature} />
 
-      <section className="knowledge-country-highlights">
-        <h3>地理亮点</h3>
-        <ul>
-          {country.highlights.map((highlight) => (
-            <li key={highlight.text}>{highlight.text}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="knowledge-country-neighbours">
-        <h3>相邻国家与地区</h3>
-        {country.borderCountryCodes.length > 0 ? (
-          <div className="country-border-group">
-            <span>主权国家</span>
-            <ExpandableItems
-              key={`${country.code}:borders`}
-              items={country.borderCountryCodes}
-              previewCount={6}
-              expandLabel="相邻国家"
-              renderItems={(countryCodes) => (
-                <div className="country-border-list">
-                  {countryCodes.map((countryCode) => {
-                    const borderCountry = countriesByCode.get(countryCode)
-                    return borderCountry ? (
-                      <button
-                        type="button"
-                        key={countryCode}
-                        onClick={() => onSelectCountry(countryCode)}
-                        aria-label={`探索邻国${borderCountry.name.zh}`}
-                      >
-                        <CountryFlag src={borderCountry.flagAsset} alt="" />
-                        <span>{borderCountry.name.zh}</span>
-                      </button>
-                    ) : null
-                  })}
-                </div>
-              )}
-            />
-          </div>
-        ) : null}
-        {country.adjacentRegions.length > 0 ? (
-          <div className="country-border-group">
-            <span>相邻地区</span>
-            <div className="country-region-list">
-              {country.adjacentRegions.map((region) => (
-                <span key={region.code} title={region.name.en}>
-                  {region.name.zh}
-                  <small>地区</small>
-                </span>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        {country.borderCountryCodes.length === 0 &&
-        country.adjacentRegions.length === 0 ? (
-          <p className="country-detail-muted">没有陆地相邻国家或地区</p>
-        ) : null}
-      </section>
-
-      <section className="knowledge-country-names">
-        <h3>名称信息</h3>
-        <p
-          style={{
-            margin: 0,
-            overflowWrap: 'anywhere',
-            color: 'var(--atlas-text-secondary)',
-            lineHeight: 'var(--lh-b)',
-          }}
-        >
-          {country.officialName.en}
-        </p>
-      </section>
-    </>
-  )
-}
-
-function CityRow({ city }: { city: City }) {
-  return (
-    <>
-      <span className={city.isCapital ? 'city-dot is-capital' : 'city-dot'} />
-      <span>
-        <strong>{city.name.zh}</strong>
-        <small>{city.name.en}</small>
-      </span>
-      <em>{city.isCapital ? '首都' : '城市'}</em>
+      <CountryKnowledgeSections
+        key={country.code}
+        country={country}
+        cities={cities}
+        onSelectCountry={onSelectCountry}
+        onSelectCity={onSelectCity}
+      />
     </>
   )
 }

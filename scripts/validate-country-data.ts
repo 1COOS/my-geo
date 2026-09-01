@@ -667,6 +667,39 @@ for (const country of countries) {
       }
     }
   }
+  const isPriorityCountry = priorityCountryCodes.includes(country.code)
+  if (Boolean(country.profile.signature) !== isPriorityCountry) {
+    throw new Error(
+      `Country signature coverage mismatch for ${country.code}: expected ${isPriorityCountry}`,
+    )
+  }
+  const profileSourceIds = [
+    ...country.profile.resources.sourceIds,
+    ...country.profile.people.sourceIds,
+    ...country.profile.economy.sourceIds,
+    ...(country.profile.signature?.flatMap((item) => item.sourceIds) ?? []),
+  ]
+  for (const sourceId of profileSourceIds) {
+    if (!sourceIds.has(sourceId)) {
+      throw new Error(`Unknown profile source ${sourceId} on ${country.code}`)
+    }
+  }
+  const demographicItems = [
+    ...country.profile.people.ethnicGroups,
+    ...country.profile.people.religions,
+  ]
+  if (
+    !isPriorityCountry &&
+    demographicItems.some((item) => item.sharePercent !== undefined)
+  ) {
+    throw new Error(`Non-priority demographic share found on ${country.code}`)
+  }
+  if (
+    isPriorityCountry &&
+    !demographicItems.some((item) => item.sharePercent !== undefined)
+  ) {
+    throw new Error(`Missing priority demographic shares on ${country.code}`)
+  }
   for (const borderCode of country.borderCountryCodes) {
     if (!countryCodes.has(borderCode)) {
       throw new Error(`Unknown sovereign border ${borderCode}`)

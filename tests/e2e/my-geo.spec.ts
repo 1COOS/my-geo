@@ -812,9 +812,13 @@ test('uses the contained flag contract across learning and exploration surfaces'
   await expectFramedFlag(
     page.locator('.country-knowledge-card .knowledge-country-detail-flag'),
   )
+  await page
+    .locator('.country-knowledge-card')
+    .getByRole('button', { name: /城市邻国/ })
+    .click()
   await expectFramedFlag(
     page
-      .locator('.country-knowledge-card .country-border-list')
+      .locator('.country-knowledge-card .knowledge-country-chapter.is-places')
       .locator('.country-flag-frame')
       .first(),
   )
@@ -830,8 +834,14 @@ test('uses the contained flag contract across learning and exploration surfaces'
   await page.goto('/explore?country=CH')
   await waitForSceneOrFallback(page)
   await expectFramedFlag(page.locator('.knowledge-country-detail-flag'))
+  await page
+    .locator('.country-knowledge-card')
+    .getByRole('button', { name: /城市邻国/ })
+    .click()
   await expectFramedFlag(
-    page.locator('.country-border-list .country-flag-frame').first(),
+    page
+      .locator('.knowledge-country-chapter.is-places .country-flag-frame')
+      .first(),
   )
 
   const search = await openCountrySearch(page)
@@ -919,7 +929,7 @@ for (const viewport of [
       }
 
       return {
-        body: fontSize('.knowledge-country-highlights li'),
+        body: fontSize('.knowledge-country-chapter-trigger'),
         code: fontSize('.knowledge-country-summary-copy > p > span:last-child'),
         englishName: fontSize(
           '.knowledge-country-summary-copy > p > span:first-child',
@@ -933,12 +943,12 @@ for (const viewport of [
     expect(typography.englishName).toBe(typography.code)
     expect(typography.factLabel).toBeGreaterThanOrEqual(12)
     expect(typography.factValue).toBeGreaterThanOrEqual(13)
-    expect(typography.body).toBeGreaterThanOrEqual(14)
+    expect(typography.body).toBeGreaterThanOrEqual(12)
     await expect(knowledgeCard.getByText('次区域')).toHaveCount(0)
     await expect(knowledgeCard.getByText('Eastern Asia')).toHaveCount(0)
     await expect(
       knowledgeCard.locator('.knowledge-country-facts > div > dt'),
-    ).toHaveText(['面积', '人口', '首都', '货币', '语言'])
+    ).toHaveText(['面积', '人口', '首都', '货币'])
     await expect(knowledgeCard.getByText('2025 年')).toHaveCount(0)
     const [
       contentBox,
@@ -948,7 +958,6 @@ for (const viewport of [
       populationBox,
       capitalBox,
       currencyBox,
-      languagesBox,
       actionBox,
     ] = await Promise.all([
       knowledgeCard.locator('.knowledge-card-content').boundingBox(),
@@ -962,9 +971,6 @@ for (const viewport of [
       knowledgeCard
         .locator('.knowledge-country-fact.is-currency')
         .boundingBox(),
-      knowledgeCard
-        .locator('.knowledge-country-fact.is-languages')
-        .boundingBox(),
       knowledgeCard.getByRole('link', { name: /在3D地球上查看/ }).boundingBox(),
     ])
     expect(contentBox).not.toBeNull()
@@ -974,23 +980,24 @@ for (const viewport of [
     expect(populationBox).not.toBeNull()
     expect(capitalBox).not.toBeNull()
     expect(currencyBox).not.toBeNull()
-    expect(languagesBox).not.toBeNull()
     expect(actionBox).not.toBeNull()
     expect(headingBox!.height).toBeLessThanOrEqual(125)
     expect(areaBox!.x).toBeLessThan(populationBox!.x)
     expect(areaBox!.y).toBeCloseTo(populationBox!.y, 0)
     expect(capitalBox!.x).toBeLessThan(currencyBox!.x)
     expect(capitalBox!.y).toBeCloseTo(currencyBox!.y, 0)
-    expect(languagesBox!.x).toBeCloseTo(factsBox!.x + 1, 0)
-    expect(languagesBox!.width).toBeCloseTo(factsBox!.width - 2, 0)
     expect(currencyBox!.y + currencyBox!.height).toBeLessThanOrEqual(
       contentBox!.y + contentBox!.height + 1,
     )
-    if (viewport.width >= 844) {
-      expect(languagesBox!.y + languagesBox!.height).toBeLessThanOrEqual(
-        contentBox!.y + contentBox!.height + 1,
-      )
+    if (viewport.width === 844) {
+      expect(knowledgeLayout.contentScrollHeight).toBeLessThanOrEqual(950)
     }
+    await expect(
+      knowledgeCard.getByText('大熊猫', { exact: true }),
+    ).toBeVisible()
+    await expect(
+      knowledgeCard.getByRole('button', { name: /民族文化/ }),
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(actionBox!.y).toBeLessThanOrEqual(knowledgeBox!.y + 13)
     expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(
       knowledgeBox!.x + knowledgeBox!.width - 11,
@@ -2213,6 +2220,7 @@ test('keeps phone landscape controls separated and country details usable', asyn
   ).toHaveCount(0)
   await expect(card.getByText('约 14.1亿 人')).toBeVisible()
 
+  await card.getByRole('button', { name: /城市邻国/ }).click()
   const shanghai = card.getByRole('button', { name: '探索城市上海' })
   await expect(shanghai).toBeVisible()
   await shanghai.click({ force: true })
@@ -2440,10 +2448,13 @@ test('toggles adaptive capital and city labels and opens a selected city', async
   await search.fill('中国')
   await search.press('Enter')
   const countryCard = page.getByLabel('中国国家知识卡')
+  await countryCard.getByRole('button', { name: /城市邻国/ }).click()
   await expect(
     countryCard.getByRole('button', { name: '探索城市上海' }),
   ).toBeVisible()
-  await countryCard.getByRole('button', { name: '探索城市上海' }).click()
+  await countryCard
+    .getByRole('button', { name: '探索城市上海' })
+    .click({ force: true })
 
   const cityCard = page.getByLabel('上海城市知识卡')
   await expect(cityCard).toBeVisible()
@@ -3414,6 +3425,10 @@ test('keeps a selected city label synchronized throughout a fast drag', async ({
   await selectPlace(page, '中国')
   await page
     .getByLabel('中国国家知识卡')
+    .getByRole('button', { name: /城市邻国/ })
+    .click()
+  await page
+    .getByLabel('中国国家知识卡')
     .getByRole('button', { name: '探索城市上海' })
     .click()
 
@@ -3497,6 +3512,7 @@ test('does not replay a stale city camera target after dragging', async ({
   await search.fill('中国')
   await search.press('Enter')
   const countryCard = page.getByLabel('中国国家知识卡')
+  await countryCard.getByRole('button', { name: /城市邻国/ }).click()
   await countryCard.getByRole('button', { name: '探索城市上海' }).click()
   await expect(page.getByLabel('上海城市知识卡')).toBeVisible()
 
@@ -3750,14 +3766,20 @@ test('searches China and opens the featured knowledge card', async ({
     'src',
     '/flags/cn.svg',
   )
+  await expect(card.getByText('大熊猫', { exact: true })).toBeVisible()
+  await expect(card.getByText('阶梯地形', { exact: true })).toBeVisible()
+  await expect(card.getByText('国家名片')).toHaveCount(0)
+  await expect(card.getByRole('button', { name: /民族文化/ })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  )
+  await card.getByRole('button', { name: /城市邻国/ }).click()
   await expect(card.getByRole('button', { name: '探索城市北京' })).toBeVisible()
   await expect(card.getByText('人民币', { exact: true })).toBeVisible()
   await expect(card.getByText(/Chinese yuan · CNY/)).toBeVisible()
   await expect(card.getByText('中国香港')).toBeVisible()
   await expect(card.getByText('中国澳门')).toBeVisible()
-  await expect(
-    card.getByText('大熊猫主要生活在四川、陕西和甘肃的山地森林中。'),
-  ).toBeVisible()
+  await expect(card.getByText(/大熊猫主要生活/)).toHaveCount(0)
 })
 
 test('resets the globe view to China', async ({ page }) => {
@@ -3786,12 +3808,18 @@ test('searches a microstate without Natural Earth geometry', async ({
 
   const card = page.getByLabel('梵蒂冈国家知识卡')
   await expect(card).toBeVisible()
+  await expect(card.getByText('梵蒂冈城国')).toBeVisible()
+  await expect(card.getByText('0.44 km²')).toBeVisible()
+  await card.getByRole('button', { name: /民族文化/ }).click()
+  await expect(card.getByText('拉丁语', { exact: true })).toBeVisible()
+  await expect(card.getByText('Latin', { exact: true })).toHaveCount(0)
+  await card.getByRole('button', { name: /城市邻国/ }).click()
   await expect(
     card.getByRole('button', { name: '探索城市梵蒂冈城' }),
   ).toBeVisible()
-  await expect(card.getByText('梵蒂冈城国')).toBeVisible()
-  await expect(card.getByText('0.44 km²')).toBeVisible()
-  await expect(card.getByText('拉丁语')).toBeVisible()
+  await expect(card.locator('.knowledge-country-signature-labels')).toHaveCount(
+    0,
+  )
   await expect(card.getByText('更多内容制作中')).toHaveCount(0)
 })
 
@@ -3805,17 +3833,23 @@ test('selects a sovereign neighbour and opens the new country card', async ({
   await search.press('Enter')
   const vaticanCard = page.getByLabel('梵蒂冈国家知识卡')
 
+  await vaticanCard.getByRole('button', { name: /城市邻国/ }).click()
   await vaticanCard.getByRole('button', { name: '探索邻国意大利' }).click()
 
   const italyCard = page.getByLabel('意大利国家知识卡')
   await expect(italyCard).toBeVisible()
-  await expect(italyCard.getByRole('heading', { name: '意大利' })).toBeVisible()
+  await expect(
+    italyCard.getByRole('heading', { name: '意大利', level: 2, exact: true }),
+  ).toBeVisible()
   await expect(italyCard.getByText('意大利共和国')).toBeVisible()
+  await expect(
+    italyCard.getByRole('button', { name: /民族文化/ }),
+  ).toHaveAttribute('aria-expanded', 'false')
   const italySearch = await openCountrySearch(page)
   await expect(italySearch).toHaveValue('意大利')
 })
 
-test('expands compact knowledge-card lists with the keyboard and resets them on navigation', async ({
+test('opens a complete chapter with the keyboard and resets it on navigation', async ({
   page,
 }) => {
   await page.goto('/')
@@ -3825,34 +3859,39 @@ test('expands compact knowledge-card lists with the keyboard and resets them on 
   await search.press('Enter')
   const card = page.getByLabel('中国国家知识卡')
 
-  await expect(card.getByRole('button', { name: '探索城市成都' })).toHaveCount(
-    0,
-  )
-  const cityExpand = card.getByRole('button', {
-    name: '查看全部主要城市（5）',
-  })
-  await cityExpand.focus()
+  const placesChapter = card.getByRole('button', { name: /城市邻国/ })
+  await placesChapter.focus()
   await page.keyboard.press('Enter')
+  await expect(placesChapter).toHaveAttribute('aria-expanded', 'true')
   await expect(card.getByRole('button', { name: '探索城市成都' })).toBeVisible()
-
-  const borderExpand = card.getByRole('button', {
-    name: '查看全部相邻国家（14）',
-  })
-  await borderExpand.focus()
-  await page.keyboard.press('Space')
+  await expect(
+    card.getByRole('button', { name: '探索邻国俄罗斯' }),
+  ).toBeVisible()
+  await expect(
+    card.getByRole('button', { name: /查看全部主要城市/ }),
+  ).toHaveCount(0)
+  await expect(
+    card.getByRole('button', { name: /查看全部相邻国家/ }),
+  ).toHaveCount(0)
   await card.getByRole('button', { name: '探索邻国俄罗斯' }).click()
 
   const russiaCard = page.getByLabel('俄罗斯国家知识卡')
   await expect(russiaCard).toBeVisible()
+  const russiaPlaces = russiaCard.getByRole('button', { name: /城市邻国/ })
+  await russiaPlaces.focus()
+  await page.keyboard.press('Space')
   await russiaCard.getByRole('button', { name: '探索邻国中国' }).click()
 
   const resetCard = page.getByLabel('中国国家知识卡')
   await expect(
-    resetCard.getByRole('button', { name: '查看全部主要城市（5）' }),
+    resetCard.getByRole('button', { name: /民族文化/ }),
   ).toHaveAttribute('aria-expanded', 'false')
   await expect(
-    resetCard.getByRole('button', { name: '查看全部相邻国家（14）' }),
+    resetCard.getByRole('button', { name: /城市邻国/ }),
   ).toHaveAttribute('aria-expanded', 'false')
+  await expect(
+    resetCard.getByRole('button', { name: '探索城市成都' }),
+  ).toHaveCount(0)
   await expect(resetCard.getByText(/资料来源/)).toHaveCount(0)
 })
 

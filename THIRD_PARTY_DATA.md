@@ -21,6 +21,25 @@ My Geo adds repository-owned Chinese labels for capitals, subregions and the sma
 
 Reference sites retain their own copyright. My Geo stores short original Chinese summaries rather than copying source prose.
 
+## Country profile resources, people and economy
+
+- Base source: CIA _The World Factbook_ country profiles, consumed from the
+  public-domain `factbook/factbook.json` mirror pinned at commit
+  `c8cfe21cd019d7748a6b0d57a75d6a77f5ec6ac6`.
+- Use: natural resources, major ethnic groups, religions, agricultural
+  products, industries, national symbols and short geography notes.
+- Coverage: all 195 catalogue countries receive local resource, people and
+  economy profiles. The 50 countries in the reviewed major-city set also
+  receive sourced country-signature items and may show dated demographic
+  estimates.
+
+My Geo commits normalized Chinese profile data and never queries the Factbook
+at runtime. The Chinese summaries are repository-authored teaching text rather
+than copied source prose. Ethnic and religious categories follow the cited
+source's statistical vocabulary and should not be interpreted as legal,
+political or value classifications. Percentages are approximate and shown only
+with their source estimate year.
+
 ## 经纬网与义务教育地理知识
 
 - 课程范围基线：中华人民共和国教育部《义务教育课程方案和课程标准（2022年版）》发布页面，访问日期 2026-08-17。

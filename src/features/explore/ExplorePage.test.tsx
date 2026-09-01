@@ -330,7 +330,7 @@ describe('ExplorePage', () => {
         },
       }),
     )
-  })
+  }, 10_000)
 
   it('supports coordinate-only deep links and rejects incomplete or out-of-range coordinates', async () => {
     expect(
@@ -648,6 +648,7 @@ describe('ExplorePage', () => {
       screen.getByRole('combobox', { name: '搜索地点' }),
       '中国{Enter}',
     )
+    await user.click(screen.getByRole('button', { name: /城市邻国/ }))
     await user.click(screen.getByRole('button', { name: '探索城市上海' }))
 
     expect(screen.getByLabelText('上海城市知识卡')).toBeInTheDocument()

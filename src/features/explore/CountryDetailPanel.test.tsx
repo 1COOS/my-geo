@@ -66,7 +66,7 @@ function renderSelectedCity(code: string, cityId: string) {
 }
 
 describe('CountryDetailPanel', () => {
-  it('renders full featured-country content and approved regions', () => {
+  it('renders the continuous featured-country knowledge structure', async () => {
     renderCountry('CN')
 
     expect(screen.getByRole('heading', { name: '中国' })).toBeInTheDocument()
@@ -94,54 +94,67 @@ describe('CountryDetailPanel', () => {
       Array.from(facts!.querySelectorAll(':scope > div > dt')).map(
         (label) => label.textContent,
       ),
-    ).toEqual(['面积', '人口', '首都', '货币', '语言'])
-    expect(facts!.querySelectorAll(':scope > div > dt svg')).toHaveLength(5)
+    ).toEqual(['面积', '人口', '首都', '货币'])
+    expect(facts!.querySelectorAll(':scope > div > dt svg')).toHaveLength(4)
     expect(
       Array.from(facts!.querySelectorAll(':scope > div > dt .sr-only')).map(
         (label) => label.textContent,
       ),
-    ).toEqual(['面积', '人口', '首都', '货币', '语言'])
-    expect(facts!.querySelector('.is-languages')).toHaveClass(
-      'knowledge-country-fact',
-      'is-languages',
+    ).toEqual(['面积', '人口', '首都', '货币'])
+    expect(facts!.querySelector('.is-languages')).toBeNull()
+    expect(screen.getByText('阶梯地形')).toBeInTheDocument()
+    expect(screen.getByText('大熊猫')).toBeInTheDocument()
+    expect(screen.queryByText('国家名片')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /民族文化/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
     )
+    await userEvent.click(screen.getByRole('button', { name: /民族文化/ }))
+    expect(screen.getByText('中文')).toBeInTheDocument()
+    expect(screen.queryByText('Chinese')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /城市邻国/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
     expect(screen.getByText('中国香港')).toBeInTheDocument()
     expect(screen.getByText('中国澳门')).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: /在知识体系中学习/ }),
     ).toHaveAttribute('href', '/knowledge/countries/east-asia?country=CN')
+    expect(screen.queryByText('国家画像')).not.toBeInTheDocument()
+    expect(screen.queryByText('首都与主要城市')).not.toBeInTheDocument()
+    expect(screen.queryByText('相邻国家与地区')).not.toBeInTheDocument()
+    expect(screen.queryByText('名称信息')).not.toBeInTheDocument()
     expect(screen.queryByText(/资料来源/)).not.toBeInTheDocument()
   })
 
-  it('renders a complete non-featured microstate card', () => {
+  it('renders a complete non-featured microstate card', async () => {
     renderCountry('VA')
 
     expect(screen.getByText(/梵蒂冈城国/)).toBeInTheDocument()
     expect(screen.getByText('0.44 km²')).toBeInTheDocument()
     expect(screen.getByText('约 882 人')).toBeInTheDocument()
     expect(screen.queryByText('2024 年')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /民族文化/ }))
     expect(screen.getByText('拉丁语')).toBeInTheDocument()
+    expect(screen.queryByText('Latin')).not.toBeInTheDocument()
+    expect(
+      document.querySelector('.knowledge-country-signature-labels'),
+    ).toBeNull()
     expect(screen.queryByText('海陆属性')).not.toBeInTheDocument()
     expect(screen.queryByText('更多内容制作中')).not.toBeInTheDocument()
   })
 
-  it('keeps multiple capitals compact and expandable', async () => {
+  it('shows all capitals without a nested expansion', () => {
     renderCountry('ZA')
     const capitalFact = document.querySelector('.is-capital')
     expect(capitalFact).not.toBeNull()
 
     expect(capitalFact).toHaveTextContent('比勒陀利亚')
-    expect(capitalFact).not.toHaveTextContent('布隆方丹')
-    expect(capitalFact).not.toHaveTextContent('开普敦')
-
-    const expand = screen.getByRole('button', {
-      name: '查看全部首都（3）',
-    })
-    expect(expand).toHaveTextContent('+2')
-    await userEvent.click(expand)
-
     expect(capitalFact).toHaveTextContent('布隆方丹')
     expect(capitalFact).toHaveTextContent('开普敦')
+    expect(screen.queryByRole('button', { name: /查看全部首都/ })).toBeNull()
   })
 
   it('uses the compact Sri Lanka heading hierarchy', () => {
@@ -162,8 +175,12 @@ describe('CountryDetailPanel', () => {
       Array.from(englishLine!.children).map((item) => item.textContent),
     ).toEqual(['Sri Lanka', '·', 'LK · LKA'])
     expect(
-      screen.getByText('Democratic Socialist Republic of Sri Lanka'),
-    ).toBeInTheDocument()
+      screen.queryByText('Democratic Socialist Republic of Sri Lanka'),
+    ).not.toBeInTheDocument()
+    expect(heading!.querySelector('small')).toHaveAttribute(
+      'title',
+      'Democratic Socialist Republic of Sri Lanka',
+    )
     expect(
       screen.getByRole('link', { name: /在知识体系中学习/ }),
     ).toBeInTheDocument()
@@ -190,6 +207,8 @@ describe('CountryDetailPanel', () => {
   it('dispatches a sovereign-neighbour selection', async () => {
     const onSelectCountry = renderCountry('VA')
 
+    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
+
     await userEvent.click(
       screen.getByRole('button', { name: '探索邻国意大利' }),
     )
@@ -202,15 +221,19 @@ describe('CountryDetailPanel', () => {
     expect(neighbourFlag?.parentElement).toHaveClass('country-flag-frame')
   })
 
-  it('keeps adjacent regions as non-interactive labels', () => {
+  it('keeps adjacent regions as non-interactive labels', async () => {
     renderCountry('CN')
+
+    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
 
     expect(screen.queryByRole('button', { name: /中国香港/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /中国澳门/ })).toBeNull()
   })
 
-  it('keeps long city lists compact and keyboard-expandable', async () => {
+  it('shows every city when the combined chapter is open', async () => {
     renderCountry('CN')
+
+    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
 
     expect(
       screen.getByRole('button', { name: '探索城市北京' }),
@@ -218,48 +241,25 @@ describe('CountryDetailPanel', () => {
     expect(
       screen.getByRole('button', { name: '探索城市上海' }),
     ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '探索城市成都' })).toBeNull()
-
-    const expand = screen.getByRole('button', {
-      name: '查看全部主要城市（5）',
-    })
-    expect(expand).toHaveAttribute('aria-expanded', 'false')
-
-    await userEvent.click(expand)
-
-    expect(expand).toHaveAttribute('aria-expanded', 'true')
     expect(
       screen.getByRole('button', { name: '探索城市成都' }),
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /查看全部主要城市/ }),
+    ).not.toBeInTheDocument()
   })
 
-  it('keeps long language and currency lists expandable', async () => {
+  it('shows all chapter languages and fact currencies without nested expansion', async () => {
     renderCountry('ZW')
 
-    expect(screen.queryByText('卡兰加语')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /民族文化/ }))
+    expect(screen.getByText(/卡兰加语/)).toBeInTheDocument()
     expect(
-      document.querySelectorAll('.knowledge-language-list > li'),
-    ).toHaveLength(2)
-    const languageExpand = screen.getByRole('button', {
-      name: '查看全部语言（15）',
-    })
-    expect(languageExpand).toHaveTextContent('+13')
-    await userEvent.click(languageExpand)
-    expect(screen.getByText('卡兰加语')).toBeInTheDocument()
-    expect(
-      document.querySelectorAll('.knowledge-language-list > li'),
-    ).toHaveLength(15)
-    expect(screen.queryByText('欧元')).not.toBeInTheDocument()
-
-    const currencyExpand = screen.getByRole('button', {
-      name: '查看全部货币（9）',
-    })
-    expect(currencyExpand).toHaveAttribute('aria-expanded', 'false')
-    await userEvent.click(currencyExpand)
-
-    expect(currencyExpand).toHaveAttribute('aria-expanded', 'true')
+      screen.queryByRole('button', { name: /查看全部语言/ }),
+    ).not.toBeInTheDocument()
     expect(screen.getByText('欧元')).toBeInTheDocument()
     expect(screen.getByText(/EUR/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /查看全部货币/ })).toBeNull()
   })
 
   it('switches to a city knowledge card with population and reasons', async () => {
