@@ -29,10 +29,17 @@
   font-size: inherit;
 }
 
+.country-knowledge-card {
+  --country-card-key-inset: 0.45rem;
+  --country-card-key-gap: 0.4rem;
+  --country-card-info-gap: 0.55rem;
+  --country-card-info-icon-bg: #36584d;
+}
+
 .knowledge-card-content {
   flex: 1;
   min-height: 0;
-  padding: 1rem;
+  padding: 0.8rem;
   overflow-y: auto;
   scrollbar-gutter: stable;
 }

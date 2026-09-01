@@ -996,8 +996,129 @@ for (const viewport of [
       knowledgeCard.getByText('大熊猫', { exact: true }),
     ).toBeVisible()
     await expect(
-      knowledgeCard.getByRole('button', { name: /民族文化/ }),
+      knowledgeCard.getByRole('button', { name: /语言民族/ }),
     ).toHaveAttribute('aria-expanded', 'false')
+    const peopleTrigger = knowledgeCard.getByRole('button', {
+      name: /语言民族/,
+    })
+    const chapterIcon = peopleTrigger.locator('.knowledge-country-chapter-icon')
+    const chapterCopy = peopleTrigger.locator('.knowledge-country-chapter-copy')
+    const chapterTitle = chapterCopy.locator('strong')
+    const chapterSummary = chapterCopy.locator('small')
+    const chapterDisclosure = peopleTrigger.locator(
+      '.knowledge-country-chapter-disclosure',
+    )
+    const capitalIcon = knowledgeCard.locator(
+      '.knowledge-country-fact.is-capital dt',
+    )
+    const capitalValue = knowledgeCard.locator(
+      '.knowledge-country-fact.is-capital dd',
+    )
+    const [
+      triggerBox,
+      chapterIconBox,
+      chapterCopyBox,
+      chapterTitleBox,
+      chapterSummaryBox,
+      collapsedDisclosureBox,
+      capitalIconBox,
+      capitalValueBox,
+    ] = await Promise.all([
+      peopleTrigger.boundingBox(),
+      chapterIcon.boundingBox(),
+      chapterCopy.boundingBox(),
+      chapterTitle.boundingBox(),
+      chapterSummary.boundingBox(),
+      chapterDisclosure.boundingBox(),
+      capitalIcon.boundingBox(),
+      capitalValue.boundingBox(),
+    ])
+    expect(triggerBox).not.toBeNull()
+    expect(chapterIconBox).not.toBeNull()
+    expect(chapterCopyBox).not.toBeNull()
+    expect(chapterTitleBox).not.toBeNull()
+    expect(chapterSummaryBox).not.toBeNull()
+    expect(chapterTitleBox!.width).toBeGreaterThanOrEqual(68)
+    expect(
+      await chapterTitle.evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).fontSize),
+      ),
+    ).toBe(13)
+    expect(
+      await chapterSummary.evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).fontSize),
+      ),
+    ).toBe(13)
+    expect(collapsedDisclosureBox).not.toBeNull()
+    expect(capitalIconBox).not.toBeNull()
+    expect(capitalValueBox).not.toBeNull()
+    expect(Math.abs(chapterIconBox!.x - capitalIconBox!.x)).toBeLessThanOrEqual(
+      1,
+    )
+    const chapterGap =
+      chapterCopyBox!.x - (chapterIconBox!.x + chapterIconBox!.width)
+    const capitalGap =
+      capitalValueBox!.x - (capitalIconBox!.x + capitalIconBox!.width)
+    expect(Math.abs(chapterGap - capitalGap)).toBeLessThanOrEqual(1)
+    expect(
+      Math.abs(
+        chapterTitleBox!.y +
+          chapterTitleBox!.height / 2 -
+          (chapterSummaryBox!.y + chapterSummaryBox!.height / 2),
+      ),
+    ).toBeLessThanOrEqual(2)
+    await expect(chapterTitle).toHaveText('语言民族')
+    await expect(chapterSummary).toHaveText('中文 · 汉族')
+    const leftInset = chapterIconBox!.x - triggerBox!.x
+    const rightInset =
+      triggerBox!.x +
+      triggerBox!.width -
+      (collapsedDisclosureBox!.x + collapsedDisclosureBox!.width)
+    expect(Math.abs(leftInset - rightInset)).toBeLessThanOrEqual(1)
+
+    await peopleTrigger.click()
+    await expect(chapterSummary).toBeVisible()
+    await expect(chapterSummary).toHaveText('中文 · 汉族')
+    const expandedDisclosureBox = await chapterDisclosure.boundingBox()
+    expect(expandedDisclosureBox).not.toBeNull()
+    expect(expandedDisclosureBox!.x).toBeCloseTo(collapsedDisclosureBox!.x, 0)
+    const infoLabel = knowledgeCard
+      .locator('.knowledge-country-info-label')
+      .first()
+    const infoRow = knowledgeCard.locator('.knowledge-country-info-row').first()
+    const infoValue = knowledgeCard
+      .locator('.knowledge-country-info-row > div')
+      .first()
+    const [infoLabelBox, infoRowBox, infoValueBox] = await Promise.all([
+      infoLabel.boundingBox(),
+      infoRow.boundingBox(),
+      infoValue.boundingBox(),
+    ])
+    expect(infoLabelBox).not.toBeNull()
+    expect(infoRowBox).not.toBeNull()
+    expect(infoValueBox).not.toBeNull()
+    expect(Math.abs(infoLabelBox!.x - chapterIconBox!.x)).toBeLessThanOrEqual(1)
+    expect(
+      Math.abs(infoLabelBox!.height - infoValueBox!.height),
+    ).toBeLessThanOrEqual(1)
+    expect(
+      infoValueBox!.x - (infoLabelBox!.x + infoLabelBox!.width),
+    ).toBeGreaterThanOrEqual(8.5)
+    expect(infoLabelBox!.height).toBeLessThan(infoRowBox!.height)
+    const infoLabelStyle = await infoLabel.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return { backgroundColor: style.backgroundColor, color: style.color }
+    })
+    expect(infoLabelStyle.backgroundColor).toBe('rgb(54, 88, 77)')
+    expect(infoLabelStyle.color).toBe('rgb(237, 243, 242)')
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth >
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(false)
+    await peopleTrigger.click()
     expect(actionBox!.y).toBeLessThanOrEqual(knowledgeBox!.y + 13)
     expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(
       knowledgeBox!.x + knowledgeBox!.width - 11,
@@ -3771,7 +3892,7 @@ test('searches China and opens the featured knowledge card', async ({
   await expect(card.getByText('长城', { exact: true })).toBeVisible()
   await expect(card.getByText('故宫', { exact: true })).toBeVisible()
   await expect(card.getByText('国家名片')).toHaveCount(0)
-  await expect(card.getByRole('button', { name: /民族文化/ })).toHaveAttribute(
+  await expect(card.getByRole('button', { name: /语言民族/ })).toHaveAttribute(
     'aria-expanded',
     'false',
   )
@@ -3842,7 +3963,7 @@ test('searches a microstate without Natural Earth geometry', async ({
   await expect(card).toBeVisible()
   await expect(card.getByText('梵蒂冈城国')).toBeVisible()
   await expect(card.getByText('0.44 km²')).toBeVisible()
-  await card.getByRole('button', { name: /民族文化/ }).click()
+  await card.getByRole('button', { name: /语言民族/ }).click()
   await expect(card.getByText('拉丁语', { exact: true })).toBeVisible()
   await expect(card.getByText('Latin', { exact: true })).toHaveCount(0)
   await card.getByRole('button', { name: /城市邻国/ }).click()
@@ -3875,7 +3996,7 @@ test('selects a sovereign neighbour and opens the new country card', async ({
   ).toBeVisible()
   await expect(italyCard.getByText('意大利共和国')).toBeVisible()
   await expect(
-    italyCard.getByRole('button', { name: /民族文化/ }),
+    italyCard.getByRole('button', { name: /语言民族/ }),
   ).toHaveAttribute('aria-expanded', 'false')
   const italySearch = await openCountrySearch(page)
   await expect(italySearch).toHaveValue('意大利')
@@ -3916,7 +4037,7 @@ test('opens a complete chapter with the keyboard and resets it on navigation', a
 
   const resetCard = page.getByLabel('中国国家知识卡')
   await expect(
-    resetCard.getByRole('button', { name: /民族文化/ }),
+    resetCard.getByRole('button', { name: /语言民族/ }),
   ).toHaveAttribute('aria-expanded', 'false')
   await expect(
     resetCard.getByRole('button', { name: /城市邻国/ }),

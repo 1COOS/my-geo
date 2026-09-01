@@ -118,7 +118,7 @@ const cornerActionIconStyle = {
 const factKeyStyle = {
   position: 'absolute',
   top: '0.5rem',
-  left: '0.45rem',
+  left: 'var(--country-card-key-inset)',
   width: '0.9rem',
   height: '0.9rem',
   color: 'var(--atlas-accent)',
@@ -133,7 +133,8 @@ function countryFactStyle(kind: CountryFactKind): CSSProperties {
   return {
     position: 'relative',
     minHeight: kind === 'capital' || kind === 'currency' ? '3.5rem' : '2.7rem',
-    padding: '0.4rem 0.45rem 0.35rem 1.75rem',
+    padding:
+      '0.4rem var(--country-card-key-inset) 0.35rem calc(var(--country-card-key-inset) + 0.9rem + var(--country-card-key-gap))',
     borderRight:
       kind === 'area' || kind === 'capital'
         ? '1px solid var(--atlas-border-soft)'

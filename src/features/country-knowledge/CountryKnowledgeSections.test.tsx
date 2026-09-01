@@ -34,7 +34,7 @@ describe('CountryKnowledgeSections', () => {
   it('starts collapsed and keeps chapters single-open', async () => {
     renderSections('CN')
 
-    const people = screen.getByRole('button', { name: /民族文化/ })
+    const people = screen.getByRole('button', { name: /语言民族/ })
     const resources = screen.getByRole('button', { name: /自然资源/ })
     const economy = screen.getByRole('button', { name: /经济产业/ })
     const places = screen.getByRole('button', { name: /城市邻国/ })
@@ -46,6 +46,7 @@ describe('CountryKnowledgeSections', () => {
     expect(screen.queryByText('中文')).toBeNull()
     await userEvent.click(people)
     expect(people).toHaveAttribute('aria-expanded', 'true')
+    expect(people).toHaveTextContent('中文 · 汉族')
     expect(screen.getByText('中文')).toBeVisible()
     expect(screen.queryByText('Chinese')).toBeNull()
     expect(
@@ -69,6 +70,111 @@ describe('CountryKnowledgeSections', () => {
 
     await userEvent.click(resources)
     expect(resources).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('uses fixed disclosure slots and compact labels in every chapter', async () => {
+    renderSections('CN')
+
+    expect(
+      document.querySelectorAll('.knowledge-country-chapter-disclosure'),
+    ).toHaveLength(4)
+    expect(
+      document.querySelectorAll('.knowledge-country-chapter-icon'),
+    ).toHaveLength(4)
+
+    const labels = () =>
+      Array.from(
+        document.querySelectorAll('.knowledge-country-info-label'),
+      ).map((item) => item.textContent)
+
+    await userEvent.click(screen.getByRole('button', { name: /语言民族/ }))
+    expect(labels()).toEqual(['语言', '民族', '宗教'])
+    expect(
+      document.querySelector<HTMLElement>('.knowledge-country-info-label')
+        ?.style.background,
+    ).toBe('var(--country-card-info-icon-bg)')
+    expect(
+      document.querySelector<HTMLElement>('.knowledge-country-info-label')
+        ?.style.width,
+    ).toBe('2rem')
+    expect(
+      document.querySelector<HTMLElement>('.knowledge-country-info-label')
+        ?.style.minHeight,
+    ).toBe('')
+    expect(
+      document.querySelector<HTMLElement>('.knowledge-country-info-label')
+        ?.style.height,
+    ).toBe('1.4rem')
+    expect(
+      document.querySelector<HTMLElement>('.knowledge-country-info-label')
+        ?.style.fontSize,
+    ).toBe('0.625rem')
+
+    await userEvent.click(screen.getByRole('button', { name: /自然资源/ }))
+    expect(labels()).toEqual(['能源', '矿产', '土地'])
+
+    await userEvent.click(screen.getByRole('button', { name: /经济产业/ }))
+    expect(labels()).toEqual(['农业', '工业'])
+
+    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
+    expect(labels()).toEqual(['城市', '区位', '邻国', '地区'])
+  })
+
+  it('keeps chapter summaries inline and prioritizes a non-capital city', () => {
+    const china = country('CN')
+    const { rerender } = render(
+      <CountryKnowledgeSections
+        key="CN"
+        country={china}
+        cities={getCitiesForCountry('CN')}
+        onSelectCountry={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /语言民族/ })).toHaveTextContent(
+      '语言民族中文 · 汉族',
+    )
+    const title = screen
+      .getByRole('button', { name: /语言民族/ })
+      .querySelector<HTMLElement>('strong')
+    const summary = screen
+      .getByRole('button', { name: /语言民族/ })
+      .querySelector<HTMLElement>('small')
+    expect(title?.style.minWidth).toBe('4.25rem')
+    expect(title?.style.fontSize).toBe('var(--fs-s)')
+    expect(summary?.style.fontSize).toBe('var(--fs-s)')
+    expect(
+      screen.getByRole('button', { name: /语言民族/ }),
+    ).not.toHaveTextContent('民间宗教')
+    expect(screen.getByRole('button', { name: /城市邻国/ })).toHaveTextContent(
+      '上海 · 邻国14个',
+    )
+
+    const russia = country('RU')
+    rerender(
+      <CountryKnowledgeSections
+        key="RU"
+        country={russia}
+        cities={getCitiesForCountry('RU')}
+        onSelectCountry={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /城市邻国/ })).toHaveTextContent(
+      '圣彼得堡 · 邻国14个',
+    )
+
+    const singapore = country('SG')
+    rerender(
+      <CountryKnowledgeSections
+        key="SG"
+        country={singapore}
+        cities={getCitiesForCountry('SG')}
+        onSelectCountry={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /城市邻国/ })).toHaveTextContent(
+      '新加坡 · 邻国0个',
+    )
   })
 
   it('resets the default chapter when the country changes', async () => {
@@ -98,7 +204,7 @@ describe('CountryKnowledgeSections', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: /民族文化/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /语言民族/ })).toHaveAttribute(
       'aria-expanded',
       'false',
     )
@@ -167,7 +273,7 @@ describe('CountryKnowledgeSections', () => {
         onSelectCountry={vi.fn()}
       />,
     )
-    await userEvent.click(screen.getByRole('button', { name: /民族文化/ }))
+    await userEvent.click(screen.getByRole('button', { name: /语言民族/ }))
     expect(screen.queryByText('民族', { exact: true })).toBeNull()
     expect(screen.getByText('宗教', { exact: true })).toBeVisible()
 

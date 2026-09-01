@@ -105,11 +105,11 @@ describe('CountryDetailPanel', () => {
     expect(screen.getByText('珠穆朗玛峰')).toBeInTheDocument()
     expect(screen.getByText('大熊猫')).toBeInTheDocument()
     expect(screen.queryByText('国家名片')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /民族文化/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /语言民族/ })).toHaveAttribute(
       'aria-expanded',
       'false',
     )
-    await userEvent.click(screen.getByRole('button', { name: /民族文化/ }))
+    await userEvent.click(screen.getByRole('button', { name: /语言民族/ }))
     expect(screen.getByText('中文')).toBeInTheDocument()
     expect(screen.queryByText('Chinese')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /城市邻国/ })).toHaveAttribute(
@@ -136,7 +136,7 @@ describe('CountryDetailPanel', () => {
     expect(screen.getByText('0.44 km²')).toBeInTheDocument()
     expect(screen.getByText('约 882 人')).toBeInTheDocument()
     expect(screen.queryByText('2024 年')).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /民族文化/ }))
+    await userEvent.click(screen.getByRole('button', { name: /语言民族/ }))
     expect(screen.getByText('拉丁语')).toBeInTheDocument()
     expect(screen.queryByText('Latin')).not.toBeInTheDocument()
     expect(
@@ -252,7 +252,7 @@ describe('CountryDetailPanel', () => {
   it('shows all chapter languages and fact currencies without nested expansion', async () => {
     renderCountry('ZW')
 
-    await userEvent.click(screen.getByRole('button', { name: /民族文化/ }))
+    await userEvent.click(screen.getByRole('button', { name: /语言民族/ }))
     expect(screen.getByText(/卡兰加语/)).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /查看全部语言/ }),

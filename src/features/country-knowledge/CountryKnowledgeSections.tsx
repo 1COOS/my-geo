@@ -61,9 +61,9 @@ const chapterTriggerBaseStyle = {
   display: 'grid',
   width: '100%',
   minHeight: '2.75rem',
-  padding: '0.45rem 0.2rem',
-  gridTemplateColumns: '1.15rem minmax(0, 1fr) auto',
-  gap: '0.45rem',
+  padding: '0.45rem var(--country-card-key-inset)',
+  gridTemplateColumns: '1.05rem minmax(0, 1fr) 1.05rem',
+  columnGap: 'var(--country-card-key-gap)',
   alignItems: 'center',
   textAlign: 'left',
   color: 'var(--atlas-text)',
@@ -80,18 +80,35 @@ const chapterIconStyle = {
 
 const chapterSummaryStyle = {
   display: 'block',
-  marginTop: '0.08rem',
+  minWidth: 0,
+  margin: 0,
+  flex: 1,
   overflow: 'hidden',
   color: 'var(--atlas-text-secondary)',
-  fontSize: 'var(--fs-m)',
+  fontSize: 'var(--fs-s)',
   fontWeight: 400,
   lineHeight: 1.3,
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 } satisfies CSSProperties
 
+const chapterCopyStyle = {
+  display: 'flex',
+  minWidth: 0,
+  gap: '0.35rem',
+  alignItems: 'baseline',
+} satisfies CSSProperties
+
+const chapterTitleStyle = {
+  minWidth: '4.25rem',
+  flex: 'none',
+  fontSize: 'var(--fs-s)',
+  fontWeight: 700,
+} satisfies CSSProperties
+
 const chapterContentStyle = {
-  padding: '0.35rem 0.2rem 0.15rem',
+  padding:
+    '0.35rem var(--country-card-key-inset) 0.15rem var(--country-card-key-inset)',
   color: 'var(--atlas-text-secondary)',
   fontSize: 'var(--fs-b)',
   lineHeight: 'var(--lh-b)',
@@ -99,16 +116,36 @@ const chapterContentStyle = {
 
 const infoRowStyle = {
   display: 'grid',
-  padding: '0.38rem 0',
-  gridTemplateColumns: '2.5rem minmax(0, 1fr)',
-  gap: '0.45rem',
+  padding: '0.28rem 0',
+  gridTemplateColumns: '2rem minmax(0, 1fr)',
+  gap: 'var(--country-card-info-gap)',
   alignItems: 'start',
 } satisfies CSSProperties
 
 const infoLabelStyle = {
-  color: 'var(--atlas-text-muted)',
-  fontSize: 'var(--fs-m)',
+  display: 'inline-flex',
+  width: '2rem',
+  height: '1.4rem',
+  padding: '0 0.18rem',
+  boxSizing: 'border-box',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: 'var(--atlas-text)',
+  fontSize: '0.625rem',
   fontWeight: 600,
+  lineHeight: 1,
+  whiteSpace: 'nowrap',
+  background: 'var(--country-card-info-icon-bg)',
+  border: '1px solid var(--country-card-info-icon-bg)',
+  borderRadius: 'var(--atlas-radius-control)',
+} satisfies CSSProperties
+
+const chapterDisclosureStyle = {
+  display: 'inline-flex',
+  width: '1.05rem',
+  height: '1.05rem',
+  alignItems: 'center',
+  justifyContent: 'center',
 } satisfies CSSProperties
 
 const inlineValuesStyle = {
@@ -170,15 +207,15 @@ export function CountryKnowledgeSections({
   const profile = country.profile
   const resourceRows = getResourceRows(profile.resources)
   const economyRows = getEconomyRows(profile.economy)
+  const summaryCity = cities.find((city) => !city.isCapital) ?? cities[0]
 
   const chapters: Chapter[] = [
     {
       id: 'people',
-      title: '民族文化',
+      title: '语言民族',
       summary: compactSummary([
         country.languages[0]?.name.zh,
         profile.people.ethnicGroups[0]?.name,
-        profile.people.religions[0]?.name,
       ]),
       content: <PeopleChapter country={country} profile={profile.people} />,
     },
@@ -206,11 +243,8 @@ export function CountryKnowledgeSections({
       id: 'places',
       title: '城市邻国',
       summary: compactSummary([
-        cities[0]?.name.zh,
-        cities[1]?.name.zh,
-        country.borderCountryCodes.length > 0
-          ? `邻国${country.borderCountryCodes.length}个`
-          : '无陆地邻国',
+        summaryCity?.name.zh,
+        `邻国${country.borderCountryCodes.length}个`,
       ]),
       content: (
         <PlacesChapter
@@ -251,13 +285,20 @@ export function CountryKnowledgeSections({
                 }
               >
                 <ChapterIcon chapter={chapter.id} />
-                <span>
-                  <strong>{chapter.title}</strong>
-                  {expanded ? null : (
-                    <small style={chapterSummaryStyle}>{chapter.summary}</small>
-                  )}
+                <span
+                  className="knowledge-country-chapter-copy"
+                  style={chapterCopyStyle}
+                >
+                  <strong style={chapterTitleStyle}>{chapter.title}</strong>
+                  <small style={chapterSummaryStyle}>{chapter.summary}</small>
                 </span>
-                <span aria-hidden="true">{expanded ? '−' : '+'}</span>
+                <span
+                  className="knowledge-country-chapter-disclosure"
+                  style={chapterDisclosureStyle}
+                  aria-hidden="true"
+                >
+                  {expanded ? '−' : '+'}
+                </span>
               </button>
             </h3>
             {expanded ? (
@@ -279,6 +320,7 @@ export function CountryKnowledgeSections({
 function ChapterIcon({ chapter }: { chapter: ChapterId }) {
   return (
     <svg
+      className="knowledge-country-chapter-icon"
       viewBox="0 0 24 24"
       style={chapterIconStyle}
       fill="none"
@@ -445,8 +487,10 @@ function PlacesChapter({
 
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={infoRowStyle}>
-      <span style={infoLabelStyle}>{label}</span>
+    <div className="knowledge-country-info-row" style={infoRowStyle}>
+      <span className="knowledge-country-info-label" style={infoLabelStyle}>
+        {label}
+      </span>
       <div>{children}</div>
     </div>
   )
