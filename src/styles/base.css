@@ -34,6 +34,10 @@
   --layout-gap: clamp(0.4rem, 0.9vw, 0.75rem);
   --navigation-rail-size: clamp(3.2rem, 4.2vw, 3.55rem);
   --detail-panel-size: clamp(17rem, 30vw, 24rem);
+  --atlas-safe-area-top: env(safe-area-inset-top, 0px);
+  --atlas-safe-area-right: env(safe-area-inset-right, 0px);
+  --atlas-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --atlas-safe-area-left: env(safe-area-inset-left, 0px);
   font-family:
     Inter, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', system-ui,
     sans-serif;

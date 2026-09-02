@@ -105,7 +105,7 @@ export function KnowledgeRegionPage() {
           >
             <Link
               className="knowledge-earth-detail-back"
-              to={`/knowledge?continent=${region.continentId}`}
+              to={`/knowledge/countries?continent=${region.continentId}`}
             >
               ← 返回{continent.name.zh}
             </Link>

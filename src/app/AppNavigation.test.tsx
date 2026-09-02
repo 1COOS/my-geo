@@ -110,82 +110,25 @@ describe('AppNavigation brand', () => {
 })
 
 describe('AppNavigation routes', () => {
-  it('places the question hub below knowledge and keeps its descendants active', () => {
-    installFullscreenHarness({ enabled: false })
-    renderNavigation('/questions/asia/easy')
-
-    const links = screen.getAllByRole('link')
-    expect(links.map((link) => link.textContent)).toEqual(['探索', '问答'])
-    expect(screen.getByRole('button', { name: '知识体系' })).not.toHaveClass(
-      'is-active',
-    )
-    expect(screen.getByRole('link', { name: '知识问答' })).toHaveClass(
-      'is-active',
-    )
-  })
-})
-
-describe('AppNavigation knowledge submenu', () => {
-  it('opens on click and closes with Escape while restoring focus', async () => {
-    const user = userEvent.setup()
-    installFullscreenHarness({ enabled: false })
-    renderNavigation('/knowledge/countries/east-asia')
-
-    const trigger = screen.getByRole('button', { name: '知识体系' })
-    expect(trigger).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByLabelText('知识二级菜单')).not.toBeInTheDocument()
-
-    await user.click(trigger)
-    expect(trigger).toHaveAttribute('aria-expanded', 'true')
-    expect(
-      screen
-        .getAllByRole('link', { name: /地球经纬|国家首都|世界之最|江河湖海/ })
-        .map((link) => link.textContent),
-    ).toEqual(['地球经纬', '国家首都', '世界之最', '江河湖海'])
-
-    await user.tab()
-    expect(screen.getByRole('link', { name: '地球经纬' })).toHaveFocus()
-    await user.keyboard('{Escape}')
-
-    expect(screen.queryByLabelText('知识二级菜单')).not.toBeInTheDocument()
-    expect(trigger).toHaveFocus()
-  })
-
-  it('closes on outside interaction and when a topic is selected', async () => {
-    const user = userEvent.setup()
-    installFullscreenHarness({ enabled: false })
-    renderNavigation()
-
-    const trigger = screen.getByRole('button', { name: '知识体系' })
-    await user.click(trigger)
-    await user.click(document.body)
-    expect(screen.queryByLabelText('知识二级菜单')).not.toBeInTheDocument()
-    expect(trigger).toHaveFocus()
-
-    await user.click(trigger)
-    await user.click(screen.getByRole('link', { name: '江河湖海' }))
-    expect(screen.queryByLabelText('知识二级菜单')).not.toBeInTheDocument()
-    expect(trigger).toHaveFocus()
-    expect(trigger).toHaveClass('is-active')
-  })
-
   it.each([
-    ['/knowledge/earth/lines/equator', '地球经纬'],
-    ['/knowledge/countries/east-asia', '国家首都'],
-    ['/knowledge/extremes/metrics/highest-point', '世界之最'],
-    ['/knowledge/water/groups/ocean-seas', '江河湖海'],
-  ])('marks %s as the active %s route family', async (path, title) => {
-    const user = userEvent.setup()
+    '/knowledge',
+    '/knowledge/earth/lines/equator',
+    '/knowledge/countries/east-asia',
+    '/knowledge/extremes/metrics/highest-point',
+    '/knowledge/water/groups/ocean-seas',
+    '/questions',
+    '/questions/asia/easy',
+  ])('uses the unified knowledge link for %s', (path) => {
     installFullscreenHarness({ enabled: false })
     renderNavigation(path)
 
-    const trigger = screen.getByRole('button', { name: '知识体系' })
-    expect(trigger).toHaveClass('is-active')
-    await user.click(trigger)
-    expect(screen.getByRole('link', { name: title })).toHaveAttribute(
-      'aria-current',
-      'page',
+    const links = screen.getAllByRole('link')
+    expect(links.map((link) => link.textContent)).toEqual(['探索', '知识'])
+    expect(screen.getByRole('link', { name: '知识中心' })).toHaveClass(
+      'is-active',
     )
+    expect(screen.queryByLabelText('知识二级菜单')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '知识问答' })).toBeNull()
   })
 })
 
@@ -220,7 +163,7 @@ describe('AppNavigation fullscreen control', () => {
       'true',
     )
 
-    await user.click(screen.getByRole('button', { name: '知识体系' }))
+    await user.click(screen.getByRole('link', { name: '知识中心' }))
     expect(screen.getByRole('button', { name: '退出全屏' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '退出全屏' }))

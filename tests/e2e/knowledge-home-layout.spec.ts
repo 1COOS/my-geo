@@ -1,17 +1,175 @@
 import { expect, test } from '@playwright/test'
 
-const knowledgeMapViewports = [
+const knowledgeMapViewports: ReadonlyArray<{
+  name: string
+  width: number
+  height: number
+  safeArea?: number
+}> = [
   { name: '1440 desktop', width: 1440, height: 900 },
   { name: 'iPad landscape', width: 1194, height: 834 },
   { name: 'phone landscape', width: 844, height: 390 },
+  {
+    name: 'iPhone 16 Pro Max landscape',
+    width: 956,
+    height: 440,
+    safeArea: 59,
+  },
 ]
+
+for (const viewport of knowledgeMapViewports) {
+  test(`keeps the unified knowledge home usable on ${viewport.name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/knowledge?continent=asia')
+    if (viewport.safeArea) {
+      await page.evaluate(async (safeArea) => {
+        document.documentElement.style.setProperty(
+          '--atlas-safe-area-left',
+          `${safeArea}px`,
+        )
+        document.documentElement.style.setProperty(
+          '--atlas-safe-area-right',
+          `${safeArea}px`,
+        )
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        )
+      }, viewport.safeArea)
+    }
+
+    await expect(
+      page.getByRole('heading', { name: '知识', level: 1 }),
+    ).toBeVisible()
+    await expect(page.getByRole('link', { name: '知识中心' })).toHaveClass(
+      /is-active/,
+    )
+    await expect(
+      page.getByRole('navigation', { name: '知识二级菜单' }),
+    ).toHaveCount(0)
+    await expect(
+      page
+        .getByRole('navigation', { name: 'My Geo 主导航' })
+        .getByRole('link', { name: '知识问答' }),
+    ).toHaveCount(0)
+
+    await expect(page.getByText('选择内容开始学习')).toBeVisible()
+    await expect(page.getByText('LEARN')).toHaveCount(0)
+    await expect(page.getByText('CHALLENGE')).toHaveCount(0)
+    await expect(page.getByText('开始学习', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('进入知识问答', { exact: true })).toHaveCount(0)
+
+    const learningRegion = page.getByRole('region', { name: '知识模块' })
+    const questionRegion = page.getByRole('region', { name: '问答模块' })
+    const moduleCards = learningRegion.locator('.knowledge-home-card')
+    const questionCards = questionRegion.locator('.knowledge-home-card')
+    await expect(moduleCards).toHaveCount(4)
+    await expect(questionCards).toHaveCount(1)
+    await expect(questionCards.first()).toBeVisible()
+
+    const geometry = await moduleCards.evaluateAll((cards) => ({
+      viewportWidth: document.documentElement.clientWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      mainClientHeight: document.querySelector('main')!.clientHeight,
+      mainScrollHeight: document.querySelector('main')!.scrollHeight,
+      navigationLeft: document
+        .querySelector('.app-navigation')!
+        .getBoundingClientRect().left,
+      navigationRight: document
+        .querySelector('.app-navigation')!
+        .getBoundingClientRect().right,
+      cards: cards.map((card) => {
+        const box = card.getBoundingClientRect()
+        return {
+          x: box.x,
+          top: box.top,
+          right: box.right,
+          bottom: box.bottom,
+          width: box.width,
+          height: box.height,
+        }
+      }),
+    }))
+    const questionBox = await questionCards.first().boundingBox()
+
+    expect(geometry.documentWidth).toBeLessThanOrEqual(
+      geometry.viewportWidth + 1,
+    )
+    expect(geometry.mainScrollHeight).toBeLessThanOrEqual(
+      geometry.mainClientHeight + 1,
+    )
+    expect(
+      geometry.cards.every(
+        (card) => card.right <= geometry.viewportWidth + 1 && card.height >= 64,
+      ),
+    ).toBe(true)
+    expect(geometry.cards[0].x).toBeGreaterThanOrEqual(
+      geometry.navigationRight + 4,
+    )
+    expect(geometry.navigationLeft).toBeGreaterThanOrEqual(
+      viewport.safeArea ?? 0,
+    )
+    expect(geometry.cards.at(-1)!.right).toBeLessThanOrEqual(
+      geometry.viewportWidth - (viewport.safeArea ?? 0) + 1,
+    )
+    expect(
+      Math.max(...geometry.cards.map((card) => card.top)) -
+        Math.min(...geometry.cards.map((card) => card.top)),
+    ).toBeLessThanOrEqual(1)
+    expect(
+      Math.max(...geometry.cards.map((card) => card.width)) -
+        Math.min(...geometry.cards.map((card) => card.width)),
+    ).toBeLessThanOrEqual(1)
+    expect(
+      Math.max(...geometry.cards.map((card) => card.height)) -
+        Math.min(...geometry.cards.map((card) => card.height)),
+    ).toBeLessThanOrEqual(1)
+    expect(questionBox).not.toBeNull()
+    expect(questionBox!.y).toBeGreaterThanOrEqual(
+      Math.max(...geometry.cards.map((card) => card.bottom)),
+    )
+    expect(questionBox!.x).toBeCloseTo(geometry.cards[0].x, 0)
+    expect(questionBox!.width).toBeCloseTo(geometry.cards[0].width, 0)
+
+    if (viewport.safeArea) {
+      await page
+        .getByRole('navigation', { name: 'My Geo 主导航' })
+        .getByRole('link', { name: '探索地球', exact: true })
+        .click()
+      const exploreShell = page.locator('.explore-shell')
+      const layerControl = page.locator('.layer-control')
+      await expect(exploreShell).toBeVisible()
+      await expect(layerControl).toBeVisible()
+      const exploreSafeArea = await page.evaluate(() => {
+        const navigation = document
+          .querySelector('.app-navigation')!
+          .getBoundingClientRect()
+        const layer = document
+          .querySelector('.layer-control')!
+          .getBoundingClientRect()
+        return {
+          navigationLeft: navigation.left,
+          layerRight: layer.right,
+          viewportWidth: document.documentElement.clientWidth,
+        }
+      })
+      expect(exploreSafeArea.navigationLeft).toBeGreaterThanOrEqual(
+        viewport.safeArea,
+      )
+      expect(exploreSafeArea.layerRight).toBeLessThanOrEqual(
+        exploreSafeArea.viewportWidth - viewport.safeArea + 1,
+      )
+    }
+  })
+}
 
 for (const viewport of knowledgeMapViewports) {
   test(`fills the knowledge map frame horizontally on ${viewport.name}`, async ({
     page,
   }) => {
     await page.setViewportSize(viewport)
-    await page.goto('/knowledge')
+    await page.goto('/knowledge/countries')
 
     const mapCard = page.locator('.knowledge-map-card')
     const map = page.locator('.knowledge-region-map')
@@ -55,7 +213,7 @@ test('matches selected-continent map colors to the learning region cards', async
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto('/knowledge')
+  await page.goto('/knowledge/countries')
 
   const selections = [
     { tab: /亚洲/, regionCount: 5 },
@@ -109,7 +267,7 @@ test('keeps the continent map stable above a single row of region cards', async 
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto('/knowledge')
+  await page.goto('/knowledge/countries')
 
   await expect(page.locator('.knowledge-topic-grid')).toHaveCount(0)
   await expect(page.getByLabel('国家知识范围')).toHaveCount(0)
@@ -214,7 +372,7 @@ test('keeps compact region cards readable in a horizontal scroller', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 430, height: 800 })
-  await page.goto('/knowledge')
+  await page.goto('/knowledge/countries')
 
   await expect(page.locator('.knowledge-topic-grid')).toHaveCount(0)
   const regionGrid = page.locator('.knowledge-category-grid')

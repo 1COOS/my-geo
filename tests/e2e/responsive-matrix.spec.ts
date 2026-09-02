@@ -145,7 +145,7 @@ for (const viewport of responsiveViewports) {
       ),
     ).toBeLessThanOrEqual(1)
 
-    await page.goto('/knowledge?continent=asia')
+    await page.goto('/knowledge/countries?continent=asia')
     await expect(page.getByRole('tablist', { name: '大洲' })).toBeVisible()
     await expect(page.locator('.knowledge-map-card')).toBeVisible()
     await expectNoRootOverflow(page)

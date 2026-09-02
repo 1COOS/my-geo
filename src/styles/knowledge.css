@@ -3,6 +3,108 @@
   margin: 0 auto 1rem;
 }
 
+.knowledge-home-shell {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  padding-bottom: 1.25rem;
+}
+
+.knowledge-home-header {
+  display: flex;
+  min-height: 2.75rem;
+  gap: 0.75rem;
+  align-items: baseline;
+  border-bottom: 1px solid var(--atlas-border-soft);
+}
+
+.knowledge-home-header h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.knowledge-home-header span {
+  color: var(--atlas-text-muted);
+  font-size: var(--fs-m);
+}
+
+.knowledge-home-section {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.knowledge-home-section h2 {
+  margin: 0;
+  color: var(--atlas-text-secondary);
+  font-size: var(--fs-b);
+  font-weight: 600;
+}
+
+.knowledge-home-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.knowledge-home-card {
+  display: grid;
+  min-width: 0;
+  min-height: 8rem;
+  padding: 0.85rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-content: start;
+  color: var(--atlas-text);
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.knowledge-home-card:hover,
+.knowledge-home-card:focus-visible {
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-accent);
+}
+
+.knowledge-home-card-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: 0.05rem;
+  color: var(--atlas-accent);
+}
+
+.knowledge-home-card-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.knowledge-home-card-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+}
+
+.knowledge-home-card-copy strong {
+  font-size: var(--fs-b);
+  font-weight: 600;
+}
+
+.knowledge-home-card-copy > span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--atlas-text-secondary);
+  font-size: var(--fs-m);
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .knowledge-question-hub-stats {
   display: flex;
   flex: none;
@@ -269,10 +371,11 @@
   isolation: isolate;
   width: 100%;
   height: 100dvh;
-  padding: clamp(0.85rem, 1.6vw, 1.4rem) clamp(0.8rem, 1.8vw, 1.65rem)
-    clamp(1.25rem, 3vw, 3rem)
+  padding: max(clamp(0.85rem, 1.6vw, 1.4rem), var(--atlas-safe-area-top))
+    max(clamp(0.8rem, 1.8vw, 1.65rem), var(--atlas-safe-area-right))
+    max(clamp(1.25rem, 3vw, 3rem), var(--atlas-safe-area-bottom))
     calc(
-      max(var(--layout-edge), env(safe-area-inset-left)) +
+      max(var(--layout-edge), var(--atlas-safe-area-left)) +
         var(--navigation-rail-size) + var(--layout-gap)
     );
   overflow-x: hidden;
@@ -705,13 +808,13 @@
 
 .knowledge-region-shell {
   --knowledge-detail-gap: 0.9rem;
-  --edge-top: max(var(--layout-edge), env(safe-area-inset-top));
-  --edge-right: max(var(--layout-edge), env(safe-area-inset-right));
-  --edge-bottom: max(var(--layout-edge), env(safe-area-inset-bottom));
+  --edge-top: max(var(--layout-edge), var(--atlas-safe-area-top));
+  --edge-right: max(var(--layout-edge), var(--atlas-safe-area-right));
+  --edge-bottom: max(var(--layout-edge), var(--atlas-safe-area-bottom));
   --detail-column: var(--detail-panel-size);
 
-  padding-top: max(0.75rem, env(safe-area-inset-top));
-  padding-bottom: 1.2rem;
+  padding-top: max(0.75rem, var(--atlas-safe-area-top));
+  padding-bottom: max(1.2rem, var(--atlas-safe-area-bottom));
 }
 
 .knowledge-view-on-globe,

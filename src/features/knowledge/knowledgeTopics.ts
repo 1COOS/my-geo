@@ -3,43 +3,33 @@ export type KnowledgeTopicId = 'earth' | 'countries' | 'extremes' | 'water'
 export type KnowledgeTopic = {
   id: KnowledgeTopicId
   title: string
+  description: string
   to: string
-  matches: (pathname: string) => boolean
-}
-
-function isRouteFamily(pathname: string, route: string) {
-  return pathname === route || pathname.startsWith(`${route}/`)
 }
 
 export const knowledgeTopics: readonly KnowledgeTopic[] = [
   {
     id: 'earth',
     title: '地球经纬',
+    description: '认识经纬线、半球与地球分区。',
     to: '/knowledge/earth',
-    matches: (pathname) => isRouteFamily(pathname, '/knowledge/earth'),
   },
   {
     id: 'countries',
     title: '国家首都',
-    to: '/knowledge',
-    matches: (pathname) =>
-      pathname === '/knowledge' ||
-      isRouteFamily(pathname, '/knowledge/countries'),
+    description: '按大洲和区域学习国家、国旗与首都。',
+    to: '/knowledge/countries',
   },
   {
     id: 'extremes',
     title: '世界之最',
+    description: '探索地球尺度、山川湖海与极值纪录。',
     to: '/knowledge/extremes',
-    matches: (pathname) => isRouteFamily(pathname, '/knowledge/extremes'),
   },
   {
     id: 'water',
     title: '江河湖海',
+    description: '按水域类型认识海洋、湖泊、河流与水道。',
     to: '/knowledge/water',
-    matches: (pathname) => isRouteFamily(pathname, '/knowledge/water'),
   },
 ]
-
-export function getActiveKnowledgeTopic(pathname: string) {
-  return knowledgeTopics.find((topic) => topic.matches(pathname))
-}

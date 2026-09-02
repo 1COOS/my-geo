@@ -107,89 +107,6 @@
   stroke-linejoin: round;
 }
 
-.app-navigation-knowledge {
-  position: relative;
-  display: grid;
-}
-
-.app-navigation-knowledge-trigger {
-  width: 100%;
-}
-
-.knowledge-subnavigation {
-  position: absolute;
-  z-index: 81;
-  top: 0;
-  left: calc(100% + 0.55rem);
-  display: grid;
-  width: min(12rem, calc(100vw - 5rem));
-  max-height: calc(100dvh - 7rem);
-  padding: 0.3rem;
-  overflow-y: auto;
-  background: var(--atlas-panel-muted);
-  border: 1px solid var(--atlas-border);
-  border-radius: var(--atlas-radius-compact);
-  box-shadow: var(--atlas-shadow);
-}
-
-.knowledge-subnavigation-link {
-  position: relative;
-  display: flex;
-  gap: 0.55rem;
-  align-items: center;
-  min-height: 2.75rem;
-  padding: 0.45rem 0.65rem;
-  color: var(--atlas-text-muted);
-  border-radius: var(--atlas-radius-control);
-  transition:
-    color 160ms ease,
-    background 160ms ease;
-}
-
-.knowledge-subnavigation-link::before {
-  position: absolute;
-  top: 0.55rem;
-  bottom: 0.55rem;
-  left: 0;
-  width: 2px;
-  content: '';
-  background: transparent;
-}
-
-.knowledge-subnavigation-link:hover,
-.knowledge-subnavigation-link:focus-visible {
-  color: var(--atlas-text);
-  background: var(--atlas-accent-soft);
-}
-
-.knowledge-subnavigation-link.is-active {
-  color: var(--atlas-text);
-  background: var(--atlas-panel-raised);
-}
-
-.knowledge-subnavigation-link.is-active::before {
-  background: var(--atlas-accent);
-}
-
-.knowledge-subnavigation-link svg {
-  flex: none;
-  width: 1.15rem;
-  height: 1.15rem;
-  fill: none;
-  stroke: var(--atlas-accent);
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.knowledge-subnavigation-link span {
-  overflow: hidden;
-  font-size: var(--fs-m);
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .app-route-loading {
   display: grid;
   width: 100%;
@@ -205,10 +122,10 @@
   display: grid;
   min-width: 320px;
   min-height: 100dvh;
-  padding: calc(1.5rem + env(safe-area-inset-top))
-    calc(1.5rem + env(safe-area-inset-right))
-    calc(1.5rem + env(safe-area-inset-bottom))
-    calc(1.5rem + env(safe-area-inset-left));
+  padding: calc(1.5rem + var(--atlas-safe-area-top))
+    calc(1.5rem + var(--atlas-safe-area-right))
+    calc(1.5rem + var(--atlas-safe-area-bottom))
+    calc(1.5rem + var(--atlas-safe-area-left));
   overflow: hidden;
   text-align: center;
   outline: none;
@@ -275,9 +192,9 @@
 .app-navigation {
   position: fixed;
   z-index: 80;
-  top: max(var(--layout-edge), env(safe-area-inset-top));
+  top: max(var(--layout-edge), var(--atlas-safe-area-top));
   bottom: auto;
-  left: max(var(--layout-edge), env(safe-area-inset-left));
+  left: max(var(--layout-edge), var(--atlas-safe-area-left));
   display: flex;
   flex-direction: column;
   align-items: stretch;

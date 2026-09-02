@@ -16,7 +16,7 @@ const pages = [
   {
     name: 'countries',
     topic: '国家首都',
-    url: '/knowledge?continent=asia',
+    url: '/knowledge/countries?continent=asia',
     tabs: '大洲',
   },
   {
@@ -56,36 +56,13 @@ for (const viewport of viewports) {
       await page.goto(definition.url)
       await expect(page.locator('.knowledge-topic-card')).toHaveCount(0)
 
-      const knowledgeTrigger = page.getByRole('button', { name: '知识体系' })
-      await knowledgeTrigger.click()
-      const submenu = page.getByRole('navigation', { name: '知识二级菜单' })
-      await expect(submenu.getByRole('link')).toHaveText([
-        '地球经纬',
-        '国家首都',
-        '世界之最',
-        '江河湖海',
-      ])
+      const knowledgeNavigation = page.getByRole('link', {
+        name: '知识中心',
+      })
+      await expect(knowledgeNavigation).toHaveClass(/is-active/)
       await expect(
-        submenu.getByRole('link', { name: definition.topic }),
-      ).toHaveAttribute('aria-current', 'page')
-      const [triggerBox, submenuBox] = await Promise.all([
-        knowledgeTrigger.boundingBox(),
-        submenu.boundingBox(),
-      ])
-      expect(triggerBox).not.toBeNull()
-      expect(submenuBox).not.toBeNull()
-      expect(submenuBox!.x).toBeGreaterThanOrEqual(
-        triggerBox!.x + triggerBox!.width,
-      )
-      expect(submenuBox!.x + submenuBox!.width).toBeLessThanOrEqual(
-        viewport.width,
-      )
-      expect(submenuBox!.y + submenuBox!.height).toBeLessThanOrEqual(
-        viewport.height,
-      )
-      await page.keyboard.press('Escape')
-      await expect(submenu).toHaveCount(0)
-      await expect(knowledgeTrigger).toBeFocused()
+        page.getByRole('navigation', { name: '知识二级菜单' }),
+      ).toHaveCount(0)
 
       const tablist = page.getByRole('tablist', { name: definition.tabs })
       const activeTab = tablist.locator('[aria-selected="true"]')

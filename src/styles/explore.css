@@ -973,10 +973,10 @@
 }
 
 .explore-shell {
-  --edge-top: max(var(--layout-edge), env(safe-area-inset-top));
-  --edge-right: max(var(--layout-edge), env(safe-area-inset-right));
-  --edge-bottom: max(var(--layout-edge), env(safe-area-inset-bottom));
-  --edge-left: max(var(--layout-edge), env(safe-area-inset-left));
+  --edge-top: max(var(--layout-edge), var(--atlas-safe-area-top));
+  --edge-right: max(var(--layout-edge), var(--atlas-safe-area-right));
+  --edge-bottom: max(var(--layout-edge), var(--atlas-safe-area-bottom));
+  --edge-left: max(var(--layout-edge), var(--atlas-safe-area-left));
   --mini-map-width: clamp(11rem, 18vw, 15.75rem);
   --middle-slot-width: calc(
     100vw - var(--edge-left) - var(--edge-right) - var(--mini-map-width) -

@@ -313,10 +313,10 @@ test('switches between exploration and knowledge without scene teardown errors',
   if (await fallback.isVisible()) return
   await expect(scene).toBeVisible()
 
-  const knowledgeButton = page.getByRole('button', { name: '知识体系' })
+  const knowledgeLink = page.getByRole('link', { name: '知识中心' })
   const exploreLink = page.getByRole('link', { name: '探索地球' })
-  await knowledgeButton.click()
-  await page.getByRole('link', { name: '国家首都' }).click()
+  await knowledgeLink.click()
+  await page.getByTestId('knowledge-home-module-countries').click()
   await expect(
     page.getByRole('heading', { name: '国家首都', level: 1 }),
   ).toHaveClass('sr-only')
@@ -325,8 +325,8 @@ test('switches between exploration and knowledge without scene teardown errors',
   await waitForSceneOrFallback(page)
   await expect(page.getByTestId('globe-scene')).toBeVisible()
 
-  await knowledgeButton.click()
-  await page.getByRole('link', { name: '国家首都' }).click()
+  await knowledgeLink.click()
+  await page.getByTestId('knowledge-home-module-countries').click()
   await expect(
     page.getByRole('heading', { name: '国家首都', level: 1 }),
   ).toHaveClass('sr-only')
@@ -338,7 +338,7 @@ test('switches between exploration and knowledge without scene teardown errors',
 test('navigates the country knowledge atlas and deep-links back to the globe', async ({
   page,
 }) => {
-  await page.goto('/knowledge')
+  await page.goto('/knowledge/countries')
 
   await expect(
     page.getByRole('heading', { name: '国家首都', level: 1 }),
@@ -512,7 +512,7 @@ for (const viewport of [
       countryDetailCard.boundingBox(),
     ])
 
-    await page.goto('/knowledge')
+    await page.goto('/knowledge/countries')
     const countryMapCard = page.locator('.knowledge-map-card')
     await expect(
       countryMapCard.locator('.knowledge-region-map-countries path').first(),
@@ -1229,7 +1229,7 @@ for (const viewport of [
       filter: 'none',
     })
 
-    await page.goto('/knowledge?continent=asia')
+    await page.goto('/knowledge/countries?continent=asia')
     expect(
       await readMapHighlightStyle(
         page,
@@ -1356,15 +1356,16 @@ test('deletes legacy regional progress and redirects legacy challenge routes', a
   await expect(page).toHaveURL(/\/questions$/)
 })
 
-test('enters continent questions from the global hub and persists the result', async ({
+test('enters continent questions from the knowledge hub and persists the result', async ({
   page,
 }) => {
-  await page.goto('/explore')
+  await page.goto('/knowledge')
 
-  const questionNavigation = page.getByRole('link', { name: '知识问答' })
-  await questionNavigation.click()
+  const knowledgeNavigation = page.getByRole('link', { name: '知识中心' })
+  const questionEntry = page.getByRole('link', { name: /知识问答/ })
+  await questionEntry.click()
   await expect(page).toHaveURL(/\/questions$/)
-  await expect(questionNavigation).toHaveClass(/is-active/)
+  await expect(knowledgeNavigation).toHaveClass(/is-active/)
   await expect(
     page.getByRole('heading', { name: '知识问答', level: 1 }),
   ).toBeVisible()
@@ -1376,7 +1377,7 @@ test('enters continent questions from the global hub and persists the result', a
   await expect(page).toHaveURL(/\/questions\?difficulty=hard$/)
   await page.getByTestId('knowledge-question-continent-asia').click()
   await expect(page).toHaveURL(/\/questions\/asia\/hard$/)
-  await expect(questionNavigation).toHaveClass(/is-active/)
+  await expect(knowledgeNavigation).toHaveClass(/is-active/)
   await expect(page.getByText('亚洲 · 困难')).toBeVisible()
 
   for (let index = 0; index < 10; index += 1) {
@@ -1521,9 +1522,11 @@ for (const viewport of [
     })
     await page.goto('/questions')
 
-    const questionNavigation = page.getByRole('link', { name: '知识问答' })
-    await expect(questionNavigation).toBeVisible()
-    await expect(questionNavigation).toHaveClass(/is-active/)
+    const knowledgeNavigation = page.getByRole('link', {
+      name: '知识中心',
+    })
+    await expect(knowledgeNavigation).toBeVisible()
+    await expect(knowledgeNavigation).toHaveClass(/is-active/)
     const cards = page.locator('.knowledge-question-continent-card')
     await expect(cards).toHaveCount(5)
     await expect(
@@ -1678,7 +1681,7 @@ for (const viewport of [
       width: viewport.width,
       height: viewport.height,
     })
-    await page.goto('/knowledge')
+    await page.goto('/knowledge/countries')
 
     await expect(
       page.getByRole('heading', { name: '国家首都', level: 1 }),
@@ -1724,7 +1727,10 @@ for (const viewport of [
       level: 1,
     })
     const regionCount = regionTitle.locator('strong')
-    await expect(backLink).toHaveAttribute('href', '/knowledge?continent=asia')
+    await expect(backLink).toHaveAttribute(
+      'href',
+      '/knowledge/countries?continent=asia',
+    )
     await expect(regionCount).toHaveText('5')
     const regionCountStyle = await regionCount.evaluate((element) => {
       const style = getComputedStyle(element)
@@ -1966,9 +1972,9 @@ test('keeps the global fullscreen control active across app routes', async ({
   const exitFullscreen = page.getByRole('button', { name: '退出全屏' })
   await expect(exitFullscreen).toHaveAttribute('aria-pressed', 'true')
 
-  await page.getByRole('button', { name: '知识体系' }).click()
-  await page.getByRole('link', { name: '国家首都' }).click()
-  await expect(page).toHaveURL(/\/knowledge$/)
+  await page.getByRole('link', { name: '知识中心' }).click()
+  await page.getByTestId('knowledge-home-module-countries').click()
+  await expect(page).toHaveURL(/\/knowledge\/countries$/)
   await expect(exitFullscreen).toBeVisible()
 
   for (const path of [
@@ -2043,7 +2049,7 @@ for (const viewport of [
     expect(layout.top).toBeGreaterThanOrEqual(5)
     expect(layout.bottom).toBeLessThanOrEqual(viewport.height - 5)
     expect(layout.scrollHeight).toBeLessThanOrEqual(layout.clientHeight + 1)
-    expect(layout.items).toHaveLength(4)
+    expect(layout.items).toHaveLength(3)
     for (let index = 1; index < layout.items.length; index += 1) {
       expect(layout.items[index].top).toBeGreaterThanOrEqual(
         layout.items[index - 1].bottom,

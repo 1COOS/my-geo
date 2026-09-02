@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import { KnowledgeEarthLineDetailPage } from './KnowledgeEarthLineDetailPage'
 import { KnowledgeEarthPage } from './KnowledgeEarthPage'
-import { KnowledgePage } from './KnowledgePage'
+import { KnowledgeCountriesPage as KnowledgePage } from './KnowledgeCountriesPage'
 import { KnowledgeRegionPage } from './KnowledgeRegionPage'
 
 function getMapCountryPath(countryCode: string) {
@@ -30,7 +30,7 @@ describe('knowledge pages', () => {
   it('shows the country topic and switches continent region catalogs', async () => {
     const user = userEvent.setup()
     render(
-      <MemoryRouter initialEntries={['/knowledge']}>
+      <MemoryRouter initialEntries={['/knowledge/countries']}>
         <KnowledgePage />
       </MemoryRouter>,
     )
@@ -368,7 +368,7 @@ describe('knowledge pages', () => {
     ).toBe('5')
     expect(screen.getByRole('link', { name: '← 返回亚洲' })).toHaveAttribute(
       'href',
-      '/knowledge?continent=asia',
+      '/knowledge/countries?continent=asia',
     )
     const regionMap = document.querySelector<HTMLElement>(
       '.knowledge-region-map-strip',
