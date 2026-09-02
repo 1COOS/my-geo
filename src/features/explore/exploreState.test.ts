@@ -7,26 +7,22 @@ import {
 } from './exploreState'
 
 describe('exploreReducer', () => {
-  it('keeps exactly one selected entity and derives a city country', () => {
+  it('keeps exactly one selected entity', () => {
     const countryState = exploreReducer(initialExploreState, {
       type: 'select',
       selection: { kind: 'country', countryCode: 'CN' },
     })
-    const cityState = exploreReducer(countryState, {
+    const lakeState = exploreReducer(countryState, {
       type: 'select',
-      selection: {
-        kind: 'city',
-        cityId: 'cn-beijing',
-        countryCode: 'CN',
-      },
+      selection: { kind: 'waterbody', waterbodyId: 'lake-baikal' },
     })
 
-    expect(cityState.selection).toEqual({
-      kind: 'city',
-      cityId: 'cn-beijing',
-      countryCode: 'CN',
+    expect(lakeState.selection).toEqual({
+      kind: 'waterbody',
+      waterbodyId: 'lake-baikal',
     })
-    expect(getSelectedCountryCode(cityState.selection)).toBe('CN')
+    expect(getSelectedCountryCode(countryState.selection)).toBe('CN')
+    expect(getSelectedCountryCode(lakeState.selection)).toBeNull()
   })
 
   it('enables layers required by selected teaching entities', () => {
@@ -129,22 +125,5 @@ describe('exploreReducer', () => {
 
     expect(hidden.hover).toBeNull()
     expect(hidden.selection).toEqual({ kind: 'country', countryCode: 'CN' })
-  })
-
-  it('returns from a city to its country', () => {
-    const cityState = exploreReducer(initialExploreState, {
-      type: 'select',
-      selection: {
-        kind: 'city',
-        cityId: 'cn-beijing',
-        countryCode: 'CN',
-      },
-    })
-    const countryState = exploreReducer(cityState, { type: 'backToCountry' })
-
-    expect(countryState.selection).toEqual({
-      kind: 'country',
-      countryCode: 'CN',
-    })
   })
 })

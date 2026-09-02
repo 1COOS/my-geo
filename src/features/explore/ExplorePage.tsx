@@ -20,7 +20,7 @@ import {
   preloadClimateRaster,
 } from '../../data/climateRaster'
 import type { ClimateTypeId } from '../../data/climateLearningSchema'
-import { getCitiesForCountry, getCity, getCountry } from '../../data/countries'
+import { getCitiesForCountry, getCountry } from '../../data/countries'
 import { getDesert } from '../../data/deserts'
 import {
   geographyLearningOverview,
@@ -55,10 +55,7 @@ import type {
   GlobeView,
   WorldMiniMapNavigation,
 } from '../../shared/types/geo'
-import {
-  CITY_CAMERA_DISTANCE,
-  OVERVIEW_CAMERA_DISTANCE,
-} from '../../scene/countrySceneInteraction'
+import { OVERVIEW_CAMERA_DISTANCE } from '../../scene/countrySceneInteraction'
 import { LANDMARK_CAMERA_DISTANCE } from '../../scene/landmarkSceneInteraction'
 import { CountryDetailPanel } from './CountryDetailPanel'
 import { CountrySearch } from './CountrySearch'
@@ -456,7 +453,6 @@ export function ExplorePage() {
   const selection = exploreState.selection
   const hover = exploreState.hover
   const selectedCountryCode = getSelectedCountryCode(selection)
-  const selectedCityId = selection?.kind === 'city' ? selection.cityId : null
   const selectedWaterbodyId =
     selection?.kind === 'waterbody' ? selection.waterbodyId : null
   const selectedLinearFeatureId =
@@ -481,7 +477,6 @@ export function ExplorePage() {
     selection?.kind === 'climate' ? selection.value : null
   const hoveredCountryCode =
     hover?.kind === 'country' ? hover.countryCode : null
-  const hoveredCityId = hover?.kind === 'city' ? hover.cityId : null
   const hoveredWaterbodyId =
     hover?.kind === 'waterbody' ? hover.waterbodyId : null
   const hoveredLinearFeatureId =
@@ -576,7 +571,6 @@ export function ExplorePage() {
   }, [activeControlPanel, closeControlPanel])
 
   const selectedCountry = getCountry(selectedCountryCode)
-  const selectedCity = getCity(selectedCityId)
   const selectedWaterbody = getWaterbody(selectedWaterbodyId)
   const selectedLinearFeature = getLinearGeoFeature(selectedLinearFeatureId)
   const selectedMountainRange = getMountainRange(selectedMountainRangeId)
@@ -815,26 +809,6 @@ export function ExplorePage() {
     },
     [requestCameraTarget],
   )
-  const navigateToCity = useCallback(
-    (cityId: string) => {
-      const city = getCity(cityId)
-      if (!city) return
-      setMiniMapExpanded(false)
-      dispatch({
-        type: 'select',
-        selection: {
-          kind: 'city',
-          cityId: city.id,
-          countryCode: city.countryCode,
-        },
-      })
-      requestCameraTarget(
-        { latitude: city.latitude, longitude: city.longitude },
-        CITY_CAMERA_DISTANCE,
-      )
-    },
-    [requestCameraTarget],
-  )
   const navigateToWaterbody = useCallback(
     (waterbodyId: string) => {
       const waterbody = getWaterbody(waterbodyId)
@@ -1000,7 +974,6 @@ export function ExplorePage() {
   const navigateToSearchResult = useCallback(
     (result: PlaceSearchResult) => {
       if (result.type === 'country') navigateToCountry(result.country.code)
-      else if (result.type === 'city') navigateToCity(result.city.id)
       else if (result.type === 'waterbody')
         navigateToWaterbody(result.waterbody.id)
       else if (result.type === 'linearFeature')
@@ -1017,7 +990,6 @@ export function ExplorePage() {
       else openClimateOverview()
     },
     [
-      navigateToCity,
       navigateToCountry,
       navigateToDesert,
       navigateToLinearFeature,
@@ -1056,11 +1028,6 @@ export function ExplorePage() {
   const hoverCountry = useCallback(
     (countryCode: string | null) =>
       setEntityHover(countryCode ? { kind: 'country', countryCode } : null),
-    [setEntityHover],
-  )
-  const hoverCity = useCallback(
-    (cityId: string | null) =>
-      setEntityHover(cityId ? { kind: 'city', cityId } : null),
     [setEntityHover],
   )
   const hoverWaterbody = useCallback(
@@ -1121,7 +1088,6 @@ export function ExplorePage() {
     !reducedMotion &&
     selectedCountryCode === null &&
     hoveredCountryCode === null &&
-    hoveredCityId === null &&
     hoveredWaterbodyId === null &&
     selectedWaterbodyId === null &&
     selectedLinearFeatureId === null &&
@@ -1182,7 +1148,6 @@ export function ExplorePage() {
               selectedGeographyTopicId,
               selectedReferenceLineId,
               selectedCountryCode,
-              selectedCityId,
               selectedWaterbodyId,
               selectedLinearFeatureId,
               selectedMountainRangeId,
@@ -1191,7 +1156,6 @@ export function ExplorePage() {
             }}
             hover={{
               hoveredCountryCode,
-              hoveredCityId,
               hoveredWaterbodyId,
               hoveredLinearFeatureId,
               hoveredMountainRangeId,
@@ -1200,9 +1164,7 @@ export function ExplorePage() {
             }}
             events={{
               onSelectCountry: navigateToCountry,
-              onSelectCity: navigateToCity,
               onHoverCountry: hoverCountry,
-              onHoverCity: hoverCity,
               onSelectWaterbody: navigateToWaterbody,
               onHoverWaterbody: hoverWaterbody,
               onSelectLinearFeature: navigateToLinearFeature,
@@ -1305,7 +1267,6 @@ export function ExplorePage() {
               <CountrySearch
                 key={
                   selectedCountry?.code ??
-                  selectedCity?.id ??
                   selectedWaterbody?.id ??
                   selectedLinearFeature?.id ??
                   selectedMountainRange?.id ??
@@ -1318,7 +1279,6 @@ export function ExplorePage() {
                   'no-selection'
                 }
                 selectedLabel={
-                  selectedCity?.name.zh ??
                   selectedCountry?.name.zh ??
                   selectedWaterbody?.name.zh ??
                   selectedLinearFeature?.name.zh ??
@@ -1400,9 +1360,6 @@ export function ExplorePage() {
           key={selectedCountry.code}
           country={selectedCountry}
           cities={visibleCountryCities}
-          selectedCity={selectedCity}
-          onSelectCity={navigateToCity}
-          onBackToCountry={() => dispatch({ type: 'backToCountry' })}
           onSelectCountry={navigateToCountry}
         />
       ) : null}

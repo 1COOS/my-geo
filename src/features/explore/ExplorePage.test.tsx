@@ -635,7 +635,7 @@ describe('ExplorePage', () => {
     ).toBeInTheDocument()
   })
 
-  it('opens a city knowledge card and requests the closer city camera distance', async () => {
+  it('keeps major cities static inside the country card', async () => {
     const user = userEvent.setup()
     render(
       <Tooltip.Provider>
@@ -648,27 +648,13 @@ describe('ExplorePage', () => {
       screen.getByRole('combobox', { name: '搜索地点' }),
       '中国{Enter}',
     )
-    await user.click(screen.getByRole('button', { name: /城市邻国/ }))
-    await user.click(screen.getByRole('button', { name: '探索城市上海' }))
-
-    expect(screen.getByLabelText('上海城市知识卡')).toBeInTheDocument()
-    expect(
-      (
-        globePropsMock.mock.lastCall![0] as {
-          cameraTarget: { distance: number; position: GeoPosition }
-          selectedCityId: string | null
-        }
-      ).cameraTarget.distance,
-    ).toBe(190)
-    expect(
-      (
-        globePropsMock.mock.lastCall![0] as {
-          selectedCityId: string | null
-        }
-      ).selectedCityId,
-    ).toBe('cn-shanghai')
-
-    await user.click(screen.getByRole('button', { name: '← 返回中国' }))
+    await user.click(screen.getByRole('button', { name: /^主要城市/ }))
+    expect(screen.getByText('上海', { exact: true })).toBeInTheDocument()
+    expect(screen.getByText('Shanghai', { exact: true })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /探索城市/ })).toBeNull()
+    expect(globePropsMock.mock.lastCall![0]).not.toHaveProperty(
+      'selectedCityId',
+    )
     expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
   })
 
@@ -1316,28 +1302,5 @@ describe('ExplorePage', () => {
       showCapitals: false,
       showCities: false,
     })
-  })
-
-  it('clears a hovered city when its layer is switched off', async () => {
-    const user = userEvent.setup()
-    render(
-      <Tooltip.Provider>
-        <ExplorePage />
-      </Tooltip.Provider>,
-    )
-
-    const getProps = () =>
-      globePropsMock.mock.lastCall![0] as {
-        hoveredCityId: string | null
-        onHoverCity: (cityId: string | null) => void
-      }
-
-    await openLayerPanel(user)
-    await user.click(screen.getByRole('button', { name: '城市' }))
-    act(() => getProps().onHoverCity('cn-shanghai'))
-    expect(getProps().hoveredCityId).toBe('cn-shanghai')
-
-    await user.click(screen.getByRole('button', { name: '城市' }))
-    expect(getProps().hoveredCityId).toBeNull()
   })
 })

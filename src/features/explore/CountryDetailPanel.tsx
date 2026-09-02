@@ -6,19 +6,13 @@ import { CountryKnowledgeCard } from '../country-knowledge/CountryKnowledgeCard'
 type CountryDetailPanelProps = {
   country: Country
   cities: City[]
-  selectedCity: City | undefined
   onSelectCountry: (countryCode: string) => void
-  onSelectCity: (cityId: string) => void
-  onBackToCountry: () => void
 }
 
 export function CountryDetailPanel({
   country,
   cities,
-  selectedCity,
   onSelectCountry,
-  onSelectCity,
-  onBackToCountry,
 }: CountryDetailPanelProps) {
   const region = knowledgeRegionByCountryCode.get(country.code)
 
@@ -26,16 +20,9 @@ export function CountryDetailPanel({
     <CountryKnowledgeCard
       country={country}
       cities={cities}
-      selectedCity={selectedCity}
-      label={
-        selectedCity
-          ? `${selectedCity.name.zh}城市知识卡`
-          : `${country.name.zh}国家知识卡`
-      }
-      identity={`${country.code}:${selectedCity?.id ?? 'country'}`}
+      label={`${country.name.zh}国家知识卡`}
+      identity={`${country.code}:country`}
       onSelectCountry={onSelectCountry}
-      onSelectCity={onSelectCity}
-      onBackToCountry={onBackToCountry}
       footerAction={
         region
           ? {

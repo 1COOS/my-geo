@@ -17,17 +17,15 @@ function country(code: string) {
 
 function renderSections(code: string, onSelectCountry = vi.fn()) {
   const selectedCountry = country(code)
-  const onSelectCity = vi.fn()
   const result = render(
     <CountryKnowledgeSections
       key={code}
       country={selectedCountry}
       cities={getCitiesForCountry(code)}
       onSelectCountry={onSelectCountry}
-      onSelectCity={onSelectCity}
     />,
   )
-  return { ...result, onSelectCity, onSelectCountry }
+  return { ...result, onSelectCountry }
 }
 
 describe('CountryKnowledgeSections', () => {
@@ -37,12 +35,14 @@ describe('CountryKnowledgeSections', () => {
     const people = screen.getByRole('button', { name: /语言民族/ })
     const resources = screen.getByRole('button', { name: /自然资源/ })
     const economy = screen.getByRole('button', { name: /经济产业/ })
-    const places = screen.getByRole('button', { name: /城市邻国/ })
+    const cities = screen.getByRole('button', { name: /^主要城市/ })
+    const relations = screen.getByRole('button', { name: /国际关系/ })
 
     expect(people).toHaveAttribute('aria-expanded', 'false')
     expect(resources).toHaveAttribute('aria-expanded', 'false')
     expect(economy).toHaveAttribute('aria-expanded', 'false')
-    expect(places).toHaveAttribute('aria-expanded', 'false')
+    expect(cities).toHaveAttribute('aria-expanded', 'false')
+    expect(relations).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('中文')).toBeNull()
     await userEvent.click(people)
     expect(people).toHaveAttribute('aria-expanded', 'true')
@@ -77,10 +77,10 @@ describe('CountryKnowledgeSections', () => {
 
     expect(
       document.querySelectorAll('.knowledge-country-chapter-disclosure'),
-    ).toHaveLength(4)
+    ).toHaveLength(5)
     expect(
       document.querySelectorAll('.knowledge-country-chapter-icon'),
-    ).toHaveLength(4)
+    ).toHaveLength(5)
 
     const labels = () =>
       Array.from(
@@ -116,8 +116,12 @@ describe('CountryKnowledgeSections', () => {
     await userEvent.click(screen.getByRole('button', { name: /经济产业/ }))
     expect(labels()).toEqual(['农业', '工业'])
 
-    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
-    expect(labels()).toEqual(['城市', '区位', '邻国', '地区'])
+    await userEvent.click(screen.getByRole('button', { name: /^主要城市/ }))
+    expect(labels()).toEqual(['城市'])
+
+    await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
+    expect(labels()).toEqual(['邻国', '地区', '全球', '功能'])
+    expect(screen.queryByText('区位', { exact: true })).toBeNull()
   })
 
   it('keeps chapter summaries inline and prioritizes a non-capital city', () => {
@@ -146,8 +150,11 @@ describe('CountryKnowledgeSections', () => {
     expect(
       screen.getByRole('button', { name: /语言民族/ }),
     ).not.toHaveTextContent('民间宗教')
-    expect(screen.getByRole('button', { name: /城市邻国/ })).toHaveTextContent(
-      '上海 · 邻国14个',
+    expect(screen.getByRole('button', { name: /^主要城市/ })).toHaveTextContent(
+      '上海 · 5座城市',
+    )
+    expect(screen.getByRole('button', { name: /国际关系/ })).toHaveTextContent(
+      '邻国14个 · 2项身份',
     )
 
     const russia = country('RU')
@@ -159,8 +166,8 @@ describe('CountryKnowledgeSections', () => {
         onSelectCountry={vi.fn()}
       />,
     )
-    expect(screen.getByRole('button', { name: /城市邻国/ })).toHaveTextContent(
-      '圣彼得堡 · 邻国14个',
+    expect(screen.getByRole('button', { name: /^主要城市/ })).toHaveTextContent(
+      '圣彼得堡 · 5座城市',
     )
 
     const singapore = country('SG')
@@ -172,8 +179,8 @@ describe('CountryKnowledgeSections', () => {
         onSelectCountry={vi.fn()}
       />,
     )
-    expect(screen.getByRole('button', { name: /城市邻国/ })).toHaveTextContent(
-      '新加坡 · 邻国0个',
+    expect(screen.getByRole('button', { name: /^主要城市/ })).toHaveTextContent(
+      '新加坡 · 1座城市',
     )
   })
 
@@ -214,14 +221,35 @@ describe('CountryKnowledgeSections', () => {
     )
   })
 
-  it('shows every city and neighbour inside the combined chapter', async () => {
+  it('shows every city as one static bilingual row and keeps neighbours separate', async () => {
     const onSelectCountry = vi.fn()
-    const { onSelectCity } = renderSections('CN', onSelectCountry)
+    renderSections('CN', onSelectCountry)
 
     expect(screen.queryByRole('button', { name: '探索城市北京' })).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
+    await userEvent.click(screen.getByRole('button', { name: /^主要城市/ }))
 
-    expect(screen.getByRole('button', { name: '探索城市成都' })).toBeVisible()
+    const cityRows = Array.from(
+      document.querySelectorAll('.knowledge-country-city-row'),
+    )
+    expect(cityRows).toHaveLength(5)
+    expect(cityRows.map((row) => row.textContent)).toEqual([
+      '北京Beijing',
+      '上海Shanghai',
+      '广州Guangzhou',
+      '深圳Shenzhen',
+      '成都Chengdu',
+    ])
+    expect(cityRows[0]?.children).toHaveLength(2)
+    expect(cityRows[0]?.children[0]).toHaveTextContent('北京')
+    expect(cityRows[0]?.children[1]).toHaveTextContent('Beijing')
+    expect(cityRows[0]?.children[1]).toHaveAttribute('title', 'Beijing')
+    expect(screen.queryByRole('button', { name: /探索城市/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: '探索邻国俄罗斯' })).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
+    expect(
+      document.querySelectorAll('.knowledge-country-city-row'),
+    ).toHaveLength(0)
     expect(screen.getByRole('button', { name: '探索邻国俄罗斯' })).toBeVisible()
     expect(
       screen.queryByRole('button', { name: /查看全部主要城市/ }),
@@ -229,15 +257,42 @@ describe('CountryKnowledgeSections', () => {
     expect(
       screen.queryByRole('button', { name: /查看全部相邻国家/ }),
     ).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: '探索城市北京' }))
-    expect(onSelectCity).toHaveBeenCalledWith('cn-beijing')
-
     await userEvent.click(
       screen.getByRole('button', { name: '探索邻国阿富汗' }),
     )
     expect(onSelectCountry).toHaveBeenCalledWith('AF')
     expect(screen.queryByRole('button', { name: /中国香港/ })).toBeNull()
     expect(screen.getByText('中国香港')).toBeVisible()
+  })
+
+  it('groups only the selected country affiliations and shows a precise empty state', async () => {
+    const { rerender } = render(
+      <CountryKnowledgeSections
+        key="CN"
+        country={country('CN')}
+        cities={getCitiesForCountry('CN')}
+        onSelectCountry={vi.fn()}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
+    expect(screen.getByText(/联合国安理会常任理事国/)).toBeVisible()
+    expect(screen.getByText(/世界贸易组织/)).toBeVisible()
+    expect(screen.queryByText(/欧洲联盟/)).toBeNull()
+    expect(screen.getByText('全球', { exact: true })).toBeVisible()
+    expect(screen.getByText('功能', { exact: true })).toBeVisible()
+
+    rerender(
+      <CountryKnowledgeSections
+        key="VA"
+        country={country('VA')}
+        cities={getCitiesForCountry('VA')}
+        onSelectCountry={vi.fn()}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
+    expect(screen.getByText('在当前收录的7项中暂无正式成员身份')).toBeVisible()
+    expect(screen.getByText('组织', { exact: true })).toBeVisible()
   })
 
   it('renders unheaded signature labels only for priority countries', () => {

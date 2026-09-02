@@ -206,6 +206,11 @@
   display: none;
 }
 
+.city-label.is-city {
+  cursor: default;
+  pointer-events: none;
+}
+
 .city-label > span {
   width: 0.42rem;
   height: 0.42rem;

@@ -127,9 +127,7 @@ export type GlobeWorldProps = {
   selectedGeographyTopicId: GeographyTopicId | null
   selectedReferenceLineId: ReferenceLineId | null
   selectedCountryCode: string | null
-  selectedCityId: string | null
   hoveredCountryCode: string | null
-  hoveredCityId: string | null
   selectedWaterbodyId: string | null
   hoveredWaterbodyId: string | null
   selectedLinearFeatureId: string | null
@@ -141,9 +139,7 @@ export type GlobeWorldProps = {
   selectedLandmarkId: string | null
   hoveredLandmarkId: string | null
   onSelectCountry: (countryCode: string) => void
-  onSelectCity: (cityId: string) => void
   onHoverCountry: (countryCode: string | null) => void
-  onHoverCity: (cityId: string | null) => void
   onSelectWaterbody: (waterbodyId: string) => void
   onHoverWaterbody: (waterbodyId: string | null) => void
   onSelectLinearFeature: (featureId: string) => void
@@ -202,7 +198,6 @@ export type GlobeSceneProps = {
     | 'selectedGeographyTopicId'
     | 'selectedReferenceLineId'
     | 'selectedCountryCode'
-    | 'selectedCityId'
     | 'selectedWaterbodyId'
     | 'selectedLinearFeatureId'
     | 'selectedMountainRangeId'
@@ -212,7 +207,6 @@ export type GlobeSceneProps = {
   hover: Pick<
     GlobeWorldProps,
     | 'hoveredCountryCode'
-    | 'hoveredCityId'
     | 'hoveredWaterbodyId'
     | 'hoveredLinearFeatureId'
     | 'hoveredMountainRangeId'
@@ -222,9 +216,7 @@ export type GlobeSceneProps = {
   events: Pick<
     GlobeWorldProps,
     | 'onSelectCountry'
-    | 'onSelectCity'
     | 'onHoverCountry'
-    | 'onHoverCity'
     | 'onSelectWaterbody'
     | 'onHoverWaterbody'
     | 'onSelectLinearFeature'
@@ -351,9 +343,7 @@ function World({
   quality,
   reducedMotion,
   selectedCountryCode,
-  selectedCityId,
   hoveredCountryCode,
-  hoveredCityId,
   selectedWaterbodyId,
   hoveredWaterbodyId,
   selectedLinearFeatureId,
@@ -374,9 +364,7 @@ function World({
   showMountainLayer,
   showDesertLayer,
   onSelectCountry,
-  onSelectCity,
   onHoverCountry,
-  onHoverCity,
   onSelectWaterbody,
   onHoverWaterbody,
   onSelectLinearFeature,
@@ -767,8 +755,6 @@ function World({
 
   const labelLayoutItems = useMemo<LabelLayoutCandidate[]>(() => {
     const priorityState = {
-      selectedCityId,
-      hoveredCityId,
       selectedWaterbodyId,
       hoveredWaterbodyId,
       selectedLinearFeatureId,
@@ -794,14 +780,12 @@ function World({
         height: 28,
       }))
   }, [
-    hoveredCityId,
     hoveredDesertId,
     hoveredLandmarkId,
     hoveredLinearFeatureId,
     hoveredMountainRangeId,
     hoveredWaterbodyId,
     labelItems,
-    selectedCityId,
     selectedDesertId,
     selectedLandmarkId,
     selectedLinearFeatureId,
@@ -998,8 +982,6 @@ function World({
       if (!element) continue
 
       const forced =
-        item.id === selectedCityId ||
-        item.id === hoveredCityId ||
         item.id === selectedWaterbodyId ||
         item.id === hoveredWaterbodyId ||
         item.id === selectedLinearFeatureId ||
@@ -1068,7 +1050,6 @@ function World({
     applyLabelProjection,
     camera,
     getSelectedLabelOffset,
-    hoveredCityId,
     hoveredWaterbodyId,
     hoveredLinearFeatureId,
     hoveredMountainRangeId,
@@ -1079,7 +1060,6 @@ function World({
     projectLabelCandidate,
     quality,
     projectSelectedMountainPeak,
-    selectedCityId,
     selectedWaterbodyId,
     selectedLinearFeatureId,
     selectedMountainRangeId,
@@ -1546,8 +1526,6 @@ function World({
           if (landmarkMarker?.landmarkId === hoveredLandmarkId) return 0.52
           if (landmarkMarker) return 0.36
           const marker = getCityMarker(value)
-          if (marker?.cityId === selectedCityId) return 0.58
-          if (marker?.cityId === hoveredCityId) return 0.5
           if (!marker?.isCapital) return 0.3
           return marker.countryCode === selectedCountryCode ? 0.46 : 0.34
         }}
@@ -1571,8 +1549,6 @@ function World({
           if (landmarkMarker?.landmarkId === hoveredLandmarkId) return '#fff1bd'
           if (landmarkMarker) return '#ffc85c'
           const marker = getCityMarker(value)
-          if (marker?.cityId === selectedCityId) return '#ffffff'
-          if (marker?.cityId === hoveredCityId) return '#b8f5ff'
           if (!marker?.isCapital) return '#4dcfff'
           if (marker.countryCode === selectedCountryCode) return '#ffd85e'
           return '#f5cf62'
@@ -1617,7 +1593,6 @@ function World({
             canvas.style.cursor = getGeographyCanvasCursor(referenceLineId)
           }
           const cityId = getCityIdForLayer(layer, value)
-          onHoverCity(cityId)
           onHoverCountry(
             cityId ||
               waterbodyId ||
@@ -1677,10 +1652,7 @@ function World({
             }
           }
           const cityId = getCityIdForLayer(layer, value)
-          if (cityId) {
-            onSelectCity(cityId)
-            return
-          }
+          if (cityId) return
           if (showClimateLayer) {
             const point = getGlobeClickPoint(event)
             if (point) {
@@ -1750,7 +1722,6 @@ export function GlobeScene({
     [climate, events, geometry, hover, layers, selection, view],
   )
   const {
-    onHoverCity,
     onHoverCountry,
     onHoverLinearFeature,
     onHoverMountainRange,
@@ -1765,14 +1736,12 @@ export function GlobeScene({
   const selectedMountainPeakRef = useRef<HTMLButtonElement>(null)
   const clearHoveredEntities = useCallback(() => {
     onHoverCountry(null)
-    onHoverCity(null)
     onHoverWaterbody(null)
     onHoverLinearFeature(null)
     onHoverMountainRange(null)
     onHoverDesert(null)
     onHoverLandmark(null)
   }, [
-    onHoverCity,
     onHoverCountry,
     onHoverLinearFeature,
     onHoverMountainRange,

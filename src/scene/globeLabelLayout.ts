@@ -135,8 +135,6 @@ export function getLabelVisibilityChanges(
 }
 
 type LabelPriorityState = {
-  selectedCityId: string | null
-  hoveredCityId: string | null
   selectedWaterbodyId: string | null
   hoveredWaterbodyId: string | null
   selectedLinearFeatureId: string | null
@@ -153,8 +151,6 @@ type LabelPriorityState = {
 export function getLabelPriority(
   item: MapLabel,
   {
-    selectedCityId,
-    hoveredCityId,
     selectedWaterbodyId,
     hoveredWaterbodyId,
     selectedLinearFeatureId,
@@ -185,7 +181,6 @@ export function getLabelPriority(
     })
   }
   if (
-    item.id === selectedCityId ||
     item.id === selectedWaterbodyId ||
     item.id === selectedLinearFeatureId ||
     item.id === selectedMountainRangeId ||
@@ -195,7 +190,6 @@ export function getLabelPriority(
     return 0
   }
   if (
-    item.id === hoveredCityId ||
     item.id === hoveredWaterbodyId ||
     item.id === hoveredLinearFeatureId ||
     item.id === hoveredMountainRangeId ||

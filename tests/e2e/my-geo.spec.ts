@@ -234,11 +234,6 @@ async function expectLayerPanelGrouped(page: Page) {
   await expect(panel.getByRole('button')).toHaveCount(11)
 }
 
-function parseMiniMapTransform(transform: string | null) {
-  const match = transform?.match(/translate\(([-\d.]+)(?:\s|,)\s*([-\d.]+)\)/)
-  return match ? { x: Number(match[1]), y: Number(match[2]) } : null
-}
-
 async function readMapHighlightStyle(page: Page, selector: string) {
   const target = page.locator(selector).first()
   await expect(target).toBeAttached({ timeout: 15_000 })
@@ -814,11 +809,13 @@ test('uses the contained flag contract across learning and exploration surfaces'
   )
   await page
     .locator('.country-knowledge-card')
-    .getByRole('button', { name: /城市邻国/ })
+    .getByRole('button', { name: /国际关系/ })
     .click()
   await expectFramedFlag(
     page
-      .locator('.country-knowledge-card .knowledge-country-chapter.is-places')
+      .locator(
+        '.country-knowledge-card .knowledge-country-chapter.is-international-relations',
+      )
       .locator('.country-flag-frame')
       .first(),
   )
@@ -836,11 +833,13 @@ test('uses the contained flag contract across learning and exploration surfaces'
   await expectFramedFlag(page.locator('.knowledge-country-detail-flag'))
   await page
     .locator('.country-knowledge-card')
-    .getByRole('button', { name: /城市邻国/ })
+    .getByRole('button', { name: /国际关系/ })
     .click()
   await expectFramedFlag(
     page
-      .locator('.knowledge-country-chapter.is-places .country-flag-frame')
+      .locator(
+        '.knowledge-country-chapter.is-international-relations .country-flag-frame',
+      )
       .first(),
   )
 
@@ -2341,21 +2340,13 @@ test('keeps phone landscape controls separated and country details usable', asyn
   ).toHaveCount(0)
   await expect(card.getByText('约 14.1亿 人')).toBeVisible()
 
-  await card.getByRole('button', { name: /城市邻国/ }).click()
-  const shanghai = card.getByRole('button', { name: '探索城市上海' })
-  await expect(shanghai).toBeVisible()
-  await shanghai.click({ force: true })
-  const cityCard = page.getByLabel('上海城市知识卡')
-  await expect(cityCard).toBeVisible()
-  await expect(cityCard.getByText('经济中心')).toBeVisible()
-  await expect(cityCard.getByText(/31\.1667°N/)).toHaveCount(0)
-  const cityCardBox = await cityCard.boundingBox()
-  expect(cityCardBox).not.toBeNull()
-  expect(cityCardBox!.y).toBeGreaterThanOrEqual(11)
-  expect(cityCardBox!.y + cityCardBox!.height).toBeLessThanOrEqual(379)
-
-  await cityCard.getByRole('button', { name: '← 返回中国' }).click()
-  await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
+  await card.getByRole('button', { name: /^主要城市/ }).click()
+  const cityRows = card.locator('.knowledge-country-city-row')
+  await expect(cityRows).toHaveCount(5)
+  await expect(cityRows.nth(1)).toHaveText('上海Shanghai')
+  await expect(cityRows.nth(1).locator('[title="Shanghai"]')).toBeVisible()
+  await expect(card.getByRole('button', { name: /探索城市/ })).toHaveCount(0)
+  await expect(page.getByLabel('上海城市知识卡')).toHaveCount(0)
 })
 
 for (const viewport of [
@@ -2534,9 +2525,7 @@ test('keeps the 2D map synchronized with country and globe navigation', async ({
   )
 })
 
-test('toggles adaptive capital and city labels and opens a selected city', async ({
-  page,
-}) => {
+test('toggles adaptive capital and static city labels', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/')
 
@@ -2561,29 +2550,17 @@ test('toggles adaptive capital and city labels and opens a selected city', async
   expect(
     await page.locator('.city-label.is-capital:not([hidden])').count(),
   ).toBe(0)
+  await expect(
+    page.locator('.city-label.is-city:not([hidden])').first(),
+  ).toHaveAttribute('aria-hidden', 'true')
+  await expect(page.locator('button.city-label.is-city')).toHaveCount(0)
 
   await cityToggle.click()
   await expect(labels).toHaveCount(0)
 
   const search = await openCountrySearch(page)
-  await search.fill('中国')
-  await search.press('Enter')
-  const countryCard = page.getByLabel('中国国家知识卡')
-  await countryCard.getByRole('button', { name: /城市邻国/ }).click()
-  await expect(
-    countryCard.getByRole('button', { name: '探索城市上海' }),
-  ).toBeVisible()
-  await countryCard
-    .getByRole('button', { name: '探索城市上海' })
-    .click({ force: true })
-
-  const cityCard = page.getByLabel('上海城市知识卡')
-  await expect(cityCard).toBeVisible()
-  await expectFramedFlag(cityCard.locator('.knowledge-country-detail-flag'))
-  await expect(page.locator('[data-city-id="cn-shanghai"]')).toBeVisible()
-  await expect(cityCard.getByRole('heading', { name: '上海' })).toBeVisible()
-  await expect(cityCard.getByText('世界知名')).toBeVisible()
-  await expect(cityCard.getByText(/资料来源/)).toHaveCount(0)
+  await search.fill('上海')
+  await expect(page.getByText('找到 0 个匹配项')).toBeVisible()
 })
 
 test('toggles waterbody layers, searches a sea, and replaces its selected range', async ({
@@ -3530,146 +3507,6 @@ test('keeps capital labels synchronized during automatic rotation', async ({
     .toBe(true)
 })
 
-test('keeps a selected city label synchronized throughout a fast drag', async ({
-  page,
-}) => {
-  test.setTimeout(60_000)
-  await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto('/')
-
-  const { scene, fallback } = await waitForSceneOrFallback(page)
-  if (await fallback.isVisible()) return
-
-  await page.getByRole('button', { name: '自动旋转：开' }).click()
-  await page.getByRole('button', { name: '画质：平衡' }).click()
-  await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
-  await selectPlace(page, '中国')
-  await page
-    .getByLabel('中国国家知识卡')
-    .getByRole('button', { name: /城市邻国/ })
-    .click()
-  await page
-    .getByLabel('中国国家知识卡')
-    .getByRole('button', { name: '探索城市上海' })
-    .click()
-
-  const label = page.locator('[data-city-id="cn-shanghai"]')
-  await expect(label).toBeVisible()
-  await page.waitForTimeout(1_300)
-  await label.evaluate((element) => {
-    const metrics = { transformMutations: 0, hiddenMutations: 0 }
-    const observer = new MutationObserver((records) => {
-      for (const record of records) {
-        if (record.attributeName === 'style') metrics.transformMutations += 1
-        if (record.attributeName === 'hidden') metrics.hiddenMutations += 1
-      }
-    })
-    observer.observe(element, {
-      attributes: true,
-      attributeFilter: ['hidden', 'style'],
-    })
-    ;(
-      window as typeof window & {
-        __cityLabelSyncMetrics?: {
-          metrics: typeof metrics
-          observer: MutationObserver
-        }
-      }
-    ).__cityLabelSyncMetrics = { metrics, observer }
-  })
-
-  const canvasBox = await scene.locator('canvas').boundingBox()
-  expect(canvasBox).not.toBeNull()
-  await page.mouse.move(
-    canvasBox!.x + canvasBox!.width * 0.5,
-    canvasBox!.y + canvasBox!.height * 0.48,
-  )
-  await page.mouse.down()
-  await page.mouse.move(
-    canvasBox!.x + canvasBox!.width * 0.52,
-    canvasBox!.y + canvasBox!.height * 0.49,
-    { steps: 2 },
-  )
-  await expect(scene).toHaveAttribute('data-controls-interacting', 'true')
-  const firstDragTransform = await label.getAttribute('style')
-
-  await page.mouse.move(
-    canvasBox!.x + canvasBox!.width * 0.57,
-    canvasBox!.y + canvasBox!.height * 0.51,
-    { steps: 12 },
-  )
-  await expect
-    .poll(() => label.getAttribute('style'))
-    .not.toBe(firstDragTransform)
-  await expect(label).toBeVisible()
-  await expect(scene).toHaveAttribute('data-controls-interacting', 'true')
-  const mutationMetrics = await label.evaluate(() => {
-    const state = (
-      window as typeof window & {
-        __cityLabelSyncMetrics?: {
-          metrics: { transformMutations: number; hiddenMutations: number }
-          observer: MutationObserver
-        }
-      }
-    ).__cityLabelSyncMetrics
-    state?.observer.disconnect()
-    return state?.metrics
-  })
-  expect(mutationMetrics?.transformMutations).toBeGreaterThanOrEqual(3)
-  expect(mutationMetrics?.hiddenMutations).toBe(0)
-  await page.mouse.up()
-})
-
-test('does not replay a stale city camera target after dragging', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto('/')
-
-  const { scene, fallback } = await waitForSceneOrFallback(page)
-  if (await fallback.isVisible()) return
-
-  const search = await openCountrySearch(page)
-  await search.fill('中国')
-  await search.press('Enter')
-  const countryCard = page.getByLabel('中国国家知识卡')
-  await countryCard.getByRole('button', { name: /城市邻国/ }).click()
-  await countryCard.getByRole('button', { name: '探索城市上海' }).click()
-  await expect(page.getByLabel('上海城市知识卡')).toBeVisible()
-
-  const marker = page.getByTestId('world-mini-map-view-marker')
-  await page.waitForTimeout(1_300)
-  const cityTransform = await marker.getAttribute('transform')
-  const sceneBox = await scene.boundingBox()
-  expect(sceneBox).not.toBeNull()
-
-  await page.mouse.move(
-    sceneBox!.x + sceneBox!.width * 0.5,
-    sceneBox!.y + sceneBox!.height * 0.48,
-  )
-  await page.mouse.down()
-  await page.mouse.move(
-    sceneBox!.x + sceneBox!.width * 0.72,
-    sceneBox!.y + sceneBox!.height * 0.55,
-    { steps: 10 },
-  )
-  await page.mouse.up()
-
-  await expect
-    .poll(() => marker.getAttribute('transform'))
-    .not.toBe(cityTransform)
-  const cityPoint = parseMiniMapTransform(cityTransform)
-  expect(cityPoint).not.toBeNull()
-  await page.waitForTimeout(1_500)
-  const settledPoint = parseMiniMapTransform(
-    await marker.getAttribute('transform'),
-  )
-  expect(settledPoint).not.toBeNull()
-  expect(
-    Math.hypot(settledPoint!.x - cityPoint!.x, settledPoint!.y - cityPoint!.y),
-  ).toBeGreaterThan(8)
-})
-
 test('keeps the full 2D map visible in touch landscape', async ({ page }) => {
   test.setTimeout(45_000)
   await page.addInitScript(() => {
@@ -3896,12 +3733,19 @@ test('searches China and opens the featured knowledge card', async ({
     'aria-expanded',
     'false',
   )
-  await card.getByRole('button', { name: /城市邻国/ }).click()
-  await expect(card.getByRole('button', { name: '探索城市北京' })).toBeVisible()
+  await card.getByRole('button', { name: /^主要城市/ }).click()
+  await expect(card.locator('.knowledge-country-city-row')).toHaveCount(5)
+  await expect(card.locator('.knowledge-country-city-row').first()).toHaveText(
+    '北京Beijing',
+  )
+  await expect(card.getByRole('button', { name: /探索城市/ })).toHaveCount(0)
   await expect(card.getByText('人民币', { exact: true })).toBeVisible()
   await expect(card.getByText(/Chinese yuan · CNY/)).toBeVisible()
+  await card.getByRole('button', { name: /国际关系/ }).click()
   await expect(card.getByText('中国香港')).toBeVisible()
   await expect(card.getByText('中国澳门')).toBeVisible()
+  await expect(card.getByText(/联合国安理会常任理事国/)).toBeVisible()
+  await expect(card.getByText(/世界贸易组织/)).toBeVisible()
   await expect(card.getByText(/大熊猫主要生活/)).toHaveCount(0)
 })
 
@@ -3966,15 +3810,46 @@ test('searches a microstate without Natural Earth geometry', async ({
   await card.getByRole('button', { name: /语言民族/ }).click()
   await expect(card.getByText('拉丁语', { exact: true })).toBeVisible()
   await expect(card.getByText('Latin', { exact: true })).toHaveCount(0)
-  await card.getByRole('button', { name: /城市邻国/ }).click()
-  await expect(
-    card.getByRole('button', { name: '探索城市梵蒂冈城' }),
-  ).toBeVisible()
+  await card.getByRole('button', { name: /^主要城市/ }).click()
+  await expect(card.locator('.knowledge-country-city-row')).toHaveText(
+    '梵蒂冈城Vatican City',
+  )
+  await expect(card.getByRole('button', { name: /探索城市/ })).toHaveCount(0)
   await expect(card.locator('.knowledge-country-signature-labels')).toHaveCount(
     0,
   )
   await expect(card.getByText('更多内容制作中')).toHaveCount(0)
 })
+
+for (const viewport of [
+  { name: 'desktop', width: 1440, height: 900 },
+  { name: 'smallest landscape', width: 568, height: 320 },
+]) {
+  test(`keeps the longest bilingual city row contained on ${viewport.name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/explore?country=BN')
+
+    const card = page.getByLabel('文莱国家知识卡')
+    await expect(card).toBeVisible()
+    await card.getByRole('button', { name: /^主要城市/ }).click()
+
+    const row = card.locator('.knowledge-country-city-row')
+    const englishName = row.locator('[title="Bandar Seri Begawan"]')
+    await expect(row).toHaveCount(1)
+    await expect(row).toHaveText('斯里巴加湾市Bandar Seri Begawan')
+    await expect(englishName).toHaveCSS('white-space', 'nowrap')
+    await expect(card.getByRole('button', { name: /探索城市/ })).toHaveCount(0)
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(0)
+  })
+}
 
 test('selects a sovereign neighbour and opens the new country card', async ({
   page,
@@ -3986,7 +3861,7 @@ test('selects a sovereign neighbour and opens the new country card', async ({
   await search.press('Enter')
   const vaticanCard = page.getByLabel('梵蒂冈国家知识卡')
 
-  await vaticanCard.getByRole('button', { name: /城市邻国/ }).click()
+  await vaticanCard.getByRole('button', { name: /国际关系/ }).click()
   await vaticanCard.getByRole('button', { name: '探索邻国意大利' }).click()
 
   const italyCard = page.getByLabel('意大利国家知识卡')
@@ -4012,11 +3887,20 @@ test('opens a complete chapter with the keyboard and resets it on navigation', a
   await search.press('Enter')
   const card = page.getByLabel('中国国家知识卡')
 
-  const placesChapter = card.getByRole('button', { name: /城市邻国/ })
-  await placesChapter.focus()
+  const citiesChapter = card.getByRole('button', { name: /^主要城市/ })
+  await citiesChapter.focus()
   await page.keyboard.press('Enter')
-  await expect(placesChapter).toHaveAttribute('aria-expanded', 'true')
-  await expect(card.getByRole('button', { name: '探索城市成都' })).toBeVisible()
+  await expect(citiesChapter).toHaveAttribute('aria-expanded', 'true')
+  await expect(card.locator('.knowledge-country-city-row')).toHaveCount(5)
+  await expect(card.getByRole('button', { name: /探索城市/ })).toHaveCount(0)
+  await expect(
+    card.getByRole('button', { name: '探索邻国俄罗斯' }),
+  ).toHaveCount(0)
+  const relationsChapter = card.getByRole('button', { name: /国际关系/ })
+  await relationsChapter.focus()
+  await page.keyboard.press('Space')
+  await expect(relationsChapter).toHaveAttribute('aria-expanded', 'true')
+  await expect(citiesChapter).toHaveAttribute('aria-expanded', 'false')
   await expect(
     card.getByRole('button', { name: '探索邻国俄罗斯' }),
   ).toBeVisible()
@@ -4030,8 +3914,10 @@ test('opens a complete chapter with the keyboard and resets it on navigation', a
 
   const russiaCard = page.getByLabel('俄罗斯国家知识卡')
   await expect(russiaCard).toBeVisible()
-  const russiaPlaces = russiaCard.getByRole('button', { name: /城市邻国/ })
-  await russiaPlaces.focus()
+  const russiaRelations = russiaCard.getByRole('button', {
+    name: /国际关系/,
+  })
+  await russiaRelations.focus()
   await page.keyboard.press('Space')
   await russiaCard.getByRole('button', { name: '探索邻国中国' }).click()
 
@@ -4040,7 +3926,10 @@ test('opens a complete chapter with the keyboard and resets it on navigation', a
     resetCard.getByRole('button', { name: /语言民族/ }),
   ).toHaveAttribute('aria-expanded', 'false')
   await expect(
-    resetCard.getByRole('button', { name: /城市邻国/ }),
+    resetCard.getByRole('button', { name: /^主要城市/ }),
+  ).toHaveAttribute('aria-expanded', 'false')
+  await expect(
+    resetCard.getByRole('button', { name: /国际关系/ }),
   ).toHaveAttribute('aria-expanded', 'false')
   await expect(
     resetCard.getByRole('button', { name: '探索城市成都' }),

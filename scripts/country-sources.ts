@@ -325,6 +325,57 @@ export const countrySources: CountrySource[] = [
   },
   ...[
     [
+      'un-security-council-members',
+      'Current Members of the United Nations Security Council',
+      'United Nations Security Council',
+      'https://main.un.org/securitycouncil/en/content/current-members',
+    ],
+    [
+      'eu-country-profiles',
+      'EU country profiles',
+      'European Union',
+      'https://european-union.europa.eu/principles-countries-history/country-profiles_en',
+    ],
+    [
+      'asean-member-states',
+      'ASEAN Member States',
+      'Association of Southeast Asian Nations',
+      'https://asean.org/member-states/',
+    ],
+    [
+      'african-union-member-states',
+      'African Union Member States',
+      'African Union',
+      'https://au.int/en/member_states/countryprofiles2',
+    ],
+    [
+      'opec-member-countries',
+      'OPEC Member Countries',
+      'Organization of the Petroleum Exporting Countries',
+      'https://www.opec.org/opec-web/en/about-us/25.html',
+    ],
+    [
+      'wto-members-and-observers',
+      'WTO Members and Observers',
+      'World Trade Organization',
+      'https://www.wto.org/english/thewto_e/whatis_e/tif_e/org6_e.htm',
+    ],
+    [
+      'nato-member-countries',
+      'NATO member countries',
+      'North Atlantic Treaty Organization',
+      'https://www.nato.int/en/about-us/organization/nato-member-countries',
+    ],
+  ].map(([id, name, publisher, url]) => ({
+    id,
+    name,
+    publisher,
+    accessedAt: '2026-09-01',
+    url,
+    license: 'Official reference material; membership data transcribed',
+  })),
+  ...[
+    [
       'britannica-australia',
       'Australia',
       'https://www.britannica.com/place/Australia',

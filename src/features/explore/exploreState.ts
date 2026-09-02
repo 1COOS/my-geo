@@ -2,7 +2,6 @@ import type {
   ClimateKnowledgeSelection,
   ClimateTypeId,
 } from '../../data/climateLearningSchema'
-import { getCity } from '../../data/countries'
 import type { GeographyExploreSelection } from '../../data/geographyLearning'
 import { getWaterbody } from '../../data/waterbodies'
 
@@ -22,7 +21,6 @@ export type LayerVisibility = {
 
 export type ExploreSelection =
   | { kind: 'country'; countryCode: string }
-  | { kind: 'city'; cityId: string; countryCode: string }
   | { kind: 'waterbody'; waterbodyId: string }
   | { kind: 'linearFeature'; featureId: string }
   | { kind: 'mountainRange'; rangeId: string }
@@ -34,7 +32,6 @@ export type ExploreSelection =
 
 export type ExploreHover =
   | { kind: 'country'; countryCode: string }
-  | { kind: 'city'; cityId: string }
   | { kind: 'waterbody'; waterbodyId: string }
   | { kind: 'linearFeature'; featureId: string }
   | { kind: 'mountainRange'; rangeId: string }
@@ -56,7 +53,6 @@ export type ExploreAction =
   | { type: 'select'; selection: ExploreSelection }
   | { type: 'hover'; hover: ExploreHover }
   | { type: 'clearHover' }
-  | { type: 'backToCountry' }
   | { type: 'selectClimateType'; climateTypeId: ClimateTypeId }
   | { type: 'showClimateOverview' }
 
@@ -88,9 +84,6 @@ function selectionMatchesHover(
   if (selection.kind === 'country' && hover.kind === 'country') {
     return selection.countryCode === hover.countryCode
   }
-  if (selection.kind === 'city' && hover.kind === 'city') {
-    return selection.cityId === hover.cityId
-  }
   if (selection.kind === 'waterbody' && hover.kind === 'waterbody') {
     return selection.waterbodyId === hover.waterbodyId
   }
@@ -111,11 +104,6 @@ function selectionMatchesHover(
 
 function shouldClearHoverForHiddenLayer(layer: LayerId, hover: ExploreHover) {
   if (!hover) return false
-  if (layer === 'capitals' || layer === 'cities') {
-    if (hover.kind !== 'city') return false
-    const city = getCity(hover.cityId)
-    return layer === 'capitals' ? city?.isCapital === true : !city?.isCapital
-  }
   if (layer === 'ocean' || layer === 'lake' || layer === 'waterway') {
     if (hover.kind !== 'waterbody') return false
     return getWaterbody(hover.waterbodyId)?.layer === layer
@@ -173,17 +161,6 @@ export function exploreReducer(
   }
   if (action.type === 'hover') return { ...state, hover: action.hover }
   if (action.type === 'clearHover') return { ...state, hover: null }
-  if (action.type === 'backToCountry') {
-    if (state.selection?.kind !== 'city') return state
-    return {
-      ...state,
-      selection: {
-        kind: 'country',
-        countryCode: state.selection.countryCode,
-      },
-      hover: null,
-    }
-  }
   if (action.type === 'selectClimateType') {
     const current =
       state.selection?.kind === 'climate' ? state.selection.value : null
@@ -213,10 +190,7 @@ export function exploreReducer(
 }
 
 export function getSelectedCountryCode(selection: ExploreSelection) {
-  if (selection?.kind === 'country' || selection?.kind === 'city') {
-    return selection.countryCode
-  }
-  return null
+  return selection?.kind === 'country' ? selection.countryCode : null
 }
 
 export function getSelectedEntityId<

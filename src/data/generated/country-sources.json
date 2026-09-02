@@ -304,6 +304,62 @@
     "license": "Official reference material; population total transcribed"
   },
   {
+    "id": "un-security-council-members",
+    "name": "Current Members of the United Nations Security Council",
+    "publisher": "United Nations Security Council",
+    "accessedAt": "2026-09-01",
+    "url": "https://main.un.org/securitycouncil/en/content/current-members",
+    "license": "Official reference material; membership data transcribed"
+  },
+  {
+    "id": "eu-country-profiles",
+    "name": "EU country profiles",
+    "publisher": "European Union",
+    "accessedAt": "2026-09-01",
+    "url": "https://european-union.europa.eu/principles-countries-history/country-profiles_en",
+    "license": "Official reference material; membership data transcribed"
+  },
+  {
+    "id": "asean-member-states",
+    "name": "ASEAN Member States",
+    "publisher": "Association of Southeast Asian Nations",
+    "accessedAt": "2026-09-01",
+    "url": "https://asean.org/member-states/",
+    "license": "Official reference material; membership data transcribed"
+  },
+  {
+    "id": "african-union-member-states",
+    "name": "African Union Member States",
+    "publisher": "African Union",
+    "accessedAt": "2026-09-01",
+    "url": "https://au.int/en/member_states/countryprofiles2",
+    "license": "Official reference material; membership data transcribed"
+  },
+  {
+    "id": "opec-member-countries",
+    "name": "OPEC Member Countries",
+    "publisher": "Organization of the Petroleum Exporting Countries",
+    "accessedAt": "2026-09-01",
+    "url": "https://www.opec.org/opec-web/en/about-us/25.html",
+    "license": "Official reference material; membership data transcribed"
+  },
+  {
+    "id": "wto-members-and-observers",
+    "name": "WTO Members and Observers",
+    "publisher": "World Trade Organization",
+    "accessedAt": "2026-09-01",
+    "url": "https://www.wto.org/english/thewto_e/whatis_e/tif_e/org6_e.htm",
+    "license": "Official reference material; membership data transcribed"
+  },
+  {
+    "id": "nato-member-countries",
+    "name": "NATO member countries",
+    "publisher": "North Atlantic Treaty Organization",
+    "accessedAt": "2026-09-01",
+    "url": "https://www.nato.int/en/about-us/organization/nato-member-countries",
+    "license": "Official reference material; membership data transcribed"
+  },
+  {
     "id": "britannica-australia",
     "name": "Australia overview",
     "publisher": "Encyclopaedia Britannica",

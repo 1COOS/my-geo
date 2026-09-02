@@ -7,15 +7,23 @@ import type {
   CountryProfile,
   CountrySignatureItem,
 } from '../../data/countrySchema'
+import {
+  getInternationalAffiliationsForCountry,
+  internationalAffiliations,
+} from '../../data/internationalOrganizations'
+import type {
+  InternationalAffiliation,
+  InternationalAffiliationCategory,
+} from '../../data/internationalOrganizationSchema'
 import { CountryFlag } from '../../shared/components/CountryFlag'
 
-type ChapterId = 'people' | 'resources' | 'economy' | 'places'
+type ChapterId =
+  'people' | 'resources' | 'economy' | 'cities' | 'international-relations'
 
 type CountryKnowledgeSectionsProps = {
   country: Country
   cities: City[]
   onSelectCountry: (countryCode: string) => void
-  onSelectCity?: (cityId: string) => void
 }
 
 type Chapter = {
@@ -173,7 +181,73 @@ const inlineActionStyle = {
   borderRadius: 'var(--atlas-radius-control)',
 } satisfies CSSProperties
 
+const cityListStyle = {
+  display: 'grid',
+  width: '100%',
+  gap: '0.3rem',
+} satisfies CSSProperties
+
+const cityRowStyle = {
+  display: 'grid',
+  width: '100%',
+  minWidth: 0,
+  padding: '0.42rem 0.5rem',
+  boxSizing: 'border-box',
+  gridTemplateColumns: 'minmax(0, auto) minmax(0, 1fr)',
+  gap: '0.55rem',
+  alignItems: 'baseline',
+  color: 'var(--atlas-text-secondary)',
+  background: 'var(--atlas-panel-muted)',
+  border: '1px solid var(--atlas-border-soft)',
+  borderRadius: 'var(--atlas-radius-control)',
+} satisfies CSSProperties
+
+const cityEnglishStyle = {
+  minWidth: 0,
+  overflow: 'hidden',
+  textAlign: 'right',
+  color: 'var(--atlas-text-muted)',
+  fontSize: 'var(--fs-s)',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} satisfies CSSProperties
+
 const neighbourFlagStyle = { width: '1.2rem' } satisfies CSSProperties
+
+const affiliationListStyle = {
+  display: 'grid',
+  width: '100%',
+  gap: '0.35rem',
+} satisfies CSSProperties
+
+const affiliationItemStyle = {
+  ...inlineActionStyle,
+  display: 'grid',
+  width: '100%',
+  gap: '0.08rem',
+  alignItems: 'start',
+} satisfies CSSProperties
+
+const affiliationNameStyle = {
+  color: 'var(--atlas-text)',
+  fontWeight: 600,
+} satisfies CSSProperties
+
+const affiliationDescriptionStyle = {
+  color: 'var(--atlas-text-muted)',
+  fontSize: 'var(--fs-s)',
+  lineHeight: 1.35,
+} satisfies CSSProperties
+
+const affiliationCategories: Array<{
+  category: InternationalAffiliationCategory
+  label: string
+}> = [
+  { category: 'global', label: '全球' },
+  { category: 'regional', label: '区域' },
+  { category: 'functional', label: '功能' },
+  { category: 'security', label: '安全' },
+]
 
 export function CountrySignatureLabels({
   signature,
@@ -200,7 +274,6 @@ export function CountryKnowledgeSections({
   country,
   cities,
   onSelectCountry,
-  onSelectCity,
 }: CountryKnowledgeSectionsProps) {
   const [openChapter, setOpenChapter] = useState<ChapterId | null>(null)
   const contentPrefix = useId()
@@ -208,6 +281,7 @@ export function CountryKnowledgeSections({
   const resourceRows = getResourceRows(profile.resources)
   const economyRows = getEconomyRows(profile.economy)
   const summaryCity = cities.find((city) => !city.isCapital) ?? cities[0]
+  const affiliations = getInternationalAffiliationsForCountry(country.code)
 
   const chapters: Chapter[] = [
     {
@@ -240,18 +314,23 @@ export function CountryKnowledgeSections({
         ]
       : []),
     {
-      id: 'places',
-      title: '城市邻国',
+      id: 'cities',
+      title: '主要城市',
+      summary: compactSummary([summaryCity?.name.zh, `${cities.length}座城市`]),
+      content: <CitiesChapter cities={cities} />,
+    },
+    {
+      id: 'international-relations',
+      title: '国际关系',
       summary: compactSummary([
-        summaryCity?.name.zh,
         `邻国${country.borderCountryCodes.length}个`,
+        `${affiliations.length}项身份`,
       ]),
       content: (
-        <PlacesChapter
+        <InternationalRelationsChapter
           country={country}
-          cities={cities}
+          affiliations={affiliations}
           onSelectCountry={onSelectCountry}
-          onSelectCity={onSelectCity}
         />
       ),
     },
@@ -345,10 +424,15 @@ function ChapterIcon({ chapter }: { chapter: ChapterId }) {
           <path d="M4 20V9l5 3V9l5 3V5h6v15z" />
           <path d="M7 16h2M12 16h2M17 9h1" />
         </>
-      ) : (
+      ) : chapter === 'cities' ? (
         <>
           <path d="M4 20V9l8-5 8 5v11M8 20v-5h8v5" />
           <path d="M7 10h.01M17 10h.01" />
+        </>
+      ) : (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
         </>
       )}
     </svg>
@@ -402,43 +486,38 @@ function KnowledgeRows({ rows }: { rows: KnowledgeRow[] }) {
   )
 }
 
-function PlacesChapter({
-  country,
+function CitiesChapter({
   cities,
+}: Pick<CountryKnowledgeSectionsProps, 'cities'>) {
+  return (
+    <InfoRow label="城市">
+      <div className="knowledge-country-city-list" style={cityListStyle}>
+        {cities.map((city) => (
+          <span
+            key={city.id}
+            className="knowledge-country-city-row"
+            style={cityRowStyle}
+          >
+            <strong>{city.name.zh}</strong>
+            <span style={cityEnglishStyle} title={city.name.en}>
+              {city.name.en}
+            </span>
+          </span>
+        ))}
+      </div>
+    </InfoRow>
+  )
+}
+
+function InternationalRelationsChapter({
+  country,
+  affiliations,
   onSelectCountry,
-  onSelectCity,
-}: CountryKnowledgeSectionsProps) {
+}: Pick<CountryKnowledgeSectionsProps, 'country' | 'onSelectCountry'> & {
+  affiliations: InternationalAffiliation[]
+}) {
   return (
     <>
-      <InfoRow label="城市">
-        <div style={inlineActionsStyle}>
-          {cities.map((city) =>
-            onSelectCity ? (
-              <button
-                type="button"
-                key={city.id}
-                style={inlineActionStyle}
-                title={city.name.en}
-                aria-label={`探索城市${city.name.zh}`}
-                onClick={() => onSelectCity(city.id)}
-              >
-                {city.name.zh}
-              </button>
-            ) : (
-              <span
-                key={city.id}
-                style={inlineActionStyle}
-                title={city.name.en}
-              >
-                {city.name.zh}
-              </span>
-            ),
-          )}
-        </div>
-      </InfoRow>
-      <InfoRow label="区位">
-        {country.subregion.zh} · {country.landlocked ? '内陆国家' : '沿海国家'}
-      </InfoRow>
       <InfoRow label="邻国">
         {country.borderCountryCodes.length > 0 ? (
           <div style={inlineActionsStyle}>
@@ -481,7 +560,44 @@ function PlacesChapter({
           </div>
         </InfoRow>
       ) : null}
+      {affiliations.length > 0 ? (
+        affiliationCategories.map(({ category, label }) => {
+          const categoryAffiliations = affiliations.filter(
+            (affiliation) => affiliation.category === category,
+          )
+          return categoryAffiliations.length > 0 ? (
+            <InfoRow key={category} label={label}>
+              <AffiliationList affiliations={categoryAffiliations} />
+            </InfoRow>
+          ) : null
+        })
+      ) : (
+        <InfoRow label="组织">
+          在当前收录的{internationalAffiliations.length}项中暂无正式成员身份
+        </InfoRow>
+      )}
     </>
+  )
+}
+
+function AffiliationList({
+  affiliations,
+}: {
+  affiliations: InternationalAffiliation[]
+}) {
+  return (
+    <div style={affiliationListStyle}>
+      {affiliations.map((affiliation) => (
+        <span key={affiliation.id} style={affiliationItemStyle}>
+          <span style={affiliationNameStyle}>
+            {affiliation.name.zh}（{affiliation.abbreviation}）
+          </span>
+          <small style={affiliationDescriptionStyle}>
+            {affiliation.description}
+          </small>
+        </span>
+      ))}
+    </div>
   )
 }
 

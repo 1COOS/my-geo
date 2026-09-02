@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Link, useInRouterContext } from 'react-router-dom'
 
-import type { City, CitySelectionReason } from '../../data/citySchema'
+import type { City } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
 import { BookIcon, GlobeIcon } from '../../shared/components/AppNavigationIcons'
 import { CountryFlag } from '../../shared/components/CountryFlag'
@@ -18,12 +18,9 @@ import {
 export type CountryKnowledgeCardProps = {
   country: Country
   cities: City[]
-  selectedCity?: City
   label: string
   identity: string
   onSelectCountry: (countryCode: string) => void
-  onSelectCity?: (cityId: string) => void
-  onBackToCountry?: () => void
   footerAction?: KnowledgeCardAction
 }
 
@@ -34,15 +31,6 @@ const populationFormatter = new Intl.NumberFormat('zh-CN', {
   notation: 'compact',
   maximumFractionDigits: 1,
 })
-const cityReasonLabels: Record<CitySelectionReason, string> = {
-  capital: '国家首都',
-  population_center: '人口中心',
-  economic_center: '经济中心',
-  global_fame: '世界知名',
-  cultural_tourism: '文化旅游中心',
-  regional_center: '区域中心',
-}
-
 type CountryFactKind = 'area' | 'population' | 'capital' | 'currency'
 
 const countryFactIconPaths: Record<CountryFactKind, string[]> = {
@@ -174,39 +162,35 @@ function CountryFactKey({
 export function CountryKnowledgeCard({
   country,
   cities,
-  selectedCity,
   label,
   identity,
   onSelectCountry,
-  onSelectCity,
-  onBackToCountry,
   footerAction,
 }: CountryKnowledgeCardProps) {
   const inRouterContext = useInRouterContext()
-  const cornerAction =
-    !selectedCity && footerAction ? (
-      inRouterContext ? (
-        <Link
-          className="knowledge-card-action knowledge-card-action-compact"
-          to={footerAction.to}
-          aria-label={`${footerAction.label}，${footerAction.description}`}
-          title={footerAction.description}
-          style={cornerActionStyle}
-        >
-          <ActionContent action={footerAction} />
-        </Link>
-      ) : (
-        <a
-          className="knowledge-card-action knowledge-card-action-compact"
-          href={footerAction.to}
-          aria-label={`${footerAction.label}，${footerAction.description}`}
-          title={footerAction.description}
-          style={cornerActionStyle}
-        >
-          <ActionContent action={footerAction} />
-        </a>
-      )
-    ) : undefined
+  const cornerAction = footerAction ? (
+    inRouterContext ? (
+      <Link
+        className="knowledge-card-action knowledge-card-action-compact"
+        to={footerAction.to}
+        aria-label={`${footerAction.label}，${footerAction.description}`}
+        title={footerAction.description}
+        style={cornerActionStyle}
+      >
+        <ActionContent action={footerAction} />
+      </Link>
+    ) : (
+      <a
+        className="knowledge-card-action knowledge-card-action-compact"
+        href={footerAction.to}
+        aria-label={`${footerAction.label}，${footerAction.description}`}
+        title={footerAction.description}
+        style={cornerActionStyle}
+      >
+        <ActionContent action={footerAction} />
+      </a>
+    )
+  ) : undefined
 
   return (
     <KnowledgeCardShell
@@ -215,20 +199,11 @@ export function CountryKnowledgeCard({
       className="country-knowledge-card"
       cornerAction={cornerAction}
     >
-      {selectedCity ? (
-        <CityDetailView
-          country={country}
-          city={selectedCity}
-          onBack={onBackToCountry}
-        />
-      ) : (
-        <CountryDetailView
-          country={country}
-          cities={cities}
-          onSelectCountry={onSelectCountry}
-          onSelectCity={onSelectCity}
-        />
-      )}
+      <CountryDetailView
+        country={country}
+        cities={cities}
+        onSelectCountry={onSelectCountry}
+      />
     </KnowledgeCardShell>
   )
 }
@@ -246,11 +221,7 @@ function CountryDetailView({
   country,
   cities,
   onSelectCountry,
-  onSelectCity,
-}: Pick<
-  CountryKnowledgeCardProps,
-  'country' | 'cities' | 'onSelectCountry' | 'onSelectCity'
->) {
+}: Pick<CountryKnowledgeCardProps, 'country' | 'cities' | 'onSelectCountry'>) {
   return (
     <>
       <div
@@ -361,66 +332,7 @@ function CountryDetailView({
         country={country}
         cities={cities}
         onSelectCountry={onSelectCountry}
-        onSelectCity={onSelectCity}
       />
-    </>
-  )
-}
-
-function CityDetailView({
-  country,
-  city,
-  onBack,
-}: {
-  country: Country
-  city: City
-  onBack?: () => void
-}) {
-  return (
-    <>
-      {onBack ? (
-        <button type="button" className="city-detail-back" onClick={onBack}>
-          ← 返回{country.name.zh}
-        </button>
-      ) : null}
-
-      <div className="knowledge-country-detail-heading">
-        <CountryFlag
-          className="knowledge-country-detail-flag"
-          src={country.flagAsset}
-          alt={`${country.name.zh}国旗`}
-        />
-        <div>
-          <span>{city.isCapital ? '国家首都' : '主要城市'}</span>
-          <h2>{city.name.zh}</h2>
-          <p>
-            {city.name.en} · {country.name.zh}
-          </p>
-        </div>
-      </div>
-
-      <section className="knowledge-country-section">
-        <h3>城市概览</h3>
-        <dl className="knowledge-country-facts knowledge-city-facts">
-          <div>
-            <dt>人口</dt>
-            <dd>
-              {city.population === null
-                ? '暂无可靠数据'
-                : `约 ${populationFormatter.format(city.population)} 人`}
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      <section className="knowledge-country-section">
-        <h3>入选理由</h3>
-        <ul className="city-reason-list">
-          {city.reasons.map((reason) => (
-            <li key={reason}>{cityReasonLabels[reason]}</li>
-          ))}
-        </ul>
-      </section>
     </>
   )
 }

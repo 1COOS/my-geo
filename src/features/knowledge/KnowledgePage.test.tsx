@@ -493,7 +493,7 @@ describe('knowledge pages', () => {
     expect(
       screen.queryByRole('button', { name: '关闭国家学习详情' }),
     ).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /城市邻国/ }))
+    await user.click(screen.getByRole('button', { name: /国际关系/ }))
     await user.click(screen.getByRole('button', { name: '探索邻国阿富汗' }))
     expect(
       screen.getByRole('heading', { name: '南亚9国', level: 1 }),

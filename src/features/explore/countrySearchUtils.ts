@@ -1,4 +1,3 @@
-import type { City } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
 import type { ClimateType } from '../../data/climateLearningSchema'
 import type { Desert } from '../../data/desertSchema'
@@ -13,7 +12,6 @@ import type { Waterbody } from '../../data/waterbodySchema'
 
 export type PlaceSearchResult =
   | { type: 'country'; country: Country }
-  | { type: 'city'; city: City; country: Country }
   | { type: 'waterbody'; waterbody: Waterbody }
   | { type: 'linearFeature'; feature: LinearGeoFeature }
   | { type: 'mountainRange'; range: MountainRange }
@@ -52,7 +50,6 @@ function matchScore(values: string[], query: string) {
 
 export function searchPlaces(
   countries: Country[],
-  cities: City[],
   waterbodies: Waterbody[],
   linearFeatures: LinearGeoFeature[],
   mountainRanges: MountainRange[],
@@ -93,28 +90,6 @@ export function searchPlaces(
         result: { type: 'country', country },
         score,
         name: country.name.zh,
-      })
-    }
-  }
-
-  for (const city of cities) {
-    const country = countriesByCode.get(city.countryCode)
-    if (!country) continue
-    const score = matchScore(
-      [
-        city.name.zh,
-        city.name.en,
-        country.code,
-        country.name.zh,
-        country.name.en,
-      ],
-      normalizedQuery,
-    )
-    if (score < 10) {
-      scored.push({
-        result: { type: 'city', city, country },
-        score: score + 0.2,
-        name: city.name.zh,
       })
     }
   }
@@ -307,7 +282,7 @@ export function searchCountries(
   query: string,
   limit = 8,
 ) {
-  return searchPlaces(countries, [], [], [], [], query, limit).flatMap(
-    (result) => (result.type === 'country' ? [result.country] : []),
+  return searchPlaces(countries, [], [], [], query, limit).flatMap((result) =>
+    result.type === 'country' ? [result.country] : [],
   )
 }

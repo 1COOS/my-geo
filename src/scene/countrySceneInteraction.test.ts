@@ -5,7 +5,6 @@ import { countryBoundaries } from '../data/geometryData'
 import { waterbodies } from '../data/waterbodies'
 import { linearGeoFeatures } from '../data/linearGeoFeatures'
 import {
-  CITY_CAMERA_DISTANCE,
   getCameraFlightDuration,
   getCityLabelBudget,
   getCountryCodeForLayer,
@@ -82,23 +81,13 @@ describe('country scene interaction', () => {
     )
   })
 
-  it('supports a closer city camera distance', () => {
-    const position = getOverviewCameraPosition(
-      { x: 20, y: -40, z: 80 },
-      CITY_CAMERA_DISTANCE,
-    )
-
-    expect(CITY_CAMERA_DISTANCE).toBe(190)
-    expect(Math.hypot(position.x, position.y, position.z)).toBeCloseTo(190)
-  })
-
   it('limits adaptive labels for low quality and touch devices', () => {
     expect(getCityLabelBudget('balanced', false)).toBe(30)
     expect(getCityLabelBudget('balanced', true)).toBe(16)
     expect(getCityLabelBudget('low', false)).toBe(16)
   })
 
-  it('filters mutually exclusive capital and city layers with selection exceptions', () => {
+  it('filters mutually exclusive capital and city layers without selection exceptions', () => {
     const beijing = cities.find((city) => city.id === 'cn-beijing')!
     const shanghai = cities.find((city) => city.id === 'cn-shanghai')!
     const sample = [beijing, shanghai]
@@ -107,40 +96,24 @@ describe('country scene interaction', () => {
       getVisibleLayerCities(sample, {
         showCapitals: false,
         showCities: false,
-        selectedCityId: null,
-        hoveredCityId: null,
       }),
     ).toEqual([])
     expect(
       getVisibleLayerCities(sample, {
         showCapitals: true,
         showCities: false,
-        selectedCityId: null,
-        hoveredCityId: null,
       }),
     ).toEqual([beijing])
     expect(
       getVisibleLayerCities(sample, {
         showCapitals: false,
         showCities: true,
-        selectedCityId: null,
-        hoveredCityId: null,
       }),
     ).toEqual([shanghai])
     expect(
       getVisibleLayerCities(sample, {
         showCapitals: true,
         showCities: true,
-        selectedCityId: null,
-        hoveredCityId: null,
-      }),
-    ).toEqual(sample)
-    expect(
-      getVisibleLayerCities(sample, {
-        showCapitals: false,
-        showCities: false,
-        selectedCityId: shanghai.id,
-        hoveredCityId: beijing.id,
       }),
     ).toEqual(sample)
   })
@@ -298,20 +271,14 @@ describe('country scene interaction', () => {
     const capitals = getVisibleLayerCities(cities, {
       showCapitals: true,
       showCities: false,
-      selectedCityId: null,
-      hoveredCityId: null,
     })
     const nonCapitalCities = getVisibleLayerCities(cities, {
       showCapitals: false,
       showCities: true,
-      selectedCityId: null,
-      hoveredCityId: null,
     })
     const allCities = getVisibleLayerCities(cities, {
       showCapitals: true,
       showCities: true,
-      selectedCityId: null,
-      hoveredCityId: null,
     })
 
     expect(capitals).toHaveLength(197)

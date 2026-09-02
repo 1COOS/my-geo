@@ -288,16 +288,9 @@
   letter-spacing: 0.08em;
 }
 
-.knowledge-city-facts > div {
-  grid-column: 1 / -1;
-  border-right: 0;
-  border-bottom: 0;
-}
-
 .knowledge-card-shell
   :is(
     .country-detail-heading,
-    .city-detail-heading,
     .waterbody-detail-heading,
     .geography-learning-heading,
     .climate-learning-heading
@@ -308,7 +301,6 @@
 .knowledge-card-shell
   :is(
     .country-detail-heading > div p,
-    .city-detail-heading > div p,
     .waterbody-detail-heading p,
     .geography-learning-heading p,
     .climate-learning-heading p

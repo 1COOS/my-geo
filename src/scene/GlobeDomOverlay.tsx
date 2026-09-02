@@ -1,6 +1,6 @@
 import { useRef, type ReactNode, type RefObject } from 'react'
 
-import { getCity, getCountry } from '../data/countries'
+import { getCountry } from '../data/countries'
 import { getDesert } from '../data/deserts'
 import { getLandmark } from '../data/landmarks'
 import {
@@ -48,7 +48,6 @@ export function GlobeDomOverlay({
   const tooltipRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const hoveredCountry = getCountry(props.hoveredCountryCode)
-  const hoveredCity = getCity(props.hoveredCityId)
   const hoveredWaterbody = getWaterbody(props.hoveredWaterbodyId)
   const hoveredLinearFeature = getLinearGeoFeature(props.hoveredLinearFeatureId)
   const hoveredMountainRange = getMountainRange(props.hoveredMountainRangeId)
@@ -89,7 +88,6 @@ export function GlobeDomOverlay({
       }}
       onPointerLeave={() => {
         props.onHoverCountry(null)
-        props.onHoverCity(null)
         props.onHoverWaterbody(null)
         props.onHoverLinearFeature(null)
         props.onHoverMountainRange(null)
@@ -184,23 +182,21 @@ export function GlobeDomOverlay({
         aria-label="城市、水域、山脉、沙漠、古迹与经纬网地理标签"
       >
         {labelCities.map((city) => (
-          <button
-            type="button"
+          <span
             key={city.id}
             hidden
-            className={city.isCapital ? 'city-label is-capital' : 'city-label'}
+            className={
+              city.isCapital
+                ? 'city-label is-city is-capital'
+                : 'city-label is-city'
+            }
             data-map-label-id={city.id}
             data-city-id={city.id}
-            aria-label={`定位到${city.name.zh}${city.isCapital ? '首都' : '城市'}`}
-            onPointerEnter={() => {
-              if (!controlsInteractingRef.current) props.onHoverCity(city.id)
-            }}
-            onPointerLeave={() => props.onHoverCity(null)}
-            onClick={() => props.onSelectCity(city.id)}
+            aria-hidden="true"
           >
             <span aria-hidden="true" />
             {city.name.zh}
-          </button>
+          </span>
         ))}
         {labelWaterbodies.map((waterbody) => (
           <button
@@ -364,7 +360,6 @@ export function GlobeDomOverlay({
         hoveredMountainRange ||
         hoveredLinearFeature ||
         hoveredWaterbody ||
-        hoveredCity ||
         hoveredCountry) ? (
         <div ref={tooltipRef} className="country-hover-tooltip" role="tooltip">
           {hoveredLandmark ? (
@@ -393,13 +388,6 @@ export function GlobeDomOverlay({
             <>
               <span>{hoveredWaterbody.name.zh}</span>
               <small>{waterbodyKindLabels[hoveredWaterbody.kind]}</small>
-            </>
-          ) : hoveredCity ? (
-            <>
-              <span>{hoveredCity.name.zh}</span>
-              <small>
-                {hoveredCity.isCapital ? '首都' : hoveredCity.name.en}
-              </small>
             </>
           ) : hoveredCountry ? (
             <>

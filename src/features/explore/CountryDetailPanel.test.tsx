@@ -14,10 +14,7 @@ function renderCountry(code: string, onSelectCountry = vi.fn()) {
       <CountryDetailPanel
         country={country!}
         cities={getCitiesForCountry(code)}
-        selectedCity={undefined}
         onSelectCountry={onSelectCountry}
-        onSelectCity={vi.fn()}
-        onBackToCountry={vi.fn()}
       />
     </MemoryRouter>,
   )
@@ -33,36 +30,10 @@ function renderCountryData(
       <CountryDetailPanel
         country={country}
         cities={getCitiesForCountry(country.code)}
-        selectedCity={undefined}
         onSelectCountry={onSelectCountry}
-        onSelectCity={vi.fn()}
-        onBackToCountry={vi.fn()}
       />
     </MemoryRouter>,
   )
-}
-
-function renderSelectedCity(code: string, cityId: string) {
-  const country = getCountry(code)
-  const cities = getCitiesForCountry(code)
-  const city = cities.find((candidate) => candidate.id === cityId)
-  expect(country).toBeDefined()
-  expect(city).toBeDefined()
-
-  const onBackToCountry = vi.fn()
-  render(
-    <MemoryRouter>
-      <CountryDetailPanel
-        country={country!}
-        cities={cities}
-        selectedCity={city}
-        onSelectCountry={vi.fn()}
-        onSelectCity={vi.fn()}
-        onBackToCountry={onBackToCountry}
-      />
-    </MemoryRouter>,
-  )
-  return onBackToCountry
 }
 
 describe('CountryDetailPanel', () => {
@@ -112,11 +83,11 @@ describe('CountryDetailPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /语言民族/ }))
     expect(screen.getByText('中文')).toBeInTheDocument()
     expect(screen.queryByText('Chinese')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /城市邻国/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /国际关系/ })).toHaveAttribute(
       'aria-expanded',
       'false',
     )
-    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
+    await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
     expect(screen.getByText('中国香港')).toBeInTheDocument()
     expect(screen.getByText('中国澳门')).toBeInTheDocument()
     expect(
@@ -207,7 +178,7 @@ describe('CountryDetailPanel', () => {
   it('dispatches a sovereign-neighbour selection', async () => {
     const onSelectCountry = renderCountry('VA')
 
-    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
+    await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
 
     await userEvent.click(
       screen.getByRole('button', { name: '探索邻国意大利' }),
@@ -224,26 +195,28 @@ describe('CountryDetailPanel', () => {
   it('keeps adjacent regions as non-interactive labels', async () => {
     renderCountry('CN')
 
-    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
+    await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
 
     expect(screen.queryByRole('button', { name: /中国香港/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /中国澳门/ })).toBeNull()
   })
 
-  it('shows every city when the combined chapter is open', async () => {
+  it('shows every city as a static bilingual row', async () => {
     renderCountry('CN')
 
-    await userEvent.click(screen.getByRole('button', { name: /城市邻国/ }))
+    await userEvent.click(screen.getByRole('button', { name: /^主要城市/ }))
 
-    expect(
-      screen.getByRole('button', { name: '探索城市北京' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: '探索城市上海' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: '探索城市成都' }),
-    ).toBeInTheDocument()
+    const cityRows = Array.from(
+      document.querySelectorAll('.knowledge-country-city-row'),
+    )
+    expect(cityRows.map((row) => row.textContent)).toEqual([
+      '北京Beijing',
+      '上海Shanghai',
+      '广州Guangzhou',
+      '深圳Shenzhen',
+      '成都Chengdu',
+    ])
+    expect(screen.queryByRole('button', { name: /探索城市/ })).toBeNull()
     expect(
       screen.queryByRole('button', { name: /查看全部主要城市/ }),
     ).not.toBeInTheDocument()
@@ -260,20 +233,5 @@ describe('CountryDetailPanel', () => {
     expect(screen.getByText('欧元')).toBeInTheDocument()
     expect(screen.getByText(/EUR/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /查看全部货币/ })).toBeNull()
-  })
-
-  it('switches to a city knowledge card with population and reasons', async () => {
-    const onBackToCountry = renderSelectedCity('CN', 'cn-shanghai')
-
-    expect(screen.getByLabelText('上海城市知识卡')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: '上海' })).toBeInTheDocument()
-    expect(screen.getByText(/约 2407.3万 人/)).toBeInTheDocument()
-    expect(screen.queryByText(/31\.1667°N/)).not.toBeInTheDocument()
-    expect(screen.getByText('经济中心')).toBeInTheDocument()
-    expect(screen.getByText('世界知名')).toBeInTheDocument()
-    expect(screen.queryByText(/资料来源/)).not.toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: '← 返回中国' }))
-    expect(onBackToCountry).toHaveBeenCalledOnce()
   })
 })

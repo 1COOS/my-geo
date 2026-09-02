@@ -38,8 +38,6 @@ type GlobeLabelDataInput = {
   selectedClimateTypeId: ClimateTypeId | null
   selectedGeographyTopicId: GeographyTopicId | null
   selectedReferenceLineId: ReferenceLineId | null
-  selectedCityId: string | null
-  hoveredCityId: string | null
   selectedWaterbodyId: string | null
   hoveredWaterbodyId: string | null
   selectedLinearFeatureId: string | null
@@ -54,15 +52,8 @@ export function useGlobeLabelData(input: GlobeLabelDataInput) {
       getVisibleLayerCities(cities, {
         showCapitals: input.showCapitals,
         showCities: input.showCities,
-        selectedCityId: input.selectedCityId,
-        hoveredCityId: input.hoveredCityId,
       }),
-    [
-      input.hoveredCityId,
-      input.selectedCityId,
-      input.showCapitals,
-      input.showCities,
-    ],
+    [input.showCapitals, input.showCities],
   )
   const labelWaterbodies = useMemo(
     () =>

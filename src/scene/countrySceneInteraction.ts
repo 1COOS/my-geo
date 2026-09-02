@@ -5,7 +5,6 @@ import type { Waterbody } from '../data/waterbodySchema'
 import type { LandmarkMarker } from './landmarkSceneInteraction'
 
 export const OVERVIEW_CAMERA_DISTANCE = 425
-export const CITY_CAMERA_DISTANCE = 190
 export const WATERBODY_CAMERA_DISTANCE = 225
 export const GLOBE_VERTICAL_CENTER_RATIO = 0.5
 export const LAKE_LABEL_VERTICAL_OFFSET = 40
@@ -100,19 +99,14 @@ export function getClimateMarker(value: unknown) {
 export type CityLayerVisibility = {
   showCapitals: boolean
   showCities: boolean
-  selectedCityId: string | null
-  hoveredCityId: string | null
 }
 
 export function getVisibleLayerCities(
   cities: readonly City[],
   visibility: CityLayerVisibility,
 ) {
-  return cities.filter(
-    (city) =>
-      city.id === visibility.selectedCityId ||
-      city.id === visibility.hoveredCityId ||
-      (city.isCapital ? visibility.showCapitals : visibility.showCities),
+  return cities.filter((city) =>
+    city.isCapital ? visibility.showCapitals : visibility.showCities,
   )
 }
 

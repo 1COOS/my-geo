@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { cities, countries } from '../../data/countries'
+import { countries } from '../../data/countries'
 import { climateLearningTopic, climateTypes } from '../../data/climateLearning'
 import { deserts } from '../../data/deserts'
 import { linearGeoFeatures } from '../../data/linearGeoFeatures'
@@ -27,24 +27,19 @@ describe('searchCountries', () => {
     ).toBe(true)
   })
 
-  it('finds cities, waterbodies, aliases, and country ISO values', () => {
+  it('excludes cities while finding waterbodies, aliases, and country ISO values', () => {
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
         '上海',
-      )[0],
-    ).toMatchObject({
-      type: 'city',
-      city: { id: 'cn-shanghai' },
-    })
+      ),
+    ).toEqual([])
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
@@ -57,7 +52,6 @@ describe('searchCountries', () => {
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
@@ -70,7 +64,6 @@ describe('searchCountries', () => {
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
@@ -83,7 +76,6 @@ describe('searchCountries', () => {
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
@@ -96,7 +88,6 @@ describe('searchCountries', () => {
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
@@ -112,7 +103,6 @@ describe('searchCountries', () => {
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
@@ -125,7 +115,6 @@ describe('searchCountries', () => {
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
@@ -138,7 +127,6 @@ describe('searchCountries', () => {
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
@@ -157,7 +145,6 @@ describe('searchCountries', () => {
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
@@ -167,7 +154,6 @@ describe('searchCountries', () => {
     expect(
       searchPlaces(
         countries,
-        cities,
         waterbodies,
         linearGeoFeatures,
         mountainRanges,
@@ -186,7 +172,6 @@ describe('searchCountries', () => {
       expect(
         searchPlaces(
           countries,
-          cities,
           waterbodies,
           linearGeoFeatures,
           mountainRanges,
@@ -208,7 +193,6 @@ describe('searchCountries', () => {
       expect(
         searchPlaces(
           countries,
-          cities,
           waterbodies,
           linearGeoFeatures,
           mountainRanges,
@@ -222,7 +206,6 @@ describe('searchCountries', () => {
 
     const countryResults = searchPlaces(
       countries,
-      cities,
       waterbodies,
       linearGeoFeatures,
       mountainRanges,
@@ -242,7 +225,6 @@ describe('searchCountries', () => {
   it('finds the climate overview and all 13 climate type cards', () => {
     const argumentsBeforeClimate = [
       countries,
-      cities,
       waterbodies,
       linearGeoFeatures,
       mountainRanges,

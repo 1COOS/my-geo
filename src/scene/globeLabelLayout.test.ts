@@ -12,8 +12,6 @@ import {
 } from './globeLabelLayout'
 
 const emptyPriorityState = {
-  selectedCityId: null,
-  hoveredCityId: null,
   selectedWaterbodyId: null,
   hoveredWaterbodyId: null,
   selectedLinearFeatureId: null,
@@ -28,7 +26,7 @@ const emptyPriorityState = {
 }
 
 describe('globe label layout', () => {
-  it('keeps selected and hovered entities ahead of ordinary labels', () => {
+  it('keeps city labels at their static capital or city priority', () => {
     const city = cities.find((item) => item.isCapital)!
     const label: MapLabel = {
       id: city.id,
@@ -38,18 +36,6 @@ describe('globe label layout', () => {
       city,
     }
 
-    expect(
-      getLabelPriority(label, {
-        ...emptyPriorityState,
-        selectedCityId: city.id,
-      }),
-    ).toBe(0)
-    expect(
-      getLabelPriority(label, {
-        ...emptyPriorityState,
-        hoveredCityId: city.id,
-      }),
-    ).toBe(1)
     expect(getLabelPriority(label, emptyPriorityState)).toBeGreaterThan(1)
     expect(getLabelGroup(label)).toBe('capital')
   })
