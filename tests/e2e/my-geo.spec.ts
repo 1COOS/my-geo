@@ -2,8 +2,11 @@ import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 async function openCountrySearch(page: Page) {
-  const trigger = page.getByRole('button', { name: '搜索地点' })
+  const trigger = page
+    .getByRole('navigation', { name: 'My Geo 主导航' })
+    .getByRole('link', { name: '搜索', exact: true })
   await trigger.click()
+  await expect(page).toHaveURL(/\/search$/)
   const search = page.getByRole('combobox', { name: '搜索地点' })
   await expect(search).toBeFocused()
   return search
@@ -256,7 +259,7 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
   ).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'My Geo 首页' })).toHaveCount(0)
   await expect(page.getByText('MY GEO · EARTH EXPLORATION LAB')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '搜索地点' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '搜索' })).toBeVisible()
   await expect(page.getByRole('combobox', { name: '搜索地点' })).toHaveCount(0)
 
   const { scene } = await waitForSceneOrFallback(page)
@@ -313,7 +316,7 @@ test('switches between exploration and knowledge without scene teardown errors',
   if (await fallback.isVisible()) return
   await expect(scene).toBeVisible()
 
-  const knowledgeLink = page.getByRole('link', { name: '知识中心' })
+  const knowledgeLink = page.getByRole('link', { name: '图鉴' })
   const exploreLink = page.getByRole('link', { name: '探索地球' })
   await knowledgeLink.click()
   await page.getByTestId('knowledge-home-module-countries').click()
@@ -1128,12 +1131,18 @@ for (const viewport of [
     ).toHaveAttribute('href', '/explore?country=CN')
     await expect(
       knowledgeCard.getByRole('link', { name: /在3D地球上查看/ }),
-    ).toHaveText('')
+    ).toHaveText('3D')
+    await expect(
+      knowledgeCard.getByRole('link', { name: /在3D地球上查看/ }),
+    ).toHaveCSS('background-color', 'rgb(54, 88, 77)')
+    await expect(
+      knowledgeCard.getByRole('link', { name: /在3D地球上查看/ }),
+    ).toHaveCSS('border-radius', '8px')
     await expect(
       knowledgeCard
         .getByRole('link', { name: /在3D地球上查看/ })
         .locator('svg'),
-    ).toHaveCount(1)
+    ).toHaveCount(0)
     await expect(
       knowledgeCard.getByRole('button', { name: /探索城市/ }),
     ).toHaveCount(0)
@@ -1156,8 +1165,14 @@ for (const viewport of [
     expect(globeBox!.height).toBeCloseTo(knowledgeBox!.height, 0)
     expect(globeBox!.x).toBeCloseTo(knowledgeBox!.x, 0)
     await expect(
-      globeCard.getByRole('link', { name: /在知识体系中学习/ }),
+      globeCard.getByRole('link', { name: /在图鉴中学习/ }),
     ).toHaveAttribute('href', '/knowledge/countries/east-asia?country=CN')
+    await expect(
+      globeCard.getByRole('link', { name: /在图鉴中学习/ }),
+    ).toHaveText('图鉴')
+    await expect(
+      globeCard.getByRole('link', { name: /在图鉴中学习/ }),
+    ).toHaveCSS('background-color', 'rgb(54, 88, 77)')
     expect(
       await page.evaluate(
         () =>
@@ -1361,7 +1376,7 @@ test('enters continent questions from the knowledge hub and persists the result'
 }) => {
   await page.goto('/knowledge')
 
-  const knowledgeNavigation = page.getByRole('link', { name: '知识中心' })
+  const knowledgeNavigation = page.getByRole('link', { name: '图鉴' })
   const questionEntry = page.getByRole('link', { name: /知识问答/ })
   await questionEntry.click()
   await expect(page).toHaveURL(/\/questions$/)
@@ -1522,9 +1537,7 @@ for (const viewport of [
     })
     await page.goto('/questions')
 
-    const knowledgeNavigation = page.getByRole('link', {
-      name: '知识中心',
-    })
+    const knowledgeNavigation = page.getByRole('link', { name: '图鉴' })
     await expect(knowledgeNavigation).toBeVisible()
     await expect(knowledgeNavigation).toHaveClass(/is-active/)
     const cards = page.locator('.knowledge-question-continent-card')
@@ -1972,7 +1985,7 @@ test('keeps the global fullscreen control active across app routes', async ({
   const exitFullscreen = page.getByRole('button', { name: '退出全屏' })
   await expect(exitFullscreen).toHaveAttribute('aria-pressed', 'true')
 
-  await page.getByRole('link', { name: '知识中心' }).click()
+  await page.getByRole('link', { name: '图鉴' }).click()
   await page.getByTestId('knowledge-home-module-countries').click()
   await expect(page).toHaveURL(/\/knowledge\/countries$/)
   await expect(exitFullscreen).toBeVisible()
@@ -2049,7 +2062,7 @@ for (const viewport of [
     expect(layout.top).toBeGreaterThanOrEqual(5)
     expect(layout.bottom).toBeLessThanOrEqual(viewport.height - 5)
     expect(layout.scrollHeight).toBeLessThanOrEqual(layout.clientHeight + 1)
-    expect(layout.items).toHaveLength(3)
+    expect(layout.items).toHaveLength(4)
     for (let index = 1; index < layout.items.length; index += 1) {
       expect(layout.items[index].top).toBeGreaterThanOrEqual(
         layout.items[index - 1].bottom,
@@ -2208,7 +2221,7 @@ test('suppresses touch context menus while preserving search editing', async ({
     await page.setViewportSize(viewport)
     await page.goto('/')
 
-    const trigger = page.getByRole('button', { name: '搜索地点' })
+    const trigger = page.getByRole('link', { name: '图鉴' })
     const blockedResult = await trigger.evaluate((element) => {
       const event = new MouseEvent('contextmenu', {
         bubbles: true,
@@ -2315,16 +2328,14 @@ test('keeps phone landscape controls separated and country details usable', asyn
 
   const search = await openCountrySearch(page)
   await expect(search).toBeVisible()
-  const dialogBox = await page
-    .getByRole('dialog', { name: '搜索地点' })
-    .boundingBox()
+  const searchPageBox = await page.locator('.search-page-content').boundingBox()
   const results = page.getByRole('listbox', { name: '地点搜索结果' })
   const popoverBox = await page.locator('.country-search-popover').boundingBox()
-  expect(dialogBox).not.toBeNull()
+  expect(searchPageBox).not.toBeNull()
   expect(popoverBox).not.toBeNull()
   await expect(results).toBeVisible()
-  expect(dialogBox!.x).toBeGreaterThanOrEqual(mapBox!.x + mapBox!.width)
-  expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(512)
+  expect(searchPageBox!.x).toBeGreaterThanOrEqual(64)
+  expect(searchPageBox!.x + searchPageBox!.width).toBeLessThanOrEqual(832)
   expect(popoverBox!.y).toBeGreaterThanOrEqual(11)
 
   await search.fill('中国')
@@ -3704,7 +3715,7 @@ test('reloads the core experience while offline', async ({ page, context }) => {
   await context.setOffline(true)
   try {
     await page.reload({ waitUntil: 'domcontentloaded' })
-    await expect(page.getByRole('button', { name: '搜索地点' })).toBeVisible()
+    await expect(page.getByRole('link', { name: '搜索' })).toBeVisible()
     const scene = page.getByTestId('globe-scene')
     if (await scene.isVisible()) {
       await expect(page.getByTestId('world-mini-map')).toBeVisible()
@@ -3797,7 +3808,7 @@ test('resets the globe view to China', async ({ page }) => {
 
   await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
   const resetSearch = await openCountrySearch(page)
-  await expect(resetSearch).toHaveValue('中国')
+  await expect(resetSearch).toHaveValue('')
 })
 
 test('searches a microstate without Natural Earth geometry', async ({
@@ -3880,7 +3891,7 @@ test('selects a sovereign neighbour and opens the new country card', async ({
     italyCard.getByRole('button', { name: /语言民族/ }),
   ).toHaveAttribute('aria-expanded', 'false')
   const italySearch = await openCountrySearch(page)
-  await expect(italySearch).toHaveValue('意大利')
+  await expect(italySearch).toHaveValue('')
 })
 
 test('opens a complete chapter with the keyboard and resets it on navigation', async ({

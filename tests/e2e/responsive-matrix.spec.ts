@@ -150,6 +150,13 @@ for (const viewport of responsiveViewports) {
     await expect(page.locator('.knowledge-map-card')).toBeVisible()
     await expectNoRootOverflow(page)
 
+    await page.goto('/search')
+    await expect(page.getByRole('combobox', { name: '搜索地点' })).toBeVisible()
+    await expect(
+      page.getByRole('listbox', { name: '地点搜索结果' }),
+    ).toBeVisible()
+    await expectNoRootOverflow(page)
+
     await page.goto('/questions?difficulty=easy')
     await expect(
       page.getByRole('heading', { name: '知识问答', exact: true }),

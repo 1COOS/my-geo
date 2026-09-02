@@ -226,6 +226,32 @@
   object-fit: contain;
 }
 
+.app-navigation-back {
+  width: 100%;
+  padding: 0;
+  color: var(--atlas-text);
+  cursor: pointer;
+  background: var(--atlas-compact-action);
+  border: 0;
+  border-radius: 0.5rem;
+}
+
+.app-navigation-back:hover,
+.app-navigation-back:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-compact-action-hover);
+}
+
+.app-navigation-back svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .app-navigation-link {
   display: grid;
   gap: 0.2rem;

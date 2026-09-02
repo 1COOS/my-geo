@@ -65,6 +65,16 @@ async function openLayerPanel(user: ReturnType<typeof userEvent.setup>) {
   return screen.getByRole('region', { name: '图层选择' })
 }
 
+function callGlobeEvent(name: string, ...args: unknown[]) {
+  act(() => {
+    const callback = (
+      globePropsMock.mock.lastCall?.[0] as Record<string, unknown>
+    )[name]
+    if (typeof callback !== 'function') throw new Error(`Missing ${name}`)
+    ;(callback as (...values: unknown[]) => void)(...args)
+  })
+}
+
 describe('ExplorePage', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/explore')
@@ -189,7 +199,9 @@ describe('ExplorePage', () => {
       within(guide).getByRole('heading', { name: '转动地球，发现世界' }),
     ).toBeInTheDocument()
     expect(within(guide).getByText(/滚轮或双指开合/)).toBeInTheDocument()
-    expect(within(guide).getByText(/搜索、图层和定位图/)).toBeInTheDocument()
+    expect(
+      within(guide).getByText(/主导航搜索、图层和定位图/),
+    ).toBeInTheDocument()
     expect(within(guide).queryByRole('button')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
     expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
@@ -199,19 +211,44 @@ describe('ExplorePage', () => {
     })
   })
 
-  it('keeps the selected card while the mini map moves to a coordinate', async () => {
-    const user = userEvent.setup()
+  it('opens landmark and climate overview deep links from standalone search', async () => {
+    window.history.replaceState({}, '', '/explore?landmark=great-wall')
+    const landmarkView = render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    expect(await screen.findByLabelText('长城古迹知识卡')).toBeVisible()
+    expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+      showLandmarkLayer: true,
+      selectedLandmarkId: 'great-wall',
+    })
+
+    landmarkView.unmount()
+    window.history.replaceState({}, '', '/explore?climate=world-climate-types')
     render(
       <Tooltip.Provider>
         <ExplorePage />
       </Tooltip.Provider>,
     )
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    await user.type(
-      screen.getByRole('combobox', { name: '搜索地点' }),
-      '中国{Enter}',
+    expect(await screen.findByLabelText('世界气候类型知识卡')).toBeVisible()
+    expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+      showClimateLayer: true,
+      selectedClimateTypeId: null,
+    })
+  })
+
+  it('keeps the selected card while the mini map moves to a coordinate', async () => {
+    window.history.replaceState({}, '', '/explore?country=CN')
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
     )
+
+    await screen.findByLabelText('中国国家知识卡')
     const map = screen.getByTestId('world-mini-map')
     vi.spyOn(map, 'getBoundingClientRect').mockReturnValue({
       x: 0,
@@ -405,7 +442,7 @@ describe('ExplorePage', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows the globe and control deck without page chrome or an open search field', async () => {
+  it('shows the globe and control deck without page chrome or search controls', async () => {
     const user = userEvent.setup()
     render(
       <Tooltip.Provider>
@@ -422,7 +459,7 @@ describe('ExplorePage', () => {
     expect(
       screen.getByRole('navigation', { name: '地球显示控制' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '搜索地点' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '搜索地点' })).toBeNull()
     expect(
       screen.queryByRole('combobox', { name: '搜索地点' }),
     ).not.toBeInTheDocument()
@@ -497,29 +534,7 @@ describe('ExplorePage', () => {
     expect(screen.getByText('水域：海峡与海沟')).toBeInTheDocument()
   })
 
-  it('opens, focuses, and closes the search dialog from the control deck', async () => {
-    const user = userEvent.setup()
-    render(
-      <Tooltip.Provider>
-        <ExplorePage />
-      </Tooltip.Provider>,
-    )
-
-    const trigger = screen.getByRole('button', { name: '搜索地点' })
-    await user.click(trigger)
-
-    const search = screen.getByRole('combobox', { name: '搜索地点' })
-    expect(search).toHaveFocus()
-    expect(trigger).toHaveAttribute('aria-expanded', 'true')
-
-    await user.keyboard('{Escape}')
-    expect(
-      screen.queryByRole('combobox', { name: '搜索地点' }),
-    ).not.toBeInTheDocument()
-    expect(trigger).toHaveFocus()
-  })
-
-  it('keeps layer and search panels mutually exclusive and restores focus', async () => {
+  it('closes the layer panel from the globe and restores focus', async () => {
     const user = userEvent.setup()
     render(
       <Tooltip.Provider>
@@ -533,60 +548,38 @@ describe('ExplorePage', () => {
     await user.click(layerTrigger)
     expect(screen.getByRole('region', { name: '图层选择' })).toBeVisible()
 
-    const searchTrigger = screen.getByRole('button', { name: '搜索地点' })
-    await user.click(searchTrigger)
-    expect(screen.queryByRole('region', { name: '图层选择' })).toBeNull()
-    expect(screen.getByRole('combobox', { name: '搜索地点' })).toHaveFocus()
-
-    await user.keyboard('{Escape}')
-    expect(searchTrigger).toHaveFocus()
-
-    await user.click(layerTrigger)
     await user.click(await screen.findByTestId('mock-globe-scene'))
     expect(screen.queryByRole('region', { name: '图层选择' })).toBeNull()
     expect(layerTrigger).toHaveFocus()
   })
 
-  it('closes the search dialog when the globe area is clicked', async () => {
-    const user = userEvent.setup()
+  it('creates a new camera request when the same country is selected twice', () => {
     render(
       <Tooltip.Provider>
         <ExplorePage />
       </Tooltip.Provider>,
     )
 
-    const trigger = screen.getByRole('button', { name: '搜索地点' })
-    await user.click(trigger)
-    expect(
-      screen.getByRole('combobox', { name: '搜索地点' }),
-    ).toBeInTheDocument()
-
-    await user.click(await screen.findByTestId('mock-globe-scene'))
-    expect(
-      screen.queryByRole('combobox', { name: '搜索地点' }),
-    ).not.toBeInTheDocument()
-    expect(trigger).toHaveFocus()
-  })
-
-  it('creates a new camera request when the same country is selected twice', async () => {
-    render(
-      <Tooltip.Provider>
-        <ExplorePage />
-      </Tooltip.Provider>,
-    )
-
-    await userEvent.click(screen.getByRole('button', { name: '搜索地点' }))
-    let search = screen.getByRole('combobox', { name: '搜索地点' })
-    await userEvent.type(search, '中国{Enter}')
+    act(() => {
+      ;(
+        globePropsMock.mock.lastCall![0] as {
+          onSelectCountry: (countryCode: string) => void
+        }
+      ).onSelectCountry('CN')
+    })
     const firstRequestId = (
       globePropsMock.mock.lastCall![0] as {
         cameraTarget: { requestId: number }
       }
     ).cameraTarget.requestId
 
-    await userEvent.click(screen.getByRole('button', { name: '搜索地点' }))
-    search = screen.getByRole('combobox', { name: '搜索地点' })
-    await userEvent.keyboard('{Enter}')
+    act(() => {
+      ;(
+        globePropsMock.mock.lastCall![0] as {
+          onSelectCountry: (countryCode: string) => void
+        }
+      ).onSelectCountry('CN')
+    })
     const secondRequestId = (
       globePropsMock.mock.lastCall![0] as {
         cameraTarget: { requestId: number }
@@ -596,9 +589,8 @@ describe('ExplorePage', () => {
     expect(secondRequestId).toBeGreaterThan(firstRequestId)
   })
 
-  it('keeps country search available when WebGL is unavailable', async () => {
+  it('shows only the fallback when WebGL is unavailable', () => {
     supportsWebGLMock.mockReturnValue(false)
-    const user = userEvent.setup()
 
     render(
       <Tooltip.Provider>
@@ -609,45 +601,23 @@ describe('ExplorePage', () => {
     expect(screen.getByTestId('webgl-fallback')).toBeInTheDocument()
     expect(screen.queryByTestId('mock-globe-scene')).not.toBeInTheDocument()
     expect(
-      screen.getByRole('navigation', { name: '地球显示控制' }),
-    ).toBeInTheDocument()
+      screen.queryByRole('navigation', { name: '地球显示控制' }),
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('region', { name: '地球图层控制' }),
     ).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    await user.type(
-      screen.getByRole('combobox', { name: '搜索地点' }),
-      '中国{Enter}',
-    )
-    expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    await user.clear(screen.getByRole('combobox', { name: '搜索地点' }))
-    await user.type(
-      screen.getByRole('combobox', { name: '搜索地点' }),
-      '赤道{Enter}',
-    )
-    expect(screen.getByLabelText('地球经纬线知识卡')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: '赤道' })).toBeInTheDocument()
-    expect(
-      screen.getByText(/最长的纬线，也是南北半球的分界线/),
-    ).toBeInTheDocument()
   })
 
   it('keeps major cities static inside the country card', async () => {
     const user = userEvent.setup()
+    window.history.replaceState({}, '', '/explore?country=CN')
     render(
       <Tooltip.Provider>
         <ExplorePage />
       </Tooltip.Provider>,
     )
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    await user.type(
-      screen.getByRole('combobox', { name: '搜索地点' }),
-      '中国{Enter}',
-    )
+    await screen.findByLabelText('中国国家知识卡')
     await user.click(screen.getByRole('button', { name: /^主要城市/ }))
     expect(screen.getByText('上海', { exact: true })).toBeInTheDocument()
     expect(screen.getByText('Shanghai', { exact: true })).toBeInTheDocument()
@@ -740,10 +710,7 @@ describe('ExplorePage', () => {
       showWaterwayLayer: true,
     })
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    const search = screen.getByRole('combobox', { name: '搜索地点' })
-    await user.clear(search)
-    await user.type(search, '太平洋{Enter}')
+    callGlobeEvent('onSelectWaterbody', 'pacific-ocean')
     expect(await screen.findByLabelText('太平洋水域知识卡')).toBeInTheDocument()
     expect(getProps()).toMatchObject({
       selectedWaterbodyId: 'pacific-ocean',
@@ -751,10 +718,7 @@ describe('ExplorePage', () => {
     })
     expect(screen.queryByText(/不代表领海/)).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    const bohaiSearch = screen.getByRole('combobox', { name: '搜索地点' })
-    await user.clear(bohaiSearch)
-    await user.type(bohaiSearch, '渤海{Enter}')
+    callGlobeEvent('onSelectWaterbody', 'bohai-sea')
     expect(await screen.findByLabelText('渤海水域知识卡')).toBeInTheDocument()
     expect(getProps()).toMatchObject({ selectedWaterbodyId: 'bohai-sea' })
     expect(screen.getByText('中国东北部沿海、黄海西北部')).toBeInTheDocument()
@@ -765,10 +729,7 @@ describe('ExplorePage', () => {
     })
     await user.click(lakeToggle)
     expect(getProps()).toMatchObject({ showLakeLayer: false })
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    const lakeSearch = screen.getByRole('combobox', { name: '搜索地点' })
-    await user.clear(lakeSearch)
-    await user.type(lakeSearch, '贝加尔湖{Enter}')
+    callGlobeEvent('onSelectWaterbody', 'lake-baikal')
     expect(
       await screen.findByLabelText('贝加尔湖水域知识卡'),
     ).toBeInTheDocument()
@@ -830,9 +791,7 @@ describe('ExplorePage', () => {
       screen.queryByRole('button', { name: '运河图层：重要人工运河' }),
     ).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    const search = screen.getByRole('combobox', { name: '搜索地点' })
-    await user.type(search, '长江{Enter}')
+    callGlobeEvent('onSelectLinearFeature', 'yangtze-system')
     expect(await screen.findByLabelText('长江知识卡')).toBeInTheDocument()
     expect(getProps()).toMatchObject({
       selectedLinearFeatureId: 'yangtze-system',
@@ -840,10 +799,7 @@ describe('ExplorePage', () => {
       selectedCountryCode: null,
     })
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    const nextSearch = screen.getByRole('combobox', { name: '搜索地点' })
-    await user.clear(nextSearch)
-    await user.type(nextSearch, '苏伊士运河{Enter}')
+    callGlobeEvent('onSelectLinearFeature', 'suez-canal')
     expect(await screen.findByLabelText('苏伊士运河知识卡')).toBeInTheDocument()
     expect(screen.queryByLabelText('长江知识卡')).not.toBeInTheDocument()
   })
@@ -871,9 +827,7 @@ describe('ExplorePage', () => {
     expect(toggle).toHaveAttribute('aria-pressed', 'true')
     expect(getProps()).toMatchObject({ showMountainLayer: true })
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    const search = screen.getByRole('combobox', { name: '搜索地点' })
-    await user.type(search, '珠穆朗玛峰{Enter}')
+    callGlobeEvent('onSelectMountainRange', 'himalayas')
     expect(
       await screen.findByLabelText('喜马拉雅山脉知识卡'),
     ).toBeInTheDocument()
@@ -886,7 +840,7 @@ describe('ExplorePage', () => {
     })
   })
 
-  it('activates the desert layer on search and hides it without closing the card', async () => {
+  it('activates the desert layer on selection and hides it without closing the card', async () => {
     const user = userEvent.setup()
     render(
       <Tooltip.Provider>
@@ -901,9 +855,7 @@ describe('ExplorePage', () => {
         selectedCountryCode: string | null
       }
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    const search = screen.getByRole('combobox', { name: '搜索地点' })
-    await user.type(search, '撒哈拉{Enter}')
+    callGlobeEvent('onSelectDesert', 'sahara')
     expect(await screen.findByLabelText('撒哈拉沙漠知识卡')).toBeInTheDocument()
     expect(screen.getByText(/9,200,000 km²/)).toBeInTheDocument()
     expect(
@@ -930,7 +882,7 @@ describe('ExplorePage', () => {
     })
   })
 
-  it('activates the landmark layer on search and hides it without closing the card', async () => {
+  it('activates the landmark layer on selection and hides it without closing the card', async () => {
     const user = userEvent.setup()
     render(
       <Tooltip.Provider>
@@ -945,9 +897,7 @@ describe('ExplorePage', () => {
         selectedCountryCode: string | null
       }
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    const search = screen.getByRole('combobox', { name: '搜索地点' })
-    await user.type(search, '长城{Enter}')
+    callGlobeEvent('onSelectLandmark', 'great-wall')
 
     expect(await screen.findByLabelText('长城古迹知识卡')).toBeInTheDocument()
     expect(screen.getByText('公元前7世纪至明代')).toBeInTheDocument()
@@ -1173,8 +1123,8 @@ describe('ExplorePage', () => {
     expect(screen.getByLabelText('世界气候类型知识卡')).toBeInTheDocument()
   })
 
-  it('searches climate knowledge, activates the layer, and lets a country replace the card', async () => {
-    const user = userEvent.setup()
+  it('opens a climate deep link and lets a country replace the card', async () => {
+    window.history.replaceState({}, '', '/explore?climate=tropical-rainforest')
     render(
       <Tooltip.Provider>
         <ExplorePage />
@@ -1188,12 +1138,9 @@ describe('ExplorePage', () => {
         cameraTarget: { position: GeoPosition }
       }
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    await user.type(
-      screen.getByRole('combobox', { name: '搜索地点' }),
-      '热带雨林气候{Enter}',
-    )
-    expect(screen.getByLabelText('世界气候类型知识卡')).toBeInTheDocument()
+    expect(
+      await screen.findByLabelText('世界气候类型知识卡'),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: '热带雨林气候' }),
     ).toBeInTheDocument()
@@ -1208,12 +1155,7 @@ describe('ExplorePage', () => {
       ),
     )
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    await user.clear(screen.getByRole('combobox', { name: '搜索地点' }))
-    await user.type(
-      screen.getByRole('combobox', { name: '搜索地点' }),
-      '中国{Enter}',
-    )
+    callGlobeEvent('onSelectCountry', 'CN')
     expect(
       screen.queryByLabelText('世界气候类型知识卡'),
     ).not.toBeInTheDocument()
@@ -1226,8 +1168,7 @@ describe('ExplorePage', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('searches a reference line, activates its layer, and replaces it with a country card', async () => {
-    const user = userEvent.setup()
+  it('selects a reference line and replaces it with a country card', () => {
     render(
       <Tooltip.Provider>
         <ExplorePage />
@@ -1241,13 +1182,7 @@ describe('ExplorePage', () => {
         cameraTarget: { position: { latitude: number; longitude: number } }
       }
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    await user.type(
-      screen.getByRole('combobox', { name: '搜索地点' }),
-      '北回归线',
-    )
-    await screen.findByRole('option', { name: /北回归线/ })
-    await user.keyboard('{Enter}')
+    callGlobeEvent('onSelectGeographyTopic', 'earth-zones', 'tropic-of-cancer')
 
     expect(screen.getByLabelText('地球经纬线知识卡')).toBeInTheDocument()
     expect(
@@ -1263,12 +1198,7 @@ describe('ExplorePage', () => {
       },
     })
 
-    await user.click(screen.getByRole('button', { name: '搜索地点' }))
-    await user.clear(screen.getByRole('combobox', { name: '搜索地点' }))
-    await user.type(
-      screen.getByRole('combobox', { name: '搜索地点' }),
-      '中国{Enter}',
-    )
+    callGlobeEvent('onSelectCountry', 'CN')
     expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()
     expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
     expect(getProps()).toMatchObject({

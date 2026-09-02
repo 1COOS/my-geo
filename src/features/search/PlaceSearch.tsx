@@ -15,13 +15,14 @@ import {
 import { mountainRanges } from '../../data/mountainRanges'
 import { waterbodies, waterbodyKindLabels } from '../../data/waterbodies'
 import { CountryFlag } from '../../shared/components/CountryFlag'
-import { searchPlaces, type PlaceSearchResult } from './countrySearchUtils'
+import { searchPlaces, type PlaceSearchResult } from './placeSearchUtils'
 
-type CountrySearchProps = {
+type PlaceSearchProps = {
   selectedLabel?: string
   onSelect: (result: PlaceSearchResult) => void
   autoFocus?: boolean
   onRequestClose?: () => void
+  persistentResults?: boolean
 }
 
 function resultId(result: PlaceSearchResult) {
@@ -38,12 +39,13 @@ function resultId(result: PlaceSearchResult) {
   return `waterbody-${result.waterbody.id}`
 }
 
-export function CountrySearch({
+export function PlaceSearch({
   selectedLabel,
   onSelect,
   autoFocus = false,
   onRequestClose,
-}: CountrySearchProps) {
+  persistentResults = false,
+}: PlaceSearchProps) {
   const listboxId = useId()
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -105,7 +107,11 @@ export function CountrySearch({
       ref={containerRef}
       className="country-search"
       onBlur={(event) => {
-        if (!containerRef.current?.contains(event.relatedTarget)) setOpen(false)
+        if (
+          !persistentResults &&
+          !containerRef.current?.contains(event.relatedTarget)
+        )
+          setOpen(false)
       }}
     >
       <label className="sr-only" htmlFor={`${listboxId}-input`}>
@@ -173,7 +179,7 @@ export function CountrySearch({
         ) : null}
       </div>
 
-      {open ? (
+      {open || persistentResults ? (
         <div className="country-search-popover">
           <p className="country-search-caption">
             {query ? `找到 ${results.length} 个匹配项` : '精选国家'}

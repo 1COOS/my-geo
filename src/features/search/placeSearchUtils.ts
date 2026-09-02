@@ -32,7 +32,7 @@ export type PlaceSearchResult =
     }
   | { type: 'climateType'; climateType: ClimateType }
 
-export function normalizeCountrySearch(value: string) {
+export function normalizePlaceSearch(value: string) {
   return value
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
@@ -41,7 +41,7 @@ export function normalizeCountrySearch(value: string) {
 }
 
 function matchScore(values: string[], query: string) {
-  const normalizedValues = values.map(normalizeCountrySearch)
+  const normalizedValues = values.map(normalizePlaceSearch)
   if (normalizedValues.some((value) => value === query)) return 0
   if (normalizedValues.some((value) => value.startsWith(query))) return 1
   if (normalizedValues.some((value) => value.includes(query))) return 2
@@ -66,7 +66,7 @@ export function searchPlaces(
   },
   climateTypes: ClimateType[] = [],
 ): PlaceSearchResult[] {
-  const normalizedQuery = normalizeCountrySearch(query)
+  const normalizedQuery = normalizePlaceSearch(query)
   if (!normalizedQuery) {
     return countries
       .filter((country) => country.featured)
@@ -285,4 +285,29 @@ export function searchCountries(
   return searchPlaces(countries, [], [], [], query, limit).flatMap((result) =>
     result.type === 'country' ? [result.country] : [],
   )
+}
+
+export function getExplorePathForPlaceSearchResult(result: PlaceSearchResult) {
+  const searchParams = new URLSearchParams()
+  if (result.type === 'country') {
+    searchParams.set('country', result.country.code)
+  } else if (result.type === 'waterbody') {
+    searchParams.set('waterbody', result.waterbody.id)
+  } else if (result.type === 'linearFeature') {
+    searchParams.set('linearFeature', result.feature.id)
+  } else if (result.type === 'mountainRange') {
+    searchParams.set('mountainRange', result.range.id)
+  } else if (result.type === 'desert') {
+    searchParams.set('desert', result.desert.id)
+  } else if (result.type === 'landmark') {
+    searchParams.set('landmark', result.landmark.id)
+  } else if (result.type === 'geographyTopic') {
+    searchParams.set('geography', result.topic.id)
+    if (result.referenceLine) searchParams.set('line', result.referenceLine.id)
+  } else if (result.type === 'climateType') {
+    searchParams.set('climate', result.climateType.id)
+  } else {
+    searchParams.set('climate', result.topic.id)
+  }
+  return `/explore?${searchParams.toString()}`
 }

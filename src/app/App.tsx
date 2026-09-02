@@ -53,6 +53,11 @@ const KnowledgeQuestionsPage = lazy(async () => {
   return { default: module.KnowledgeQuestionsPage }
 })
 
+const SearchPage = lazy(async () => {
+  const module = await import('../features/search/SearchPage')
+  return { default: module.SearchPage }
+})
+
 export function App() {
   const viewportProfile = useViewportProfile()
   const responsiveTokens =
@@ -88,6 +93,7 @@ export function App() {
               <Routes>
                 <Route path="/" element={<Navigate to="/explore" replace />} />
                 <Route path="/explore" element={<ExplorePage />} />
+                <Route path="/search" element={<SearchPage />} />
                 <Route path="/knowledge" element={<KnowledgePage />} />
                 <Route
                   path="/knowledge/countries"

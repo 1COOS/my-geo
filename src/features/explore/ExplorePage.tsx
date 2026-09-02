@@ -12,7 +12,10 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { getClimateType } from '../../data/climateLearning'
+import {
+  climateLearningTopic,
+  getClimateType,
+} from '../../data/climateLearning'
 import {
   classifyClimatePosition,
   getClimateRasterAsset,
@@ -23,8 +26,6 @@ import type { ClimateTypeId } from '../../data/climateLearningSchema'
 import { getCitiesForCountry, getCountry } from '../../data/countries'
 import { getDesert } from '../../data/deserts'
 import {
-  geographyLearningOverview,
-  getGeographyTopic,
   getReferenceLine,
   resolveGeographyExploreSelection,
 } from '../../data/geographyLearning'
@@ -58,9 +59,7 @@ import type {
 import { OVERVIEW_CAMERA_DISTANCE } from '../../scene/countrySceneInteraction'
 import { LANDMARK_CAMERA_DISTANCE } from '../../scene/landmarkSceneInteraction'
 import { CountryDetailPanel } from './CountryDetailPanel'
-import { CountrySearch } from './CountrySearch'
 import { ClimateLearningPanel } from './ClimateLearningPanel'
-import type { PlaceSearchResult } from './countrySearchUtils'
 import { DesertDetailPanel } from './DesertDetailPanel'
 import { parseExploreDeepLinkPosition } from './exploreDeepLinks'
 import { ExploreGuideCard } from './ExploreGuideCard'
@@ -106,15 +105,6 @@ function ResetIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M5.2 8.3A8 8 0 1 1 4 14" />
       <path d="M4.5 4.5v4.8h4.8" />
-    </svg>
-  )
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="10.8" cy="10.8" r="6.3" />
-      <path d="m15.5 15.5 4.2 4.2" />
     </svg>
   )
 }
@@ -399,7 +389,6 @@ function LayerControl({
 export function ExplorePage() {
   const { t } = useTranslation()
   const reducedMotion = usePrefersReducedMotion()
-  const searchDialogId = useId()
   const layerPanelId = useId()
   const cameraRequestIdRef = useRef(0)
   const climateRequestIdRef = useRef(0)
@@ -407,18 +396,12 @@ export function ExplorePage() {
   const miniMapRef = useRef<WorldMiniMapHandle>(null)
   const layerControlRef = useRef<HTMLElement>(null)
   const layerButtonRef = useRef<HTMLButtonElement>(null)
-  const controlDeckRef = useRef<HTMLDivElement>(null)
-  const searchButtonRef = useRef<HTMLButtonElement>(null)
   const [exploreState, dispatch] = useReducer(
     exploreReducer,
     initialExploreState,
   )
   const [miniMapExpanded, setMiniMapExpanded] = useState(false)
-  const [activeControlPanel, setActiveControlPanel] = useState<
-    'layers' | 'search' | null
-  >(null)
-  const layerPanelOpen = activeControlPanel === 'layers'
-  const searchOpen = activeControlPanel === 'search'
+  const [layerPanelOpen, setLayerPanelOpen] = useState(false)
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(() => ({
     requestId: 0,
     position: getCountry('CN')!.center,
@@ -531,35 +514,22 @@ export function ExplorePage() {
     }
   }, [])
 
-  const closeControlPanel = useCallback((panel: 'layers' | 'search') => {
-    setActiveControlPanel((current) => (current === panel ? null : current))
-    queueMicrotask(() =>
-      (panel === 'layers' ? layerButtonRef : searchButtonRef).current?.focus({
-        preventScroll: true,
-      }),
-    )
+  const closeLayerPanel = useCallback(() => {
+    setLayerPanelOpen(false)
+    queueMicrotask(() => layerButtonRef.current?.focus({ preventScroll: true }))
   }, [])
 
-  const closeSearch = useCallback(
-    () => closeControlPanel('search'),
-    [closeControlPanel],
-  )
-
   useEffect(() => {
-    if (!activeControlPanel) return
+    if (!layerPanelOpen) return
 
     const handleClick = (event: MouseEvent) => {
-      const activeContainer =
-        activeControlPanel === 'layers'
-          ? layerControlRef.current
-          : controlDeckRef.current
-      if (activeContainer?.contains(event.target as Node)) return
-      closeControlPanel(activeControlPanel)
+      if (layerControlRef.current?.contains(event.target as Node)) return
+      closeLayerPanel()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.preventDefault()
-      closeControlPanel(activeControlPanel)
+      closeLayerPanel()
     }
 
     document.addEventListener('click', handleClick)
@@ -568,7 +538,7 @@ export function ExplorePage() {
       document.removeEventListener('click', handleClick)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [activeControlPanel, closeControlPanel])
+  }, [closeLayerPanel, layerPanelOpen])
 
   const selectedCountry = getCountry(selectedCountryCode)
   const selectedWaterbody = getWaterbody(selectedWaterbodyId)
@@ -576,8 +546,6 @@ export function ExplorePage() {
   const selectedMountainRange = getMountainRange(selectedMountainRangeId)
   const selectedDesert = getDesert(selectedDesertId)
   const selectedLandmark = getLandmark(selectedLandmarkId)
-  const selectedGeographyTopic = getGeographyTopic(selectedGeographyTopicId)
-  const selectedReferenceLine = getReferenceLine(selectedReferenceLineId)
   const selectedClimateType =
     climateSelection?.kind === 'type'
       ? getClimateType(climateSelection.climateTypeId)
@@ -861,6 +829,19 @@ export function ExplorePage() {
     },
     [requestCameraTarget],
   )
+  const navigateToLandmark = useCallback(
+    (landmarkId: string) => {
+      const landmark = getLandmark(landmarkId)
+      if (!landmark) return
+      setMiniMapExpanded(false)
+      dispatch({
+        type: 'select',
+        selection: { kind: 'landmark', landmarkId: landmark.id },
+      })
+      requestCameraTarget(landmark.position, LANDMARK_CAMERA_DISTANCE)
+    },
+    [requestCameraTarget],
+  )
   const requestedDeepLinks = useMemo(() => {
     const searchParams = new URLSearchParams(window.location.search)
     return {
@@ -873,6 +854,8 @@ export function ExplorePage() {
       linearFeatureId: searchParams.get('linearFeature'),
       mountainRangeId: searchParams.get('mountainRange'),
       desertId: searchParams.get('desert'),
+      landmarkId: searchParams.get('landmark'),
+      climateId: searchParams.get('climate'),
       position: parseExploreDeepLinkPosition(searchParams),
     }
   }, [])
@@ -941,6 +924,29 @@ export function ExplorePage() {
         return
       }
 
+      const landmark = getLandmark(requestedDeepLinks.landmarkId)
+      if (landmark) {
+        handledDeepLinkRef.current = `landmark:${landmark.id}`
+        navigateToLandmark(landmark.id)
+        focusPosition()
+        return
+      }
+
+      if (requestedDeepLinks.climateId === climateLearningTopic.id) {
+        handledDeepLinkRef.current = 'climate:overview'
+        openClimateOverview()
+        focusPosition()
+        return
+      }
+
+      const climateType = getClimateType(requestedDeepLinks.climateId)
+      if (climateType) {
+        handledDeepLinkRef.current = `climate:${climateType.id}`
+        navigateToClimateType(climateType.id)
+        focusPosition()
+        return
+      }
+
       if (requestedDeepLinks.position) {
         handledDeepLinkRef.current = 'coordinate'
         requestCameraTarget(requestedDeepLinks.position)
@@ -951,56 +957,16 @@ export function ExplorePage() {
     navigateToCountry,
     navigateToDesert,
     navigateToLinearFeature,
+    navigateToLandmark,
     navigateToMountainRange,
     navigateToWaterbody,
+    navigateToClimateType,
+    openClimateOverview,
     openGeographyOverview,
     openGeographyTopic,
     requestCameraTarget,
     requestedDeepLinks,
   ])
-  const navigateToLandmark = useCallback(
-    (landmarkId: string) => {
-      const landmark = getLandmark(landmarkId)
-      if (!landmark) return
-      setMiniMapExpanded(false)
-      dispatch({
-        type: 'select',
-        selection: { kind: 'landmark', landmarkId: landmark.id },
-      })
-      requestCameraTarget(landmark.position, LANDMARK_CAMERA_DISTANCE)
-    },
-    [requestCameraTarget],
-  )
-  const navigateToSearchResult = useCallback(
-    (result: PlaceSearchResult) => {
-      if (result.type === 'country') navigateToCountry(result.country.code)
-      else if (result.type === 'waterbody')
-        navigateToWaterbody(result.waterbody.id)
-      else if (result.type === 'linearFeature')
-        navigateToLinearFeature(result.feature.id)
-      else if (result.type === 'mountainRange')
-        navigateToMountainRange(result.range.id)
-      else if (result.type === 'desert') navigateToDesert(result.desert.id)
-      else if (result.type === 'landmark')
-        navigateToLandmark(result.landmark.id)
-      else if (result.type === 'geographyTopic')
-        openGeographyTopic(result.topic.id, result.referenceLine?.id ?? null)
-      else if (result.type === 'climateType')
-        navigateToClimateType(result.climateType.id)
-      else openClimateOverview()
-    },
-    [
-      navigateToCountry,
-      navigateToDesert,
-      navigateToLinearFeature,
-      navigateToLandmark,
-      navigateToMountainRange,
-      navigateToWaterbody,
-      navigateToClimateType,
-      openClimateOverview,
-      openGeographyTopic,
-    ],
-  )
   const handleMiniMapNavigation = useCallback(
     (navigation: WorldMiniMapNavigation) => {
       if (navigation.kind === 'country') {
@@ -1217,11 +1183,7 @@ export function ExplorePage() {
           onToggleLandmarkLayer={toggleLandmarkLayer}
           onToggleGeographyLearningLayer={toggleGeographyLearningLayer}
           onToggleClimateLayer={toggleClimateLayer}
-          onToggleOpen={() =>
-            setActiveControlPanel((current) =>
-              current === 'layers' ? null : 'layers',
-            )
-          }
+          onToggleOpen={() => setLayerPanelOpen((current) => !current)}
         />
       ) : null}
 
@@ -1255,105 +1217,47 @@ export function ExplorePage() {
         onNavigate={handleMiniMapNavigation}
       />
 
-      <div className="control-deck" data-scene-overlay="controls">
-        <div ref={controlDeckRef} className="control-deck-content">
-          {searchOpen ? (
-            <section
-              id={searchDialogId}
-              className="search-dialog"
-              role="dialog"
-              aria-label="搜索地点"
-            >
-              <CountrySearch
-                key={
-                  selectedCountry?.code ??
-                  selectedWaterbody?.id ??
-                  selectedLinearFeature?.id ??
-                  selectedMountainRange?.id ??
-                  selectedDesert?.id ??
-                  selectedLandmark?.id ??
-                  selectedReferenceLine?.id ??
-                  selectedGeographyTopic?.id ??
-                  selectedClimateType?.id ??
-                  (climateSelection ? 'climate-overview' : null) ??
-                  'no-selection'
-                }
-                selectedLabel={
-                  selectedCountry?.name.zh ??
-                  selectedWaterbody?.name.zh ??
-                  selectedLinearFeature?.name.zh ??
-                  selectedMountainRange?.name.zh ??
-                  selectedDesert?.name.zh ??
-                  selectedLandmark?.name.zh ??
-                  selectedReferenceLine?.name.zh ??
-                  (geographySelection
-                    ? geographyLearningOverview.name.zh
-                    : undefined) ??
-                  selectedClimateType?.name.zh ??
-                  (climateSelection ? '世界气候类型' : undefined)
-                }
-                onSelect={navigateToSearchResult}
-                autoFocus
-                onRequestClose={closeSearch}
+      {webGLAvailable ? (
+        <div className="control-deck" data-scene-overlay="controls">
+          <div className="control-deck-content">
+            <nav className="control-dock" aria-label="地球显示控制">
+              <ControlButton
+                icon={<CompassIcon />}
+                label={t(effectiveAutoRotate ? 'rotateOn' : 'rotateOff')}
+                onClick={toggleAutoRotate}
+                disabled={reducedMotion}
+                aria-pressed={effectiveAutoRotate}
               />
-            </section>
-          ) : null}
-          <nav className="control-dock" aria-label="地球显示控制">
-            {webGLAvailable ? (
-              <>
-                <ControlButton
-                  icon={<CompassIcon />}
-                  label={t(effectiveAutoRotate ? 'rotateOn' : 'rotateOff')}
-                  onClick={toggleAutoRotate}
-                  disabled={reducedMotion}
-                  aria-pressed={effectiveAutoRotate}
-                />
-                <ControlButton
-                  icon={<SparkleIcon />}
-                  label={t(
-                    quality === 'balanced' ? 'qualityBalanced' : 'qualityLow',
-                  )}
-                  onClick={toggleQuality}
-                  aria-pressed={quality === 'balanced'}
-                />
-                <ControlButton
-                  icon={<ResetIcon />}
-                  label={t('reset')}
-                  onClick={() => {
-                    navigateToCountry('CN')
-                  }}
-                />
-              </>
+              <ControlButton
+                icon={<SparkleIcon />}
+                label={t(
+                  quality === 'balanced' ? 'qualityBalanced' : 'qualityLow',
+                )}
+                onClick={toggleQuality}
+                aria-pressed={quality === 'balanced'}
+              />
+              <ControlButton
+                icon={<ResetIcon />}
+                label={t('reset')}
+                onClick={() => {
+                  navigateToCountry('CN')
+                }}
+              />
+            </nav>
+            {persistenceStatus === 'saving' ||
+            persistenceStatus === 'memory-only' ||
+            persistenceStatus === 'error' ? (
+              <output className="experience-persistence-status" role="status">
+                {persistenceStatus === 'saving'
+                  ? '正在保存本机偏好…'
+                  : persistenceStatus === 'memory-only'
+                    ? '当前偏好仅在本次使用期间保留'
+                    : '本机偏好保存失败，当前设置仍可继续使用'}
+              </output>
             ) : null}
-            <ControlButton
-              ref={searchButtonRef}
-              className="search-control"
-              icon={<SearchIcon />}
-              label="搜索地点"
-              aria-haspopup="dialog"
-              aria-expanded={searchOpen}
-              aria-controls={searchDialogId}
-              onClick={(event) => {
-                event.stopPropagation()
-                setActiveControlPanel((current) =>
-                  current === 'search' ? null : 'search',
-                )
-              }}
-            />
-          </nav>
-          {persistenceStatus === 'saving' ||
-          persistenceStatus === 'memory-only' ||
-          persistenceStatus === 'error' ? (
-            <output className="experience-persistence-status" role="status">
-              {persistenceStatus === 'saving'
-                ? '正在保存本机偏好…'
-                : persistenceStatus === 'memory-only'
-                  ? '当前偏好仅在本次使用期间保留'
-                  : '本机偏好保存失败，当前设置仍可继续使用'}
-            </output>
-          ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {selectedCountry ? (
         <CountryDetailPanel

@@ -57,7 +57,7 @@ for (const viewport of viewports) {
       await expect(page.locator('.knowledge-topic-card')).toHaveCount(0)
 
       const knowledgeNavigation = page.getByRole('link', {
-        name: '知识中心',
+        name: '图鉴',
       })
       await expect(knowledgeNavigation).toHaveClass(/is-active/)
       await expect(

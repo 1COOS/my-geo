@@ -2,15 +2,15 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { CountrySearch } from './CountrySearch'
-import type { PlaceSearchResult } from './countrySearchUtils'
+import { PlaceSearch } from './PlaceSearch'
+import type { PlaceSearchResult } from './placeSearchUtils'
 
-describe('CountrySearch', () => {
+describe('PlaceSearch', () => {
   it('supports Chinese search and Enter selection', async () => {
     const user = userEvent.setup()
     const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
 
-    render(<CountrySearch onSelect={onSelect} />)
+    render(<PlaceSearch onSelect={onSelect} />)
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, '中国')
@@ -26,7 +26,7 @@ describe('CountrySearch', () => {
     const user = userEvent.setup()
     const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
 
-    render(<CountrySearch onSelect={onSelect} />)
+    render(<PlaceSearch onSelect={onSelect} />)
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, 'Vatican')
@@ -50,7 +50,7 @@ describe('CountrySearch', () => {
     const onRequestClose = vi.fn()
 
     render(
-      <CountrySearch
+      <PlaceSearch
         selectedLabel="中国"
         onSelect={vi.fn()}
         onRequestClose={onRequestClose}
@@ -67,7 +67,7 @@ describe('CountrySearch', () => {
     const user = userEvent.setup()
     const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
 
-    render(<CountrySearch onSelect={onSelect} />)
+    render(<PlaceSearch onSelect={onSelect} />)
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
     expect(search).toHaveAttribute('placeholder', '搜索国家、地点或地理知识')
@@ -84,7 +84,7 @@ describe('CountrySearch', () => {
     const user = userEvent.setup()
     const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
 
-    render(<CountrySearch onSelect={onSelect} />)
+    render(<PlaceSearch onSelect={onSelect} />)
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, '北回归线')
@@ -105,7 +105,7 @@ describe('CountrySearch', () => {
     const user = userEvent.setup()
     const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
 
-    render(<CountrySearch onSelect={onSelect} />)
+    render(<PlaceSearch onSelect={onSelect} />)
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, '撒哈拉')
@@ -122,7 +122,7 @@ describe('CountrySearch', () => {
     const user = userEvent.setup()
     const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
 
-    render(<CountrySearch onSelect={onSelect} />)
+    render(<PlaceSearch onSelect={onSelect} />)
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, '贝加尔湖')
@@ -139,7 +139,7 @@ describe('CountrySearch', () => {
     const user = userEvent.setup()
     const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
 
-    render(<CountrySearch onSelect={onSelect} />)
+    render(<PlaceSearch onSelect={onSelect} />)
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
     await user.type(search, '长城')
@@ -157,7 +157,7 @@ describe('CountrySearch', () => {
     const onRequestClose = vi.fn()
 
     render(
-      <CountrySearch
+      <PlaceSearch
         onSelect={vi.fn()}
         autoFocus
         onRequestClose={onRequestClose}

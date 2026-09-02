@@ -90,9 +90,10 @@ describe('CountryDetailPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
     expect(screen.getByText('中国香港')).toBeInTheDocument()
     expect(screen.getByText('中国澳门')).toBeInTheDocument()
-    expect(
-      screen.getByRole('link', { name: /在知识体系中学习/ }),
-    ).toHaveAttribute('href', '/knowledge/countries/east-asia?country=CN')
+    expect(screen.getByRole('link', { name: /在图鉴中学习/ })).toHaveAttribute(
+      'href',
+      '/knowledge/countries/east-asia?country=CN',
+    )
     expect(screen.queryByText('国家画像')).not.toBeInTheDocument()
     expect(screen.queryByText('首都与主要城市')).not.toBeInTheDocument()
     expect(screen.queryByText('相邻国家与地区')).not.toBeInTheDocument()
@@ -153,16 +154,14 @@ describe('CountryDetailPanel', () => {
       'Democratic Socialist Republic of Sri Lanka',
     )
     expect(
-      screen.getByRole('link', { name: /在知识体系中学习/ }),
+      screen.getByRole('link', { name: /在图鉴中学习/ }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: /在知识体系中学习/ }),
-    ).toHaveTextContent('')
+      screen.getByRole('link', { name: /在图鉴中学习/ }),
+    ).toHaveTextContent('图鉴')
     expect(
-      screen
-        .getByRole('link', { name: /在知识体系中学习/ })
-        .querySelector('svg'),
-    ).not.toBeNull()
+      screen.getByRole('link', { name: /在图鉴中学习/ }).querySelector('svg'),
+    ).toBeNull()
     expect(document.querySelector('.knowledge-card-footer')).toBeNull()
   })
 

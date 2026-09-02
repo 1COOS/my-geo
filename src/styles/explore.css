@@ -901,24 +901,6 @@
   pointer-events: auto;
 }
 
-.search-dialog {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 0.55rem);
-  width: min(24rem, var(--middle-slot-width));
-}
-
-.search-dialog .country-search-popover {
-  top: auto;
-  bottom: calc(100% + 0.55rem);
-}
-
-.search-control[aria-expanded='true'] {
-  color: #fff;
-  background: rgb(83 187 240 / 16%);
-  border-color: rgb(125 218 255 / 28%);
-}
-
 .control-button:hover:not(:disabled) {
   color: #fff;
   background: rgb(83 187 240 / 12%);
@@ -1515,8 +1497,7 @@
   border-right: 0;
 }
 
-.control-button:hover:not(:disabled),
-.search-control[aria-expanded='true'] {
+.control-button:hover:not(:disabled) {
   color: var(--atlas-text);
   background: var(--atlas-accent-soft);
   border-color: var(--atlas-border-soft);

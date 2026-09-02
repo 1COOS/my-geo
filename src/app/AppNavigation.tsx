@@ -1,14 +1,29 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { useEffect, useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import {
+  NavLink,
+  NavigationType,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from 'react-router-dom'
 
-import { BookIcon, GlobeIcon } from '../shared/components/AppNavigationIcons'
+import {
+  BackIcon,
+  BookIcon,
+  GlobeIcon,
+  SearchIcon,
+} from '../shared/components/AppNavigationIcons'
 
 import {
   isDocumentFullscreen,
   isManualFullscreenAvailable,
   toggleDocumentFullscreen,
 } from './fullscreenPlatform'
+import {
+  getNavigationBackFallback,
+  primaryNavigationPaths,
+} from './navigationRoutes'
 
 function FullscreenIcon({ active }: { active: boolean }) {
   return active ? (
@@ -75,9 +90,9 @@ function FullscreenControl() {
   )
 }
 
-function KnowledgeNavigationLink() {
+function AtlasNavigationLink() {
   const location = useLocation()
-  const knowledgeActive =
+  const atlasActive =
     location.pathname === '/knowledge' ||
     location.pathname.startsWith('/knowledge/') ||
     location.pathname === '/questions' ||
@@ -87,16 +102,45 @@ function KnowledgeNavigationLink() {
     <NavLink
       to="/knowledge"
       className={
-        knowledgeActive
-          ? 'app-navigation-link is-active'
-          : 'app-navigation-link'
+        atlasActive ? 'app-navigation-link is-active' : 'app-navigation-link'
       }
-      aria-label="知识中心"
-      aria-current={knowledgeActive ? 'page' : undefined}
+      aria-label="图鉴"
+      aria-current={atlasActive ? 'page' : undefined}
     >
       <BookIcon />
-      <span>知识</span>
+      <span>图鉴</span>
     </NavLink>
+  )
+}
+
+function NavigationBrand() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const navigationType = useNavigationType()
+
+  if (primaryNavigationPaths.has(location.pathname)) {
+    return (
+      <div className="app-navigation-brand" aria-hidden="true">
+        <img src="/icons/my-geo-mark.svg" alt="" draggable={false} />
+      </div>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      className="app-navigation-brand app-navigation-back"
+      aria-label="返回上页"
+      onClick={() => {
+        if (navigationType === NavigationType.Push) void navigate(-1)
+        else
+          void navigate(getNavigationBackFallback(location.pathname), {
+            replace: true,
+          })
+      }}
+    >
+      <BackIcon />
+    </button>
   )
 }
 
@@ -107,9 +151,7 @@ export function AppNavigation() {
       data-scene-overlay="navigation"
       aria-label="My Geo 主导航"
     >
-      <div className="app-navigation-brand" aria-hidden="true">
-        <img src="/icons/my-geo-mark.svg" alt="" draggable={false} />
-      </div>
+      <NavigationBrand />
       <NavLink
         to="/explore"
         className={({ isActive }) =>
@@ -120,7 +162,17 @@ export function AppNavigation() {
         <GlobeIcon />
         <span>探索</span>
       </NavLink>
-      <KnowledgeNavigationLink />
+      <AtlasNavigationLink />
+      <NavLink
+        to="/search"
+        className={({ isActive }) =>
+          isActive ? 'app-navigation-link is-active' : 'app-navigation-link'
+        }
+        aria-label="搜索"
+      >
+        <SearchIcon />
+        <span>搜索</span>
+      </NavLink>
       <FullscreenControl />
     </nav>
   )

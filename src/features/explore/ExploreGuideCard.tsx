@@ -15,7 +15,7 @@ export function ExploreGuideCard() {
       </header>
 
       <p className="knowledge-region-overview-lead">
-        直接操控 3D 地球，或借助搜索、图层和定位图快速找到想了解的地方。
+        直接操控 3D 地球，或借助主导航搜索、图层和定位图快速找到想了解的地方。
       </p>
 
       <section className="country-detail-section explore-guide-section">
@@ -41,7 +41,7 @@ export function ExploreGuideCard() {
         <dl className="explore-guide-tools">
           <div>
             <dt>搜索</dt>
-            <dd>定位国家、城市、河流、山脉、古迹与知识主题。</dd>
+            <dd>从左侧主导航定位国家、河流、山脉、古迹与知识主题。</dd>
           </div>
           <div>
             <dt>图层</dt>

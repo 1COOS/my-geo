@@ -1,6 +1,7 @@
 @import './styles/base.css';
 @import './styles/navigation.css';
 @import './styles/knowledge.css';
+@import './styles/search.css';
 @import './styles/explore.css';
 @import './styles/detail-panels.css';
 @import './styles/runtime-status.css';

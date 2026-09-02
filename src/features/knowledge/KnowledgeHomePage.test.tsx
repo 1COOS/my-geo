@@ -13,11 +13,11 @@ describe('KnowledgePage home', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: '知识', level: 1 }),
+      screen.getByRole('heading', { name: '图鉴', level: 1 }),
     ).toBeVisible()
     expect(screen.getByText('选择内容开始学习')).toBeVisible()
 
-    const learning = screen.getByRole('region', { name: '知识模块' })
+    const learning = screen.getByRole('region', { name: '图鉴模块' })
     expect(within(learning).getAllByRole('link')).toHaveLength(4)
     expect(
       within(learning).getByRole('link', { name: /地球经纬/ }),

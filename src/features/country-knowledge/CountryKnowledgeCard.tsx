@@ -3,7 +3,6 @@ import { Link, useInRouterContext } from 'react-router-dom'
 
 import type { City } from '../../data/citySchema'
 import type { Country } from '../../data/countrySchema'
-import { BookIcon, GlobeIcon } from '../../shared/components/AppNavigationIcons'
 import { CountryFlag } from '../../shared/components/CountryFlag'
 import {
   KnowledgeCardShell,
@@ -86,22 +85,13 @@ const cornerActionStyle = {
   top: '0.75rem',
   right: '0.75rem',
   display: 'inline-flex',
-  width: '2rem',
+  width: 'auto',
+  minWidth: '2.8rem',
   height: '2rem',
   minHeight: '2rem',
-  padding: '0.35rem',
+  padding: '0.3rem 0.55rem',
   alignItems: 'center',
   justifyContent: 'center',
-} satisfies CSSProperties
-const cornerActionIconStyle = {
-  display: 'flex',
-  width: '100%',
-  height: '100%',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-  strokeWidth: 1.7,
 } satisfies CSSProperties
 const factKeyStyle = {
   position: 'absolute',
@@ -209,12 +199,7 @@ export function CountryKnowledgeCard({
 }
 
 function ActionContent({ action }: { action: KnowledgeCardAction }) {
-  const Icon = action.label.includes('3D') ? GlobeIcon : BookIcon
-  return (
-    <span style={cornerActionIconStyle}>
-      <Icon />
-    </span>
-  )
+  return <span>{action.label.includes('3D') ? '3D' : '图鉴'}</span>
 }
 
 function CountryDetailView({

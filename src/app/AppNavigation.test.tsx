@@ -2,9 +2,16 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import {
+  Link,
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router-dom'
 
 import { AppNavigation } from './AppNavigation'
+import { getNavigationBackFallback } from './navigationRoutes'
 
 type FullscreenHarness = {
   exitFullscreen: ReturnType<typeof vi.fn>
@@ -97,15 +104,69 @@ afterEach(() => {
 })
 
 describe('AppNavigation brand', () => {
-  it('uses the existing My Geo logo instead of the temporary letter', () => {
-    installFullscreenHarness({ enabled: false })
-    const { container } = renderNavigation()
-    const brand = container.querySelector('.app-navigation-brand')
-    const logo = brand?.querySelector('img')
+  it.each(['/explore', '/knowledge', '/search'])(
+    'uses the My Geo logo on the primary %s page',
+    (path) => {
+      installFullscreenHarness({ enabled: false })
+      const { container } = renderNavigation(path)
+      const brand = container.querySelector('.app-navigation-brand')
+      const logo = brand?.querySelector('img')
 
-    expect(logo).toHaveAttribute('src', '/icons/my-geo-mark.svg')
-    expect(logo).toHaveAttribute('alt', '')
-    expect(brand).not.toHaveTextContent('M')
+      expect(logo).toHaveAttribute('src', '/icons/my-geo-mark.svg')
+      expect(logo).toHaveAttribute('alt', '')
+      expect(screen.queryByRole('button', { name: '返回上页' })).toBeNull()
+    },
+  )
+
+  it('shows a back button on descendant pages', () => {
+    installFullscreenHarness({ enabled: false })
+    const { container } = renderNavigation('/knowledge/earth')
+
+    expect(container.querySelector('.app-navigation-brand img')).toBeNull()
+    expect(screen.getByRole('button', { name: '返回上页' })).toBeVisible()
+  })
+
+  it.each([
+    ['/knowledge/earth', '/knowledge'],
+    ['/knowledge/earth/lines/equator', '/knowledge/earth'],
+    ['/knowledge/countries/east-asia', '/knowledge/countries'],
+    ['/knowledge/water/groups/ocean-seas', '/knowledge/water'],
+    ['/knowledge/extremes/metrics/highest-peak', '/knowledge/extremes'],
+    ['/questions', '/knowledge'],
+    ['/questions/asia/easy', '/questions'],
+    ['/unknown', '/explore'],
+  ])('falls back from %s to %s', (path, fallback) => {
+    expect(getNavigationBackFallback(path)).toBe(fallback)
+  })
+
+  it('uses navigation history before the fallback', async () => {
+    const user = userEvent.setup()
+    installFullscreenHarness({ enabled: false })
+
+    function LocationProbe() {
+      return <output data-testid="location">{useLocation().pathname}</output>
+    }
+
+    render(
+      <Tooltip.Provider delayDuration={0}>
+        <MemoryRouter initialEntries={['/knowledge']}>
+          <AppNavigation />
+          <Routes>
+            <Route
+              path="/knowledge"
+              element={<Link to="/knowledge/earth">打开地球经纬</Link>}
+            />
+            <Route path="/knowledge/earth" element={<div>地球经纬</div>} />
+          </Routes>
+          <LocationProbe />
+        </MemoryRouter>
+      </Tooltip.Provider>,
+    )
+
+    await user.click(screen.getByRole('link', { name: '打开地球经纬' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('/knowledge/earth')
+    await user.click(screen.getByRole('button', { name: '返回上页' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('/knowledge')
   })
 })
 
@@ -118,17 +179,29 @@ describe('AppNavigation routes', () => {
     '/knowledge/water/groups/ocean-seas',
     '/questions',
     '/questions/asia/easy',
-  ])('uses the unified knowledge link for %s', (path) => {
+  ])('uses the unified atlas link for %s', (path) => {
     installFullscreenHarness({ enabled: false })
     renderNavigation(path)
 
     const links = screen.getAllByRole('link')
-    expect(links.map((link) => link.textContent)).toEqual(['探索', '知识'])
-    expect(screen.getByRole('link', { name: '知识中心' })).toHaveClass(
-      'is-active',
-    )
+    expect(links.map((link) => link.textContent)).toEqual([
+      '探索',
+      '图鉴',
+      '搜索',
+    ])
+    expect(screen.getByRole('link', { name: '图鉴' })).toHaveClass('is-active')
     expect(screen.queryByLabelText('知识二级菜单')).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '知识问答' })).toBeNull()
+  })
+
+  it('activates the standalone search route', () => {
+    installFullscreenHarness({ enabled: false })
+    renderNavigation('/search')
+
+    expect(screen.getByRole('link', { name: '搜索' })).toHaveClass('is-active')
+    expect(screen.getByRole('link', { name: '图鉴' })).not.toHaveClass(
+      'is-active',
+    )
   })
 })
 
@@ -163,7 +236,7 @@ describe('AppNavigation fullscreen control', () => {
       'true',
     )
 
-    await user.click(screen.getByRole('link', { name: '知识中心' }))
+    await user.click(screen.getByRole('link', { name: '图鉴' }))
     expect(screen.getByRole('button', { name: '退出全屏' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '退出全屏' }))

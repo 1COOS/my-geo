@@ -1,0 +1,55 @@
+.search-page-shell {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow-y: hidden;
+}
+
+.search-page-content {
+  width: min(42rem, 100%);
+  min-height: 0;
+}
+
+.search-page-content .country-search,
+.search-page-content .country-search-popover {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.search-page-content .country-search {
+  height: 100%;
+}
+
+.search-page-content .country-search-popover {
+  position: relative;
+  top: auto;
+  flex: 1;
+  margin-top: 0.55rem;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.search-page-content .country-search-popover ul {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
+@media (max-height: 600px) {
+  .search-page-shell {
+    gap: 0.4rem;
+  }
+
+  .search-page-content {
+    width: min(36rem, 100%);
+  }
+
+  .search-page-content .country-search-field {
+    height: 2.5rem;
+  }
+
+  .search-page-content .country-search-popover {
+    margin-top: 0.35rem;
+  }
+}

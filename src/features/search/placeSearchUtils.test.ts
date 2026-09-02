@@ -3,11 +3,81 @@ import { describe, expect, it } from 'vitest'
 import { countries } from '../../data/countries'
 import { climateLearningTopic, climateTypes } from '../../data/climateLearning'
 import { deserts } from '../../data/deserts'
+import {
+  geographyReferenceLines,
+  geographyTopics,
+} from '../../data/geographyLearning'
 import { linearGeoFeatures } from '../../data/linearGeoFeatures'
 import { landmarks } from '../../data/landmarks'
 import { mountainRanges } from '../../data/mountainRanges'
 import { waterbodies } from '../../data/waterbodies'
-import { searchCountries, searchPlaces } from './countrySearchUtils'
+import {
+  getExplorePathForPlaceSearchResult,
+  searchCountries,
+  searchPlaces,
+} from './placeSearchUtils'
+
+describe('getExplorePathForPlaceSearchResult', () => {
+  it('maps every result family to a canonical 3D deep link', () => {
+    expect(
+      getExplorePathForPlaceSearchResult({
+        type: 'country',
+        country: countries.find((country) => country.code === 'CN')!,
+      }),
+    ).toBe('/explore?country=CN')
+    expect(
+      getExplorePathForPlaceSearchResult({
+        type: 'waterbody',
+        waterbody: waterbodies.find((item) => item.id === 'lake-baikal')!,
+      }),
+    ).toBe('/explore?waterbody=lake-baikal')
+    expect(
+      getExplorePathForPlaceSearchResult({
+        type: 'linearFeature',
+        feature: linearGeoFeatures.find((item) => item.id === 'amazon-system')!,
+      }),
+    ).toBe('/explore?linearFeature=amazon-system')
+    expect(
+      getExplorePathForPlaceSearchResult({
+        type: 'mountainRange',
+        range: mountainRanges.find((item) => item.id === 'himalayas')!,
+      }),
+    ).toBe('/explore?mountainRange=himalayas')
+    expect(
+      getExplorePathForPlaceSearchResult({
+        type: 'desert',
+        desert: deserts.find((item) => item.id === 'sahara')!,
+      }),
+    ).toBe('/explore?desert=sahara')
+    expect(
+      getExplorePathForPlaceSearchResult({
+        type: 'landmark',
+        landmark: landmarks.find((item) => item.id === 'great-wall')!,
+      }),
+    ).toBe('/explore?landmark=great-wall')
+    expect(
+      getExplorePathForPlaceSearchResult({
+        type: 'geographyTopic',
+        topic: geographyTopics.find((item) => item.id === 'earth-zones')!,
+        referenceLine: geographyReferenceLines.find(
+          (item) => item.id === 'tropic-of-cancer',
+        ),
+      }),
+    ).toBe('/explore?geography=earth-zones&line=tropic-of-cancer')
+    expect(
+      getExplorePathForPlaceSearchResult({
+        type: 'climateTopic',
+        topic: climateLearningTopic,
+      }),
+    ).toBe('/explore?climate=world-climate-types')
+    expect(
+      getExplorePathForPlaceSearchResult({
+        type: 'climateType',
+        climateType: climateTypes[0],
+      }),
+    ).toBe(`/explore?climate=${climateTypes[0].id}`)
+  })
+})
 
 describe('searchCountries', () => {
   it.each([

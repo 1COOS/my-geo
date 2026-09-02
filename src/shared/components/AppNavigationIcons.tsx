@@ -14,3 +14,20 @@ export function BookIcon() {
     </svg>
   )
 }
+
+export function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true">
+      <circle cx="10.8" cy="10.8" r="6.3" />
+      <path d="m15.5 15.5 4.2 4.2" />
+    </svg>
+  )
+}
+
+export function BackIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true">
+      <path d="m15 5.5-6.5 6.5 6.5 6.5" />
+    </svg>
+  )
+}

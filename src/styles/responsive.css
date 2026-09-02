@@ -363,25 +363,6 @@
     left: calc(var(--edge-left) + var(--mini-map-width) + var(--layout-gap));
   }
 
-  .landscape-runtime.is-touch-device .search-dialog {
-    width: min(21rem, calc((var(--middle-slot-width) + 100%) / 2));
-  }
-
-  .landscape-runtime.is-touch-device .search-dialog .country-search-popover {
-    display: flex;
-    max-height: calc(
-      100dvh - 10.5rem - var(--atlas-safe-area-top) -
-        var(--atlas-safe-area-bottom)
-    );
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .landscape-runtime.is-touch-device .search-dialog .country-search-popover ul {
-    min-height: 0;
-    max-height: none;
-  }
-
   .landscape-runtime.is-touch-device .country-detail-handle {
     display: none;
   }

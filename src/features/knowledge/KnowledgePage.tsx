@@ -80,7 +80,7 @@ export function KnowledgePage() {
   return (
     <main className="knowledge-shell knowledge-home-shell">
       <header className="knowledge-home-header">
-        <h1>知识</h1>
+        <h1>图鉴</h1>
         <span>选择内容开始学习</span>
       </header>
 
@@ -88,7 +88,7 @@ export function KnowledgePage() {
         className="knowledge-home-section"
         aria-labelledby="knowledge-home-learning-title"
       >
-        <h2 id="knowledge-home-learning-title">知识模块</h2>
+        <h2 id="knowledge-home-learning-title">图鉴模块</h2>
 
         <div className="knowledge-home-grid">
           {knowledgeTopics.map((topic) => (

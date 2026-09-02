@@ -27,7 +27,7 @@ export function CountryDetailPanel({
         region
           ? {
               to: `/knowledge/countries/${region.id}?country=${country.code}`,
-              label: '在知识体系中学习',
+              label: '在图鉴中学习',
               description: `打开${region.name.zh}国家学习详情`,
             }
           : undefined

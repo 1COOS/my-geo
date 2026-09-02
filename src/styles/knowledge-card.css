@@ -154,6 +154,23 @@
   background: color-mix(in srgb, var(--atlas-progress), white 12%);
 }
 
+.knowledge-card-action-compact {
+  color: var(--atlas-text);
+  font-size: var(--fs-m);
+  font-weight: 700;
+  line-height: 1;
+  background: var(--atlas-compact-action);
+  border: 0;
+  border-radius: 0.5rem;
+  box-shadow: none;
+}
+
+.knowledge-card-action-compact:hover,
+.knowledge-card-action-compact:focus-visible {
+  color: var(--atlas-text);
+  background: var(--atlas-compact-action-hover);
+}
+
 .country-knowledge-card .knowledge-country-detail-heading {
   display: flex;
   min-height: 0;

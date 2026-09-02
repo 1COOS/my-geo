@@ -40,9 +40,9 @@ for (const viewport of knowledgeMapViewports) {
     }
 
     await expect(
-      page.getByRole('heading', { name: '知识', level: 1 }),
+      page.getByRole('heading', { name: '图鉴', level: 1 }),
     ).toBeVisible()
-    await expect(page.getByRole('link', { name: '知识中心' })).toHaveClass(
+    await expect(page.getByRole('link', { name: '图鉴' })).toHaveClass(
       /is-active/,
     )
     await expect(
@@ -60,7 +60,7 @@ for (const viewport of knowledgeMapViewports) {
     await expect(page.getByText('开始学习', { exact: true })).toHaveCount(0)
     await expect(page.getByText('进入知识问答', { exact: true })).toHaveCount(0)
 
-    const learningRegion = page.getByRole('region', { name: '知识模块' })
+    const learningRegion = page.getByRole('region', { name: '图鉴模块' })
     const questionRegion = page.getByRole('region', { name: '问答模块' })
     const moduleCards = learningRegion.locator('.knowledge-home-card')
     const questionCards = questionRegion.locator('.knowledge-home-card')
