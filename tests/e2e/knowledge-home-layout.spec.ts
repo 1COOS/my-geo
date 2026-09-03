@@ -375,19 +375,107 @@ test('keeps the continent map stable above a single row of region cards', async 
 test('keeps compact region cards readable in a horizontal scroller', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 430, height: 800 })
+  await page.setViewportSize({ width: 844, height: 390 })
   await page.goto('/knowledge/countries')
 
   await expect(page.locator('.knowledge-topic-grid')).toHaveCount(0)
   const regionGrid = page.locator('.knowledge-category-grid')
   const firstCard = regionGrid.getByRole('link').first()
-  const dimensions = await regionGrid.evaluate((element) => ({
-    clientWidth: element.clientWidth,
-    scrollWidth: element.scrollWidth,
-  }))
+  const dimensions = await regionGrid.evaluate((element) => {
+    const bounds = element.getBoundingClientRect()
+    const cards = Array.from(element.querySelectorAll('a')).map((card) => {
+      const cardBounds = card.getBoundingClientRect()
+      return {
+        left: cardBounds.left,
+        right: cardBounds.right,
+      }
+    })
+    return {
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      bounds: { left: bounds.left, right: bounds.right },
+      cards,
+    }
+  })
   const firstCardBox = await firstCard.boundingBox()
 
   expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth)
   expect(firstCardBox).not.toBeNull()
   expect(firstCardBox!.width).toBeGreaterThanOrEqual(175)
+  expect(
+    dimensions.cards.some(
+      (card) =>
+        card.left < dimensions.bounds.right &&
+        card.right > dimensions.bounds.right,
+    ),
+  ).toBe(true)
+})
+
+test('fits all five country regions on a small tablet landscape', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 600 })
+  await page.goto('/knowledge/countries')
+
+  const mapSlot = page.locator('.knowledge-map-workbench-map')
+  const mapCard = page.locator('.knowledge-map-card')
+  const regionGrid = page.locator('.knowledge-category-grid')
+  const cards = regionGrid.getByRole('link')
+  await expect(cards).toHaveCount(5)
+
+  const [mapSlotBox, mapBox, layout] = await Promise.all([
+    mapSlot.boundingBox(),
+    mapCard.boundingBox(),
+    regionGrid.evaluate((element) => {
+      const bounds = element.getBoundingClientRect()
+      const cardBounds = Array.from(element.querySelectorAll('a')).map((card) =>
+        card.getBoundingClientRect(),
+      )
+      return {
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+        allCardsVisible: cardBounds.every(
+          (card) =>
+            card.left >= bounds.left - 1 && card.right <= bounds.right + 1,
+        ),
+        widths: cardBounds.map((card) => card.width),
+      }
+    }),
+  ])
+
+  expect(mapSlotBox).not.toBeNull()
+  expect(mapBox).not.toBeNull()
+  expect(mapBox!.width).toBeCloseTo(mapSlotBox!.width, 0)
+  expect(mapBox!.width / mapBox!.height).toBeCloseTo(36 / 17, 2)
+  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
+  expect(layout.allCardsVisible).toBe(true)
+  expect(
+    Math.max(...layout.widths) - Math.min(...layout.widths),
+  ).toBeLessThanOrEqual(1)
+})
+
+test('reveals a directly selected trailing continent tab', async ({ page }) => {
+  await page.setViewportSize({ width: 568, height: 320 })
+  await page.goto('/knowledge/countries?continent=oceania')
+
+  const tablist = page.getByRole('tablist', { name: '大洲' })
+  const activeTab = tablist.getByRole('tab', { name: /大洋洲/ })
+  await expect(activeTab).toHaveAttribute('aria-selected', 'true')
+
+  const visibility = await tablist.evaluate((element) => {
+    const selected = element.querySelector<HTMLElement>(
+      '[role="tab"][aria-selected="true"]',
+    )!
+    const listBounds = element.getBoundingClientRect()
+    const selectedBounds = selected.getBoundingClientRect()
+    return {
+      scrollLeft: element.scrollLeft,
+      fullyVisible:
+        selectedBounds.left >= listBounds.left - 1 &&
+        selectedBounds.right <= listBounds.right + 1,
+    }
+  })
+
+  expect(visibility.scrollLeft).toBeGreaterThan(0)
+  expect(visibility.fullyVisible).toBe(true)
 })

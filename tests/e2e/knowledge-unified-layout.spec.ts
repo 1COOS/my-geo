@@ -1,6 +1,16 @@
 import { expect, test } from '@playwright/test'
 
-const viewports = [
+const overviewViewports = [
+  { name: 'small phone landscape', width: 568, height: 320 },
+  { name: 'phone landscape', width: 844, height: 390 },
+  { name: 'small tablet landscape', width: 1024, height: 600 },
+  { name: 'iPad landscape', width: 1194, height: 834 },
+  { name: '1440 desktop', width: 1440, height: 900 },
+  { name: 'full HD', width: 1920, height: 1080 },
+  { name: 'large desktop', width: 2560, height: 1440 },
+]
+
+const detailViewports = [
   { name: '1440 desktop', width: 1440, height: 900 },
   { name: 'iPad landscape', width: 1194, height: 834 },
   { name: 'phone landscape', width: 844, height: 390 },
@@ -33,7 +43,7 @@ const pages = [
   },
 ]
 
-for (const viewport of viewports) {
+for (const viewport of overviewViewports) {
   test(`keeps all four knowledge overviews visually identical on ${viewport.name}`, async ({
     page,
   }) => {
@@ -80,8 +90,9 @@ for (const viewport of viewports) {
       expect(tabs.flexBasis).toBe('auto')
       expect(tabs.minWidth).toBe('max-content')
 
-      const [controlsBox, mapBox] = await Promise.all([
+      const [controlsBox, mapSlotBox, mapBox] = await Promise.all([
         page.locator('.knowledge-map-workbench-controls').boundingBox(),
+        page.locator('.knowledge-map-workbench-map').boundingBox(),
         page.locator('.knowledge-map-card').boundingBox(),
       ])
       const categoryCards = page.locator('.knowledge-category-grid')
@@ -92,12 +103,21 @@ for (const viewport of viewports) {
         leftBorder: getComputedStyle(element).borderLeftWidth,
       }))
       expect(controlsBox).not.toBeNull()
+      expect(mapSlotBox).not.toBeNull()
       expect(mapBox).not.toBeNull()
       expect(controlsBox!.width).toBeGreaterThanOrEqual(mapBox!.width)
       expect(controlsBox!.y + controlsBox!.height).toBeLessThanOrEqual(
         mapBox!.y,
       )
       expect(mapBox!.width / mapBox!.height).toBeCloseTo(36 / 17, 1)
+      expect(mapBox!.width).toBeLessThanOrEqual(mapSlotBox!.width + 1)
+      expect(mapBox!.height).toBeLessThanOrEqual(mapSlotBox!.height + 1)
+      expect(
+        Math.min(
+          Math.abs(mapSlotBox!.width - mapBox!.width),
+          Math.abs(mapSlotBox!.height - mapBox!.height),
+        ),
+      ).toBeLessThanOrEqual(1)
       await expectNoPageScroll(page)
       measurements.push({
         name: definition.name,
@@ -159,7 +179,7 @@ const detailPages = [
   },
 ] as const
 
-for (const viewport of viewports) {
+for (const viewport of detailViewports) {
   test(`keeps all knowledge detail layouts aligned on ${viewport.name}`, async ({
     page,
   }) => {

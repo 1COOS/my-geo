@@ -60,8 +60,6 @@ export function KnowledgeWaterMap({
   layerId,
   selected,
   activeGroup,
-  workbench = false,
-  compact = false,
   onSelectWaterbody,
   onSelectLinearFeature,
 }: KnowledgeWaterMapProps) {
@@ -124,14 +122,6 @@ export function KnowledgeWaterMap({
     <section
       className="knowledge-earth-map-card knowledge-map-card"
       aria-label={`${layerId}水域图层世界地图`}
-      style={
-        workbench
-          ? {
-              width: compact ? 'min(100%, 24rem)' : 'min(100%, 70rem)',
-              marginInline: 'auto',
-            }
-          : undefined
-      }
     >
       <svg
         className="knowledge-earth-map"

@@ -484,6 +484,76 @@
   color: var(--knowledge-earth-line-color);
 }
 
+.geography-reference-list.knowledge-earth-reference-grid.knowledge-category-grid {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  gap: 0.55rem;
+  margin: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+}
+
+.knowledge-category-grid[data-compact-cards='true'] {
+  gap: 0.4rem;
+}
+
+.knowledge-category-grid > .knowledge-category-card {
+  display: grid;
+  flex: 1 0 11rem;
+  min-width: 11rem;
+  min-height: 4.4rem;
+  padding: 0.65rem 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0.55rem;
+  align-items: center;
+  scroll-snap-align: start;
+}
+
+.knowledge-category-grid[data-compact-cards='true'] > .knowledge-category-card {
+  flex: 0 0 13rem;
+  min-width: 13rem;
+  min-height: 3.5rem;
+  padding: 0.45rem 0.6rem;
+}
+
+.knowledge-category-grid > .knowledge-category-card[data-has-leading='true'] {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.knowledge-category-card-copy {
+  display: block;
+  min-width: 0;
+}
+
+.knowledge-category-card-heading {
+  display: flex;
+  min-width: 0;
+  gap: 0.45rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.knowledge-category-card-subtitle {
+  display: block;
+  margin-top: 0.18rem;
+  overflow: hidden;
+  color: var(--atlas-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@container knowledge-page (min-width: 58rem) {
+  .knowledge-map-workbench-results
+    .knowledge-category-grid[data-compact-cards='true']
+    > .knowledge-category-card {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
 .knowledge-earth-detail-back {
   display: inline-flex;
   min-height: 2.75rem;

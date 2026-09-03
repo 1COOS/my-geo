@@ -29,7 +29,6 @@ type Champion = {
 
 export function KnowledgeExtremesCategoryMap({
   category,
-  compact,
   metrics,
   onSelectChampion,
 }: {
@@ -166,10 +165,6 @@ export function KnowledgeExtremesCategoryMap({
     <section
       className="knowledge-earth-map-card knowledge-map-card"
       aria-label={`${category.name}冠军地图`}
-      style={{
-        width: compact ? 'min(100%, 24rem)' : 'min(100%, 70rem)',
-        marginInline: 'auto',
-      }}
     >
       <svg
         className="knowledge-region-map world-extremes-category-map"

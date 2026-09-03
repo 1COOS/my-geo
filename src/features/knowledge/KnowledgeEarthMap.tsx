@@ -75,8 +75,6 @@ function getCoverageAreaRect(area: {
 export function KnowledgeEarthMap({
   topicId,
   onSelectTopic,
-  workbench = false,
-  compact = false,
 }: KnowledgeEarthMapProps) {
   const {
     resource: countryBoundaries,
@@ -89,14 +87,6 @@ export function KnowledgeEarthMap({
     <section
       className="knowledge-earth-map-card knowledge-map-card"
       aria-label="地球重要经纬线用途图"
-      style={
-        workbench
-          ? {
-              width: compact ? 'min(100%, 24rem)' : 'min(100%, 70rem)',
-              marginInline: 'auto',
-            }
-          : undefined
-      }
     >
       <svg
         className="knowledge-earth-map"

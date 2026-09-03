@@ -38,14 +38,8 @@ export function KnowledgeCountriesPage() {
           label="大洲"
         />
       )}
-      renderMap={(compact) => (
-        <div
-          className="knowledge-map-card"
-          style={{
-            width: compact ? 'min(100%, 24rem)' : 'min(100%, 70rem)',
-            marginInline: 'auto',
-          }}
-        >
+      renderMap={() => (
+        <div className="knowledge-map-card">
           <KnowledgeRegionMap
             continentId={continentId}
             onSelectContinent={(nextContinentId) =>

@@ -26,64 +26,34 @@ export function KnowledgeCategoryCards({
     <nav
       className="geography-reference-list knowledge-earth-reference-grid knowledge-category-grid"
       aria-label={label}
-      style={{
-        display: 'flex',
-        width: '100%',
-        height: '100%',
-        minWidth: 0,
-        gap: compact ? '0.4rem' : '0.55rem',
-        margin: 0,
-        overflowX: 'auto',
-      }}
+      data-compact-cards={compact ? 'true' : 'false'}
     >
       {items.map((item) => (
         <Link
           key={item.id}
+          className="knowledge-category-card"
           to={item.to}
           data-testid={item.testId}
+          data-has-leading={item.leading ? 'true' : 'false'}
+          aria-label={[item.title, item.meta, item.subtitle]
+            .filter(Boolean)
+            .join(' ')}
           aria-current={item.current ? 'page' : undefined}
           style={
             {
               '--knowledge-earth-line-color':
                 item.accent ?? 'var(--atlas-accent)',
-              display: 'grid',
-              flex: compact ? '0 0 13rem' : '1 0 11rem',
-              minWidth: compact ? '13rem' : '11rem',
-              minHeight: compact ? '3.5rem' : '4.4rem',
-              padding: compact ? '0.45rem 0.6rem' : '0.65rem 0.75rem',
-              gridTemplateColumns: item.leading
-                ? 'auto minmax(0, 1fr)'
-                : 'minmax(0, 1fr)',
-              columnGap: '0.55rem',
-              alignItems: 'center',
             } as CSSProperties
           }
         >
           {item.leading}
-          <span style={{ display: 'block', minWidth: 0 }}>
-            <span
-              style={{
-                display: 'flex',
-                minWidth: 0,
-                gap: '0.45rem',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-              }}
-            >
+          <span className="knowledge-category-card-copy">
+            <span className="knowledge-category-card-heading">
               <strong>{item.title}</strong>
               {item.meta ? <small>{item.meta}</small> : null}
             </span>
             {item.subtitle ? (
-              <small
-                style={{
-                  display: 'block',
-                  marginTop: '0.18rem',
-                  overflow: 'hidden',
-                  color: 'var(--atlas-text-secondary)',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
+              <small className="knowledge-category-card-subtitle">
                 {item.subtitle}
               </small>
             ) : null}

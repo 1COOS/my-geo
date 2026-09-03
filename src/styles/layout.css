@@ -99,6 +99,27 @@
   justify-content: center;
 }
 
+.knowledge-map-workbench-map {
+  container-name: knowledge-overview-map;
+  container-type: size;
+}
+
+.knowledge-map-workbench-map > .knowledge-map-card {
+  width: min(100cqw, calc(100cqh * 36 / 17), 92rem);
+  margin-inline: auto;
+}
+
+.knowledge-detail-workbench-map > .knowledge-map-card {
+  width: min(100%, 70rem);
+  margin-inline: auto;
+}
+
+[data-compact-workbench='true']
+  .knowledge-detail-workbench-map
+  > .knowledge-map-card {
+  width: min(100%, 24rem);
+}
+
 .knowledge-map-workbench-results {
   min-width: 0;
   min-height: 0;
