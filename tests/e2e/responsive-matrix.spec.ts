@@ -146,11 +146,19 @@ for (const viewport of responsiveViewports) {
     ).toBeLessThanOrEqual(1)
 
     await page.goto('/knowledge/countries?continent=asia')
+    await expect(page.locator('main')).toHaveAttribute(
+      'data-page-scroll',
+      'locked',
+    )
     await expect(page.getByRole('tablist', { name: '大洲' })).toBeVisible()
     await expect(page.locator('.knowledge-map-card')).toBeVisible()
     await expectNoRootOverflow(page)
 
     await page.goto('/search')
+    await expect(page.locator('main')).toHaveAttribute(
+      'data-page-scroll',
+      'locked',
+    )
     await expect(page.getByRole('combobox', { name: '搜索地点' })).toBeVisible()
     await expect(
       page.getByRole('listbox', { name: '地点搜索结果' }),
@@ -158,12 +166,24 @@ for (const viewport of responsiveViewports) {
     await expectNoRootOverflow(page)
 
     await page.goto('/questions?difficulty=easy')
+    await expect(page.locator('main')).toHaveAttribute(
+      'data-page-scroll',
+      'auto',
+    )
     await expect(
       page.getByRole('heading', { name: '知识问答', exact: true }),
     ).toBeVisible()
     await expect(
       page.getByTestId('knowledge-question-continent-asia'),
     ).toBeVisible()
+    await expectNoRootOverflow(page)
+
+    await page.goto('/questions/asia/easy')
+    await expect(page.locator('main')).toHaveAttribute(
+      'data-page-scroll',
+      'auto',
+    )
+    await expect(page.locator('.knowledge-challenge-header')).toBeVisible()
     await expectNoRootOverflow(page)
   })
 }

@@ -1,5 +1,7 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 
+import { sceneOverlayRoles } from '../../types/sceneOverlay'
+
 export type KnowledgeCardAction = {
   to: string
   label: string
@@ -33,7 +35,7 @@ export function KnowledgeCardShell(props: KnowledgeCardShellProps) {
   return (
     <aside
       className={`knowledge-card-shell country-detail detail-panel-enter${className ? ` ${className}` : ''}`}
-      data-scene-overlay="detail"
+      data-scene-overlay={sceneOverlayRoles.detail}
       aria-label={label}
       style={
         accent

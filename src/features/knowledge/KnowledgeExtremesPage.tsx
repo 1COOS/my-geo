@@ -27,6 +27,10 @@ import { KnowledgeExtremeDetailCard } from './KnowledgeExtremeDetailCard'
 import { KnowledgeExtremeMetricOverviewCard } from './KnowledgeExtremeMetricOverviewCard'
 import { KnowledgeExtremesCategoryMap } from './KnowledgeExtremesCategoryMap'
 import { KnowledgeExtremesMap } from './KnowledgeExtremesMap'
+import {
+  KnowledgeDetailLayout,
+  KnowledgeDetailWorkbench,
+} from './KnowledgeDetailLayout'
 import { KnowledgeMapWorkbenchPage } from './KnowledgeMapWorkbench'
 import { KnowledgePrimaryTabs } from './KnowledgePrimaryTabs'
 import {
@@ -162,51 +166,25 @@ function KnowledgeExtremeMetricPage({ metricId }: { metricId: string }) {
   }
 
   return (
-    <main
-      ref={shellRef}
-      className="knowledge-shell knowledge-region-shell has-country-selection knowledge-earth-detail-shell world-extremes-detail-shell"
-      data-compact-workbench={compact ? 'true' : 'false'}
-      style={{
-        overflowY: 'hidden',
-        paddingBottom: compact ? '0.45rem' : '0.75rem',
-      }}
-    >
-      <div
-        className="knowledge-region-content knowledge-earth-detail-content"
-        style={{ height: '100%', minHeight: 0 }}
-      >
-        <section
-          className="knowledge-earth-detail-study"
-          aria-label={`${metric.name}地图与排名`}
-          style={{
-            display: 'grid',
-            height: '100%',
-            minHeight: 0,
-            gridTemplateRows: compact
-              ? '2.75rem minmax(0, 1fr) 3.25rem 3.5rem'
-              : '2.75rem minmax(0, 1fr) 4.4rem 4.4rem',
-            gap: compact ? '0.4rem' : '0.5rem',
-          }}
-        >
-          <header className="knowledge-region-page-header">
-            <Link
-              className="knowledge-earth-detail-back"
-              to={getExtremeOverviewPath(category.id)}
-            >
-              ← 返回{category.name}
-            </Link>
-            <h1>{metric.name}</h1>
-          </header>
-          <div
-            style={{
-              display: 'flex',
-              minWidth: 0,
-              minHeight: 0,
-              overflow: 'hidden',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+    <KnowledgeDetailLayout
+      shellRef={shellRef}
+      mode="fixed-workbench"
+      className="has-country-selection knowledge-earth-detail-shell world-extremes-detail-shell"
+      studyLabel={`${metric.name}地图与排名`}
+      study={
+        <KnowledgeDetailWorkbench
+          header={
+            <header className="knowledge-region-page-header">
+              <Link
+                className="knowledge-earth-detail-back"
+                to={getExtremeOverviewPath(category.id)}
+              >
+                ← 返回{category.name}
+              </Link>
+              <h1>{metric.name}</h1>
+            </header>
+          }
+          map={
             <KnowledgeExtremesMap
               metricId={metric.id}
               metricName={metric.name}
@@ -218,30 +196,35 @@ function KnowledgeExtremeMetricPage({ metricId }: { metricId: string }) {
                 void navigate(getExtremeMetricPath(metric.id, nextEntry.id))
               }
             />
-          </div>
-          <ExtremeMetricCards
-            category={category}
-            compact={compact}
-            currentMetricId={metric.id}
-            metrics={metrics}
-          />
-          <ExtremeEntryCards
-            compact={compact}
-            currentEntryId={entry?.id}
+          }
+          primaryRail={
+            <ExtremeMetricCards
+              category={category}
+              compact={compact}
+              currentMetricId={metric.id}
+              metrics={metrics}
+            />
+          }
+          secondaryRail={
+            <ExtremeEntryCards
+              compact={compact}
+              currentEntryId={entry?.id}
+              metric={metric}
+            />
+          }
+        />
+      }
+      detail={
+        entry ? (
+          <KnowledgeExtremeDetailCard metric={metric} entry={entry} />
+        ) : (
+          <KnowledgeExtremeMetricOverviewCard
+            accent={getWorldExtremeMetricColor(metric.id)}
             metric={metric}
           />
-        </section>
-      </div>
-
-      {entry ? (
-        <KnowledgeExtremeDetailCard metric={metric} entry={entry} />
-      ) : (
-        <KnowledgeExtremeMetricOverviewCard
-          accent={getWorldExtremeMetricColor(metric.id)}
-          metric={metric}
-        />
-      )}
-    </main>
+        )
+      }
+    />
   )
 }
 

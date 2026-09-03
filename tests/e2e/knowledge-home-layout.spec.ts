@@ -42,6 +42,10 @@ for (const viewport of knowledgeMapViewports) {
     await expect(
       page.getByRole('heading', { name: '图鉴', level: 1 }),
     ).toBeVisible()
+    await expect(page.locator('main')).toHaveAttribute(
+      'data-page-scroll',
+      'auto',
+    )
     await expect(page.getByRole('link', { name: '图鉴' })).toHaveClass(
       /is-active/,
     )

@@ -1,7 +1,6 @@
-import { useMemo, type KeyboardEvent } from 'react'
+import { useMemo } from 'react'
 
 import {
-  loadCountryBoundaries,
   loadLinearFeatureGeometries,
   loadWaterbodyGeometries,
 } from '../../data/geometryResources'
@@ -14,6 +13,9 @@ import {
 import type { WaterLearningLayerId } from '../../data/waterLearningSchema'
 import type { WaterObjectGroup } from '../../data/waterLearningSchema'
 import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
+import { WorldMapResourceStatus } from '../../shared/maps/WorldMapResourceStatus'
+import { activateSvgControlOnKeyboard } from '../../shared/maps/svgMapInteraction'
+import { useWorldBoundaryPaths } from '../../shared/maps/useWorldBoundaryPaths'
 import {
   getMapFeaturePath,
   MINI_MAP_WIDTH,
@@ -47,15 +49,6 @@ const WATER_MAP_TOP = 5
 const WATER_MAP_HEIGHT = 170
 const WATER_MAP_BOTTOM = WATER_MAP_TOP + WATER_MAP_HEIGHT
 
-function activateOnKeyboard(
-  event: KeyboardEvent<SVGGElement>,
-  activate: () => void,
-) {
-  if (event.key !== 'Enter' && event.key !== ' ') return
-  event.preventDefault()
-  activate()
-}
-
 function getWaterbodyColor(waterbody: Waterbody) {
   if (waterbody.kind === 'lake') return '#53e6bd'
   if (waterbody.kind === 'trench') return '#b293ff'
@@ -72,7 +65,11 @@ export function KnowledgeWaterMap({
   onSelectWaterbody,
   onSelectLinearFeature,
 }: KnowledgeWaterMapProps) {
-  const countryBoundaries = useGeometryResource(loadCountryBoundaries)
+  const {
+    resource: countryBoundaries,
+    countryPaths: boundaryPaths,
+    landmassPaths,
+  } = useWorldBoundaryPaths(getMapFeaturePath)
   const usesWaterbodies = layerId !== 'river'
   const usesLinearFeatures = layerId === 'river'
   const waterbodyGeometries = useGeometryResource(
@@ -88,22 +85,6 @@ export function KnowledgeWaterMap({
   const activeGroupObjectIds = useMemo(
     () => new Set(activeGroup?.objectIds ?? []),
     [activeGroup],
-  )
-  const boundaryPaths = useMemo(
-    () =>
-      (countryBoundaries.data?.features ?? []).map((boundary) => ({
-        code: boundary.properties.code,
-        path: getMapFeaturePath(boundary),
-      })),
-    [countryBoundaries.data],
-  )
-  const landmassPaths = useMemo(
-    () =>
-      (countryBoundaries.data?.landmasses ?? []).map((landmass) => ({
-        id: landmass.properties.id,
-        path: getMapFeaturePath(landmass),
-      })),
-    [countryBoundaries.data],
   )
   const waterbodyGeometryById = useMemo(
     () =>
@@ -251,7 +232,7 @@ export function KnowledgeWaterMap({
                 tabIndex={0}
                 onClick={() => onSelectWaterbody(waterbody.id)}
                 onKeyDown={(event) =>
-                  activateOnKeyboard(event, () =>
+                  activateSvgControlOnKeyboard(event, () =>
                     onSelectWaterbody(waterbody.id),
                   )
                 }
@@ -335,7 +316,7 @@ export function KnowledgeWaterMap({
                 tabIndex={0}
                 onClick={() => onSelectLinearFeature(feature.id)}
                 onKeyDown={(event) =>
-                  activateOnKeyboard(event, () =>
+                  activateSvgControlOnKeyboard(event, () =>
                     onSelectLinearFeature(feature.id),
                   )
                 }
@@ -386,18 +367,13 @@ export function KnowledgeWaterMap({
         </g>
       </svg>
 
-      {loading ? (
-        <output className="geometry-resource-status" role="status">
-          正在加载水域地图…
-        </output>
-      ) : failed ? (
-        <div className="geometry-resource-status" role="alert">
-          水域地图加载失败。
-          <button type="button" onClick={retry}>
-            重新加载
-          </button>
-        </div>
-      ) : null}
+      <WorldMapResourceStatus
+        loading={loading}
+        failed={failed}
+        loadingText="正在加载水域地图…"
+        errorText="水域地图加载失败。"
+        onRetry={retry}
+      />
     </section>
   )
 }

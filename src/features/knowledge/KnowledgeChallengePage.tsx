@@ -13,6 +13,7 @@ import {
   type PersistenceStatus,
 } from '../../storage/database'
 import { CountryFlag } from '../../shared/components/CountryFlag'
+import { ContentPageShell } from '../../shared/components/ContentPageShell'
 import {
   createKnowledgeChallenge,
   getChallengeScore,
@@ -112,9 +113,10 @@ export function KnowledgeChallengePage() {
 
   if (finished) {
     return (
-      <main
-        ref={shellRef}
-        className="knowledge-shell knowledge-challenge-shell"
+      <ContentPageShell
+        shellRef={shellRef}
+        className="knowledge-challenge-shell"
+        scrollMode="auto"
       >
         <section className="knowledge-challenge-result" aria-live="polite">
           <span className={passed ? 'is-passed' : undefined}>
@@ -163,12 +165,16 @@ export function KnowledgeChallengePage() {
             </Link>
           </div>
         </section>
-      </main>
+      </ContentPageShell>
     )
   }
 
   return (
-    <main ref={shellRef} className="knowledge-shell knowledge-challenge-shell">
+    <ContentPageShell
+      shellRef={shellRef}
+      className="knowledge-challenge-shell"
+      scrollMode="auto"
+    >
       <header className="knowledge-challenge-header">
         <Link to={returnTarget} aria-label="退出挑战">
           <span aria-hidden="true">‹</span>
@@ -264,6 +270,6 @@ export function KnowledgeChallengePage() {
           )}
         </div>
       </section>
-    </main>
+    </ContentPageShell>
   )
 }

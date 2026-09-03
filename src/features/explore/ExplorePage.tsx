@@ -3,12 +3,10 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useId,
   useMemo,
   useReducer,
   useRef,
   useState,
-  type RefObject,
 } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -56,6 +54,7 @@ import type {
   GlobeView,
   WorldMiniMapNavigation,
 } from '../../shared/types/geo'
+import { sceneOverlayRoles } from '../../shared/types/sceneOverlay'
 import { OVERVIEW_CAMERA_DISTANCE } from '../../scene/countrySceneInteraction'
 import { LANDMARK_CAMERA_DISTANCE } from '../../scene/landmarkSceneInteraction'
 import { CountryDetailPanel } from './CountryDetailPanel'
@@ -66,6 +65,7 @@ import { ExploreGuideCard } from './ExploreGuideCard'
 import { GeographyLearningPanel } from './GeographyLearningPanel'
 import { LinearGeoFeatureDetailPanel } from './LinearGeoFeatureDetailPanel'
 import { LandmarkDetailPanel } from './LandmarkDetailPanel'
+import { LayerControl, type LayerControlGroup } from './LayerControl'
 import { MountainRangeDetailPanel } from './MountainRangeDetailPanel'
 import { WaterbodyDetailPanel } from './WaterbodyDetailPanel'
 import {
@@ -109,299 +109,18 @@ function ResetIcon() {
   )
 }
 
-function LayersIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m12 3.8 8 4.4-8 4.4-8-4.4z" />
-      <path d="m4 12.1 8 4.4 8-4.4" />
-      <path d="m4 16 8 4.4 8-4.4" />
-    </svg>
-  )
-}
-
-type LayerControlProps = {
-  open: boolean
-  panelId: string
-  containerRef: RefObject<HTMLElement | null>
-  triggerRef: RefObject<HTMLButtonElement | null>
-  showCapitals: boolean
-  showCities: boolean
-  showOceanLayer: boolean
-  showLakeLayer: boolean
-  showWaterwayLayer: boolean
-  showRiverAndCanalLayer: boolean
-  showMountainLayer: boolean
-  showDesertLayer: boolean
-  showLandmarkLayer: boolean
-  showGeographyLearningLayer: boolean
-  showClimateLayer: boolean
-  onToggleCapitals: () => void
-  onToggleCities: () => void
-  onToggleOceanLayer: () => void
-  onToggleLakeLayer: () => void
-  onToggleWaterwayLayer: () => void
-  onToggleRiverAndCanalLayer: () => void
-  onToggleMountainLayer: () => void
-  onToggleDesertLayer: () => void
-  onToggleLandmarkLayer: () => void
-  onToggleGeographyLearningLayer: () => void
-  onToggleClimateLayer: () => void
-  onToggleOpen: () => void
-}
-
-type LayerOption = {
-  id: string
-  label: string
-  className: string
-  pressed: boolean
-  onToggle: () => void
-  accessibleLabel?: string
-  title?: string
-  describedBy?: string
-}
-
-function LayerControl({
-  open,
-  panelId,
-  containerRef,
-  triggerRef,
-  showCapitals,
-  showCities,
-  showOceanLayer,
-  showLakeLayer,
-  showWaterwayLayer,
-  showRiverAndCanalLayer,
-  showMountainLayer,
-  showDesertLayer,
-  showLandmarkLayer,
-  showGeographyLearningLayer,
-  showClimateLayer,
-  onToggleCapitals,
-  onToggleCities,
-  onToggleOceanLayer,
-  onToggleLakeLayer,
-  onToggleWaterwayLayer,
-  onToggleRiverAndCanalLayer,
-  onToggleMountainLayer,
-  onToggleDesertLayer,
-  onToggleLandmarkLayer,
-  onToggleGeographyLearningLayer,
-  onToggleClimateLayer,
-  onToggleOpen,
-}: LayerControlProps) {
-  const groups: Array<{ id: string; label: string; items: LayerOption[] }> = [
-    {
-      id: 'labels',
-      label: '标注',
-      items: [
-        {
-          id: 'capitals',
-          label: '首都',
-          className: 'is-capital',
-          pressed: showCapitals,
-          onToggle: onToggleCapitals,
-        },
-        {
-          id: 'cities',
-          label: '城市',
-          className: 'is-city',
-          pressed: showCities,
-          onToggle: onToggleCities,
-        },
-      ],
-    },
-    {
-      id: 'earth-knowledge',
-      label: '地球知识',
-      items: [
-        {
-          id: 'geography',
-          label: '经纬',
-          className: 'is-geography',
-          pressed: showGeographyLearningLayer,
-          accessibleLabel:
-            '经纬图层：经度基准、半球界线、纬度分区线与五带分界线',
-          title: '经纬：地球重要经纬线',
-          onToggle: onToggleGeographyLearningLayer,
-        },
-        {
-          id: 'climate',
-          label: '气候',
-          className: 'is-climate',
-          pressed: showClimateLayer,
-          accessibleLabel: '世界气候类型教学图层',
-          title: '气候：世界13类气候类型',
-          onToggle: onToggleClimateLayer,
-        },
-      ],
-    },
-    {
-      id: 'water',
-      label: '水域',
-      items: [
-        {
-          id: 'ocean',
-          label: '海洋',
-          className: 'is-ocean',
-          pressed: showOceanLayer,
-          describedBy: 'ocean-layer-description',
-          onToggle: onToggleOceanLayer,
-        },
-        {
-          id: 'lake',
-          label: '湖泊',
-          className: 'is-lake',
-          pressed: showLakeLayer,
-          accessibleLabel: '湖泊图层：世界著名淡水与咸水湖泊',
-          title: '湖泊：世界著名淡水与咸水湖泊',
-          onToggle: onToggleLakeLayer,
-        },
-        {
-          id: 'waterway',
-          label: '水域',
-          className: 'is-waterway',
-          pressed: showWaterwayLayer,
-          describedBy: 'waterway-layer-description',
-          onToggle: onToggleWaterwayLayer,
-        },
-        {
-          id: 'river',
-          label: '河流',
-          className: 'is-river',
-          pressed: showRiverAndCanalLayer,
-          accessibleLabel: '河流图层：世界重要河流与人工运河',
-          title: '河流：世界重要河流与人工运河',
-          onToggle: onToggleRiverAndCanalLayer,
-        },
-      ],
-    },
-    {
-      id: 'terrain-culture',
-      label: '地貌与文化',
-      items: [
-        {
-          id: 'mountain',
-          label: '山脉',
-          className: 'is-mountain',
-          pressed: showMountainLayer,
-          accessibleLabel: '山脉图层：世界著名山脉与最高峰',
-          title: '山脉：世界著名山脉与最高峰',
-          onToggle: onToggleMountainLayer,
-        },
-        {
-          id: 'desert',
-          label: '沙漠',
-          className: 'is-desert',
-          pressed: showDesertLayer,
-          accessibleLabel: '沙漠图层：世界主要沙漠与荒漠景观',
-          title: '沙漠：世界主要沙漠与荒漠景观',
-          onToggle: onToggleDesertLayer,
-        },
-        {
-          id: 'landmark',
-          label: '古迹',
-          className: 'is-landmark',
-          pressed: showLandmarkLayer,
-          accessibleLabel: '名胜古迹图层：世界著名文化与历史遗产',
-          title: '古迹：世界著名文化与历史遗产',
-          onToggle: onToggleLandmarkLayer,
-        },
-      ],
-    },
-  ]
-  const activeCount = groups.reduce(
-    (count, group) => count + group.items.filter((item) => item.pressed).length,
-    0,
-  )
-
-  return (
-    <section
-      ref={containerRef}
-      className="layer-control"
-      data-scene-overlay="layers"
-      aria-label="地球图层控制"
-    >
-      <button
-        ref={triggerRef}
-        type="button"
-        className="layer-control-trigger"
-        aria-label={`图层，已开启 ${activeCount} 项`}
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={(event) => {
-          event.stopPropagation()
-          onToggleOpen()
-        }}
-      >
-        <span className="layer-control-icon" aria-hidden="true">
-          <LayersIcon />
-        </span>
-        <span>图层</span>
-        <strong aria-hidden="true">{activeCount}</strong>
-      </button>
-      {open ? (
-        <div
-          id={panelId}
-          className="layer-control-panel"
-          role="region"
-          aria-label="图层选择"
-        >
-          <div className="layer-control-groups">
-            {groups.map((group) => (
-              <section
-                key={group.id}
-                className="layer-control-group"
-                aria-labelledby={`${panelId}-${group.id}`}
-              >
-                <h2 id={`${panelId}-${group.id}`}>{group.label}</h2>
-                <div className="layer-control-options">
-                  {group.items.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`layer-toggle ${item.className}`}
-                      aria-pressed={item.pressed}
-                      aria-label={item.accessibleLabel}
-                      aria-describedby={item.describedBy}
-                      title={item.title}
-                      onClick={item.onToggle}
-                    >
-                      <span className="layer-toggle-dot" aria-hidden="true" />
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </div>
-      ) : null}
-      <span id="ocean-layer-description" className="sr-only">
-        海洋：大洋、海与海湾
-      </span>
-      <span id="waterway-layer-description" className="sr-only">
-        水域：海峡与海沟
-      </span>
-    </section>
-  )
-}
-
 export function ExplorePage() {
   const { t } = useTranslation()
   const reducedMotion = usePrefersReducedMotion()
-  const layerPanelId = useId()
   const cameraRequestIdRef = useRef(0)
   const climateRequestIdRef = useRef(0)
   const currentViewCenterRef = useRef<GeoPosition>(getCountry('CN')!.center)
   const miniMapRef = useRef<WorldMiniMapHandle>(null)
-  const layerControlRef = useRef<HTMLElement>(null)
-  const layerButtonRef = useRef<HTMLButtonElement>(null)
   const [exploreState, dispatch] = useReducer(
     exploreReducer,
     initialExploreState,
   )
   const [miniMapExpanded, setMiniMapExpanded] = useState(false)
-  const [layerPanelOpen, setLayerPanelOpen] = useState(false)
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(() => ({
     requestId: 0,
     position: getCountry('CN')!.center,
@@ -514,32 +233,6 @@ export function ExplorePage() {
     }
   }, [])
 
-  const closeLayerPanel = useCallback(() => {
-    setLayerPanelOpen(false)
-    queueMicrotask(() => layerButtonRef.current?.focus({ preventScroll: true }))
-  }, [])
-
-  useEffect(() => {
-    if (!layerPanelOpen) return
-
-    const handleClick = (event: MouseEvent) => {
-      if (layerControlRef.current?.contains(event.target as Node)) return
-      closeLayerPanel()
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      closeLayerPanel()
-    }
-
-    document.addEventListener('click', handleClick)
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('click', handleClick)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [closeLayerPanel, layerPanelOpen])
-
   const selectedCountry = getCountry(selectedCountryCode)
   const selectedWaterbody = getWaterbody(selectedWaterbodyId)
   const selectedLinearFeature = getLinearGeoFeature(selectedLinearFeatureId)
@@ -639,6 +332,125 @@ export function ExplorePage() {
     dispatch({ type: 'showClimateOverview' })
     void preloadClimateRaster(quality).catch(() => undefined)
   }, [quality, showClimateLayer])
+  const layerGroups: readonly LayerControlGroup[] = [
+    {
+      id: 'labels',
+      label: '标注',
+      items: [
+        {
+          id: 'capitals',
+          label: '首都',
+          className: 'is-capital',
+          pressed: showCapitals,
+          onToggle: toggleCapitalLayer,
+        },
+        {
+          id: 'cities',
+          label: '城市',
+          className: 'is-city',
+          pressed: showCities,
+          onToggle: toggleCityLayer,
+        },
+      ],
+    },
+    {
+      id: 'earth-knowledge',
+      label: '地球知识',
+      items: [
+        {
+          id: 'geography',
+          label: '经纬',
+          className: 'is-geography',
+          pressed: showGeographyLearningLayer,
+          ariaLabel: '经纬图层：经度基准、半球界线、纬度分区线与五带分界线',
+          title: '经纬：地球重要经纬线',
+          onToggle: toggleGeographyLearningLayer,
+        },
+        {
+          id: 'climate',
+          label: '气候',
+          className: 'is-climate',
+          pressed: showClimateLayer,
+          ariaLabel: '世界气候类型教学图层',
+          title: '气候：世界13类气候类型',
+          onToggle: toggleClimateLayer,
+        },
+      ],
+    },
+    {
+      id: 'water',
+      label: '水域',
+      items: [
+        {
+          id: 'ocean',
+          label: '海洋',
+          className: 'is-ocean',
+          pressed: showOceanLayer,
+          description: '海洋：大洋、海与海湾',
+          onToggle: toggleOceanLayer,
+        },
+        {
+          id: 'lake',
+          label: '湖泊',
+          className: 'is-lake',
+          pressed: showLakeLayer,
+          ariaLabel: '湖泊图层：世界著名淡水与咸水湖泊',
+          title: '湖泊：世界著名淡水与咸水湖泊',
+          onToggle: toggleLakeLayer,
+        },
+        {
+          id: 'waterway',
+          label: '水域',
+          className: 'is-waterway',
+          pressed: showWaterwayLayer,
+          description: '水域：海峡与海沟',
+          onToggle: toggleWaterwayLayer,
+        },
+        {
+          id: 'river',
+          label: '河流',
+          className: 'is-river',
+          pressed: showRiverAndCanalLayer,
+          ariaLabel: '河流图层：世界重要河流与人工运河',
+          title: '河流：世界重要河流与人工运河',
+          onToggle: toggleRiverAndCanalLayer,
+        },
+      ],
+    },
+    {
+      id: 'terrain-culture',
+      label: '地貌与文化',
+      items: [
+        {
+          id: 'mountain',
+          label: '山脉',
+          className: 'is-mountain',
+          pressed: showMountainLayer,
+          ariaLabel: '山脉图层：世界著名山脉与最高峰',
+          title: '山脉：世界著名山脉与最高峰',
+          onToggle: toggleMountainLayer,
+        },
+        {
+          id: 'desert',
+          label: '沙漠',
+          className: 'is-desert',
+          pressed: showDesertLayer,
+          ariaLabel: '沙漠图层：世界主要沙漠与荒漠景观',
+          title: '沙漠：世界主要沙漠与荒漠景观',
+          onToggle: toggleDesertLayer,
+        },
+        {
+          id: 'landmark',
+          label: '古迹',
+          className: 'is-landmark',
+          pressed: showLandmarkLayer,
+          ariaLabel: '名胜古迹图层：世界著名文化与历史遗产',
+          title: '古迹：世界著名文化与历史遗产',
+          onToggle: toggleLandmarkLayer,
+        },
+      ],
+    },
+  ]
   const requestCameraTarget = useCallback(
     (position: GeoPosition, distance = OVERVIEW_CAMERA_DISTANCE) => {
       cameraRequestIdRef.current += 1
@@ -1155,37 +967,7 @@ export function ExplorePage() {
         </div>
       )}
 
-      {webGLAvailable ? (
-        <LayerControl
-          open={layerPanelOpen}
-          panelId={layerPanelId}
-          containerRef={layerControlRef}
-          triggerRef={layerButtonRef}
-          showCapitals={showCapitals}
-          showCities={showCities}
-          showOceanLayer={showOceanLayer}
-          showLakeLayer={showLakeLayer}
-          showWaterwayLayer={showWaterwayLayer}
-          showRiverAndCanalLayer={showRiverAndCanalLayer}
-          showMountainLayer={showMountainLayer}
-          showDesertLayer={showDesertLayer}
-          showLandmarkLayer={showLandmarkLayer}
-          showGeographyLearningLayer={showGeographyLearningLayer}
-          showClimateLayer={showClimateLayer}
-          onToggleCapitals={toggleCapitalLayer}
-          onToggleCities={toggleCityLayer}
-          onToggleOceanLayer={toggleOceanLayer}
-          onToggleLakeLayer={toggleLakeLayer}
-          onToggleWaterwayLayer={toggleWaterwayLayer}
-          onToggleRiverAndCanalLayer={toggleRiverAndCanalLayer}
-          onToggleMountainLayer={toggleMountainLayer}
-          onToggleDesertLayer={toggleDesertLayer}
-          onToggleLandmarkLayer={toggleLandmarkLayer}
-          onToggleGeographyLearningLayer={toggleGeographyLearningLayer}
-          onToggleClimateLayer={toggleClimateLayer}
-          onToggleOpen={() => setLayerPanelOpen((current) => !current)}
-        />
-      ) : null}
+      {webGLAvailable ? <LayerControl groups={layerGroups} /> : null}
 
       {failedGeometryResources.length > 0 ? (
         <div className="geometry-resource-status" role="alert">
@@ -1218,7 +1000,10 @@ export function ExplorePage() {
       />
 
       {webGLAvailable ? (
-        <div className="control-deck" data-scene-overlay="controls">
+        <div
+          className="control-deck"
+          data-scene-overlay={sceneOverlayRoles.controls}
+        >
           <div className="control-deck-content">
             <nav className="control-dock" aria-label="地球显示控制">
               <ControlButton

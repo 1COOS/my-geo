@@ -1,5 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom'
 
+import { ContentPageShell } from '../../shared/components/ContentPageShell'
 import { countries } from '../../data/countries'
 import {
   getQuestionChallengeId,
@@ -28,7 +29,10 @@ export function KnowledgeQuestionsPage() {
   ).length
 
   return (
-    <main className="knowledge-shell knowledge-question-hub-shell">
+    <ContentPageShell
+      className="knowledge-question-hub-shell"
+      scrollMode="auto"
+    >
       <section
         className="knowledge-question-hub-overview"
         aria-labelledby="knowledge-question-hub-title"
@@ -148,6 +152,6 @@ export function KnowledgeQuestionsPage() {
           })}
         </div>
       </section>
-    </main>
+    </ContentPageShell>
   )
 }

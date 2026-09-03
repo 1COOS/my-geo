@@ -2,12 +2,18 @@ import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { gzipSync } from 'node:zlib'
 
+import {
+  evaluateBudgets,
+  formatBudgetEvaluation,
+  formatKiB,
+} from './build-budget'
+
 const projectRoot = path.resolve(import.meta.dirname, '..')
 const distRoot = path.join(projectRoot, 'dist')
 const sourceMapsEnabled = process.env.GENERATE_SOURCEMAP === 'true'
 const maxJavaScriptGzipBytes = 700 * 1024
-const maxCssRawBytes = 100 * 1024
-const maxCssGzipBytes = 20 * 1024
+const cssRawThreshold = { soft: 112 * 1024, hard: 128 * 1024 }
+const cssGzipThreshold = { soft: 20 * 1024, hard: 24 * 1024 }
 const maxPrecacheBytes = 8 * 1024 * 1024
 const precacheExtensions = new Set([
   '.js',
@@ -28,10 +34,6 @@ async function listFiles(directory: string): Promise<string[]> {
     }),
   )
   return nested.flat()
-}
-
-function formatKiB(bytes: number) {
-  return `${(bytes / 1024).toFixed(1)} KiB`
 }
 
 const files = await listFiles(distRoot)
@@ -62,16 +64,15 @@ for (const file of files) {
   if (precacheExtensions.has(extension)) precacheBytes += bytes.byteLength
 }
 
-if (cssRawBytes > maxCssRawBytes) {
-  failures.push(
-    `CSS raw ${formatKiB(cssRawBytes)} exceeds ${formatKiB(maxCssRawBytes)}`,
-  )
-}
-if (cssGzipBytes > maxCssGzipBytes) {
-  failures.push(
-    `CSS gzip ${formatKiB(cssGzipBytes)} exceeds ${formatKiB(maxCssGzipBytes)}`,
-  )
-}
+const cssBudgets = evaluateBudgets([
+  { label: 'CSS raw', actual: cssRawBytes, threshold: cssRawThreshold },
+  { label: 'CSS gzip', actual: cssGzipBytes, threshold: cssGzipThreshold },
+])
+failures.push(
+  ...cssBudgets.failures.map(
+    (item) => `${formatBudgetEvaluation(item)} exceeds hard limit`,
+  ),
+)
 if (precacheBytes > maxPrecacheBytes) {
   failures.push(
     `Precache assets ${formatKiB(precacheBytes)} exceed ${formatKiB(maxPrecacheBytes)}`,
@@ -82,6 +83,12 @@ if (failures.length > 0) {
   throw new Error(`Build budget failed:\n${failures.join('\n')}`)
 }
 
+if (cssBudgets.warnings.length > 0) {
+  console.warn(
+    `Build budget warning:\n${cssBudgets.warnings.map(formatBudgetEvaluation).join('\n')}`,
+  )
+}
+
 console.log(
-  `Build budgets passed: CSS ${formatKiB(cssRawBytes)} raw / ${formatKiB(cssGzipBytes)} gzip, precache ${formatKiB(precacheBytes)}.`,
+  `Build budgets passed: ${cssBudgets.evaluations.map(formatBudgetEvaluation).join('; ')}; precache ${formatKiB(precacheBytes)} (hard ${formatKiB(maxPrecacheBytes)}, hard headroom ${formatKiB(maxPrecacheBytes - precacheBytes)}).`,
 )

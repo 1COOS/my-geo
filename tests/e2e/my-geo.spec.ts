@@ -3964,7 +3964,15 @@ test('uses the mobile bottom sheet for country details', async ({ page }) => {
 
   const card = page.getByLabel('中国国家知识卡')
   await expect(card).toBeVisible()
-  await page.waitForTimeout(450)
+  await expect
+    .poll(() =>
+      card.evaluate((element) =>
+        element
+          .getAnimations()
+          .every((animation) => animation.playState === 'finished'),
+      ),
+    )
+    .toBe(true)
   const box = await card.boundingBox()
   expect(box).not.toBeNull()
   expect(box!.x).toBeLessThanOrEqual(1)

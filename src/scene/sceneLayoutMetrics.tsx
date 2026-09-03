@@ -2,6 +2,11 @@ import { useEffect, useState, type ReactNode, type RefObject } from 'react'
 
 import { resolveViewportProfile } from '../shared/hooks/useViewportProfile'
 import {
+  measuredSceneOverlayRoles,
+  sceneOverlayRoles,
+  type SceneOverlayRole,
+} from '../shared/types/sceneOverlay'
+import {
   emptySceneLayoutMetrics,
   SceneLayoutMetricsContext,
   type SceneLayoutMetrics,
@@ -36,14 +41,15 @@ function sameMetrics(a: SceneLayoutMetrics, b: SceneLayoutMetrics) {
 function measureSceneLayout(viewport: HTMLElement): SceneLayoutMetrics {
   const root = viewport.getBoundingClientRect()
   const gap = Math.max(8, Math.min(14, root.width * 0.01))
-  const find = (role: string) =>
+  const find = (role: SceneOverlayRole) =>
     document.querySelector<HTMLElement>(`[data-scene-overlay="${role}"]`)
-  const navigationElement = find('navigation')
+  const navigationElement = find(sceneOverlayRoles.navigation)
   const navigationRect = navigationElement?.getBoundingClientRect() ?? null
-  const layerRect = find('layers')?.getBoundingClientRect() ?? null
-  const mapElement = find('mini-map')
+  const layerRect =
+    find(sceneOverlayRoles.layers)?.getBoundingClientRect() ?? null
+  const mapElement = find(sceneOverlayRoles.miniMap)
   const mapRect = mapElement?.getBoundingClientRect() ?? null
-  const controlsElement = find('controls')
+  const controlsElement = find(sceneOverlayRoles.controls)
   const controlsRect = controlsElement?.getBoundingClientRect() ?? null
 
   let left = 0
@@ -59,7 +65,7 @@ function measureSceneLayout(viewport: HTMLElement): SceneLayoutMetrics {
   ) {
     left = navigationRect.right - root.left + gap
   }
-  const layerElement = find('layers')
+  const layerElement = find(sceneOverlayRoles.layers)
   if (
     layerElement &&
     layerRect &&
@@ -124,10 +130,13 @@ export function SceneLayoutMetricsProvider({
 
     const update = () => {
       frame = null
-      const elements = [
-        viewport,
-        ...document.querySelectorAll<HTMLElement>('[data-scene-overlay]'),
-      ]
+      const elements: HTMLElement[] = [viewport]
+      for (const role of measuredSceneOverlayRoles) {
+        const element = document.querySelector<HTMLElement>(
+          `[data-scene-overlay="${role}"]`,
+        )
+        if (element) elements.push(element)
+      }
       for (const element of elements) {
         if (observed.has(element)) continue
         observed.add(element)

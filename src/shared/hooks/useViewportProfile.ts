@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { createContext, useContext } from 'react'
 
 export type ViewportProfile = 'wide' | 'balanced' | 'compact-landscape'
 
@@ -16,7 +16,7 @@ export function resolveViewportProfile({
   return 'balanced'
 }
 
-function readViewportSize(): ViewportSize {
+export function readViewportSize(): ViewportSize {
   const viewport = window.visualViewport
   return {
     width: Math.round(viewport?.width ?? window.innerWidth),
@@ -25,26 +25,7 @@ function readViewportSize(): ViewportSize {
 }
 
 export function useViewportProfile(): ViewportProfile {
-  const [profile, setProfile] = useState(() =>
-    resolveViewportProfile(readViewportSize()),
-  )
-
-  useEffect(() => {
-    const update = () =>
-      setProfile((current) => {
-        const next = resolveViewportProfile(readViewportSize())
-        return next === current ? current : next
-      })
-
-    window.addEventListener('resize', update)
-    window.addEventListener('orientationchange', update)
-    window.visualViewport?.addEventListener('resize', update)
-    return () => {
-      window.removeEventListener('resize', update)
-      window.removeEventListener('orientationchange', update)
-      window.visualViewport?.removeEventListener('resize', update)
-    }
-  }, [])
-
-  return profile
+  return useContext(ViewportProfileContext)
 }
+
+export const ViewportProfileContext = createContext<ViewportProfile>('balanced')

@@ -18,10 +18,12 @@ import type {
   ReferenceLineId,
 } from '../../data/geographyLearningSchema'
 import { classifyGeoPosition } from '../../shared/lib/geoClassification'
+import { activateSvgControlOnKeyboard } from '../../shared/maps/svgMapInteraction'
 import type {
   GeoPosition,
   WorldMiniMapNavigation,
 } from '../../shared/types/geo'
+import { sceneOverlayRoles } from '../../shared/types/sceneOverlay'
 import {
   findCountryAtPosition,
   formatGeoPosition,
@@ -227,7 +229,7 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
     return (
       <aside
         className={expanded ? 'world-mini-map is-expanded' : 'world-mini-map'}
-        data-scene-overlay="mini-map"
+        data-scene-overlay={sceneOverlayRoles.miniMap}
         aria-label="2D 世界定位图"
       >
         <button
@@ -450,10 +452,10 @@ export const WorldMiniMap = forwardRef<WorldMiniMapHandle, WorldMiniMapProps>(
                           onSelectGeographyTopic(line.topicId, line.id)
                         }}
                         onKeyDown={(event) => {
-                          if (event.key !== 'Enter' && event.key !== ' ') return
-                          event.preventDefault()
-                          event.stopPropagation()
-                          onSelectGeographyTopic(line.topicId, line.id)
+                          activateSvgControlOnKeyboard(event, () => {
+                            event.stopPropagation()
+                            onSelectGeographyTopic(line.topicId, line.id)
+                          })
                         }}
                       >
                         {line.shortLabel}

@@ -1,13 +1,13 @@
 import { useMemo, type CSSProperties } from 'react'
 
 import { countries } from '../../data/countries'
-import { loadCountryBoundaries } from '../../data/geometryResources'
 import {
   knowledgeRegionByCountryCode,
   type KnowledgeContinentId,
   type KnowledgeRegionId,
 } from '../../data/knowledgeRegions'
-import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
+import { WorldMapResourceStatus } from '../../shared/maps/WorldMapResourceStatus'
+import { useWorldBoundaryPaths } from '../../shared/maps/useWorldBoundaryPaths'
 import {
   getKnowledgeWorldMapPath,
   KNOWLEDGE_WORLD_MAP_HEIGHT as MAP_HEIGHT,
@@ -30,23 +30,11 @@ export function KnowledgeRegionMap({
   selectedCountryCode,
   onSelectContinent,
 }: KnowledgeRegionMapProps) {
-  const boundaryResource = useGeometryResource(loadCountryBoundaries)
-  const paths = useMemo(
-    () =>
-      (boundaryResource.data?.features ?? []).map((feature) => ({
-        code: feature.properties.code,
-        path: getKnowledgeWorldMapPath(feature),
-      })),
-    [boundaryResource.data],
-  )
-  const landmassPaths = useMemo(
-    () =>
-      (boundaryResource.data?.landmasses ?? []).map((landmass) => ({
-        id: landmass.properties.id,
-        path: getKnowledgeWorldMapPath(landmass),
-      })),
-    [boundaryResource.data],
-  )
+  const {
+    resource: boundaryResource,
+    countryPaths: paths,
+    landmassPaths,
+  } = useWorldBoundaryPaths(getKnowledgeWorldMapPath)
   const microstateMarkers = useMemo(() => {
     const boundaryCodes = new Set(
       (boundaryResource.data?.features ?? []).map(
@@ -167,18 +155,13 @@ export function KnowledgeRegionMap({
           })}
         </g>
       </svg>
-      {boundaryResource.status === 'loading' ? (
-        <output className="geometry-resource-status" role="status">
-          正在加载世界边界…
-        </output>
-      ) : boundaryResource.status === 'error' ? (
-        <div className="geometry-resource-status" role="alert">
-          世界边界加载失败。
-          <button type="button" onClick={boundaryResource.retry}>
-            重新加载
-          </button>
-        </div>
-      ) : null}
+      <WorldMapResourceStatus
+        loading={boundaryResource.status === 'loading'}
+        failed={boundaryResource.status === 'error'}
+        loadingText="正在加载世界边界…"
+        errorText="世界边界加载失败。"
+        onRetry={boundaryResource.retry}
+      />
     </>
   )
 }

@@ -1,7 +1,6 @@
 import { useMemo, type KeyboardEvent } from 'react'
 
 import {
-  loadCountryBoundaries,
   loadDesertGeometries,
   loadLinearFeatureGeometries,
   loadMountainGeometries,
@@ -12,6 +11,9 @@ import type {
   WorldExtremeMetric,
 } from '../../data/worldExtremesSchema'
 import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
+import { WorldMapResourceStatus } from '../../shared/maps/WorldMapResourceStatus'
+import { activateSvgControlOnKeyboard } from '../../shared/maps/svgMapInteraction'
+import { useWorldBoundaryPaths } from '../../shared/maps/useWorldBoundaryPaths'
 import {
   getKnowledgeWorldMapPath,
   KNOWLEDGE_WORLD_MAP_HEIGHT,
@@ -23,15 +25,6 @@ import { getWorldExtremeMetricColor } from './worldExtremePresentation'
 type Champion = {
   metric: WorldExtremeMetric
   entry: WorldExtremeMetric['entries'][number]
-}
-
-function activateOnKeyboard(
-  event: KeyboardEvent<SVGGElement>,
-  activate: () => void,
-) {
-  if (event.key !== 'Enter' && event.key !== ' ') return
-  event.preventDefault()
-  activate()
 }
 
 export function KnowledgeExtremesCategoryMap({
@@ -65,7 +58,11 @@ export function KnowledgeExtremesCategoryMap({
   const needsDesert = champions.some(
     ({ entry }) => entry.entity?.kind === 'desert',
   )
-  const countryBoundaries = useGeometryResource(loadCountryBoundaries)
+  const {
+    resource: countryBoundaries,
+    countryPaths: boundaryPaths,
+    landmassPaths,
+  } = useWorldBoundaryPaths(getKnowledgeWorldMapPath)
   const waterbodyGeometries = useGeometryResource(
     loadWaterbodyGeometries,
     needsWaterbody,
@@ -82,25 +79,9 @@ export function KnowledgeExtremesCategoryMap({
     loadDesertGeometries,
     needsDesert,
   )
-  const boundaryPaths = useMemo(
-    () =>
-      (countryBoundaries.data?.features ?? []).map((feature) => ({
-        code: feature.properties.code,
-        path: getKnowledgeWorldMapPath(feature),
-      })),
-    [countryBoundaries.data],
-  )
   const boundaryPathByCode = useMemo(
     () => new Map(boundaryPaths.map(({ code, path }) => [code, path])),
     [boundaryPaths],
-  )
-  const landmassPaths = useMemo(
-    () =>
-      (countryBoundaries.data?.landmasses ?? []).map((landmass) => ({
-        id: landmass.properties.id,
-        path: getKnowledgeWorldMapPath(landmass),
-      })),
-    [countryBoundaries.data],
   )
   const waterbodyGeometryById = useMemo(
     () =>
@@ -247,7 +228,7 @@ export function KnowledgeExtremesCategoryMap({
               'data-entity-kind': entity.kind,
               onClick: activate,
               onKeyDown: (event: KeyboardEvent<SVGGElement>) =>
-                activateOnKeyboard(event, activate),
+                activateSvgControlOnKeyboard(event, activate),
             }
 
             if (
@@ -360,18 +341,13 @@ export function KnowledgeExtremesCategoryMap({
           })}
         </g>
       </svg>
-      {loading ? (
-        <output className="geometry-resource-status" role="status">
-          正在加载当前类别地图…
-        </output>
-      ) : failed ? (
-        <div className="geometry-resource-status" role="alert">
-          当前类别地图加载失败，指标卡仍可继续使用。
-          <button type="button" onClick={retry}>
-            重新加载
-          </button>
-        </div>
-      ) : null}
+      <WorldMapResourceStatus
+        loading={loading}
+        failed={failed}
+        loadingText="正在加载当前类别地图…"
+        errorText="当前类别地图加载失败，指标卡仍可继续使用。"
+        onRetry={retry}
+      />
     </section>
   )
 }

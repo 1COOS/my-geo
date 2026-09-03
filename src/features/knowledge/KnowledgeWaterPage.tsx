@@ -23,6 +23,10 @@ import { useViewportProfile } from '../../shared/hooks/useViewportProfile'
 import { KnowledgeMapWorkbenchPage } from './KnowledgeMapWorkbench'
 import { KnowledgePrimaryTabs } from './KnowledgePrimaryTabs'
 import {
+  KnowledgeDetailLayout,
+  KnowledgeDetailWorkbench,
+} from './KnowledgeDetailLayout'
+import {
   KnowledgeWaterGroupRows,
   KnowledgeWaterMap,
   KnowledgeWaterObjectRows,
@@ -193,55 +197,28 @@ function KnowledgeWaterGroupPage({ groupId }: { groupId: string }) {
     if (nextGroup) void navigate(getWaterGroupPath(nextGroup.id, id))
   }
   return (
-    <main
-      ref={shellRef}
-      className="knowledge-shell knowledge-region-shell has-country-selection knowledge-earth-detail-shell knowledge-water-group-shell"
-      data-compact-workbench={compact ? 'true' : 'false'}
-      style={{
-        overflowY: 'hidden',
-        paddingBottom: compact ? '0.45rem' : '0.75rem',
-      }}
-    >
-      <div
-        className="knowledge-region-content knowledge-earth-detail-content"
-        style={{ height: '100%', minHeight: 0 }}
-      >
-        <section
-          className="knowledge-earth-detail-study"
-          aria-label={`${group.name}对象地图`}
-          style={{
-            display: 'grid',
-            height: '100%',
-            minHeight: 0,
-            gridTemplateRows: compact
-              ? '2.75rem minmax(0, 1fr) 3.25rem 3.5rem'
-              : '2.75rem minmax(0, 1fr) 4.4rem 4.4rem',
-            gap: compact ? '0.4rem' : '0.5rem',
-          }}
-        >
-          <header className="knowledge-region-page-header">
-            <Link
-              className="knowledge-earth-detail-back"
-              to={getWaterLayerPath(group.layerId)}
-            >
-              ← 返回{layer.name}
-            </Link>
-            <h1>
-              {group.name}
-              <strong>{group.objectIds.length}</strong>个对象
-            </h1>
-          </header>
-
-          <div
-            style={{
-              display: 'flex',
-              minWidth: 0,
-              minHeight: 0,
-              overflow: 'hidden',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+    <KnowledgeDetailLayout
+      shellRef={shellRef}
+      mode="fixed-workbench"
+      className="has-country-selection knowledge-earth-detail-shell knowledge-water-group-shell"
+      studyLabel={`${group.name}对象地图`}
+      study={
+        <KnowledgeDetailWorkbench
+          header={
+            <header className="knowledge-region-page-header">
+              <Link
+                className="knowledge-earth-detail-back"
+                to={getWaterLayerPath(group.layerId)}
+              >
+                ← 返回{layer.name}
+              </Link>
+              <h1>
+                {group.name}
+                <strong>{group.objectIds.length}</strong>个对象
+              </h1>
+            </header>
+          }
+          map={
             <KnowledgeWaterMap
               layerId={group.layerId}
               selected={selected}
@@ -251,37 +228,41 @@ function KnowledgeWaterGroupPage({ groupId }: { groupId: string }) {
               onSelectWaterbody={openWaterbody}
               onSelectLinearFeature={openLinearFeature}
             />
-          </div>
-
-          <KnowledgeWaterGroupRows
-            groups={groups}
-            activeGroupId={group.id}
-            compact={compact}
-            label={`${layer.name}分组`}
-          />
-          <KnowledgeWaterObjectRows
-            group={group}
-            selected={selected}
-            compact={compact}
-          />
-        </section>
-      </div>
-
-      {waterbody ? (
-        <KnowledgeWaterObjectCard
-          object={waterbody}
-          objectType="waterbody"
-          layer={layer}
+          }
+          primaryRail={
+            <KnowledgeWaterGroupRows
+              groups={groups}
+              activeGroupId={group.id}
+              compact={compact}
+              label={`${layer.name}分组`}
+            />
+          }
+          secondaryRail={
+            <KnowledgeWaterObjectRows
+              group={group}
+              selected={selected}
+              compact={compact}
+            />
+          }
         />
-      ) : linearFeature ? (
-        <KnowledgeWaterObjectCard
-          object={linearFeature}
-          objectType="linearFeature"
-          layer={layer}
-        />
-      ) : (
-        <KnowledgeWaterGroupOverviewCard group={group} layer={layer} />
-      )}
-    </main>
+      }
+      detail={
+        waterbody ? (
+          <KnowledgeWaterObjectCard
+            object={waterbody}
+            objectType="waterbody"
+            layer={layer}
+          />
+        ) : linearFeature ? (
+          <KnowledgeWaterObjectCard
+            object={linearFeature}
+            objectType="linearFeature"
+            layer={layer}
+          />
+        ) : (
+          <KnowledgeWaterGroupOverviewCard group={group} layer={layer} />
+        )
+      }
+    />
   )
 }

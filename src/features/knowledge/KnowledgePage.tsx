@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom'
 
+import {
+  ContentPageHeader,
+  ContentPageShell,
+} from '../../shared/components/ContentPageShell'
 import { knowledgeTopics, type KnowledgeTopicId } from './knowledgeTopics'
 
 type KnowledgeHomeIconId = KnowledgeTopicId | 'questions'
@@ -78,11 +82,8 @@ function KnowledgeHomeCard({
 
 export function KnowledgePage() {
   return (
-    <main className="knowledge-shell knowledge-home-shell">
-      <header className="knowledge-home-header">
-        <h1>图鉴</h1>
-        <span>选择内容开始学习</span>
-      </header>
+    <ContentPageShell className="knowledge-home-shell" scrollMode="auto">
+      <ContentPageHeader title="图鉴" subtitle="选择内容开始学习" />
 
       <section
         className="knowledge-home-section"
@@ -116,6 +117,6 @@ export function KnowledgePage() {
           ))}
         </div>
       </section>
-    </main>
+    </ContentPageShell>
   )
 }

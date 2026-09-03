@@ -24,15 +24,9 @@ export function KnowledgePrimaryTabs({
   return (
     <div
       className="knowledge-continent-tabs knowledge-primary-tabs"
+      data-compact-tabs={compact ? 'true' : 'false'}
       role="tablist"
       aria-label={label}
-      style={{
-        width: '100%',
-        height: '100%',
-        padding: 0,
-        margin: 0,
-        gap: compact ? '0.75rem' : '1.4rem',
-      }}
     >
       {items.map((item) => {
         const active = item.id === activeId
@@ -42,21 +36,12 @@ export function KnowledgePrimaryTabs({
             {item.secondary ? <span>{item.secondary}</span> : null}
           </>
         )
-        const style = {
-          flex: '0 0 auto',
-          minWidth: 'max-content',
-          minHeight: '100%',
-          padding: compact ? '0.35rem 0.45rem' : '0.55rem 0.6rem 0.7rem',
-          justifyContent: 'flex-start',
-        } as const
-
         return getTo ? (
           <Link
             key={item.id}
             role="tab"
             aria-selected={active}
             to={getTo(item)}
-            style={style}
           >
             {content}
           </Link>
@@ -67,7 +52,6 @@ export function KnowledgePrimaryTabs({
             role="tab"
             aria-selected={active}
             onClick={() => onSelect?.(item.id)}
-            style={style}
           >
             {content}
           </button>

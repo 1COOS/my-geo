@@ -1,9 +1,10 @@
-import { useMemo, type CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 
 import { geographyReferenceLines } from '../../data/geographyLearning'
 import type { GeographyTopicId } from '../../data/geographyLearningSchema'
-import { loadCountryBoundaries } from '../../data/geometryResources'
-import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
+import { WorldMapResourceStatus } from '../../shared/maps/WorldMapResourceStatus'
+import { activateSvgControlOnKeyboard } from '../../shared/maps/svgMapInteraction'
+import { useWorldBoundaryPaths } from '../../shared/maps/useWorldBoundaryPaths'
 import {
   getMapFeaturePath,
   MINI_MAP_WIDTH,
@@ -77,25 +78,13 @@ export function KnowledgeEarthMap({
   workbench = false,
   compact = false,
 }: KnowledgeEarthMapProps) {
-  const countryBoundaries = useGeometryResource(loadCountryBoundaries)
+  const {
+    resource: countryBoundaries,
+    countryPaths: boundaryPaths,
+    landmassPaths,
+  } = useWorldBoundaryPaths(getMapFeaturePath)
   const topicLineColors = getKnowledgeEarthTopicLineColors(topicId)
   const coverageRegions = getKnowledgeEarthCoverageRegions(topicId)
-  const boundaryPaths = useMemo(
-    () =>
-      (countryBoundaries.data?.features ?? []).map((boundary) => ({
-        code: boundary.properties.code,
-        path: getMapFeaturePath(boundary),
-      })),
-    [countryBoundaries.data],
-  )
-  const landmassPaths = useMemo(
-    () =>
-      (countryBoundaries.data?.landmasses ?? []).map((landmass) => ({
-        id: landmass.properties.id,
-        path: getMapFeaturePath(landmass),
-      })),
-    [countryBoundaries.data],
-  )
   return (
     <section
       className="knowledge-earth-map-card knowledge-map-card"
@@ -267,9 +256,9 @@ export function KnowledgeEarthMap({
                 onKeyDown={
                   onSelectTopic
                     ? (event) => {
-                        if (event.key !== 'Enter' && event.key !== ' ') return
-                        event.preventDefault()
-                        onSelectTopic(line.topicId)
+                        activateSvgControlOnKeyboard(event, () =>
+                          onSelectTopic(line.topicId),
+                        )
                       }
                     : undefined
                 }
@@ -310,18 +299,13 @@ export function KnowledgeEarthMap({
         </g>
       </svg>
 
-      {countryBoundaries.status === 'loading' ? (
-        <output className="geometry-resource-status" role="status">
-          正在绘制世界轮廓…
-        </output>
-      ) : countryBoundaries.status === 'error' ? (
-        <div className="geometry-resource-status" role="alert">
-          <span>世界轮廓加载失败</span>
-          <button type="button" onClick={countryBoundaries.retry}>
-            重新加载
-          </button>
-        </div>
-      ) : null}
+      <WorldMapResourceStatus
+        loading={countryBoundaries.status === 'loading'}
+        failed={countryBoundaries.status === 'error'}
+        loadingText="正在绘制世界轮廓…"
+        errorText="世界轮廓加载失败"
+        onRetry={countryBoundaries.retry}
+      />
     </section>
   )
 }

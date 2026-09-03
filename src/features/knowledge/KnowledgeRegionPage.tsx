@@ -16,6 +16,7 @@ import {
 } from '../../data/knowledgeRegions'
 import { CountryFlag } from '../../shared/components/CountryFlag'
 import { KnowledgeCountryDetail } from './KnowledgeCountryDetail'
+import { KnowledgeDetailLayout } from './KnowledgeDetailLayout'
 import { KnowledgeRegionMap } from './KnowledgeRegionMap'
 import { KnowledgeRegionOverviewCard } from './KnowledgeRegionOverviewCard'
 
@@ -93,12 +94,11 @@ export function KnowledgeRegionPage() {
   }
 
   return (
-    <main className="knowledge-shell knowledge-region-shell">
-      <div className="knowledge-region-content">
-        <section
-          className="knowledge-region-study"
-          aria-label={`${region.name.zh}国家学习`}
-        >
+    <KnowledgeDetailLayout
+      mode="flow"
+      studyLabel={`${region.name.zh}国家学习`}
+      study={
+        <>
           <header
             className="knowledge-region-page-header"
             style={regionHeaderStyle}
@@ -191,22 +191,23 @@ export function KnowledgeRegionPage() {
               </article>
             ))}
           </div>
-        </section>
-      </div>
-
-      {selectedCountry ? (
-        <KnowledgeCountryDetail
-          country={selectedCountry}
-          regionId={region.id}
-          onSelectCountry={openCountry}
-        />
-      ) : (
-        <KnowledgeRegionOverviewCard
-          continentName={continent.name.zh}
-          countries={regionCountries}
-          region={region}
-        />
-      )}
-    </main>
+        </>
+      }
+      detail={
+        selectedCountry ? (
+          <KnowledgeCountryDetail
+            country={selectedCountry}
+            regionId={region.id}
+            onSelectCountry={openCountry}
+          />
+        ) : (
+          <KnowledgeRegionOverviewCard
+            continentName={continent.name.zh}
+            countries={regionCountries}
+            region={region}
+          />
+        )
+      }
+    />
   )
 }

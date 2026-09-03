@@ -1,9 +1,4 @@
-import {
-  geoContains,
-  geoEquirectangular,
-  geoPath,
-  type GeoProjection,
-} from 'd3-geo'
+import { geoContains, type GeoProjection } from 'd3-geo'
 
 import { countries } from '../../data/countries'
 import type {
@@ -12,23 +7,25 @@ import type {
   Landmass,
 } from '../../data/countrySchema'
 import type { GeoPosition } from '../../shared/types/geo'
+import {
+  createWorldMapProjection,
+  getWorldFeaturePath,
+} from '../../shared/maps/worldMapProjection'
 
-export const MINI_MAP_WIDTH = 360
-export const MINI_MAP_HEIGHT = 180
+const miniMapProjection = createWorldMapProjection({
+  width: 360,
+  height: 180,
+  precision: 0.1,
+})
+
+export const MINI_MAP_WIDTH = miniMapProjection.width
+export const MINI_MAP_HEIGHT = miniMapProjection.height
 export const MINI_MAP_KEYBOARD_STEP = 5
 export const MINI_MAP_KEYBOARD_FAST_STEP = 15
 export const MICROSTATE_HIT_RADIUS = 6
 
-export const worldMiniMapProjection = geoEquirectangular()
-  .scale(MINI_MAP_WIDTH / (2 * Math.PI))
-  .translate([MINI_MAP_WIDTH / 2, MINI_MAP_HEIGHT / 2])
-  .precision(0.1)
-  .clipExtent([
-    [0, 0],
-    [MINI_MAP_WIDTH, MINI_MAP_HEIGHT],
-  ])
-
-export const worldMiniMapPath = geoPath(worldMiniMapProjection)
+export const worldMiniMapProjection = miniMapProjection.projection
+export const worldMiniMapPath = miniMapProjection.path
 
 export function getMicrostateCountries(boundaries: CountryBoundaries) {
   const boundaryCodes = new Set(
@@ -108,7 +105,7 @@ export function formatGeoPosition(position: GeoPosition) {
 }
 
 export function getMapFeaturePath(feature: CountryBoundary | Landmass) {
-  return worldMiniMapPath(feature as never) ?? ''
+  return getWorldFeaturePath(worldMiniMapPath, feature)
 }
 
 function clampLatitude(latitude: number) {

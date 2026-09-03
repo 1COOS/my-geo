@@ -132,6 +132,91 @@ for (const viewport of viewports) {
   })
 }
 
+const detailPages = [
+  {
+    name: 'country',
+    mode: 'flow',
+    url: '/knowledge/countries/east-asia?country=CN',
+    detailLabel: '中国国家学习详情',
+  },
+  {
+    name: 'earth line',
+    mode: 'flow',
+    url: '/knowledge/earth/lines/equator',
+    detailLabel: '赤道经纬线详情',
+  },
+  {
+    name: 'water object',
+    mode: 'fixed-workbench',
+    url: '/knowledge/water/groups/ocean-seas?object=mediterranean-sea',
+    detailLabel: '地中海海详情',
+  },
+  {
+    name: 'world extreme',
+    mode: 'fixed-workbench',
+    url: '/knowledge/extremes/metrics/highest-peak?entry=mount-everest',
+    detailLabel: '珠穆朗玛峰世界之最详情',
+  },
+] as const
+
+for (const viewport of viewports) {
+  test(`keeps all knowledge detail layouts aligned on ${viewport.name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    const detailWidths: number[] = []
+
+    for (const definition of detailPages) {
+      await page.goto(definition.url)
+      const shell = page.locator('.knowledge-detail-layout')
+      const study = page.locator('.knowledge-detail-study')
+      const detail = page.getByLabel(definition.detailLabel)
+      await expect(shell).toBeVisible()
+      await expect(shell).toHaveAttribute(
+        'data-page-scroll',
+        definition.mode === 'fixed-workbench' ? 'locked' : 'auto',
+      )
+      await expect(study).toBeVisible()
+      await expect(detail).toBeVisible()
+      await expect
+        .poll(() =>
+          detail.evaluate((element) =>
+            element
+              .getAnimations()
+              .every((animation) => animation.playState === 'finished'),
+          ),
+        )
+        .toBe(true)
+
+      const [shellBox, studyBox, detailBox] = await Promise.all([
+        shell.boundingBox(),
+        study.boundingBox(),
+        detail.boundingBox(),
+      ])
+      expect(shellBox).not.toBeNull()
+      expect(studyBox).not.toBeNull()
+      expect(detailBox).not.toBeNull()
+      expect(studyBox!.x + studyBox!.width).toBeLessThanOrEqual(
+        detailBox!.x + 1,
+      )
+      expect(detailBox!.x + detailBox!.width).toBeLessThanOrEqual(
+        viewport.width + 1,
+      )
+      detailWidths.push(detailBox!.width)
+
+      if (definition.mode === 'fixed-workbench') {
+        await expect(shell).toHaveClass(/is-fixed-workbench/)
+        await expectNoPageScroll(page)
+      } else {
+        await expect(shell).not.toHaveClass(/is-fixed-workbench/)
+      }
+      await expectNoRootOverflow(page)
+    }
+
+    expectSpreadWithin(detailWidths, 1)
+  })
+}
+
 function expectSpreadWithin(values: number[], tolerance: number) {
   expect(Math.max(...values) - Math.min(...values)).toBeLessThanOrEqual(
     tolerance,
@@ -144,6 +229,15 @@ async function expectNoPageScroll(page: import('@playwright/test').Page) {
     scrollHeight: element.scrollHeight,
   }))
   expect(scroll.scrollHeight).toBeLessThanOrEqual(scroll.clientHeight)
+  const overflow = await page.evaluate(() => ({
+    body: document.body.scrollWidth - innerWidth,
+    root: document.documentElement.scrollWidth - innerWidth,
+  }))
+  expect(overflow.body).toBeLessThanOrEqual(0)
+  expect(overflow.root).toBeLessThanOrEqual(0)
+}
+
+async function expectNoRootOverflow(page: import('@playwright/test').Page) {
   const overflow = await page.evaluate(() => ({
     body: document.body.scrollWidth - innerWidth,
     root: document.documentElement.scrollWidth - innerWidth,

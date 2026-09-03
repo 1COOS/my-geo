@@ -14,6 +14,7 @@ import {
   GlobeIcon,
   SearchIcon,
 } from '../shared/components/AppNavigationIcons'
+import { sceneOverlayRoles } from '../shared/types/sceneOverlay'
 
 import {
   isDocumentFullscreen,
@@ -22,7 +23,7 @@ import {
 } from './fullscreenPlatform'
 import {
   getNavigationBackFallback,
-  primaryNavigationPaths,
+  resolveAppRouteMeta,
 } from './navigationRoutes'
 
 function FullscreenIcon({ active }: { active: boolean }) {
@@ -93,10 +94,7 @@ function FullscreenControl() {
 function AtlasNavigationLink() {
   const location = useLocation()
   const atlasActive =
-    location.pathname === '/knowledge' ||
-    location.pathname.startsWith('/knowledge/') ||
-    location.pathname === '/questions' ||
-    location.pathname.startsWith('/questions/')
+    resolveAppRouteMeta(location.pathname).section === 'knowledge'
 
   return (
     <NavLink
@@ -117,8 +115,9 @@ function NavigationBrand() {
   const location = useLocation()
   const navigate = useNavigate()
   const navigationType = useNavigationType()
+  const route = resolveAppRouteMeta(location.pathname)
 
-  if (primaryNavigationPaths.has(location.pathname)) {
+  if (route.primary) {
     return (
       <div className="app-navigation-brand" aria-hidden="true">
         <img src="/icons/my-geo-mark.svg" alt="" draggable={false} />
@@ -148,7 +147,7 @@ export function AppNavigation() {
   return (
     <nav
       className="app-navigation"
-      data-scene-overlay="navigation"
+      data-scene-overlay={sceneOverlayRoles.navigation}
       aria-label="My Geo 主导航"
     >
       <NavigationBrand />

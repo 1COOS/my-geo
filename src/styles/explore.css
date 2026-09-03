@@ -682,11 +682,6 @@
 
 .world-mini-map-card {
   overflow: hidden;
-  background: linear-gradient(150deg, rgb(12 40 63 / 91%), rgb(4 17 31 / 94%));
-  border: 1px solid rgb(126 214 255 / 18%);
-  border-radius: 1rem;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 36%);
-  backdrop-filter: blur(18px);
 }
 
 .world-mini-map-header > div {
@@ -785,17 +780,6 @@
   fill: #fff;
   outline: none;
   text-decoration: underline;
-}
-
-.world-mini-map-countries path:hover {
-  fill: #287ba0;
-  stroke: #a3e9ff;
-}
-
-.world-mini-map-countries path.is-selected {
-  fill: #bb8e32;
-  stroke: #fff0a3;
-  stroke-width: 1.15;
 }
 
 .world-mini-map-microstates circle {
@@ -901,13 +885,6 @@
   pointer-events: auto;
 }
 
-.control-button:hover:not(:disabled) {
-  color: #fff;
-  background: rgb(83 187 240 / 12%);
-  border-color: rgb(125 218 255 / 18%);
-  transform: translateY(-1px);
-}
-
 .control-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
@@ -927,12 +904,7 @@
 .tooltip-content {
   z-index: 20;
   padding: 0.48rem 0.65rem;
-  color: #eaf8ff;
   font-size: var(--fs-m);
-  background: #10263b;
-  border: 1px solid rgb(147 222 255 / 18%);
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 30px rgb(0 0 0 / 30%);
 }
 
 .city-dot {
@@ -940,12 +912,10 @@
   height: 0.52rem;
   background: #4dcfff;
   border-radius: 50%;
-  box-shadow: 0 0 0 0.2rem rgb(77 207 255 / 12%);
 }
 
 .city-dot.is-capital {
   background: #ffd85e;
-  box-shadow: 0 0 0 0.2rem rgb(255 216 94 / 13%);
 }
 
 .fallback-stage {

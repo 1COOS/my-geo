@@ -3,6 +3,7 @@ import { lazy, Suspense, type CSSProperties } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { ExplorePage } from '../features/explore/ExplorePage'
+import { ViewportProfileProvider } from '../shared/components/ViewportProfileProvider'
 import { useViewportProfile } from '../shared/hooks/useViewportProfile'
 import { AppNavigation } from './AppNavigation'
 import { LandscapeGuard } from './LandscapeGuard'
@@ -58,7 +59,7 @@ const SearchPage = lazy(async () => {
   return { default: module.SearchPage }
 })
 
-export function App() {
+function AppRoutes() {
   const viewportProfile = useViewportProfile()
   const responsiveTokens =
     viewportProfile === 'compact-landscape'
@@ -159,5 +160,13 @@ export function App() {
         </BrowserRouter>
       </LandscapeGuard>
     </Tooltip.Provider>
+  )
+}
+
+export function App() {
+  return (
+    <ViewportProfileProvider>
+      <AppRoutes />
+    </ViewportProfileProvider>
   )
 }

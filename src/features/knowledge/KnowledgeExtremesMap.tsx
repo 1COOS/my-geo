@@ -1,7 +1,6 @@
-import { useMemo, type KeyboardEvent } from 'react'
+import { useMemo } from 'react'
 
 import {
-  loadCountryBoundaries,
   loadDesertGeometries,
   loadLinearFeatureGeometries,
   loadMountainGeometries,
@@ -9,6 +8,9 @@ import {
 } from '../../data/geometryResources'
 import type { WorldExtremeEntry } from '../../data/worldExtremesSchema'
 import { useGeometryResource } from '../../shared/hooks/useGeometryResource'
+import { WorldMapResourceStatus } from '../../shared/maps/WorldMapResourceStatus'
+import { activateSvgControlOnKeyboard } from '../../shared/maps/svgMapInteraction'
+import { useWorldBoundaryPaths } from '../../shared/maps/useWorldBoundaryPaths'
 import {
   getMapFeaturePath,
   getMicrostateCountries,
@@ -29,15 +31,6 @@ type KnowledgeExtremesMapProps = {
   onSelectEntry: (entry: WorldExtremeEntry) => void
 }
 
-function activateOnKeyboard(
-  event: KeyboardEvent<SVGGElement>,
-  activate: () => void,
-) {
-  if (event.key !== 'Enter' && event.key !== ' ') return
-  event.preventDefault()
-  activate()
-}
-
 export function KnowledgeExtremesMap({
   metricId,
   metricName,
@@ -47,7 +40,11 @@ export function KnowledgeExtremesMap({
   compact = false,
   onSelectEntry,
 }: KnowledgeExtremesMapProps) {
-  const countryBoundaries = useGeometryResource(loadCountryBoundaries)
+  const {
+    resource: countryBoundaries,
+    countryPaths: boundaryPaths,
+    landmassPaths,
+  } = useWorldBoundaryPaths(getMapFeaturePath)
   const needsWaterbody = entries.some(
     (entry) => entry.entity?.kind === 'waterbody',
   )
@@ -84,22 +81,6 @@ export function KnowledgeExtremesMap({
         ),
       ),
     [entries],
-  )
-  const boundaryPaths = useMemo(
-    () =>
-      (countryBoundaries.data?.features ?? []).map((feature) => ({
-        code: feature.properties.code,
-        path: getMapFeaturePath(feature),
-      })),
-    [countryBoundaries.data],
-  )
-  const landmassPaths = useMemo(
-    () =>
-      (countryBoundaries.data?.landmasses ?? []).map((landmass) => ({
-        id: landmass.properties.id,
-        path: getMapFeaturePath(landmass),
-      })),
-    [countryBoundaries.data],
   )
   const microstateCodes = useMemo(
     () =>
@@ -349,7 +330,9 @@ export function KnowledgeExtremesMap({
                 style={{ color, cursor: 'pointer' }}
                 onClick={() => onSelectEntry(entry)}
                 onKeyDown={(event) =>
-                  activateOnKeyboard(event, () => onSelectEntry(entry))
+                  activateSvgControlOnKeyboard(event, () =>
+                    onSelectEntry(entry),
+                  )
                 }
               >
                 <title>
@@ -385,18 +368,13 @@ export function KnowledgeExtremesMap({
           })}
         </g>
       </svg>
-      {loading ? (
-        <output className="geometry-resource-status" role="status">
-          正在加载当前纪录地图…
-        </output>
-      ) : failed ? (
-        <div className="geometry-resource-status" role="alert">
-          当前纪录地图加载失败，榜单仍可继续阅读。
-          <button type="button" onClick={retry}>
-            重新加载
-          </button>
-        </div>
-      ) : null}
+      <WorldMapResourceStatus
+        loading={loading}
+        failed={failed}
+        loadingText="正在加载当前纪录地图…"
+        errorText="当前纪录地图加载失败，榜单仍可继续阅读。"
+        onRetry={retry}
+      />
     </section>
   )
 }
