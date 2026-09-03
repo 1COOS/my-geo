@@ -113,10 +113,6 @@ function countryFactStyle(kind: CountryFactKind): CSSProperties {
     minHeight: kind === 'capital' || kind === 'currency' ? '3.5rem' : '2.7rem',
     padding:
       '0.4rem var(--country-card-key-inset) 0.35rem calc(var(--country-card-key-inset) + 0.9rem + var(--country-card-key-gap))',
-    borderRight:
-      kind === 'area' || kind === 'capital'
-        ? '1px solid var(--atlas-border-soft)'
-        : 0,
   }
 }
 
@@ -249,6 +245,15 @@ function CountryDetailView({
         style={summaryFactsStyle}
       >
         <div
+          className="knowledge-country-fact is-population"
+          style={countryFactStyle('population')}
+        >
+          <CountryFactKey kind="population" label="人口" />
+          <dd style={factValueStyle}>
+            <strong>{populationFormatter.format(country.population)}人</strong>
+          </dd>
+        </div>
+        <div
           className="knowledge-country-fact is-area"
           style={countryFactStyle('area')}
         >
@@ -256,17 +261,6 @@ function CountryDetailView({
           <dd style={factValueStyle}>
             <strong>
               {areaFormatter.format(country.areaSquareKilometers)} km²
-            </strong>
-          </dd>
-        </div>
-        <div
-          className="knowledge-country-fact is-population"
-          style={countryFactStyle('population')}
-        >
-          <CountryFactKey kind="population" label="人口" />
-          <dd style={factValueStyle}>
-            <strong>
-              约 {populationFormatter.format(country.population)} 人
             </strong>
           </dd>
         </div>
@@ -294,15 +288,15 @@ function CountryDetailView({
           className="knowledge-country-fact is-currency"
           style={countryFactStyle('currency')}
         >
-          <CountryFactKey kind="currency" label="货币" />
+          <CountryFactKey kind="currency" label="法币" />
           <dd style={factValueStyle}>
             <ul className="knowledge-fact-list">
               {country.currencies.map((currency) => (
                 <li key={currency.code}>
-                  <strong>{currency.name.zh}</strong>
-                  <small>
-                    {currency.name.en} · {currency.code} · {currency.symbol}
-                  </small>
+                  <strong>
+                    {currency.name.zh} {currency.code} {currency.symbol}
+                  </strong>
+                  <small>{currency.name.en}</small>
                 </li>
               ))}
             </ul>

@@ -214,7 +214,7 @@
 
 .country-knowledge-card .knowledge-country-facts {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   gap: 0;
   margin: 1rem 0 0;
   overflow: hidden;
@@ -227,15 +227,14 @@
   padding: 0.65rem 0.7rem;
   background: transparent;
   border: 0;
-  border-right: 1px solid var(--atlas-border-soft);
   border-bottom: 1px solid var(--atlas-border-soft);
   border-radius: 0;
 }
 
-.country-knowledge-card .knowledge-country-fact.is-population,
-.country-knowledge-card .knowledge-country-fact.is-area,
+.country-knowledge-card .knowledge-country-fact.is-capital,
+.country-knowledge-card .knowledge-country-fact.is-currency,
 .country-knowledge-card .knowledge-country-fact.is-languages {
-  border-right: 0;
+  border-bottom: 0;
 }
 
 .country-knowledge-card .knowledge-country-fact.is-languages {

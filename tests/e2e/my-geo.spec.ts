@@ -867,6 +867,13 @@ test('uses the contained flag contract across learning and exploration surfaces'
 for (const viewport of [
   { name: '1440 desktop', width: 1440, height: 900, touch: false },
   { name: 'iPad landscape', width: 1194, height: 834, touch: true },
+  {
+    name: 'wide phone landscape',
+    width: 956,
+    height: 440,
+    touch: true,
+    safeArea: 59,
+  },
   { name: 'phone landscape', width: 844, height: 390, touch: true },
   { name: 'smallest landscape', width: 568, height: 320, touch: true },
   { name: 'small landscape', width: 667, height: 375, touch: true },
@@ -888,6 +895,18 @@ for (const viewport of [
     }
     await page.setViewportSize(viewport)
     await page.goto('/knowledge/countries/east-asia')
+    if ('safeArea' in viewport) {
+      await page.evaluate((safeArea) => {
+        document.documentElement.style.setProperty(
+          '--atlas-safe-area-left',
+          `${safeArea}px`,
+        )
+        document.documentElement.style.setProperty(
+          '--atlas-safe-area-right',
+          `${safeArea}px`,
+        )
+      }, viewport.safeArea)
+    }
     await page.getByRole('button', { name: '查看中国国家详情' }).click()
 
     const knowledgeCard = page.getByRole('complementary', {
@@ -950,7 +969,16 @@ for (const viewport of [
     await expect(knowledgeCard.getByText('Eastern Asia')).toHaveCount(0)
     await expect(
       knowledgeCard.locator('.knowledge-country-facts > div > dt'),
-    ).toHaveText(['面积', '人口', '首都', '货币'])
+    ).toHaveText(['人口', '面积', '首都', '法币'])
+    await expect(
+      knowledgeCard.getByText('14.1亿人', { exact: true }),
+    ).toBeVisible()
+    await expect(
+      knowledgeCard.getByText('人民币 CNY ¥', { exact: true }),
+    ).toBeVisible()
+    await expect(
+      knowledgeCard.getByText('Chinese yuan', { exact: true }),
+    ).toBeVisible()
     await expect(knowledgeCard.getByText('2025 年')).toHaveCount(0)
     const [
       contentBox,
@@ -984,10 +1012,26 @@ for (const viewport of [
     expect(currencyBox).not.toBeNull()
     expect(actionBox).not.toBeNull()
     expect(headingBox!.height).toBeLessThanOrEqual(125)
-    expect(areaBox!.x).toBeLessThan(populationBox!.x)
+    expect(populationBox!.x).toBeLessThan(areaBox!.x)
     expect(areaBox!.y).toBeCloseTo(populationBox!.y, 0)
     expect(capitalBox!.x).toBeLessThan(currencyBox!.x)
     expect(capitalBox!.y).toBeCloseTo(currencyBox!.y, 0)
+    expect(areaBox!.width / populationBox!.width).toBeCloseTo(1.5, 1)
+    expect(currencyBox!.width / capitalBox!.width).toBeCloseTo(1.5, 1)
+    expect(
+      await knowledgeCard
+        .locator('.knowledge-country-fact')
+        .evaluateAll((facts) =>
+          facts.map((fact) => getComputedStyle(fact).borderRightWidth),
+        ),
+    ).toEqual(['0px', '0px', '0px', '0px'])
+    expect(
+      await knowledgeCard
+        .locator('.knowledge-country-fact')
+        .evaluateAll((facts) =>
+          facts.map((fact) => getComputedStyle(fact).borderBottomWidth),
+        ),
+    ).toEqual(['1px', '1px', '0px', '0px'])
     expect(currencyBox!.y + currencyBox!.height).toBeLessThanOrEqual(
       contentBox!.y + contentBox!.height + 1,
     )
@@ -1148,6 +1192,18 @@ for (const viewport of [
     ).toHaveCount(0)
 
     await page.goto('/explore?country=CN')
+    if ('safeArea' in viewport) {
+      await page.evaluate((safeArea) => {
+        document.documentElement.style.setProperty(
+          '--atlas-safe-area-left',
+          `${safeArea}px`,
+        )
+        document.documentElement.style.setProperty(
+          '--atlas-safe-area-right',
+          `${safeArea}px`,
+        )
+      }, viewport.safeArea)
+    }
     await waitForSceneOrFallback(page)
     const globeCard = page.getByRole('complementary', {
       name: '中国国家知识卡',
@@ -2151,7 +2207,7 @@ test('adapts persistent knowledge-card width on ultrawide touch phones', async (
     { width: 568, height: 320, cardWidth: 240 },
     { width: 740, height: 360, cardWidth: 259 },
     { width: 844, height: 390, cardWidth: 320 },
-    { width: 956, height: 440, cardWidth: 352 },
+    { width: 956, height: 440, cardWidth: 320 },
   ]) {
     await page.setViewportSize(viewport)
     await page.goto('/explore')
@@ -2193,7 +2249,7 @@ test('adapts persistent knowledge-card width on ultrawide touch phones', async (
   const knowledgeCard = page.getByLabel('东亚区域知识')
   await expect(knowledgeCard).toBeVisible()
   await waitForKnowledgeCardSettled(knowledgeCard)
-  expect((await knowledgeCard.boundingBox())!.width).toBeCloseTo(352, 0)
+  expect((await knowledgeCard.boundingBox())!.width).toBeCloseTo(320, 0)
   await expect(knowledgeCard.getByRole('heading', { name: '东亚' })).toHaveCSS(
     'font-size',
     '20px',
@@ -2355,7 +2411,7 @@ test('keeps phone landscape controls separated and country details usable', asyn
   await expect(
     card.getByRole('button', { name: '关闭国家知识卡' }),
   ).toHaveCount(0)
-  await expect(card.getByText('约 14.1亿 人')).toBeVisible()
+  await expect(card.getByText('14.1亿人')).toBeVisible()
 
   await card.getByRole('button', { name: /^主要城市/ }).click()
   const cityRows = card.locator('.knowledge-country-city-row')
@@ -3756,8 +3812,8 @@ test('searches China and opens the featured knowledge card', async ({
     '北京Beijing',
   )
   await expect(card.getByRole('button', { name: /探索城市/ })).toHaveCount(0)
-  await expect(card.getByText('人民币', { exact: true })).toBeVisible()
-  await expect(card.getByText(/Chinese yuan · CNY/)).toBeVisible()
+  await expect(card.getByText('人民币 CNY ¥', { exact: true })).toBeVisible()
+  await expect(card.getByText('Chinese yuan', { exact: true })).toBeVisible()
   await card.getByRole('button', { name: /国际关系/ }).click()
   await expect(card.getByText('中国香港')).toBeVisible()
   await expect(card.getByText('中国澳门')).toBeVisible()

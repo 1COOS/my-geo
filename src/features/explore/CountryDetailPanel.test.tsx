@@ -53,10 +53,11 @@ describe('CountryDetailPanel', () => {
     )
     expect(screen.getByText(/中华人民共和国/)).toBeInTheDocument()
     expect(screen.getAllByText('北京').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('约 14.1亿 人')).toBeInTheDocument()
+    expect(screen.getByText('14.1亿人')).toBeInTheDocument()
+    expect(screen.queryByText('约 14.1亿 人')).not.toBeInTheDocument()
     expect(screen.queryByText('2025 年')).not.toBeInTheDocument()
-    expect(screen.getByText('人民币')).toBeInTheDocument()
-    expect(screen.getByText(/CNY/)).toBeInTheDocument()
+    expect(screen.getByText('人民币 CNY ¥')).toBeInTheDocument()
+    expect(screen.getByText('Chinese yuan')).toBeInTheDocument()
     expect(screen.queryByText('次区域')).not.toBeInTheDocument()
     expect(screen.queryByText('Eastern Asia')).not.toBeInTheDocument()
     const facts = document.querySelector('.knowledge-country-facts')
@@ -65,13 +66,13 @@ describe('CountryDetailPanel', () => {
       Array.from(facts!.querySelectorAll(':scope > div > dt')).map(
         (label) => label.textContent,
       ),
-    ).toEqual(['面积', '人口', '首都', '货币'])
+    ).toEqual(['人口', '面积', '首都', '法币'])
     expect(facts!.querySelectorAll(':scope > div > dt svg')).toHaveLength(4)
     expect(
       Array.from(facts!.querySelectorAll(':scope > div > dt .sr-only')).map(
         (label) => label.textContent,
       ),
-    ).toEqual(['面积', '人口', '首都', '货币'])
+    ).toEqual(['人口', '面积', '首都', '法币'])
     expect(facts!.querySelector('.is-languages')).toBeNull()
     expect(screen.getByText('珠穆朗玛峰')).toBeInTheDocument()
     expect(screen.getByText('大熊猫')).toBeInTheDocument()
@@ -106,7 +107,7 @@ describe('CountryDetailPanel', () => {
 
     expect(screen.getByText(/梵蒂冈城国/)).toBeInTheDocument()
     expect(screen.getByText('0.44 km²')).toBeInTheDocument()
-    expect(screen.getByText('约 882 人')).toBeInTheDocument()
+    expect(screen.getByText('882人')).toBeInTheDocument()
     expect(screen.queryByText('2024 年')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /语言民族/ }))
     expect(screen.getByText('拉丁语')).toBeInTheDocument()
@@ -229,8 +230,8 @@ describe('CountryDetailPanel', () => {
     expect(
       screen.queryByRole('button', { name: /查看全部语言/ }),
     ).not.toBeInTheDocument()
-    expect(screen.getByText('欧元')).toBeInTheDocument()
-    expect(screen.getByText(/EUR/)).toBeInTheDocument()
+    expect(screen.getByText('欧元 EUR €')).toBeInTheDocument()
+    expect(screen.getByText('Euro')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /查看全部货币/ })).toBeNull()
   })
 })
