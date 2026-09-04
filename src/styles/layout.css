@@ -3,13 +3,8 @@
   isolation: isolate;
   width: 100%;
   height: 100dvh;
-  padding: max(clamp(0.85rem, 1.6vw, 1.4rem), var(--atlas-safe-area-top))
-    max(clamp(0.8rem, 1.8vw, 1.65rem), var(--atlas-safe-area-right))
-    max(clamp(1.25rem, 3vw, 3rem), var(--atlas-safe-area-bottom))
-    calc(
-      max(var(--layout-edge), var(--atlas-safe-area-left)) +
-        var(--navigation-rail-size) + var(--layout-gap)
-    );
+  padding: var(--app-edge-top) var(--app-edge-right) var(--app-content-bottom)
+    calc(var(--app-edge-left) + var(--navigation-rail-size) + var(--layout-gap));
   overflow-x: hidden;
   color: var(--atlas-text);
   background: var(--atlas-canvas);
@@ -30,7 +25,6 @@
   display: grid;
   gap: 1rem;
   align-content: start;
-  padding-bottom: 1.25rem;
 }
 
 .content-page-header {
@@ -60,12 +54,7 @@
 
 .knowledge-map-workbench-shell {
   display: flex;
-  padding-bottom: 0.75rem;
   flex-direction: column;
-}
-
-.knowledge-map-workbench-shell[data-compact-workbench='true'] {
-  padding-bottom: 0.45rem;
 }
 
 .knowledge-map-workbench {
@@ -124,14 +113,6 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-}
-
-.knowledge-detail-layout.is-fixed-workbench {
-  padding-bottom: 0.75rem;
-}
-
-.knowledge-detail-layout[data-compact-workbench='true'].is-fixed-workbench {
-  padding-bottom: 0.45rem;
 }
 
 .knowledge-detail-layout.is-fixed-workbench .knowledge-detail-content,

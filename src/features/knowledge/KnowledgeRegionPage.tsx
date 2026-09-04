@@ -1,4 +1,12 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import {
   Link,
   Navigate,
@@ -11,8 +19,11 @@ import { getCountry } from '../../data/countries'
 import {
   getCountriesForKnowledgeRegion,
   getKnowledgeRegion,
+  getKnowledgeRegionsForContinent,
   knowledgeContinents,
   knowledgeRegionByCountryCode,
+  type KnowledgeRegion,
+  type KnowledgeRegionId,
 } from '../../data/knowledgeRegions'
 import { CountryFlag } from '../../shared/components/CountryFlag'
 import { KnowledgeCountryDetail } from './KnowledgeCountryDetail'
@@ -30,6 +41,365 @@ const countryCardFields: Array<{
   { id: 'country', label: '国家' },
   { id: 'capital', label: '首都' },
 ]
+
+const countryFieldMenuHeight = 148
+
+function readCountryFieldMenuGap() {
+  const probe = document.createElement('span')
+  probe.style.position = 'fixed'
+  probe.style.visibility = 'hidden'
+  probe.style.width = 'var(--layout-gap)'
+  probe.style.pointerEvents = 'none'
+  document.body.append(probe)
+  const value = probe.getBoundingClientRect().width
+  probe.remove()
+  return value > 0 ? value : 8
+}
+
+type CountryFieldMenuPlacement = {
+  collapsed: boolean
+  panelLeft: number
+  panelTop: number
+  triggerLeft: number
+  triggerTop: number
+  width: number
+}
+
+function getCountryFieldMenuPlacement(): CountryFieldMenuPlacement {
+  const navigation = document.querySelector<HTMLElement>('.app-navigation')
+  if (!navigation) {
+    return {
+      collapsed: false,
+      panelLeft: 0,
+      panelTop: 0,
+      triggerLeft: 0,
+      triggerTop: 0,
+      width: 56,
+    }
+  }
+
+  const navigationBounds = navigation.getBoundingClientRect()
+  const countryFieldMenuGap = readCountryFieldMenuGap()
+  const countryFieldMenuMinimumSpace =
+    countryFieldMenuHeight + countryFieldMenuGap
+  const viewportHeight =
+    window.visualViewport?.height ?? document.documentElement.clientHeight
+  const remainingHeight = viewportHeight - navigationBounds.bottom
+  const collapsed = remainingHeight < countryFieldMenuMinimumSpace
+  const triggerTop = navigationBounds.bottom + countryFieldMenuGap
+  const panelTop = collapsed
+    ? Math.max(
+        countryFieldMenuGap,
+        Math.min(
+          triggerTop,
+          viewportHeight - countryFieldMenuHeight - countryFieldMenuGap,
+        ),
+      )
+    : triggerTop
+
+  return {
+    collapsed,
+    panelLeft: collapsed
+      ? navigationBounds.right + countryFieldMenuGap
+      : navigationBounds.left,
+    panelTop,
+    triggerLeft: navigationBounds.left,
+    triggerTop,
+    width: navigationBounds.width,
+  }
+}
+
+function placementsMatch(
+  current: CountryFieldMenuPlacement,
+  next: CountryFieldMenuPlacement,
+) {
+  return (
+    current.collapsed === next.collapsed &&
+    current.panelLeft === next.panelLeft &&
+    current.panelTop === next.panelTop &&
+    current.triggerLeft === next.triggerLeft &&
+    current.triggerTop === next.triggerTop &&
+    current.width === next.width
+  )
+}
+
+function useCountryFieldMenuPlacement() {
+  const [placement, setPlacement] = useState<CountryFieldMenuPlacement>(() => ({
+    collapsed: false,
+    panelLeft: 0,
+    panelTop: 0,
+    triggerLeft: 0,
+    triggerTop: 0,
+    width: 56,
+  }))
+
+  useLayoutEffect(() => {
+    const updatePlacement = () => {
+      const next = getCountryFieldMenuPlacement()
+      setPlacement((current) =>
+        placementsMatch(current, next) ? current : next,
+      )
+    }
+    const navigation = document.querySelector<HTMLElement>('.app-navigation')
+    const resizeObserver =
+      navigation && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(updatePlacement)
+        : null
+
+    updatePlacement()
+    if (navigation) resizeObserver?.observe(navigation)
+    window.addEventListener('resize', updatePlacement)
+    window.visualViewport?.addEventListener('resize', updatePlacement)
+
+    return () => {
+      resizeObserver?.disconnect()
+      window.removeEventListener('resize', updatePlacement)
+      window.visualViewport?.removeEventListener('resize', updatePlacement)
+    }
+  }, [])
+
+  return placement
+}
+
+function CountryCardFieldIcon({ field }: { field: CountryCardField | 'menu' }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      {field === 'flag' ? (
+        <>
+          <path d="M6 21V4" />
+          <path d="M7 5h10l-2 3 2 3H7" />
+        </>
+      ) : field === 'country' ? (
+        <>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M3.8 12h16.4M12 3.5c2.3 2.3 3.5 5.1 3.5 8.5S14.3 18.2 12 20.5M12 3.5C9.7 5.8 8.5 8.6 8.5 12s1.2 6.2 3.5 8.5" />
+        </>
+      ) : field === 'capital' ? (
+        <>
+          <path d="M4 20h16M6 18V9l6-4 6 4v9M9 18v-6M12 18v-6M15 18v-6" />
+        </>
+      ) : (
+        <>
+          <path d="M5 7h14M5 12h14M5 17h14" />
+          <circle cx="8" cy="7" r="1.4" />
+          <circle cx="15" cy="12" r="1.4" />
+          <circle cx="10" cy="17" r="1.4" />
+        </>
+      )}
+    </svg>
+  )
+}
+
+type CountryCardFieldMenuProps = {
+  onToggle: (field: CountryCardField) => void
+  visibleFields: Set<CountryCardField>
+}
+
+function CountryCardFieldButtons({
+  onToggle,
+  visibleFields,
+}: CountryCardFieldMenuProps) {
+  return countryCardFields.map((field) => {
+    const active = visibleFields.has(field.id)
+    return (
+      <button
+        key={field.id}
+        type="button"
+        aria-pressed={active}
+        disabled={active && visibleFields.size === 1}
+        onClick={() => onToggle(field.id)}
+      >
+        <CountryCardFieldIcon field={field.id} />
+        <span>{field.label}</span>
+      </button>
+    )
+  })
+}
+
+function CompactCountryCardFieldMenu({
+  onToggle,
+  placement,
+  visibleFields,
+}: CountryCardFieldMenuProps & {
+  placement: CountryFieldMenuPlacement
+}) {
+  const menuId = useId()
+  const [compactMenuOpen, setCompactMenuOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!compactMenuOpen) return
+
+    const closeMenu = () => {
+      setCompactMenuOpen(false)
+      window.requestAnimationFrame(() => triggerRef.current?.focus())
+    }
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node
+      if (
+        triggerRef.current?.contains(target) ||
+        panelRef.current?.contains(target)
+      ) {
+        return
+      }
+      closeMenu()
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      closeMenu()
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [compactMenuOpen])
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        className="knowledge-country-menu-trigger"
+        type="button"
+        aria-controls={menuId}
+        aria-expanded={compactMenuOpen}
+        aria-label="显示国家卡内容"
+        style={{
+          top: placement.triggerTop,
+          left: placement.triggerLeft,
+          width: placement.width,
+        }}
+        onClick={() => setCompactMenuOpen((current) => !current)}
+      >
+        <CountryCardFieldIcon field="menu" />
+        <span>显示</span>
+      </button>
+
+      <div
+        ref={panelRef}
+        id={menuId}
+        className="knowledge-country-display-controls"
+        role="group"
+        aria-label="国家卡显示内容"
+        hidden={!compactMenuOpen}
+        style={{
+          top: placement.panelTop,
+          left: placement.panelLeft,
+          width: placement.width,
+        }}
+      >
+        <CountryCardFieldButtons
+          visibleFields={visibleFields}
+          onToggle={onToggle}
+        />
+      </div>
+    </>
+  )
+}
+
+function CountryCardFieldMenu({
+  onToggle,
+  visibleFields,
+}: CountryCardFieldMenuProps) {
+  const placement = useCountryFieldMenuPlacement()
+
+  return (
+    <div
+      className="knowledge-country-field-menu"
+      data-collapsed={placement.collapsed ? 'true' : 'false'}
+    >
+      {placement.collapsed ? (
+        <CompactCountryCardFieldMenu
+          placement={placement}
+          visibleFields={visibleFields}
+          onToggle={onToggle}
+        />
+      ) : (
+        <div
+          className="knowledge-country-display-controls"
+          role="group"
+          aria-label="国家卡显示内容"
+          style={{
+            top: placement.panelTop,
+            left: placement.panelLeft,
+            width: placement.width,
+          }}
+        >
+          <CountryCardFieldButtons
+            visibleFields={visibleFields}
+            onToggle={onToggle}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function KnowledgeRegionSwitcher({
+  continentName,
+  currentRegionId,
+  regions,
+}: {
+  continentName: string
+  currentRegionId: KnowledgeRegionId
+  regions: readonly KnowledgeRegion[]
+}) {
+  const switcherRef = useRef<HTMLElement>(null)
+
+  useLayoutEffect(() => {
+    const switcher = switcherRef.current
+    const activeRegion = switcher?.querySelector<HTMLElement>(
+      '[aria-current="page"]',
+    )
+    if (!switcher || !activeRegion) return
+
+    const visibleStart = switcher.scrollTop
+    const visibleEnd = visibleStart + switcher.clientHeight
+    const activeStart = activeRegion.offsetTop
+    const activeEnd = activeStart + activeRegion.offsetHeight
+    let nextScrollTop = visibleStart
+
+    if (activeStart < visibleStart) nextScrollTop = activeStart
+    else if (activeEnd > visibleEnd) {
+      nextScrollTop = activeEnd - switcher.clientHeight
+    }
+
+    if (nextScrollTop === visibleStart) return
+    if (typeof switcher.scrollTo === 'function') {
+      switcher.scrollTo({ top: nextScrollTop, behavior: 'auto' })
+    } else {
+      switcher.scrollTop = nextScrollTop
+    }
+  }, [currentRegionId, regions.length])
+
+  return (
+    <nav
+      ref={switcherRef}
+      className="knowledge-region-switcher"
+      aria-label={`${continentName}子区域`}
+    >
+      {regions.map((region) => (
+        <Link
+          key={region.id}
+          to={`/knowledge/countries/${region.id}`}
+          aria-current={region.id === currentRegionId ? 'page' : undefined}
+          style={
+            {
+              '--knowledge-region-switcher-accent': region.accent,
+            } as CSSProperties
+          }
+        >
+          <strong>{region.name.zh}</strong>
+          <small>{region.countryCodes.length}国</small>
+        </Link>
+      ))}
+    </nav>
+  )
+}
 
 export function KnowledgeRegionPage() {
   const { regionId: rawRegionId } = useParams()
@@ -49,6 +419,7 @@ export function KnowledgeRegionPage() {
   const continent = knowledgeContinents.find(
     (item) => item.id === region.continentId,
   )!
+  const continentRegions = getKnowledgeRegionsForContinent(region.continentId)
   const requestedCountry = getCountry(searchParams.get('country'))
   const selectedCountry = region.countryCodes.includes(
     requestedCountry?.code ?? '',
@@ -58,14 +429,11 @@ export function KnowledgeRegionPage() {
   const showCountry = visibleCardFields.has('country')
   const showFlag = visibleCardFields.has('flag')
   const showCapital = visibleCardFields.has('capital')
-  const regionHeaderStyle = {
-    '--knowledge-region-title-accent': region.accent,
-  } as CSSProperties
   const countryGridStyle = {
-    '--knowledge-country-columns-wide': Math.min(regionCountries.length, 5),
-    '--knowledge-country-columns-detail': Math.min(regionCountries.length, 5),
-    '--knowledge-country-columns-tablet': Math.min(regionCountries.length, 3),
-    '--knowledge-country-columns-compact': Math.min(regionCountries.length, 2),
+    '--knowledge-country-columns-five': Math.min(regionCountries.length, 5),
+    '--knowledge-country-columns-four': Math.min(regionCountries.length, 4),
+    '--knowledge-country-columns-three': Math.min(regionCountries.length, 3),
+    '--knowledge-country-columns-two': Math.min(regionCountries.length, 2),
   } as CSSProperties
 
   const toggleCardField = (field: CountryCardField) => {
@@ -98,53 +466,29 @@ export function KnowledgeRegionPage() {
       mode="flow"
       studyLabel={`${region.name.zh}国家学习`}
       study={
-        <>
-          <header
-            className="knowledge-region-page-header"
-            style={regionHeaderStyle}
-          >
-            <Link
-              className="knowledge-earth-detail-back"
-              to={`/knowledge/countries?continent=${region.continentId}`}
-            >
-              ← 返回{continent.name.zh}
-            </Link>
-            <h1>
-              {region.name.zh}
-              <strong>{region.countryCodes.length}</strong>国
-            </h1>
-          </header>
-          <div className="knowledge-region-map-strip">
-            <KnowledgeRegionMap
-              continentId={region.continentId}
-              regionId={region.id}
-              selectedCountryCode={selectedCountry?.code}
+        <div className="knowledge-country-study">
+          <h1 className="sr-only">
+            {region.name.zh}
+            {region.countryCodes.length}国
+          </h1>
+          <CountryCardFieldMenu
+            visibleFields={visibleCardFields}
+            onToggle={toggleCardField}
+          />
+          <div className="knowledge-region-browser">
+            <div className="knowledge-region-map-strip">
+              <KnowledgeRegionMap
+                continentId={region.continentId}
+                regionId={region.id}
+                selectedCountryCode={selectedCountry?.code}
+              />
+            </div>
+            <KnowledgeRegionSwitcher
+              continentName={continent.name.zh}
+              currentRegionId={region.id}
+              regions={continentRegions}
             />
           </div>
-
-          <div className="knowledge-country-controls-row">
-            <div
-              className="knowledge-country-display-controls"
-              role="group"
-              aria-label="国家卡显示内容"
-            >
-              {countryCardFields.map((field) => {
-                const active = visibleCardFields.has(field.id)
-                return (
-                  <button
-                    key={field.id}
-                    type="button"
-                    aria-pressed={active}
-                    disabled={active && visibleCardFields.size === 1}
-                    onClick={() => toggleCardField(field.id)}
-                  >
-                    {field.label}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
           <div className="knowledge-country-grid" style={countryGridStyle}>
             {regionCountries.map((country) => (
               <article
@@ -191,7 +535,7 @@ export function KnowledgeRegionPage() {
               </article>
             ))}
           </div>
-        </>
+        </div>
       }
       detail={
         selectedCountry ? (

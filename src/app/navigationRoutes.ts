@@ -90,6 +90,6 @@ export function resolveAppRouteMeta(pathname: string): AppRouteMeta {
   )
 }
 
-export function getNavigationBackFallback(pathname: string) {
+export function getNavigationParentPath(pathname: string) {
   return resolveAppRouteMeta(pathname).parentPath ?? '/explore'
 }

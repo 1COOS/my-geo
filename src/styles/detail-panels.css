@@ -107,7 +107,7 @@
   margin-top: 0.75rem;
   background: linear-gradient(135deg, rgb(66 30 86 / 42%), rgb(12 49 69 / 42%));
   border: 1px solid rgb(210 145 255 / 20%);
-  border-radius: 0.9rem;
+  border-radius: var(--atlas-radius-panel);
 }
 
 .geography-current-reading > div {
@@ -189,7 +189,7 @@
   margin-top: 0.75rem;
   background: rgb(210 145 255 / 8%);
   border: 1px solid rgb(210 145 255 / 20%);
-  border-radius: 0.85rem;
+  border-radius: var(--atlas-radius-panel);
 }
 
 .geography-line-callout span,
@@ -289,7 +289,7 @@
   margin-top: 0.9rem;
   background: rgb(15 58 72 / 55%);
   border: 1px solid rgb(137 222 241 / 18%);
-  border-radius: 0.85rem;
+  border-radius: var(--atlas-radius-panel);
 }
 
 .climate-current-reading span,
@@ -341,7 +341,7 @@
   padding: 0.68rem;
   background: rgb(45 102 120 / 15%);
   border: 1px solid rgb(139 215 236 / 12%);
-  border-radius: 0.75rem;
+  border-radius: var(--atlas-radius-panel);
 }
 
 .climate-fact-grid dt {
@@ -357,7 +357,7 @@
 .climate-common-mistake {
   padding: 0.72rem;
   margin-top: 0.65rem;
-  border-radius: 0.75rem;
+  border-radius: var(--atlas-radius-panel);
 }
 
 .climate-example-list {
@@ -645,7 +645,7 @@
   padding: 0.58rem 0.65rem;
   background: rgb(217 155 82 / 8%);
   border: 1px solid rgb(217 155 82 / 18%);
-  border-radius: 0.8rem;
+  border-radius: var(--atlas-radius-panel);
 }
 
 .mountain-peak-card-icon {

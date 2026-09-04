@@ -25,21 +25,25 @@
   --atlas-danger: #d87c75;
   --atlas-focus: #f1ce63;
   --atlas-shadow: 0 12px 32px rgb(0 0 0 / 28%);
-  --atlas-radius-control: 0.25rem;
+  --atlas-radius-control: 0.375rem;
   --atlas-radius-compact: 0.375rem;
-  --atlas-radius-panel: 0.625rem;
+  --atlas-radius-panel: 0.375rem;
   --fs-m: 0.75rem;
   --fs-s: 0.8125rem;
   --fs-b: 0.875rem;
   --lh-b: 1.6;
-  --layout-edge: 0.75rem;
-  --layout-gap: clamp(0.4rem, 0.9vw, 0.75rem);
+  --layout-edge: clamp(0.5rem, 1.2vw, 0.75rem);
+  --layout-gap: var(--layout-edge);
   --navigation-rail-size: clamp(3.2rem, 4.2vw, 3.55rem);
   --detail-panel-size: clamp(17rem, 30vw, 24rem);
   --atlas-safe-area-top: env(safe-area-inset-top, 0px);
   --atlas-safe-area-right: env(safe-area-inset-right, 0px);
-  --atlas-safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --atlas-safe-area-left: env(safe-area-inset-left, 0px);
+  --app-edge-top: max(var(--layout-edge), var(--atlas-safe-area-top));
+  --app-edge-right: max(var(--layout-edge), var(--atlas-safe-area-right));
+  --app-edge-bottom: var(--layout-edge);
+  --app-content-bottom: var(--layout-edge);
+  --app-edge-left: max(var(--layout-edge), var(--atlas-safe-area-left));
   font-family:
     Inter, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', system-ui,
     sans-serif;

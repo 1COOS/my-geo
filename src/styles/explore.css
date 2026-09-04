@@ -148,7 +148,7 @@
   visibility: hidden;
   background: rgb(42 28 9 / 94%);
   border: 1px solid rgb(239 181 92 / 42%);
-  border-radius: 0.65rem;
+  border-radius: var(--atlas-radius-compact);
   box-shadow: 0 10px 28px rgb(0 0 0 / 42%);
   opacity: 0;
   transform: translate(-50%, 0.3rem);
@@ -925,10 +925,10 @@
 }
 
 .explore-shell {
-  --edge-top: max(var(--layout-edge), var(--atlas-safe-area-top));
-  --edge-right: max(var(--layout-edge), var(--atlas-safe-area-right));
-  --edge-bottom: max(var(--layout-edge), var(--atlas-safe-area-bottom));
-  --edge-left: max(var(--layout-edge), var(--atlas-safe-area-left));
+  --edge-top: var(--app-edge-top);
+  --edge-right: var(--app-edge-right);
+  --edge-bottom: var(--app-edge-bottom);
+  --edge-left: var(--app-edge-left);
   --mini-map-width: clamp(11rem, 18vw, 15.75rem);
   --middle-slot-width: calc(
     100vw - var(--edge-left) - var(--edge-right) - var(--mini-map-width) -

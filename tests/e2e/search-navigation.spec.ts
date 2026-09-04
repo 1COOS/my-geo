@@ -21,7 +21,9 @@ for (const viewport of searchViewports) {
       /is-active/,
     )
     await expect(page.locator('.app-navigation-brand img')).toBeVisible()
-    await expect(page.getByRole('button', { name: '返回上页' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '返回上一级' })).toHaveCount(
+      0,
+    )
     await expect(page.getByText('精选国家')).toBeVisible()
     await expect(
       page.getByRole('listbox', { name: '地点搜索结果' }),
@@ -57,37 +59,49 @@ test('opens standalone search results in 3D without a bottom search control', as
   await expect(page.locator('.app-navigation-brand img')).toBeVisible()
 })
 
-test('uses history first and deterministic parent fallbacks for the back icon', async ({
-  page,
-}) => {
+test('uses deterministic parent routes for the back icon', async ({ page }) => {
   await page.goto('/knowledge/earth')
-  const directBack = page.getByRole('button', { name: '返回上页' })
+  const directBack = page.getByRole('button', { name: '返回上一级' })
   await expect(directBack).toBeVisible()
-  expect(
-    await directBack.evaluate((element) => {
-      const style = getComputedStyle(element)
-      return {
-        background: style.backgroundColor,
-        border: style.borderWidth,
-        radius: style.borderRadius,
-        path: element.querySelector('path')?.getAttribute('d'),
-      }
-    }),
-  ).toEqual({
+  const directBackStyle = await directBack.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const style = getComputedStyle(element)
+    return {
+      background: style.backgroundColor,
+      border: style.borderWidth,
+      height: box.height,
+      radius: style.borderRadius,
+      width: box.width,
+      path: element.querySelector('path')?.getAttribute('d'),
+    }
+  })
+  expect({
+    background: directBackStyle.background,
+    border: directBackStyle.border,
+    radius: directBackStyle.radius,
+    path: directBackStyle.path,
+  }).toEqual({
     background: 'rgb(54, 88, 77)',
     border: '0px',
-    radius: '8px',
+    radius: '6px',
     path: 'm15 5.5-6.5 6.5 6.5 6.5',
   })
+  expect(directBackStyle.width).toBeGreaterThanOrEqual(44)
+  expect(directBackStyle.height).toBeGreaterThanOrEqual(44)
   await directBack.click()
   await expect(page).toHaveURL(/\/knowledge$/)
 
   await page.getByTestId('knowledge-home-module-earth').click()
   await expect(page).toHaveURL(/\/knowledge\/earth$/)
-  await page.getByRole('button', { name: '返回上页' }).click()
+  await page.getByRole('button', { name: '返回上一级' }).click()
   await expect(page).toHaveURL(/\/knowledge$/)
 
   await page.goto('/questions/asia/easy')
-  await page.getByRole('button', { name: '返回上页' }).click()
+  await page.getByRole('button', { name: '返回上一级' }).click()
   await expect(page).toHaveURL(/\/questions$/)
+
+  await page.goto('/search')
+  await page.goto('/knowledge/countries/east-asia?country=CN')
+  await page.getByRole('button', { name: '返回上一级' }).click()
+  await expect(page).toHaveURL(/\/knowledge\/countries$/)
 })

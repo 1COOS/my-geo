@@ -357,7 +357,8 @@ test('navigates the country knowledge atlas and deep-links back to the globe', a
   const knowledgeMap = page.locator('.knowledge-region-map')
   await expect(
     knowledgeMap.locator('[data-landmass-id="antarctica"]'),
-  ).toHaveCount(1)
+  ).toHaveCount(0)
+  await expect(knowledgeMap).toHaveAttribute('data-map-scope', 'region')
   await expect(knowledgeMap.locator('path.is-region')).toHaveCount(5)
   await expect(knowledgeMap.locator('path.is-continent')).toHaveCount(0)
   const chinaCard = page
@@ -506,14 +507,17 @@ for (const viewport of [
 
     await page.goto('/knowledge/countries/east-asia?country=CN')
     const countryDetailMap = page.locator('.knowledge-region-map-strip')
+    const countryDetailBrowser = page.locator('.knowledge-region-browser')
     const countryDetailCard = page.getByLabel('中国国家学习详情')
     await expect(countryDetailMap).toBeVisible()
     await expect(countryDetailCard).toBeVisible()
     await waitForKnowledgeCardSettled(countryDetailCard)
-    const [countryDetailMapBox, countryDetailCardBox] = await Promise.all([
-      countryDetailMap.boundingBox(),
-      countryDetailCard.boundingBox(),
-    ])
+    const [countryDetailMapBox, countryDetailBrowserBox, countryDetailCardBox] =
+      await Promise.all([
+        countryDetailMap.boundingBox(),
+        countryDetailBrowser.boundingBox(),
+        countryDetailCard.boundingBox(),
+      ])
 
     await page.goto('/knowledge/countries')
     const countryMapCard = page.locator('.knowledge-map-card')
@@ -740,10 +744,17 @@ for (const viewport of [
         }),
       ])
     expect(countryDetailMapBox).not.toBeNull()
+    expect(countryDetailBrowserBox).not.toBeNull()
     expect(countryDetailCardBox).not.toBeNull()
     expect(earthDetailMapBox).not.toBeNull()
     expect(earthDetailCardBox).not.toBeNull()
-    expect(earthDetailMapBox!.width).toBeCloseTo(countryDetailMapBox!.width, 0)
+    expect(countryDetailMapBox!.width).toBeLessThan(
+      countryDetailBrowserBox!.width,
+    )
+    expect(earthDetailMapBox!.width).toBeCloseTo(
+      countryDetailBrowserBox!.width,
+      0,
+    )
     expect(earthDetailMapBox!.width / earthDetailMapBox!.height).toBeCloseTo(
       720 / 340,
       2,
@@ -1181,7 +1192,7 @@ for (const viewport of [
     ).toHaveCSS('background-color', 'rgb(54, 88, 77)')
     await expect(
       knowledgeCard.getByRole('link', { name: /在3D地球上查看/ }),
-    ).toHaveCSS('border-radius', '8px')
+    ).toHaveCSS('border-radius', '6px')
     await expect(
       knowledgeCard
         .getByRole('link', { name: /在3D地球上查看/ })
@@ -1516,7 +1527,7 @@ test('keeps flag choices anonymous in separate iPadOS cards', async ({
     })
   expect(cardLayout.gap).toBeGreaterThan(0)
   expect(cardLayout.borderWidth).toBe(0)
-  expect(cardLayout.cards.every((card) => card.borderRadius > 8)).toBe(true)
+  expect(cardLayout.cards.every((card) => card.borderRadius === 6)).toBe(true)
   expect(cardLayout.cards.every((card) => card.borderWidth > 0)).toBe(true)
   expect(new Set(cardLayout.cards.map((card) => card.top)).size).toBe(2)
   expect(new Set(cardLayout.cards.map((card) => card.left)).size).toBe(2)
@@ -1579,6 +1590,38 @@ for (const viewport of [
   })
 }
 
+test('switches continent regions and replaces the focused map geometry', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1194, height: 834 })
+  await page.goto('/knowledge/countries/east-asia')
+
+  const map = page.locator('.knowledge-region-map-strip')
+  const switcher = page.getByRole('navigation', { name: '亚洲子区域' })
+  const readDisplayedCodes = () =>
+    map
+      .locator('[data-country-code]')
+      .evaluateAll((elements) =>
+        elements
+          .map((element) => element.getAttribute('data-country-code')!)
+          .sort(),
+      )
+
+  await expect(map.getByRole('img', { name: '东亚区域地图' })).toBeVisible()
+  await expect.poll(readDisplayedCodes).toEqual(['CN', 'JP', 'KP', 'KR', 'MN'])
+
+  await switcher.getByRole('link', { name: /东南亚\s*11国/ }).click()
+  await expect(page).toHaveURL(/\/knowledge\/countries\/southeast-asia$/)
+  await expect(
+    switcher.getByRole('link', { name: /东南亚\s*11国/ }),
+  ).toHaveAttribute('aria-current', 'page')
+  await expect(map.getByRole('img', { name: '东南亚区域地图' })).toBeVisible()
+  await expect.poll(readDisplayedCodes).toHaveLength(11)
+  expect(await readDisplayedCodes()).toContain('ID')
+  expect(await readDisplayedCodes()).not.toContain('CN')
+  await expect(page.getByLabel('东南亚区域知识')).toBeVisible()
+})
+
 for (const viewport of [
   { name: '1440 desktop', width: 1440, height: 900 },
   { name: 'iPad landscape', width: 1194, height: 834 },
@@ -1630,9 +1673,69 @@ for (const viewport of [
 }
 
 for (const viewport of [
-  { name: '1440 desktop', width: 1440, height: 900, touch: false },
-  { name: 'iPad landscape', width: 1194, height: 834, touch: true },
-  { name: 'phone landscape', width: 844, height: 390, touch: true },
+  {
+    name: 'smallest landscape',
+    width: 568,
+    height: 320,
+    touch: true,
+    expectedColumns: 2,
+  },
+  {
+    name: 'small landscape',
+    width: 667,
+    height: 375,
+    touch: true,
+    expectedColumns: 2,
+  },
+  {
+    name: 'android phone landscape',
+    width: 740,
+    height: 360,
+    touch: true,
+    expectedColumns: 2,
+  },
+  {
+    name: 'phone landscape',
+    width: 844,
+    height: 390,
+    touch: true,
+    expectedColumns: 3,
+  },
+  {
+    name: 'wide phone landscape',
+    width: 956,
+    height: 440,
+    touch: true,
+    expectedColumns: 3,
+  },
+  {
+    name: 'small tablet landscape',
+    width: 1024,
+    height: 600,
+    touch: true,
+    expectedColumns: 4,
+  },
+  {
+    name: 'iPad landscape',
+    width: 1194,
+    height: 834,
+    touch: true,
+    expectedColumns: 4,
+  },
+  {
+    name: 'small laptop',
+    width: 1366,
+    height: 768,
+    touch: false,
+    expectedColumns: 5,
+  },
+  {
+    name: '1440 desktop',
+    width: 1440,
+    height: 900,
+    touch: false,
+    expectedColumns: 5,
+  },
 ]) {
   test(`aligns dynamic country grids with the region map on ${viewport.name}`, async ({
     page,
@@ -1651,12 +1754,6 @@ for (const viewport of [
     }
     await page.setViewportSize(viewport)
 
-    const columnLimit =
-      viewport.height <= 600 || viewport.width <= 760
-        ? 2
-        : viewport.width <= 1080
-          ? 3
-          : 5
     for (const regionCase of [
       {
         route: '/knowledge/countries/east-europe',
@@ -1682,12 +1779,15 @@ for (const viewport of [
       await page.goto(regionCase.route)
       await expect(
         page.getByRole('heading', { name: regionCase.title, level: 1 }),
-      ).toBeVisible()
+      ).toHaveClass('sr-only')
       await expect(page.locator('.knowledge-country-card')).toHaveCount(
         regionCase.countryCount,
       )
 
       const geometry = await page.evaluate(() => {
+        const browser = document
+          .querySelector('.knowledge-region-browser')!
+          .getBoundingClientRect()
         const map = document
           .querySelector('.knowledge-region-map-strip')!
           .getBoundingClientRect()
@@ -1700,7 +1800,10 @@ for (const viewport of [
         const firstRow = cards.filter(
           (card) => Math.abs(card.y - cards[0].y) < 1,
         )
+        const secondRowCard = cards.find((card) => card.y > cards[0].y + 1)
         return {
+          browserX: browser.x,
+          browserRight: browser.right,
           mapX: map.x,
           mapRight: map.right,
           gridX: grid.x,
@@ -1708,28 +1811,68 @@ for (const viewport of [
           firstCardX: firstRow[0].x,
           lastCardRight: firstRow.at(-1)!.right,
           firstRowCount: firstRow.length,
+          cardHeight: cards[0].height,
+          rowGap: secondRowCard ? secondRowCard.y - cards[0].bottom : null,
           pageOverflows:
             document.documentElement.scrollWidth >
             document.documentElement.clientWidth,
         }
       })
 
-      expect(geometry.gridX).toBeCloseTo(geometry.mapX, 0)
-      expect(geometry.gridRight).toBeCloseTo(geometry.mapRight, 0)
-      expect(geometry.firstCardX).toBeCloseTo(geometry.mapX, 0)
-      expect(geometry.lastCardRight).toBeCloseTo(geometry.mapRight, 0)
+      expect(geometry.mapX).toBeCloseTo(geometry.browserX, 0)
+      expect(geometry.mapRight).toBeLessThan(geometry.browserRight)
+      expect(geometry.gridX).toBeCloseTo(geometry.browserX, 0)
+      expect(geometry.gridRight).toBeCloseTo(geometry.browserRight, 0)
+      expect(geometry.firstCardX).toBeCloseTo(geometry.browserX, 0)
+      expect(geometry.lastCardRight).toBeCloseTo(geometry.browserRight, 0)
       expect(geometry.firstRowCount).toBe(
-        Math.min(regionCase.countryCount, columnLimit),
+        Math.min(regionCase.countryCount, viewport.expectedColumns),
       )
+      expect(geometry.cardHeight).toBeLessThanOrEqual(
+        viewport.height <= 600 ? 73 : 93,
+      )
+      if (geometry.rowGap !== null) {
+        expect(geometry.rowGap).toBeLessThanOrEqual(8.1)
+      }
       expect(geometry.pageOverflows).toBe(false)
     }
   })
 }
 
 for (const viewport of [
-  { name: 'desktop', width: 1440, height: 900, touch: false },
-  { name: 'phone landscape', width: 844, height: 390, touch: true },
-  { name: 'iPad landscape', width: 1194, height: 834, touch: true },
+  {
+    name: 'desktop',
+    width: 1440,
+    height: 900,
+    touch: false,
+    expectedColumns: 5,
+    collapsedMenu: false,
+  },
+  {
+    name: 'iPad landscape',
+    width: 1194,
+    height: 834,
+    touch: true,
+    expectedColumns: 4,
+    collapsedMenu: false,
+  },
+  {
+    name: 'wide phone landscape',
+    width: 956,
+    height: 440,
+    touch: true,
+    expectedColumns: 3,
+    collapsedMenu: false,
+    safeArea: 59,
+  },
+  {
+    name: 'phone landscape',
+    width: 844,
+    height: 390,
+    touch: true,
+    expectedColumns: 3,
+    collapsedMenu: false,
+  },
 ]) {
   test(`keeps the knowledge atlas usable on ${viewport.name}`, async ({
     page,
@@ -1767,6 +1910,19 @@ for (const viewport of [
     expect(geometry.scrollHeight).toBeGreaterThanOrEqual(geometry.clientHeight)
 
     await page.getByTestId('knowledge-region-east-asia').click()
+    if ('safeArea' in viewport) {
+      await page.evaluate((safeArea) => {
+        document.documentElement.style.setProperty(
+          '--atlas-safe-area-left',
+          `${safeArea}px`,
+        )
+        document.documentElement.style.setProperty(
+          '--atlas-safe-area-right',
+          `${safeArea}px`,
+        )
+        window.dispatchEvent(new Event('resize'))
+      }, viewport.safeArea)
+    }
     await expect(page.getByRole('link', { name: '开始区域挑战' })).toHaveCount(
       0,
     )
@@ -1776,6 +1932,23 @@ for (const viewport of [
     await expect(regionCard).toContainText('人文地理')
     await expect(regionCard).toContainText('学习要点')
     await expect(regionCard.getByRole('button')).toHaveCount(0)
+    await expect(
+      page.getByRole('heading', { name: '东亚5国', level: 1 }),
+    ).toHaveClass('sr-only')
+    await expect(page.locator('.knowledge-region-page-header')).toHaveCount(0)
+    await expect(page.getByRole('link', { name: '← 返回亚洲' })).toHaveCount(0)
+    const navigation = page.getByRole('navigation', {
+      name: 'My Geo 主导航',
+    })
+    const displayTrigger = page.getByRole('button', {
+      name: '显示国家卡内容',
+    })
+    if (viewport.collapsedMenu) {
+      await expect(displayTrigger).toBeVisible()
+      await displayTrigger.click()
+    } else {
+      await expect(displayTrigger).toHaveCount(0)
+    }
     const displayControls = page.getByRole('group', {
       name: '国家卡显示内容',
     })
@@ -1789,33 +1962,21 @@ for (const viewport of [
       displayControls.getByRole('button', { name: '国旗' }),
     ).toBeDisabled()
     const map = page.locator('.knowledge-region-map-strip')
-    const pageHeader = page.locator('.knowledge-region-page-header')
-    const backLink = pageHeader.getByRole('link', { name: '← 返回亚洲' })
-    const regionTitle = pageHeader.getByRole('heading', {
-      name: '东亚5国',
-      level: 1,
+    const regionBrowser = page.locator('.knowledge-region-browser')
+    const regionSwitcher = page.getByRole('navigation', {
+      name: '亚洲子区域',
     })
-    const regionCount = regionTitle.locator('strong')
-    await expect(backLink).toHaveAttribute(
-      'href',
-      '/knowledge/countries?continent=asia',
-    )
-    await expect(regionCount).toHaveText('5')
-    const regionCountStyle = await regionCount.evaluate((element) => {
-      const style = getComputedStyle(element)
-      return {
-        color: style.color,
-        fontWeight: Number.parseInt(style.fontWeight, 10),
-        marginLeft: Number.parseFloat(style.marginLeft),
-        marginRight: Number.parseFloat(style.marginRight),
-      }
-    })
-    expect(regionCountStyle.color).toBe('rgb(76, 201, 240)')
-    expect(regionCountStyle.fontWeight).toBeGreaterThanOrEqual(700)
-    expect(regionCountStyle.marginLeft).toBeGreaterThan(0)
-    expect(regionCountStyle.marginRight).toBeGreaterThan(0)
+    await expect(regionSwitcher.getByRole('link')).toHaveCount(5)
+    await expect(
+      regionSwitcher.getByRole('link', { name: /东亚\s*5国/ }),
+    ).toHaveAttribute('aria-current', 'page')
     await expect(map.getByRole('link')).toHaveCount(0)
     await expect(map.getByText('WORLD POSITION')).toHaveCount(0)
+    await expect(
+      map.getByRole('img', { name: '东亚区域地图' }),
+    ).toHaveAttribute('data-map-scope', 'region')
+    await expect(map.locator('.knowledge-region-map-grid')).toHaveCount(0)
+    await expect(map.locator('.knowledge-region-map-landmasses')).toHaveCount(0)
     const mapCountryPaths = map.locator('.knowledge-region-map-countries')
     await expect(mapCountryPaths.locator('path.is-region')).toHaveCount(5)
     await expect(mapCountryPaths.locator('path.is-continent')).toHaveCount(0)
@@ -1824,10 +1985,11 @@ for (const viewport of [
     const countryGrid = page.locator('.knowledge-country-grid')
     const [
       mapBefore,
-      headerBox,
-      backLinkBox,
-      regionTitleBox,
+      regionBrowserBox,
+      regionSwitcherLayout,
+      navigationBox,
       controlsBox,
+      triggerBox,
       gridBefore,
       regionCardBox,
     ] = await Promise.all([
@@ -1846,11 +2008,39 @@ for (const viewport of [
             element.querySelectorAll('.knowledge-region-map-countries path'),
           ).map((path) => path.getBoundingClientRect().right),
         ),
+        pathTop: Math.min(
+          ...Array.from(
+            element.querySelectorAll('.knowledge-region-map-countries path'),
+          ).map((path) => path.getBoundingClientRect().top),
+        ),
+        pathBottom: Math.max(
+          ...Array.from(
+            element.querySelectorAll('.knowledge-region-map-countries path'),
+          ).map((path) => path.getBoundingClientRect().bottom),
+        ),
+        viewBox: element.querySelector('svg')?.getAttribute('viewBox'),
       })),
-      pageHeader.boundingBox(),
-      backLink.boundingBox(),
-      regionTitle.boundingBox(),
+      regionBrowser.boundingBox(),
+      regionSwitcher.evaluate((element) => {
+        const bounds = element.getBoundingClientRect()
+        const active = element
+          .querySelector('[aria-current="page"]')!
+          .getBoundingClientRect()
+        return {
+          x: bounds.x,
+          right: bounds.right,
+          height: bounds.height,
+          clientHeight: element.clientHeight,
+          scrollHeight: element.scrollHeight,
+          activeFullyVisible:
+            active.top >= bounds.top - 1 && active.bottom <= bounds.bottom + 1,
+        }
+      }),
+      navigation.boundingBox(),
       displayControls.boundingBox(),
+      viewport.collapsedMenu
+        ? displayTrigger.boundingBox()
+        : Promise.resolve(null),
       countryGrid.evaluate((element) => {
         const box = element.getBoundingClientRect()
         const cards = Array.from(
@@ -1867,14 +2057,47 @@ for (const viewport of [
       }),
       regionCard.boundingBox(),
     ])
-    expect(mapBefore.width / mapBefore.height).toBeCloseTo(720 / 340, 2)
-    expect(mapBefore.pathLeft - mapBefore.x).toBeLessThanOrEqual(2.5)
+    expect(regionBrowserBox).not.toBeNull()
+    expect(mapBefore.x).toBeCloseTo(regionBrowserBox!.x, 0)
+    expect(mapBefore.x + mapBefore.width).toBeLessThan(
+      regionBrowserBox!.x + regionBrowserBox!.width,
+    )
+    expect(regionSwitcherLayout.x).toBeGreaterThanOrEqual(
+      mapBefore.x + mapBefore.width,
+    )
+    expect(regionSwitcherLayout.right).toBeCloseTo(
+      regionBrowserBox!.x + regionBrowserBox!.width,
+      0,
+    )
+    expect(regionSwitcherLayout.height).toBeCloseTo(regionBrowserBox!.height, 0)
+    expect(regionSwitcherLayout.activeFullyVisible).toBe(true)
+    if (viewport.height <= 600) {
+      expect(mapBefore.height).toBeGreaterThanOrEqual(120)
+      expect(mapBefore.height).toBeLessThanOrEqual(145)
+      expect(regionSwitcherLayout.scrollHeight).toBeGreaterThan(
+        regionSwitcherLayout.clientHeight,
+      )
+    } else {
+      expect(mapBefore.height).toBeCloseTo(240, 0)
+      expect(regionSwitcherLayout.scrollHeight).toBeLessThanOrEqual(
+        regionSwitcherLayout.clientHeight + 1,
+      )
+    }
+    expect(mapBefore.pathLeft).toBeGreaterThanOrEqual(mapBefore.x)
+    expect(mapBefore.pathRight).toBeLessThanOrEqual(
+      mapBefore.x + mapBefore.width + 1,
+    )
+    expect(mapBefore.pathTop).toBeGreaterThanOrEqual(mapBefore.y)
+    expect(mapBefore.pathBottom).toBeLessThanOrEqual(
+      mapBefore.y + mapBefore.height + 1,
+    )
     expect(
-      mapBefore.x + mapBefore.width - mapBefore.pathRight,
-    ).toBeLessThanOrEqual(2.5)
-    expect(headerBox).not.toBeNull()
-    expect(backLinkBox).not.toBeNull()
-    expect(regionTitleBox).not.toBeNull()
+      (mapBefore.pathRight - mapBefore.pathLeft) / mapBefore.width,
+    ).toBeGreaterThan(0.45)
+    expect(
+      (mapBefore.pathBottom - mapBefore.pathTop) / mapBefore.height,
+    ).toBeGreaterThan(0.45)
+    expect(navigationBox).not.toBeNull()
     expect(controlsBox).not.toBeNull()
     expect(regionCardBox).not.toBeNull()
     expect(regionCardBox!.x).toBeGreaterThanOrEqual(0)
@@ -1884,26 +2107,34 @@ for (const viewport of [
     expect(mapBefore.x + mapBefore.width).toBeLessThanOrEqual(
       regionCardBox!.x + 1,
     )
-    expect(headerBox!.x).toBeCloseTo(mapBefore.x, 0)
-    expect(headerBox!.width).toBeCloseTo(mapBefore.width, 0)
-    expect(regionTitleBox!.x + regionTitleBox!.width / 2).toBeCloseTo(
-      headerBox!.x + headerBox!.width / 2,
+    expect(mapBefore.y).toBeLessThanOrEqual(24)
+    if (viewport.collapsedMenu) {
+      expect(triggerBox).not.toBeNull()
+      expect(triggerBox!.x).toBeCloseTo(navigationBox!.x, 0)
+      expect(triggerBox!.width).toBeCloseTo(navigationBox!.width, 0)
+      expect(triggerBox!.y).toBeGreaterThanOrEqual(
+        navigationBox!.y + navigationBox!.height,
+      )
+      expect(controlsBox!.x).toBeGreaterThanOrEqual(
+        navigationBox!.x + navigationBox!.width,
+      )
+      expect(controlsBox!.y).toBeGreaterThanOrEqual(0)
+      expect(controlsBox!.y + controlsBox!.height).toBeLessThanOrEqual(
+        viewport.height + 1,
+      )
+    } else {
+      expect(controlsBox!.x).toBeCloseTo(navigationBox!.x, 0)
+      expect(controlsBox!.width).toBeCloseTo(navigationBox!.width, 0)
+      expect(controlsBox!.y).toBeGreaterThanOrEqual(
+        navigationBox!.y + navigationBox!.height,
+      )
+    }
+    expect(gridBefore.x).toBeCloseTo(regionBrowserBox!.x, 0)
+    expect(gridBefore.right).toBeCloseTo(
+      regionBrowserBox!.x + regionBrowserBox!.width,
       0,
     )
-    expect(backLinkBox!.y + backLinkBox!.height / 2).toBeCloseTo(
-      regionTitleBox!.y + regionTitleBox!.height / 2,
-      0,
-    )
-    expect(mapBefore.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height)
-    expect(controlsBox!.x).toBeCloseTo(mapBefore.x, 0)
-    expect(controlsBox!.y).toBeGreaterThanOrEqual(
-      mapBefore.y + mapBefore.height,
-    )
-    expect(gridBefore.x).toBeCloseTo(mapBefore.x, 0)
-    expect(gridBefore.right).toBeCloseTo(mapBefore.x + mapBefore.width, 0)
-    expect(gridBefore.firstRowCount).toBe(
-      viewport.height <= 600 ? 2 : viewport.width <= 1080 ? 3 : 5,
-    )
+    expect(gridBefore.firstRowCount).toBe(viewport.expectedColumns)
 
     const chinaCard = page
       .getByRole('button', { name: '查看中国国家详情' })
@@ -1973,6 +2204,8 @@ for (const viewport of [
       map.evaluate((element) => ({
         x: element.getBoundingClientRect().x,
         width: element.getBoundingClientRect().width,
+        height: element.getBoundingClientRect().height,
+        viewBox: element.querySelector('svg')?.getAttribute('viewBox'),
       })),
       countryGrid.evaluate((element) => {
         const box = element.getBoundingClientRect()
@@ -1996,12 +2229,15 @@ for (const viewport of [
       viewport.width + 1,
     )
     expect(mapAfter.width).toBeCloseTo(mapBefore.width, 0)
+    expect(mapAfter.height).toBeCloseTo(mapBefore.height, 0)
+    expect(mapAfter.viewBox).toBe(mapBefore.viewBox)
     expect(gridAfter.width).toBeCloseTo(gridBefore.width, 0)
-    expect(gridAfter.x).toBeCloseTo(mapAfter.x, 0)
-    expect(gridAfter.right).toBeCloseTo(mapAfter.x + mapAfter.width, 0)
-    expect(gridAfter.firstRowCount).toBe(
-      viewport.height <= 600 ? 2 : viewport.width <= 1080 ? 3 : 5,
+    expect(gridAfter.x).toBeCloseTo(regionBrowserBox!.x, 0)
+    expect(gridAfter.right).toBeCloseTo(
+      regionBrowserBox!.x + regionBrowserBox!.width,
+      0,
     )
+    expect(gridAfter.firstRowCount).toBe(viewport.expectedColumns)
     expect(mapAfter.x + mapAfter.width).toBeLessThanOrEqual(detailBox!.x + 1)
     expect(gridAfter.x + gridAfter.width).toBeLessThanOrEqual(detailBox!.x + 1)
     expect(detailBox!.width).toBeCloseTo(regionCardBox!.width, 0)
@@ -2009,6 +2245,86 @@ for (const viewport of [
     await expect(
       detail.getByRole('button', { name: '关闭国家学习详情' }),
     ).toHaveCount(0)
+  })
+}
+
+for (const viewport of [
+  { name: 'smallest landscape', width: 568, height: 320 },
+]) {
+  test(`keeps the collapsed country field menu usable on ${viewport.name}`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        configurable: true,
+        value: 5,
+      })
+      Object.defineProperty(navigator, 'platform', {
+        configurable: true,
+        value: 'MacIntel',
+      })
+    })
+    await page.setViewportSize(viewport)
+    await page.goto('/knowledge/countries/southeast-asia')
+
+    const navigation = page.getByRole('navigation', {
+      name: 'My Geo 主导航',
+    })
+    const trigger = page.getByRole('button', {
+      name: '显示国家卡内容',
+    })
+    await expect(trigger).toBeVisible()
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    await trigger.click()
+
+    const controls = page.getByRole('group', { name: '国家卡显示内容' })
+    await expect(controls).toBeVisible()
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    const [navigationBox, triggerBox, controlsBox, buttonHeights] =
+      await Promise.all([
+        navigation.boundingBox(),
+        trigger.boundingBox(),
+        controls.boundingBox(),
+        controls
+          .getByRole('button')
+          .evaluateAll((buttons) =>
+            buttons.map((button) => button.getBoundingClientRect().height),
+          ),
+      ])
+    expect(navigationBox).not.toBeNull()
+    expect(triggerBox).not.toBeNull()
+    expect(controlsBox).not.toBeNull()
+    expect(triggerBox!.x).toBeCloseTo(navigationBox!.x, 0)
+    expect(triggerBox!.y).toBeGreaterThanOrEqual(
+      navigationBox!.y + navigationBox!.height,
+    )
+    expect(triggerBox!.height).toBeGreaterThanOrEqual(44)
+    expect(controlsBox!.x).toBeGreaterThanOrEqual(
+      navigationBox!.x + navigationBox!.width + 5,
+    )
+    expect(controlsBox!.y).toBeGreaterThanOrEqual(0)
+    expect(controlsBox!.y + controlsBox!.height).toBeLessThanOrEqual(
+      viewport.height + 1,
+    )
+    expect(buttonHeights.every((height) => height >= 44)).toBe(true)
+
+    await controls.getByRole('button', { name: '国家' }).click()
+    await expect(
+      controls.getByRole('button', { name: '国家' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    await expect(controls).toBeVisible()
+
+    await page.keyboard.press('Escape')
+    await expect(controls).toBeHidden()
+    await expect(trigger).toBeFocused()
+
+    await trigger.click()
+    await expect(controls).toBeVisible()
+    await page
+      .locator('.knowledge-region-map-strip')
+      .click({ position: { x: 8, y: 8 } })
+    await expect(controls).toBeHidden()
+    await expect(trigger).toBeFocused()
   })
 }
 
@@ -2031,38 +2347,48 @@ test('exposes a valid PWA manifest', async ({ request }) => {
   expect(manifest.icons).toHaveLength(3)
 })
 
-test('keeps the global fullscreen control active across app routes', async ({
+test('toggles fullscreen from the primary-page logo and preserves state on descendants', async ({
   page,
 }) => {
   await installFullscreenApiMock(page)
   await page.goto('/explore')
 
-  await page.getByRole('button', { name: '进入全屏' }).click()
-  const exitFullscreen = page.getByRole('button', { name: '退出全屏' })
-  await expect(exitFullscreen).toHaveAttribute('aria-pressed', 'true')
+  const enterFullscreen = page.getByRole('button', {
+    name: 'My Geo，双击进入全屏',
+  })
+  await enterFullscreen.click()
+  expect(await page.evaluate(() => document.fullscreenElement)).toBeNull()
+  await enterFullscreen.dblclick()
+  await expect(
+    page.getByRole('button', { name: 'My Geo，双击退出全屏' }),
+  ).toHaveAttribute('aria-pressed', 'true')
 
   await page.getByRole('link', { name: '图鉴' }).click()
   await page.getByTestId('knowledge-home-module-countries').click()
   await expect(page).toHaveURL(/\/knowledge\/countries$/)
-  await expect(exitFullscreen).toBeVisible()
+  await page.getByRole('tab', { name: /亚洲/ }).click()
+  await page.getByTestId('knowledge-region-east-asia').click()
+  await expect(page).toHaveURL(/\/knowledge\/countries\/east-asia$/)
+  await expect(
+    page.getByRole('button', { name: 'My Geo，双击退出全屏' }),
+  ).toHaveCount(0)
+  expect(await page.evaluate(() => document.fullscreenElement !== null)).toBe(
+    true,
+  )
 
-  for (const path of [
-    '/knowledge/countries/east-asia',
-    '/questions/asia/easy',
-  ]) {
-    await page.evaluate((nextPath) => {
-      window.history.pushState({}, '', nextPath)
-      window.dispatchEvent(new PopStateEvent('popstate'))
-    }, path)
-    await expect(page).toHaveURL(new RegExp(`${path}$`))
-    await expect(exitFullscreen).toBeVisible()
-  }
-
+  await page.getByRole('button', { name: '返回上一级' }).click()
+  await expect(page).toHaveURL(/\/knowledge\/countries$/)
+  await page.getByRole('button', { name: '返回上一级' }).click()
+  await expect(page).toHaveURL(/\/knowledge$/)
+  const exitFullscreen = page.getByRole('button', {
+    name: 'My Geo，双击退出全屏',
+  })
   await page.evaluate(() => document.exitFullscreen())
-  const enterFullscreen = page.getByRole('button', { name: '进入全屏' })
-  await expect(enterFullscreen).toHaveAttribute('aria-pressed', 'false')
+  await expect(
+    page.getByRole('button', { name: 'My Geo，双击进入全屏' }),
+  ).toHaveAttribute('aria-pressed', 'false')
 
-  await enterFullscreen.click()
+  await page.getByRole('button', { name: 'My Geo，双击进入全屏' }).dblclick()
   await expect(exitFullscreen).toBeVisible()
 })
 
@@ -2071,7 +2397,7 @@ for (const viewport of [
   { name: 'iPad landscape', width: 1194, height: 834, touch: true },
   { name: 'phone landscape', width: 844, height: 390, touch: true },
 ]) {
-  test(`keeps the global fullscreen control inside navigation on ${viewport.name}`, async ({
+  test(`keeps three navigation links and the fullscreen logo inside navigation on ${viewport.name}`, async ({
     page,
   }) => {
     await installFullscreenApiMock(page)
@@ -2096,29 +2422,39 @@ for (const viewport of [
     const navigation = page.getByRole('navigation', {
       name: 'My Geo 主导航',
     })
-    await expect(page.getByRole('button', { name: '进入全屏' })).toBeVisible()
-    const layout = await navigation.evaluate((element) => {
-      const box = element.getBoundingClientRect()
-      const items = Array.from(
-        element.querySelectorAll<HTMLElement>('.app-navigation-link'),
-        (item) => {
-          const itemBox = item.getBoundingClientRect()
-          return { top: itemBox.top, bottom: itemBox.bottom }
-        },
-      )
-      return {
-        top: box.top,
-        bottom: box.bottom,
-        clientHeight: element.clientHeight,
-        scrollHeight: element.scrollHeight,
-        items,
-      }
+    const logo = page.getByRole('button', {
+      name: 'My Geo，双击进入全屏',
     })
+    await expect(logo).toBeVisible()
+    await expect(page.getByText('全屏', { exact: true })).toHaveCount(0)
+    const [layout, logoBox] = await Promise.all([
+      navigation.evaluate((element) => {
+        const box = element.getBoundingClientRect()
+        const items = Array.from(
+          element.querySelectorAll<HTMLElement>('.app-navigation-link'),
+          (item) => {
+            const itemBox = item.getBoundingClientRect()
+            return { top: itemBox.top, bottom: itemBox.bottom }
+          },
+        )
+        return {
+          top: box.top,
+          bottom: box.bottom,
+          clientHeight: element.clientHeight,
+          scrollHeight: element.scrollHeight,
+          items,
+        }
+      }),
+      logo.boundingBox(),
+    ])
 
+    expect(logoBox).not.toBeNull()
+    expect(logoBox!.width).toBeGreaterThanOrEqual(44)
+    expect(logoBox!.height).toBeGreaterThanOrEqual(44)
     expect(layout.top).toBeGreaterThanOrEqual(5)
     expect(layout.bottom).toBeLessThanOrEqual(viewport.height - 5)
     expect(layout.scrollHeight).toBeLessThanOrEqual(layout.clientHeight + 1)
-    expect(layout.items).toHaveLength(4)
+    expect(layout.items).toHaveLength(3)
     for (let index = 1; index < layout.items.length; index += 1) {
       expect(layout.items[index].top).toBeGreaterThanOrEqual(
         layout.items[index - 1].bottom,
@@ -2155,7 +2491,9 @@ test('asks touch phones and iPads to rotate before loading the app', async ({
     ).toBeVisible()
     await expect(page.getByTestId('globe-scene')).toHaveCount(0)
     await expect(page.getByTestId('webgl-fallback')).toHaveCount(0)
-    await expect(page.getByRole('button', { name: '进入全屏' })).toHaveCount(0)
+    await expect(
+      page.getByRole('button', { name: /My Geo，双击.*全屏/ }),
+    ).toHaveCount(0)
   }
 })
 
@@ -2369,12 +2707,15 @@ test('keeps phone landscape controls separated and country details usable', asyn
   expect(controlsBox).not.toBeNull()
   expect(layerControlBox).not.toBeNull()
   expect(layerPanelBox).not.toBeNull()
+  const layoutEdge = Math.min(8, Math.max(4, 844 * 0.01))
   expect(mapBox!.x + mapBox!.width).toBeLessThanOrEqual(controlsBox!.x)
-  expect(layerControlBox!.x).toBeGreaterThanOrEqual(11)
-  expect(layerControlBox!.y).toBeGreaterThanOrEqual(11)
+  expect(layerControlBox!.x).toBeGreaterThanOrEqual(layoutEdge)
+  expect(layerControlBox!.y).toBeCloseTo(layoutEdge, 0)
   expect(layerControlBox!.y + layerControlBox!.height).toBeLessThan(mapBox!.y)
   expect(layerPanelBox!.x).toBeGreaterThanOrEqual(mapBox!.x + mapBox!.width)
-  expect(layerPanelBox!.x + layerPanelBox!.width).toBeLessThanOrEqual(832)
+  expect(layerPanelBox!.x + layerPanelBox!.width).toBeLessThanOrEqual(
+    844 - layoutEdge + 1,
+  )
   expect(layerPanelBox!.y).toBeGreaterThanOrEqual(
     layerControlBox!.y + layerControlBox!.height,
   )
@@ -2392,7 +2733,7 @@ test('keeps phone landscape controls separated and country details usable', asyn
   await expect(results).toBeVisible()
   expect(searchPageBox!.x).toBeGreaterThanOrEqual(64)
   expect(searchPageBox!.x + searchPageBox!.width).toBeLessThanOrEqual(832)
-  expect(popoverBox!.y).toBeGreaterThanOrEqual(11)
+  expect(popoverBox!.y).toBeGreaterThanOrEqual(layoutEdge)
 
   await search.fill('中国')
   await search.press('Enter')
@@ -2403,10 +2744,8 @@ test('keeps phone landscape controls separated and country details usable', asyn
     .toBeLessThanOrEqual(13)
   const cardBox = await card.boundingBox()
   expect(cardBox).not.toBeNull()
-  expect(cardBox!.y).toBeGreaterThanOrEqual(11)
-  expect(cardBox!.y).toBeLessThanOrEqual(13)
-  expect(cardBox!.y + cardBox!.height).toBeGreaterThanOrEqual(377)
-  expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(379)
+  expect(cardBox!.y).toBeCloseTo(layoutEdge, 0)
+  expect(390 - cardBox!.y - cardBox!.height).toBeCloseTo(layoutEdge, 0)
   expect(controlsBox!.x + controlsBox!.width).toBeLessThanOrEqual(cardBox!.x)
   await expect(
     card.getByRole('button', { name: '关闭国家知识卡' }),

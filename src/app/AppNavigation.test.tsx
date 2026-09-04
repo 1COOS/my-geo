@@ -1,5 +1,5 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -11,7 +11,7 @@ import {
 } from 'react-router-dom'
 
 import { AppNavigation } from './AppNavigation'
-import { getNavigationBackFallback } from './navigationRoutes'
+import { getNavigationParentPath } from './navigationRoutes'
 
 type FullscreenHarness = {
   exitFullscreen: ReturnType<typeof vi.fn>
@@ -114,7 +114,7 @@ describe('AppNavigation brand', () => {
 
       expect(logo).toHaveAttribute('src', '/icons/my-geo-mark.svg')
       expect(logo).toHaveAttribute('alt', '')
-      expect(screen.queryByRole('button', { name: '返回上页' })).toBeNull()
+      expect(screen.queryByRole('button', { name: '返回上一级' })).toBeNull()
     },
   )
 
@@ -123,7 +123,7 @@ describe('AppNavigation brand', () => {
     const { container } = renderNavigation('/knowledge/earth')
 
     expect(container.querySelector('.app-navigation-brand img')).toBeNull()
-    expect(screen.getByRole('button', { name: '返回上页' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '返回上一级' })).toBeVisible()
   })
 
   it.each([
@@ -135,11 +135,11 @@ describe('AppNavigation brand', () => {
     ['/questions', '/knowledge'],
     ['/questions/asia/easy', '/questions'],
     ['/unknown', '/explore'],
-  ])('falls back from %s to %s', (path, fallback) => {
-    expect(getNavigationBackFallback(path)).toBe(fallback)
+  ])('resolves the parent of %s as %s', (path, fallback) => {
+    expect(getNavigationParentPath(path)).toBe(fallback)
   })
 
-  it('uses navigation history before the fallback', async () => {
+  it('returns to the route parent instead of the history source', async () => {
     const user = userEvent.setup()
     installFullscreenHarness({ enabled: false })
 
@@ -149,24 +149,36 @@ describe('AppNavigation brand', () => {
 
     render(
       <Tooltip.Provider delayDuration={0}>
-        <MemoryRouter initialEntries={['/knowledge']}>
+        <MemoryRouter initialEntries={['/search']}>
           <AppNavigation />
           <Routes>
             <Route
-              path="/knowledge"
-              element={<Link to="/knowledge/earth">打开地球经纬</Link>}
+              path="/search"
+              element={
+                <Link to="/knowledge/countries/east-asia?country=CN">
+                  打开中国区域详情
+                </Link>
+              }
             />
-            <Route path="/knowledge/earth" element={<div>地球经纬</div>} />
+            <Route path="/knowledge/countries" element={<div>国家首都</div>} />
+            <Route
+              path="/knowledge/countries/east-asia"
+              element={<div>东亚详情</div>}
+            />
           </Routes>
           <LocationProbe />
         </MemoryRouter>
       </Tooltip.Provider>,
     )
 
-    await user.click(screen.getByRole('link', { name: '打开地球经纬' }))
-    expect(screen.getByTestId('location')).toHaveTextContent('/knowledge/earth')
-    await user.click(screen.getByRole('button', { name: '返回上页' }))
-    expect(screen.getByTestId('location')).toHaveTextContent('/knowledge')
+    await user.click(screen.getByRole('link', { name: '打开中国区域详情' }))
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/knowledge/countries/east-asia',
+    )
+    await user.click(screen.getByRole('button', { name: '返回上一级' }))
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/knowledge/countries',
+    )
   })
 })
 
@@ -205,46 +217,77 @@ describe('AppNavigation routes', () => {
   })
 })
 
-describe('AppNavigation fullscreen control', () => {
-  it('hides the control when the Fullscreen API is unavailable', () => {
+describe('AppNavigation fullscreen logo', () => {
+  it('keeps a non-interactive logo when the Fullscreen API is unavailable', () => {
     installFullscreenHarness({ enabled: false })
-    renderNavigation()
+    const { container } = renderNavigation()
 
-    expect(
-      screen.queryByRole('button', { name: '进入全屏' }),
-    ).not.toBeInTheDocument()
+    expect(container.querySelector('.app-navigation-brand img')).toBeVisible()
+    expect(container.querySelector('.app-navigation-logo-control')).toBeNull()
+    expect(screen.queryByText('全屏')).toBeNull()
   })
 
-  it('hides the manual control in manifest fullscreen display mode', () => {
+  it('keeps a non-interactive logo in manifest fullscreen display mode', () => {
     installFullscreenHarness({ fullscreenDisplayMode: true })
-    renderNavigation()
+    const { container } = renderNavigation()
 
-    expect(
-      screen.queryByRole('button', { name: '进入全屏' }),
-    ).not.toBeInTheDocument()
+    expect(container.querySelector('.app-navigation-logo-control')).toBeNull()
   })
 
-  it('enters and exits fullscreen while staying active across routes', async () => {
+  it('ignores a single click and toggles fullscreen on a mouse double click', async () => {
     const user = userEvent.setup()
     const fullscreen = installFullscreenHarness()
     renderNavigation()
 
-    await user.click(screen.getByRole('button', { name: '进入全屏' }))
+    const enterFullscreen = screen.getByRole('button', {
+      name: 'My Geo，双击进入全屏',
+    })
+    await user.click(enterFullscreen)
+    expect(fullscreen.requestFullscreen).not.toHaveBeenCalled()
+    await user.dblClick(enterFullscreen)
     expect(fullscreen.requestFullscreen).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { name: '退出全屏' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(
+      screen.getByRole('button', { name: 'My Geo，双击退出全屏' }),
+    ).toHaveAttribute('aria-pressed', 'true')
 
     await user.click(screen.getByRole('link', { name: '图鉴' }))
-    expect(screen.getByRole('button', { name: '退出全屏' })).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: '退出全屏' }))
+    const exitFullscreen = screen.getByRole('button', {
+      name: 'My Geo，双击退出全屏',
+    })
+    await user.dblClick(exitFullscreen)
     expect(fullscreen.exitFullscreen).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { name: '进入全屏' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
+    expect(
+      screen.getByRole('button', { name: 'My Geo，双击进入全屏' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByText('全屏')).toBeNull()
+  })
+
+  it('toggles fullscreen after a touch double tap', async () => {
+    const fullscreen = installFullscreenHarness()
+    renderNavigation()
+    const logo = screen.getByRole('button', {
+      name: 'My Geo，双击进入全屏',
+    })
+
+    fireEvent.pointerUp(logo, { pointerType: 'touch' })
+    expect(fullscreen.requestFullscreen).not.toHaveBeenCalled()
+    fireEvent.pointerUp(logo, { pointerType: 'touch' })
+    await waitFor(() =>
+      expect(fullscreen.requestFullscreen).toHaveBeenCalledTimes(1),
     )
+  })
+
+  it('provides an immediate keyboard alternative', async () => {
+    const user = userEvent.setup()
+    const fullscreen = installFullscreenHarness()
+    renderNavigation()
+    const logo = screen.getByRole('button', {
+      name: 'My Geo，双击进入全屏',
+    })
+
+    logo.focus()
+    await user.keyboard('{Enter}')
+    expect(fullscreen.requestFullscreen).toHaveBeenCalledTimes(1)
   })
 
   it('synchronizes when the browser exits fullscreen externally', async () => {
@@ -252,12 +295,14 @@ describe('AppNavigation fullscreen control', () => {
     const fullscreen = installFullscreenHarness()
     renderNavigation()
 
-    await user.click(screen.getByRole('button', { name: '进入全屏' }))
+    await user.dblClick(
+      screen.getByRole('button', { name: 'My Geo，双击进入全屏' }),
+    )
     fullscreen.setFullscreenElement(null)
 
     await waitFor(() =>
       expect(
-        screen.getByRole('button', { name: '进入全屏' }),
+        screen.getByRole('button', { name: 'My Geo，双击进入全屏' }),
       ).toBeInTheDocument(),
     )
   })
@@ -267,12 +312,13 @@ describe('AppNavigation fullscreen control', () => {
     const fullscreen = installFullscreenHarness({ requestRejects: true })
     renderNavigation()
 
-    await user.click(screen.getByRole('button', { name: '进入全屏' }))
+    await user.dblClick(
+      screen.getByRole('button', { name: 'My Geo，双击进入全屏' }),
+    )
 
     expect(fullscreen.requestFullscreen).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { name: '进入全屏' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(
+      screen.getByRole('button', { name: 'My Geo，双击进入全屏' }),
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 })

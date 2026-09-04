@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  getNavigationBackFallback,
+  getNavigationParentPath,
   resolveAppRouteMeta,
 } from './navigationRoutes'
 
@@ -46,6 +46,6 @@ describe('resolveAppRouteMeta', () => {
       primary,
       parentPath,
     })
-    expect(getNavigationBackFallback(pathname)).toBe(parentPath ?? '/explore')
+    expect(getNavigationParentPath(pathname)).toBe(parentPath ?? '/explore')
   })
 })

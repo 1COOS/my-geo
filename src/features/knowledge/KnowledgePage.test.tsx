@@ -353,29 +353,37 @@ describe('knowledge pages', () => {
 
     expect(
       screen.getByRole('heading', { name: '东亚5国', level: 1 }),
-    ).toBeVisible()
-    const regionHeader = document.querySelector<HTMLElement>(
-      '.knowledge-region-page-header',
-    )!
-    expect(
-      regionHeader.style.getPropertyValue('--knowledge-region-title-accent'),
-    ).toBe('#4cc9f0')
-    expect(within(regionHeader).getByText('5').tagName).toBe('STRONG')
+    ).toHaveClass('sr-only')
+    expect(document.querySelector('.knowledge-region-page-header')).toBeNull()
     expect(
       document
         .querySelector<HTMLElement>('.knowledge-country-grid')!
-        .style.getPropertyValue('--knowledge-country-columns-detail'),
+        .style.getPropertyValue('--knowledge-country-columns-five'),
     ).toBe('5')
-    expect(screen.getByRole('link', { name: '← 返回亚洲' })).toHaveAttribute(
-      'href',
-      '/knowledge/countries?continent=asia',
-    )
+    expect(screen.queryByRole('link', { name: '← 返回亚洲' })).toBeNull()
     const regionMap = document.querySelector<HTMLElement>(
       '.knowledge-region-map-strip',
     )!
     expect(within(regionMap).queryByRole('link')).toBeNull()
     expect(within(regionMap).queryByText('WORLD POSITION')).toBeNull()
     expect(document.querySelector('.knowledge-region-map-actions')).toBeNull()
+    expect(
+      within(regionMap).getByRole('img', { name: '东亚区域地图' }),
+    ).toHaveAttribute('data-map-scope', 'region')
+    expect(regionMap.querySelector('.knowledge-region-map-grid')).toBeNull()
+    expect(
+      regionMap.querySelector('.knowledge-region-map-landmasses'),
+    ).toBeNull()
+    const regionSwitcher = screen.getByRole('navigation', {
+      name: '亚洲子区域',
+    })
+    expect(within(regionSwitcher).getAllByRole('link')).toHaveLength(5)
+    expect(
+      within(regionSwitcher).getByRole('link', { name: /东亚\s*5国/ }),
+    ).toHaveAttribute('aria-current', 'page')
+    expect(
+      within(regionSwitcher).getByRole('link', { name: /东南亚\s*11国/ }),
+    ).toHaveAttribute('href', '/knowledge/countries/southeast-asia')
     expect(screen.queryByTestId('knowledge-region-best-score')).toBeNull()
     expect(screen.queryByRole('link', { name: '开始区域挑战' })).toBeNull()
     expect(screen.queryByText('Asia · COUNTRY KNOWLEDGE')).toBeNull()
@@ -398,7 +406,9 @@ describe('knowledge pages', () => {
     expect(document.querySelectorAll('path.is-continent')).toHaveLength(0)
     expect(getMapCountryPath('CN')).toHaveClass('is-region')
     expect(getMapCountryPath('JP')).toHaveClass('is-region')
-    expect(getMapCountryPath('IN')).not.toHaveClass('is-region')
+    expect(
+      document.querySelector('[data-country-code="IN"]'),
+    ).not.toBeInTheDocument()
     expect(screen.queryByText('逐国学习')).toBeNull()
     expect(screen.queryByText('观察国旗，猜一猜首都')).toBeNull()
     expect(screen.queryByRole('button', { name: '揭晓首都' })).toBeNull()
@@ -424,6 +434,11 @@ describe('knowledge pages', () => {
         .getAllByRole('button')
         .map((button) => button.textContent),
     ).toEqual(['国旗', '国家', '首都'])
+    expect(
+      within(displayControls)
+        .getAllByRole('button')
+        .every((button) => button.querySelector('svg[aria-hidden="true"]')),
+    ).toBe(true)
     expect(countryControl).toHaveAttribute('aria-pressed', 'false')
     expect(flagControl).toHaveAttribute('aria-pressed', 'true')
     expect(flagControl).toBeDisabled()
@@ -497,12 +512,20 @@ describe('knowledge pages', () => {
     await user.click(screen.getByRole('button', { name: '探索邻国阿富汗' }))
     expect(
       screen.getByRole('heading', { name: '南亚9国', level: 1 }),
-    ).toBeVisible()
+    ).toHaveClass('sr-only')
     expect(screen.getByLabelText('阿富汗国家学习详情')).toBeVisible()
     expect(document.querySelectorAll('path.is-country')).toHaveLength(1)
     expect(getMapCountryPath('AF')).toHaveClass('is-country')
     expect(getMapCountryPath('IN')).toHaveClass('is-region')
-    expect(getMapCountryPath('CN')).not.toHaveClass('is-region')
+    expect(
+      document.querySelector('[data-country-code="CN"]'),
+    ).not.toBeInTheDocument()
+    expect(
+      within(screen.getByRole('navigation', { name: '亚洲子区域' })).getByRole(
+        'link',
+        { name: /南亚\s*9国/ },
+      ),
+    ).toHaveAttribute('aria-current', 'page')
   }, 10_000)
 
   it('matches small-region grid columns to the number of countries', () => {
@@ -520,16 +543,16 @@ describe('knowledge pages', () => {
     const grid = document.querySelector<HTMLElement>('.knowledge-country-grid')
     expect(grid).not.toBeNull()
     expect(
-      grid!.style.getPropertyValue('--knowledge-country-columns-wide'),
+      grid!.style.getPropertyValue('--knowledge-country-columns-five'),
     ).toBe('4')
     expect(
-      grid!.style.getPropertyValue('--knowledge-country-columns-detail'),
+      grid!.style.getPropertyValue('--knowledge-country-columns-four'),
     ).toBe('4')
     expect(
-      grid!.style.getPropertyValue('--knowledge-country-columns-tablet'),
+      grid!.style.getPropertyValue('--knowledge-country-columns-three'),
     ).toBe('3')
     expect(
-      grid!.style.getPropertyValue('--knowledge-country-columns-compact'),
+      grid!.style.getPropertyValue('--knowledge-country-columns-two'),
     ).toBe('2')
   })
 

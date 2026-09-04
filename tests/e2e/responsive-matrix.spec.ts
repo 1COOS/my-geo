@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 const responsiveViewports = [
   { name: 'small phone landscape', width: 568, height: 320 },
+  { name: 'small landscape', width: 667, height: 375 },
   { name: 'android phone landscape', width: 740, height: 360 },
   { name: 'phone landscape', width: 844, height: 390 },
   { name: 'wide phone landscape', width: 956, height: 440 },

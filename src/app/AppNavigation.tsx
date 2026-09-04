@@ -1,12 +1,5 @@
-import * as Tooltip from '@radix-ui/react-tooltip'
-import { useEffect, useState } from 'react'
-import {
-  NavLink,
-  NavigationType,
-  useLocation,
-  useNavigate,
-  useNavigationType,
-} from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 
 import {
   BackIcon,
@@ -22,25 +15,17 @@ import {
   toggleDocumentFullscreen,
 } from './fullscreenPlatform'
 import {
-  getNavigationBackFallback,
+  getNavigationParentPath,
   resolveAppRouteMeta,
 } from './navigationRoutes'
 
-function FullscreenIcon({ active }: { active: boolean }) {
-  return active ? (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M9.2 4v5.2H4M14.8 4v5.2H20M9.2 20v-5.2H4M14.8 20v-5.2H20" />
-    </svg>
-  ) : (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M9.2 4H4v5.2M14.8 4H20v5.2M9.2 20H4v-5.2M14.8 20H20v-5.2" />
-    </svg>
-  )
-}
+const fullscreenDoubleTapWindow = 350
 
-function FullscreenControl() {
+function FullscreenBrand() {
   const [available] = useState(() => isManualFullscreenAvailable())
   const [active, setActive] = useState(() => isDocumentFullscreen())
+  const lastTouchReleaseRef = useRef(0)
+  const lastTouchToggleRef = useRef(0)
 
   useEffect(() => {
     if (!available) return
@@ -51,43 +36,59 @@ function FullscreenControl() {
       document.removeEventListener('fullscreenchange', syncFullscreenState)
   }, [available])
 
-  if (!available) return null
+  const toggleFullscreen = () => {
+    void toggleDocumentFullscreen().then(() =>
+      setActive(isDocumentFullscreen()),
+    )
+  }
+  const label = active ? 'My Geo，双击退出全屏' : 'My Geo，双击进入全屏'
+  const logo = <img src="/icons/my-geo-mark.svg" alt="" draggable={false} />
 
-  const label = active ? '退出全屏' : '进入全屏'
+  if (!available) {
+    return (
+      <div className="app-navigation-brand" aria-hidden="true">
+        {logo}
+      </div>
+    )
+  }
 
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <button
-          type="button"
-          className={
-            active
-              ? 'app-navigation-link app-navigation-action is-pressed'
-              : 'app-navigation-link app-navigation-action'
-          }
-          aria-label={label}
-          aria-pressed={active}
-          onClick={() => {
-            void toggleDocumentFullscreen().then(() =>
-              setActive(isDocumentFullscreen()),
-            )
-          }}
-        >
-          <FullscreenIcon active={active} />
-          <span>{active ? '退出' : '全屏'}</span>
-        </button>
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content
-          className="app-navigation-tooltip"
-          side="right"
-          sideOffset={8}
-        >
-          {label}
-          <Tooltip.Arrow className="app-navigation-tooltip-arrow" />
-        </Tooltip.Content>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+    <button
+      type="button"
+      className="app-navigation-brand app-navigation-logo-control"
+      aria-label={label}
+      aria-pressed={active}
+      title={label}
+      onClick={(event) => {
+        if (event.detail === 0) toggleFullscreen()
+      }}
+      onDoubleClick={() => {
+        if (
+          lastTouchToggleRef.current > 0 &&
+          performance.now() - lastTouchToggleRef.current <
+            fullscreenDoubleTapWindow
+        ) {
+          return
+        }
+        toggleFullscreen()
+      }}
+      onPointerUp={(event) => {
+        if (event.pointerType === 'mouse') return
+        const now = performance.now()
+        if (
+          lastTouchReleaseRef.current > 0 &&
+          now - lastTouchReleaseRef.current <= fullscreenDoubleTapWindow
+        ) {
+          lastTouchReleaseRef.current = 0
+          lastTouchToggleRef.current = now
+          toggleFullscreen()
+        } else {
+          lastTouchReleaseRef.current = now
+        }
+      }}
+    >
+      {logo}
+    </button>
   )
 }
 
@@ -114,28 +115,19 @@ function AtlasNavigationLink() {
 function NavigationBrand() {
   const location = useLocation()
   const navigate = useNavigate()
-  const navigationType = useNavigationType()
   const route = resolveAppRouteMeta(location.pathname)
 
-  if (route.primary) {
-    return (
-      <div className="app-navigation-brand" aria-hidden="true">
-        <img src="/icons/my-geo-mark.svg" alt="" draggable={false} />
-      </div>
-    )
-  }
+  if (route.primary) return <FullscreenBrand />
 
   return (
     <button
       type="button"
       className="app-navigation-brand app-navigation-back"
-      aria-label="返回上页"
+      aria-label="返回上一级"
       onClick={() => {
-        if (navigationType === NavigationType.Push) void navigate(-1)
-        else
-          void navigate(getNavigationBackFallback(location.pathname), {
-            replace: true,
-          })
+        void navigate(getNavigationParentPath(location.pathname), {
+          replace: true,
+        })
       }}
     >
       <BackIcon />
@@ -172,7 +164,6 @@ export function AppNavigation() {
         <SearchIcon />
         <span>搜索</span>
       </NavLink>
-      <FullscreenControl />
     </nav>
   )
 }

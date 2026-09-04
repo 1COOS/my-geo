@@ -64,7 +64,6 @@ function AppRoutes() {
   const responsiveTokens =
     viewportProfile === 'compact-landscape'
       ? ({
-          '--layout-gap': 'clamp(0.3rem, 0.8vw, 0.5rem)',
           '--navigation-rail-size': '3.2rem',
           '--detail-panel-size': 'clamp(15rem, 36vw, 18.5rem)',
         } as CSSProperties)

@@ -185,14 +185,15 @@
   cursor: pointer;
   background: linear-gradient(135deg, #7ce7ff, #45bfff);
   border: 0;
-  border-radius: 0.85rem;
+  border-radius: var(--atlas-radius-control);
   box-shadow: 0 12px 30px rgb(54 185 235 / 20%);
 }
 
 .knowledge-region-content {
-  max-width: 92rem;
+  width: 100%;
+  max-width: none;
   padding-right: calc(var(--detail-column) + var(--knowledge-detail-gap));
-  margin: 0 auto;
+  margin: 0;
 }
 
 .knowledge-region-study {
@@ -235,11 +236,19 @@
   font-weight: 750;
 }
 
+.knowledge-region-browser {
+  display: grid;
+  height: 15rem;
+  grid-template-columns: minmax(0, 1fr) clamp(5rem, 18%, 9rem);
+  gap: clamp(0.35rem, 0.7vw, 0.6rem);
+  margin-bottom: 0.4rem;
+  align-items: stretch;
+}
+
 .knowledge-region-map-strip {
-  height: auto;
+  height: 100%;
   min-height: 0;
-  aspect-ratio: 720 / 340;
-  margin-bottom: 0.5rem;
+  margin: 0;
 }
 
 .knowledge-region-map-strip .knowledge-region-map {
@@ -247,13 +256,60 @@
   min-height: 0;
 }
 
-.knowledge-country-controls-row {
-  display: flex;
-  min-height: 2.5rem;
-  gap: 0.65rem;
-  margin-bottom: 0.65rem;
-  align-items: stretch;
-  justify-content: space-between;
+.knowledge-region-switcher {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  gap: 0.25rem;
+  overflow-y: auto;
+  overscroll-behavior-block: contain;
+  scroll-snap-type: block proximity;
+  scrollbar-color: var(--atlas-border) transparent;
+}
+
+.knowledge-region-switcher a {
+  display: grid;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.45rem;
+  gap: 0.1rem;
+  align-content: center;
+  color: var(--atlas-text-secondary);
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-left: 3px solid var(--knowledge-region-switcher-accent);
+  border-radius: var(--atlas-radius-control);
+  scroll-snap-align: start;
+}
+
+.knowledge-region-switcher a:hover,
+.knowledge-region-switcher a:focus-visible,
+.knowledge-region-switcher a[aria-current='page'] {
+  color: var(--atlas-text);
+  background: var(--atlas-panel-raised);
+  border-color: var(--knowledge-region-switcher-accent);
+}
+
+.knowledge-region-switcher strong,
+.knowledge-region-switcher small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.knowledge-region-switcher strong {
+  font-size: var(--fs-m);
+  font-weight: 600;
+}
+
+.knowledge-region-switcher small {
+  color: var(--knowledge-region-switcher-accent);
+  font-size: 0.65rem;
+}
+
+.knowledge-country-study {
+  container-name: knowledge-country-study;
+  container-type: inline-size;
 }
 
 .knowledge-country-display-controls button:disabled {
@@ -264,10 +320,37 @@
 .knowledge-country-grid {
   display: grid;
   grid-template-columns: repeat(
-    var(--knowledge-country-columns-detail),
+    var(--knowledge-country-columns-two),
     minmax(0, 1fr)
   );
-  gap: clamp(0.45rem, 0.8vw, 0.7rem);
+  gap: clamp(0.3rem, 0.55vw, 0.5rem);
+}
+
+@container knowledge-country-study (min-width: 25.5rem) {
+  .knowledge-country-grid {
+    grid-template-columns: repeat(
+      var(--knowledge-country-columns-three),
+      minmax(0, 1fr)
+    );
+  }
+}
+
+@container knowledge-country-study (min-width: 35rem) {
+  .knowledge-country-grid {
+    grid-template-columns: repeat(
+      var(--knowledge-country-columns-four),
+      minmax(0, 1fr)
+    );
+  }
+}
+
+@container knowledge-country-study (min-width: 52rem) {
+  .knowledge-country-grid {
+    grid-template-columns: repeat(
+      var(--knowledge-country-columns-five),
+      minmax(0, 1fr)
+    );
+  }
 }
 
 .knowledge-country-open .country-flag-frame {
@@ -803,14 +886,11 @@
 }
 
 .knowledge-region-shell {
-  --knowledge-detail-gap: 0.9rem;
-  --edge-top: max(var(--layout-edge), var(--atlas-safe-area-top));
-  --edge-right: max(var(--layout-edge), var(--atlas-safe-area-right));
-  --edge-bottom: max(var(--layout-edge), var(--atlas-safe-area-bottom));
+  --knowledge-detail-gap: var(--layout-gap);
+  --edge-top: var(--app-edge-top);
+  --edge-right: var(--app-edge-right);
+  --edge-bottom: var(--app-edge-bottom);
   --detail-column: var(--detail-panel-size);
-
-  padding-top: max(0.75rem, var(--atlas-safe-area-top));
-  padding-bottom: max(1.2rem, var(--atlas-safe-area-bottom));
 }
 
 .knowledge-view-on-globe,
@@ -824,52 +904,78 @@
 }
 
 .knowledge-country-display-controls {
-  display: flex;
+  position: fixed;
+  z-index: 70;
+  display: grid;
   min-width: 0;
-  align-items: center;
-  justify-content: flex-start;
+  gap: 0.15rem;
+  padding: 0.2rem;
   overflow: hidden;
-  gap: 0;
+  background: var(--atlas-panel-muted);
   border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+  box-shadow: var(--atlas-shadow);
+}
+
+.knowledge-country-display-controls[hidden] {
+  display: none;
+}
+
+.knowledge-country-menu-trigger {
+  position: fixed;
+  z-index: 70;
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+  box-shadow: var(--atlas-shadow);
+}
+
+.knowledge-country-menu-trigger,
+.knowledge-country-display-controls button {
+  display: grid;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.2rem 0.1rem;
+  gap: 0.1rem;
+  place-items: center;
+  color: var(--atlas-text-secondary);
+  font-size: var(--fs-m);
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--atlas-panel-muted);
+  border: 0;
   border-radius: var(--atlas-radius-control);
 }
 
-.knowledge-country-display-controls button {
-  min-width: 4rem;
-  padding: 0.45rem 0.75rem;
-  font-size: var(--fs-m);
-  cursor: pointer;
-  min-height: 2.75rem;
-  color: var(--atlas-text-secondary);
-  background: var(--atlas-panel-muted);
-  border: 0;
-  border-right: 1px solid var(--atlas-border);
-  border-radius: 0;
-  font-weight: 500;
+.knowledge-country-menu-trigger svg,
+.knowledge-country-display-controls button svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.knowledge-country-display-controls button:last-child {
-  border-right: 0;
-}
-
+.knowledge-country-menu-trigger:hover,
+.knowledge-country-menu-trigger:focus-visible,
 .knowledge-country-display-controls button:hover:not(:disabled),
 .knowledge-country-display-controls button:focus-visible {
   color: var(--atlas-text);
   background: var(--atlas-accent-soft);
-  border-color: var(--atlas-border);
 }
 
+.knowledge-country-menu-trigger[aria-expanded='true'],
 .knowledge-country-display-controls button[aria-pressed='true'] {
   color: var(--atlas-text);
   background: var(--atlas-panel-raised);
-  border-color: var(--atlas-border);
-  box-shadow: inset 0 -2px var(--atlas-accent);
+  box-shadow: inset 2px 0 var(--atlas-accent);
 }
 
 .knowledge-country-card {
   min-width: 0;
   overflow: hidden;
-  min-height: 6.4rem;
+  min-height: 5.75rem;
   background: var(--atlas-panel-muted);
   border: 1px solid var(--atlas-border);
   border-radius: var(--atlas-radius-compact);
@@ -879,8 +985,8 @@
   display: flex;
   width: 100%;
   height: 100%;
-  gap: 0.55rem;
-  padding: 0.75rem;
+  gap: 0.4rem;
+  padding: 0.6rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -888,7 +994,7 @@
   cursor: pointer;
   background: transparent;
   border: 0;
-  min-height: 6.4rem;
+  min-height: calc(5.75rem - 2px);
   color: var(--atlas-text);
 }
 
@@ -917,14 +1023,13 @@
 .knowledge-country-card:not([data-field-count='1'])
   .knowledge-country-card-capital {
   width: 100%;
-  padding-top: 0.5rem;
+  padding-top: 0.35rem;
   border-top: 1px solid rgb(105 190 226 / 10%);
   border-top-color: var(--atlas-border-soft);
 }
 
 .knowledge-challenge-shell {
   display: flex;
-  padding-bottom: 1rem;
   flex-direction: column;
   align-items: center;
   background: var(--atlas-canvas);
@@ -1022,7 +1127,7 @@
     rgb(255 255 255 / 3%)
   );
   border: 1px solid rgb(255 255 255 / 11%);
-  border-radius: 1rem;
+  border-radius: var(--atlas-radius-control);
 }
 
 .knowledge-question-option .country-flag-frame {
@@ -1091,7 +1196,7 @@
   padding: 0.65rem 0.8rem;
   background: rgb(255 255 255 / 4%);
   border: 1px solid rgb(255 255 255 / 7%);
-  border-radius: 0.85rem;
+  border-radius: var(--atlas-radius-control);
 }
 
 .knowledge-question-feedback p {
@@ -1110,7 +1215,7 @@
   border: 0;
   color: var(--atlas-canvas-deep);
   background: var(--atlas-accent);
-  border-radius: 0.7rem;
+  border-radius: var(--atlas-radius-control);
   font-weight: 500;
 }
 
@@ -1121,7 +1226,7 @@
   text-align: center;
   background: rgb(255 255 255 / 5%);
   border: 1px solid rgb(255 255 255 / 9%);
-  border-radius: 1.25rem;
+  border-radius: var(--atlas-radius-panel);
 }
 
 .knowledge-challenge-result > span {
@@ -1202,7 +1307,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border-radius: 0.75rem;
+  border-radius: var(--atlas-radius-control);
   font-size: var(--fs-m);
 }
 
