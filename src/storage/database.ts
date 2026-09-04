@@ -13,7 +13,7 @@ export type ExperiencePreferences = z.infer<typeof experiencePreferencesSchema>
 export const questionChallengeProgressSchema = z.object({
   challengeId: z
     .string()
-    .regex(/^(asia|europe|africa|americas|oceania):(easy|normal|hard)$/),
+    .regex(/^(world|asia|europe|africa|americas|oceania):(easy|normal|hard)$/),
   bestScore: z.number().int().min(0).max(100),
   lastScore: z.number().int().min(0).max(100),
   attemptCount: z.number().int().nonnegative(),
@@ -40,6 +40,18 @@ const defaultPreferences: ExperiencePreferences = {
   updatedAt: 0,
 }
 
+type QuestionProgressMigrationTransaction = {
+  table: (name: 'questionProgress') => {
+    clear: () => void | PromiseLike<unknown>
+  }
+}
+
+export function clearLegacyQuestionProgress(
+  transaction: QuestionProgressMigrationTransaction,
+) {
+  return transaction.table('questionProgress').clear()
+}
+
 class MyGeoDatabase extends Dexie {
   preferences!: EntityTable<ExperiencePreferences, 'id'>
   questionProgress!: EntityTable<QuestionChallengeProgress, 'challengeId'>
@@ -58,6 +70,12 @@ class MyGeoDatabase extends Dexie {
       knowledgeProgress: null,
       questionProgress: 'challengeId, updatedAt, passedAt',
     })
+    this.version(4)
+      .stores({
+        preferences: 'id, updatedAt',
+        questionProgress: 'challengeId, updatedAt, passedAt',
+      })
+      .upgrade((transaction) => clearLegacyQuestionProgress(transaction))
   }
 }
 

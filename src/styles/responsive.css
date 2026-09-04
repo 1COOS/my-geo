@@ -12,6 +12,12 @@
   .knowledge-question-hub-stats {
     justify-content: space-between;
   }
+
+  .knowledge-question-scope-card.knowledge-region-card.is-world {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 0.55rem;
+  }
 }
 
 @media (max-width: 900px), (max-height: 600px) {
@@ -193,21 +199,29 @@
   }
 
   .knowledge-challenge-header {
-    margin-bottom: 0.55rem;
+    gap: 0.45rem;
   }
 
   .knowledge-question-card {
-    padding: 0 1rem;
+    padding: 0.55rem;
   }
 
   .knowledge-question-card > h1 {
-    margin: 0.25rem 0 0.55rem;
+    margin: 0.15rem 0 0.35rem;
     font-size: 1.25rem;
   }
 
+  .knowledge-question-card > p {
+    font-size: 0.7rem;
+    line-height: 1.25;
+  }
+
   .knowledge-question-flag {
-    width: 6.75rem;
-    margin-bottom: 0.55rem;
+    width: 5.5rem;
+  }
+
+  .knowledge-question-flag-wrap {
+    margin-bottom: 0.3rem;
   }
 
   .knowledge-question-options {
@@ -225,8 +239,52 @@
 
   .knowledge-question-feedback {
     min-height: 2.8rem;
-    margin-top: 0.3rem;
     padding: 0.45rem 0.6rem;
+  }
+
+  .knowledge-challenge-workbench {
+    grid-template-columns: minmax(0, 1fr) clamp(7.5rem, 19vw, 9rem);
+    gap: 0.4rem;
+  }
+
+  .knowledge-character-fill {
+    gap: 0.35rem;
+  }
+
+  .knowledge-character-answer {
+    min-height: 2.5rem;
+    padding: 0.2rem;
+  }
+
+  .knowledge-character-answer > :is(button, span:not(.is-placeholder)) {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .knowledge-character-bank {
+    gap: 0.3rem;
+  }
+
+  .knowledge-character-bank button {
+    min-height: 2.25rem;
+  }
+
+  .knowledge-character-actions button {
+    min-height: 2.1rem;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .knowledge-challenge-status {
+    padding: 0.5rem;
+    gap: 0.35rem;
+  }
+
+  .knowledge-challenge-status dl > div {
+    padding: 0.3rem 0;
+  }
+
+  .knowledge-challenge-status li {
+    height: 1.2rem;
   }
 
   .knowledge-result-actions {

@@ -1,12 +1,17 @@
+import { z } from 'zod'
+
+import { countries } from '../../data/countries'
 import type { Country } from '../../data/countrySchema'
 import {
   getQuestionPoolCountries,
   type QuestionDifficulty,
+  type QuestionScope,
 } from '../../data/countryQuestionFamiliarity'
-import type { KnowledgeContinentId } from '../../data/knowledgeRegions'
 
 export type KnowledgeQuestionKind =
   'flag-to-country' | 'country-to-flag' | 'country-to-capital'
+
+export type KnowledgeQuestionFormat = 'choice' | 'character-fill'
 
 export type KnowledgeQuestionOption = {
   id: string
@@ -14,25 +19,70 @@ export type KnowledgeQuestionOption = {
   flagAsset?: string
 }
 
-export type KnowledgeQuestion = {
+export type KnowledgeQuestionCharacter = {
+  id: string
+  character: string
+}
+
+type KnowledgeQuestionBase = {
   id: string
   kind: KnowledgeQuestionKind
   prompt: string
-  continentId: KnowledgeContinentId
+  scope: QuestionScope
   difficulty: QuestionDifficulty
   countryCode: string
   subjectFlagAsset?: string
+}
+
+export type KnowledgeChoiceQuestion = KnowledgeQuestionBase & {
+  format: 'choice'
   correctOptionId: string
   options: KnowledgeQuestionOption[]
 }
 
+export type KnowledgeCharacterFillQuestion = KnowledgeQuestionBase & {
+  format: 'character-fill'
+  answerText: string
+  acceptedAnswers: string[]
+  characterBank: KnowledgeQuestionCharacter[]
+}
+
+export type KnowledgeQuestion =
+  KnowledgeChoiceQuestion | KnowledgeCharacterFillQuestion
+
 type RandomSource = () => number
 
-const questionKinds: KnowledgeQuestionKind[] = [
+const fillAnswerSchema = z
+  .string()
+  .min(1)
+  .refine((answer) => /^\p{Script=Han}+$/u.test(answer), {
+    message: 'Fill answers must contain only Chinese characters',
+  })
+  .refine((answer) => [...answer].length <= 12, {
+    message: 'Fill answers must contain no more than 12 characters',
+  })
+
+const validatedFillAnswersByCountry = new Map(
+  countries.map((country) => [
+    country.code,
+    {
+      country: fillAnswerSchema.parse(country.name.zh),
+      capitals: country.capitals.map((capital) =>
+        fillAnswerSchema.parse(capital.name.zh),
+      ),
+    },
+  ]),
+)
+
+const choiceQuestionKinds: KnowledgeQuestionKind[] = [
   'flag-to-country',
   'country-to-flag',
   'country-to-capital',
 ]
+
+const fillQuestionKinds: Array<
+  Extract<KnowledgeQuestionKind, 'flag-to-country' | 'country-to-capital'>
+> = ['flag-to-country', 'country-to-capital']
 
 function shuffle<T>(items: T[], random: RandomSource) {
   const shuffled = [...items]
@@ -46,11 +96,16 @@ function shuffle<T>(items: T[], random: RandomSource) {
   return shuffled
 }
 
+function pickRandom<T>(items: readonly T[], random: RandomSource) {
+  const index = Math.min(items.length - 1, Math.floor(random() * items.length))
+  return items[index]
+}
+
 function getCapitalLabel(country: Country) {
   return country.capitals.map((capital) => capital.name.zh).join('、')
 }
 
-function buildOptions(
+function buildChoiceOptions(
   country: Country,
   kind: KnowledgeQuestionKind,
   pool: Country[],
@@ -91,39 +146,149 @@ function buildOptions(
   )
 }
 
+function getDistractorCharacters(pool: Country[], answerText: string) {
+  const answerCharacters = new Set([...answerText])
+  return [
+    ...new Set(
+      pool
+        .flatMap((country) => [
+          validatedFillAnswersByCountry.get(country.code)!.country,
+          ...validatedFillAnswersByCountry.get(country.code)!.capitals,
+        ])
+        .flatMap((answer) => [...answer])
+        .filter((character) => !answerCharacters.has(character)),
+    ),
+  ]
+}
+
+function buildCharacterBank(
+  questionId: string,
+  answerText: string,
+  pool: Country[],
+  random: RandomSource,
+) {
+  const answerCharacters = [...answerText]
+  const distractorCount = 12 - answerCharacters.length
+  const distractors = shuffle(
+    getDistractorCharacters(pool, answerText),
+    random,
+  ).slice(0, distractorCount)
+
+  if (distractors.length !== distractorCount) {
+    throw new Error(
+      `Question ${questionId} cannot build a 12-character answer bank`,
+    )
+  }
+
+  return shuffle([...answerCharacters, ...distractors], random).map(
+    (character, index) => ({
+      id: `${questionId}:character:${index}`,
+      character,
+    }),
+  )
+}
+
+function createChoiceQuestion(
+  scope: QuestionScope,
+  difficulty: QuestionDifficulty,
+  country: Country,
+  index: number,
+  pool: Country[],
+  random: RandomSource,
+): KnowledgeChoiceQuestion {
+  const kind = pickRandom(choiceQuestionKinds, random)
+  const id = `${scope}:${difficulty}:${index}:choice:${kind}:${country.code}`
+  const prompt =
+    kind === 'flag-to-country'
+      ? '这面国旗属于哪个国家？'
+      : kind === 'country-to-flag'
+        ? `请选择${country.name.zh}的国旗`
+        : `${country.name.zh}的首都是哪里？`
+
+  return {
+    id,
+    format: 'choice',
+    kind,
+    prompt,
+    scope,
+    difficulty,
+    countryCode: country.code,
+    subjectFlagAsset:
+      kind === 'flag-to-country' ? country.flagAsset : undefined,
+    correctOptionId: country.code,
+    options: buildChoiceOptions(country, kind, pool, random),
+  }
+}
+
+function createFillQuestion(
+  scope: QuestionScope,
+  difficulty: QuestionDifficulty,
+  country: Country,
+  index: number,
+  pool: Country[],
+  random: RandomSource,
+): KnowledgeCharacterFillQuestion {
+  const kind = pickRandom(fillQuestionKinds, random)
+  const answers = validatedFillAnswersByCountry.get(country.code)!
+  const answerText =
+    kind === 'flag-to-country'
+      ? answers.country
+      : pickRandom(answers.capitals, random)
+  const acceptedAnswers =
+    kind === 'flag-to-country' ? [answers.country] : answers.capitals
+  const id = `${scope}:${difficulty}:${index}:character-fill:${kind}:${country.code}`
+  const hasMultipleCapitals = answers.capitals.length > 1
+
+  return {
+    id,
+    format: 'character-fill',
+    kind,
+    prompt:
+      kind === 'flag-to-country'
+        ? '请用中文字拼出这面国旗所属的国家'
+        : hasMultipleCapitals
+          ? `${country.name.zh}的首都之一是哪里？`
+          : `${country.name.zh}的首都是哪里？`,
+    scope,
+    difficulty,
+    countryCode: country.code,
+    subjectFlagAsset:
+      kind === 'flag-to-country' ? country.flagAsset : undefined,
+    answerText,
+    acceptedAnswers,
+    characterBank: buildCharacterBank(id, answerText, pool, random),
+  }
+}
+
 export const knowledgeChallengeQuestionCount = 10
 
 export function createKnowledgeChallenge(
-  continentId: KnowledgeContinentId,
+  scope: QuestionScope,
   difficulty: QuestionDifficulty,
   random: RandomSource = Math.random,
 ) {
-  const questionPool = getQuestionPoolCountries(continentId, difficulty)
+  const questionPool = getQuestionPoolCountries(scope, difficulty)
   const countrySequence = shuffle(questionPool, random)
 
   return Array.from({ length: knowledgeChallengeQuestionCount }, (_, index) => {
     const country = countrySequence[index % countrySequence.length]
-    const kind = questionKinds[index % questionKinds.length]
-    const options = buildOptions(country, kind, questionPool, random)
-    const prompt =
-      kind === 'flag-to-country'
-        ? '这面国旗属于哪个国家？'
-        : kind === 'country-to-flag'
-          ? `请选择${country.name.zh}的国旗`
-          : `${country.name.zh}的首都是哪里？`
-
-    return {
-      id: `${continentId}:${difficulty}:${index}:${kind}:${country.code}`,
-      kind,
-      prompt,
-      continentId,
-      difficulty,
-      countryCode: country.code,
-      subjectFlagAsset:
-        kind === 'flag-to-country' ? country.flagAsset : undefined,
-      correctOptionId: country.code,
-      options,
-    } satisfies KnowledgeQuestion
+    return random() < 0.5
+      ? createChoiceQuestion(
+          scope,
+          difficulty,
+          country,
+          index,
+          questionPool,
+          random,
+        )
+      : createFillQuestion(
+          scope,
+          difficulty,
+          country,
+          index,
+          questionPool,
+          random,
+        )
   })
 }
 

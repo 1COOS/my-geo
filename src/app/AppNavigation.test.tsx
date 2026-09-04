@@ -133,7 +133,8 @@ describe('AppNavigation brand', () => {
     ['/knowledge/water/groups/ocean-seas', '/knowledge/water'],
     ['/knowledge/extremes/metrics/highest-peak', '/knowledge/extremes'],
     ['/questions', '/knowledge'],
-    ['/questions/asia/easy', '/questions'],
+    ['/questions/asia/easy', '/questions?difficulty=easy'],
+    ['/questions/world/hard', '/questions?difficulty=hard'],
     ['/unknown', '/explore'],
   ])('resolves the parent of %s as %s', (path, fallback) => {
     expect(getNavigationParentPath(path)).toBe(fallback)
@@ -178,6 +179,35 @@ describe('AppNavigation brand', () => {
     await user.click(screen.getByRole('button', { name: '返回上一级' }))
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/knowledge/countries',
+    )
+  })
+
+  it('returns from a challenge to its selected difficulty', async () => {
+    const user = userEvent.setup()
+    installFullscreenHarness({ enabled: false })
+
+    function LocationProbe() {
+      const location = useLocation()
+      return (
+        <output data-testid="location">
+          {location.pathname}
+          {location.search}
+        </output>
+      )
+    }
+
+    render(
+      <Tooltip.Provider delayDuration={0}>
+        <MemoryRouter initialEntries={['/questions/world/hard']}>
+          <AppNavigation />
+          <LocationProbe />
+        </MemoryRouter>
+      </Tooltip.Provider>,
+    )
+
+    await user.click(screen.getByRole('button', { name: '返回上一级' }))
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/questions?difficulty=hard',
     )
   })
 })

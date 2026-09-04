@@ -149,7 +149,7 @@ function AppRoutes() {
                   element={<Navigate to="/questions" replace />}
                 />
                 <Route
-                  path="/questions/:continentId/:difficulty"
+                  path="/questions/:scope/:difficulty"
                   element={<KnowledgeChallengePage />}
                 />
                 <Route path="*" element={<Navigate to="/explore" replace />} />

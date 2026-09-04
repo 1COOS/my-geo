@@ -98,7 +98,7 @@ test('uses deterministic parent routes for the back icon', async ({ page }) => {
 
   await page.goto('/questions/asia/easy')
   await page.getByRole('button', { name: '返回上一级' }).click()
-  await expect(page).toHaveURL(/\/questions$/)
+  await expect(page).toHaveURL(/\/questions\?difficulty=easy$/)
 
   await page.goto('/search')
   await page.goto('/knowledge/countries/east-asia?country=CN')

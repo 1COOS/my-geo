@@ -91,5 +91,12 @@ export function resolveAppRouteMeta(pathname: string): AppRouteMeta {
 }
 
 export function getNavigationParentPath(pathname: string) {
+  const questionChallengeMatch = pathname.match(
+    /^\/questions\/(?:world|asia|europe|africa|americas|oceania)\/(easy|normal|hard)$/,
+  )
+  if (questionChallengeMatch) {
+    return `/questions?difficulty=${questionChallengeMatch[1]}`
+  }
+
   return resolveAppRouteMeta(pathname).parentPath ?? '/explore'
 }

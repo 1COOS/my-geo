@@ -1,18 +1,92 @@
 import { Link, useSearchParams } from 'react-router-dom'
 
-import { ContentPageShell } from '../../shared/components/ContentPageShell'
 import { countries } from '../../data/countries'
 import {
   getQuestionChallengeId,
-  getQuestionContinentCountryCount,
   getQuestionDifficulty,
+  getQuestionPoolCountryCount,
   questionDifficulties,
   questionDifficultySchema,
+  questionWorldScope,
   type QuestionDifficulty,
+  type QuestionScope,
 } from '../../data/countryQuestionFamiliarity'
 import { knowledgeContinents } from '../../data/knowledgeRegions'
+import { ContentPageShell } from '../../shared/components/ContentPageShell'
+import type { QuestionChallengeProgress } from '../../storage/database'
 import { knowledgeChallengeQuestionCount } from './knowledgeChallenge'
 import { useQuestionProgress } from './useQuestionProgress'
+
+type QuestionScopeDefinition =
+  typeof questionWorldScope | (typeof knowledgeContinents)[number]
+
+function QuestionScopeCard({
+  definition,
+  difficulty,
+  featured = false,
+  progress,
+}: {
+  definition: QuestionScopeDefinition
+  difficulty: QuestionDifficulty
+  featured?: boolean
+  progress?: QuestionChallengeProgress
+}) {
+  const scope: QuestionScope = definition.id
+  const passed = progress ? progress.passedAt !== null : false
+  const testId =
+    scope === 'world'
+      ? 'knowledge-question-scope-world'
+      : `knowledge-question-continent-${scope}`
+
+  return (
+    <Link
+      className={[
+        'knowledge-question-scope-card',
+        'knowledge-question-continent-card',
+        'knowledge-region-card',
+        featured && 'is-world',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      data-testid={testId}
+      to={`/questions/${scope}/${difficulty}`}
+    >
+      <div className="knowledge-question-continent-heading knowledge-region-heading">
+        <div>
+          <h3>{definition.name.zh}</h3>
+          <p>{definition.name.en}</p>
+        </div>
+        <span>{passed ? '已通过' : progress ? '继续' : '开始'}</span>
+      </div>
+      <div className="knowledge-question-continent-meta">
+        <span>{getQuestionPoolCountryCount(scope, difficulty)} 个国家</span>
+        <i aria-hidden="true" />
+        <span>{knowledgeChallengeQuestionCount} 道题</span>
+        {featured ? (
+          <>
+            <i aria-hidden="true" />
+            <span>全球难度题池随机抽取</span>
+          </>
+        ) : null}
+      </div>
+      <div className="knowledge-question-continent-progress">
+        {progress ? (
+          <>
+            <strong className={passed ? 'is-passed' : undefined}>
+              最高 {progress.bestScore} 分
+            </strong>
+            <span>{progress.attemptCount} 次挑战</span>
+          </>
+        ) : (
+          <>
+            <strong>未开始</strong>
+            <span>进入问答</span>
+          </>
+        )}
+      </div>
+    </Link>
+  )
+}
 
 export function KnowledgeQuestionsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -27,10 +101,12 @@ export function KnowledgeQuestionsPage() {
   const passedCount = [...progressByChallenge.values()].filter(
     (progress) => progress.passedAt !== null,
   ).length
+  const getProgress = (scope: QuestionScope) =>
+    progressByChallenge.get(getQuestionChallengeId(scope, difficulty))
 
   return (
     <ContentPageShell
-      className="knowledge-question-hub-shell"
+      className={`knowledge-question-hub-shell is-difficulty-${difficulty}`}
       scrollMode="auto"
     >
       <section
@@ -40,7 +116,7 @@ export function KnowledgeQuestionsPage() {
         <div className="knowledge-question-hub-copy">
           <p>国家｜国旗｜首都</p>
           <h1 id="knowledge-question-hub-title">知识问答</h1>
-          <span>按大洲选择难度，从最常见的国家开始。</span>
+          <span>选择难度，从全球或一个大洲开始混合挑战。</span>
         </div>
         <div className="knowledge-question-hub-stats" aria-label="知识问答范围">
           <div>
@@ -48,8 +124,8 @@ export function KnowledgeQuestionsPage() {
             <span>国家</span>
           </div>
           <div>
-            <strong>{knowledgeContinents.length}</strong>
-            <span>大洲</span>
+            <strong>全球+{knowledgeContinents.length}</strong>
+            <span>范围</span>
           </div>
           <div>
             <strong>{questionDifficulties.length}</strong>
@@ -68,8 +144,8 @@ export function KnowledgeQuestionsPage() {
       >
         <header className="knowledge-question-hub-heading">
           <div>
-            <p>国家问答</p>
-            <h2 id="knowledge-question-country-title">选择难度与大洲</h2>
+            <p>混合问答</p>
+            <h2 id="knowledge-question-country-title">选择难度与范围</h2>
           </div>
           <span>
             当前：{difficultyDefinition.name} ·{' '}
@@ -85,6 +161,7 @@ export function KnowledgeQuestionsPage() {
           {questionDifficulties.map((item) => (
             <button
               key={item.id}
+              className={`is-${item.id}`}
               type="button"
               role="tab"
               aria-selected={item.id === difficulty}
@@ -105,51 +182,24 @@ export function KnowledgeQuestionsPage() {
           </output>
         ) : null}
 
-        <div className="knowledge-question-continent-grid">
-          {knowledgeContinents.map((continent) => {
-            const challengeId = getQuestionChallengeId(continent.id, difficulty)
-            const progress = progressByChallenge.get(challengeId)
-            const passed = progress ? progress.passedAt !== null : false
+        <div className="knowledge-question-world-card">
+          <QuestionScopeCard
+            definition={questionWorldScope}
+            difficulty={difficulty}
+            featured
+            progress={getProgress('world')}
+          />
+        </div>
 
-            return (
-              <Link
-                key={continent.id}
-                className="knowledge-question-continent-card knowledge-region-card"
-                data-testid={`knowledge-question-continent-${continent.id}`}
-                to={`/questions/${continent.id}/${difficulty}`}
-              >
-                <div className="knowledge-question-continent-heading knowledge-region-heading">
-                  <div>
-                    <h3>{continent.name.zh}</h3>
-                    <p>{continent.name.en}</p>
-                  </div>
-                  <span>{passed ? '已通过' : progress ? '继续' : '开始'}</span>
-                </div>
-                <div className="knowledge-question-continent-meta">
-                  <span>
-                    {getQuestionContinentCountryCount(continent.id)} 个国家
-                  </span>
-                  <i aria-hidden="true" />
-                  <span>{knowledgeChallengeQuestionCount} 道题</span>
-                </div>
-                <div className="knowledge-question-continent-progress">
-                  {progress ? (
-                    <>
-                      <strong className={passed ? 'is-passed' : undefined}>
-                        最高 {progress.bestScore} 分
-                      </strong>
-                      <span>{progress.attemptCount} 次挑战</span>
-                    </>
-                  ) : (
-                    <>
-                      <strong>未开始</strong>
-                      <span>进入问答</span>
-                    </>
-                  )}
-                </div>
-              </Link>
-            )
-          })}
+        <div className="knowledge-question-continent-grid">
+          {knowledgeContinents.map((continent) => (
+            <QuestionScopeCard
+              key={continent.id}
+              definition={continent}
+              difficulty={difficulty}
+              progress={getProgress(continent.id)}
+            />
+          ))}
         </div>
       </section>
     </ContentPageShell>

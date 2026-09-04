@@ -13,6 +13,18 @@ export const questionDifficultySchema = z.enum(['easy', 'normal', 'hard'])
 
 export type QuestionDifficulty = z.infer<typeof questionDifficultySchema>
 
+export const questionScopeSchema = z.union([
+  z.literal('world'),
+  knowledgeContinentIdSchema,
+])
+
+export type QuestionScope = z.infer<typeof questionScopeSchema>
+
+export const questionWorldScope = {
+  id: 'world',
+  name: { zh: '全球', en: 'World' },
+} as const
+
 export const questionDifficulties = [
   { id: 'easy', name: '简单', note: '最常见国家' },
   { id: 'normal', name: '普通', note: '较熟悉国家' },
@@ -328,12 +340,27 @@ export function getQuestionDifficulty(difficulty: QuestionDifficulty) {
 }
 
 export function getQuestionPoolCountries(
-  continentId: KnowledgeContinentId,
+  scope: QuestionScope,
   difficulty: QuestionDifficulty,
 ): Country[] {
+  if (scope === 'world') {
+    return countryQuestionFamiliarity.flatMap((definition) =>
+      definition.difficulties[difficulty].map((code) =>
+        countryByCode.get(code),
+      ),
+    ) as Country[]
+  }
+
   return familiarityByContinent
-    .get(continentId)!
+    .get(scope)!
     .difficulties[difficulty].map((code) => countryByCode.get(code)!)
+}
+
+export function getQuestionPoolCountryCount(
+  scope: QuestionScope,
+  difficulty: QuestionDifficulty,
+) {
+  return getQuestionPoolCountries(scope, difficulty).length
 }
 
 export function getQuestionContinentCountryCount(
@@ -347,12 +374,16 @@ export function getQuestionContinentCountryCount(
 }
 
 export function getQuestionChallengeId(
-  continentId: KnowledgeContinentId,
+  scope: QuestionScope,
   difficulty: QuestionDifficulty,
 ) {
-  return `${continentId}:${difficulty}` as const
+  return `${scope}:${difficulty}` as const
 }
 
 export function getQuestionContinent(continentId: KnowledgeContinentId) {
   return knowledgeContinents.find((continent) => continent.id === continentId)!
+}
+
+export function getQuestionScope(scope: QuestionScope) {
+  return scope === 'world' ? questionWorldScope : getQuestionContinent(scope)
 }

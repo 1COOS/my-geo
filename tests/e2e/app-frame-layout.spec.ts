@@ -385,6 +385,9 @@ test('uses the shared six pixel radius for rectangular interface surfaces', asyn
     ),
   ])
 
+  await page.addInitScript(() => {
+    Math.random = () => 0
+  })
   await page.goto('/questions/asia/easy')
   await expectSharedRadius(page.locator('.knowledge-question-option').first())
 

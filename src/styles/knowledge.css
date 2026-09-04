@@ -95,7 +95,7 @@
 .knowledge-question-hub-stats strong {
   font-size: 1.35rem;
   line-height: 1;
-  color: var(--atlas-progress);
+  color: var(--question-difficulty-accent, var(--atlas-progress));
 }
 
 .knowledge-question-hub-stats span {
@@ -397,8 +397,21 @@
 
 .knowledge-question-hub-overview,
 .knowledge-question-hub-section {
+  width: 100%;
   max-width: 92rem;
   margin: 0 auto 1rem;
+}
+
+.knowledge-question-hub-shell {
+  --question-difficulty-accent: var(--atlas-progress);
+}
+
+.knowledge-question-hub-shell.is-difficulty-normal {
+  --question-difficulty-accent: var(--atlas-accent);
+}
+
+.knowledge-question-hub-shell.is-difficulty-hard {
+  --question-difficulty-accent: var(--atlas-warning);
 }
 
 .knowledge-question-hub-overview {
@@ -417,13 +430,13 @@
   inset: 0 auto 0 0;
   width: 3px;
   content: '';
-  background: var(--atlas-accent);
+  background: var(--question-difficulty-accent);
 }
 
 .knowledge-question-hub-copy > p,
 .knowledge-question-hub-heading p {
   margin: 0 0 0.3rem;
-  color: var(--atlas-accent);
+  color: var(--question-difficulty-accent);
   font-size: var(--fs-m);
 }
 
@@ -467,16 +480,49 @@
 }
 
 .knowledge-question-difficulty-tabs.knowledge-continent-tabs button {
+  --difficulty-tab-accent: var(--atlas-progress);
+
   justify-content: center;
+}
+
+.knowledge-question-difficulty-tabs.knowledge-continent-tabs button.is-normal {
+  --difficulty-tab-accent: var(--atlas-accent);
+}
+
+.knowledge-question-difficulty-tabs.knowledge-continent-tabs button.is-hard {
+  --difficulty-tab-accent: var(--atlas-warning);
+}
+
+.knowledge-question-difficulty-tabs.knowledge-continent-tabs button strong {
+  color: var(--difficulty-tab-accent);
+}
+
+.knowledge-question-hub-shell
+  .knowledge-question-difficulty-tabs.knowledge-continent-tabs
+  button[aria-selected='true'] {
+  background: color-mix(in srgb, var(--difficulty-tab-accent) 10%, transparent);
+}
+
+.knowledge-question-hub-shell
+  .knowledge-question-difficulty-tabs.knowledge-continent-tabs
+  button[aria-selected='true']::after {
+  background: var(--difficulty-tab-accent);
+}
+
+.knowledge-question-world-card {
+  margin-bottom: 0.7rem;
 }
 
 .knowledge-question-continent-grid {
   display: flex;
   gap: 0.7rem;
   overflow-x: auto;
+  scrollbar-color: var(--atlas-border) transparent;
 }
 
-.knowledge-question-continent-card.knowledge-region-card {
+.knowledge-question-scope-card.knowledge-region-card {
+  --region-accent: var(--question-difficulty-accent);
+
   display: grid;
   flex: 1 0 0;
   min-width: 11rem;
@@ -488,13 +534,38 @@
   border-radius: var(--atlas-radius-compact);
 }
 
+.knowledge-question-scope-card.knowledge-region-card.is-world {
+  min-height: 6.5rem;
+  grid-template-columns: minmax(10rem, 0.8fr) minmax(12rem, 1fr) minmax(
+      10rem,
+      0.8fr
+    );
+  grid-template-rows: 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.knowledge-question-continent-heading > span {
+  color: var(--question-difficulty-accent);
+  font-size: var(--fs-m);
+  font-weight: 600;
+}
+
+.knowledge-question-continent-meta i {
+  width: 3px;
+  height: 3px;
+  flex: none;
+  background: var(--question-difficulty-accent);
+  border-radius: 50%;
+}
+
 .knowledge-question-continent-progress {
   padding-top: 0.65rem;
   border-top: 1px solid var(--atlas-border-soft);
 }
 
 .knowledge-question-continent-progress strong.is-passed {
-  color: var(--atlas-progress);
+  color: var(--question-difficulty-accent);
 }
 
 .knowledge-earth {
@@ -1029,23 +1100,28 @@
 }
 
 .knowledge-challenge-shell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
   background: var(--atlas-canvas);
+}
+
+.knowledge-challenge-shell.is-result {
+  display: flex;
+  align-items: center;
 }
 
 .knowledge-challenge-header {
   display: grid;
-  width: min(64rem, 100%);
-  grid-template-columns: auto minmax(16rem, 1fr) auto;
+  width: min(92rem, 100%);
+  grid-template-columns: auto minmax(10rem, 1fr) auto;
   gap: 0.9rem;
   align-items: center;
-  margin-bottom: 0.8rem;
+  margin-inline: auto;
   color: var(--atlas-text-secondary);
 }
 
-.knowledge-challenge-header > a {
+.knowledge-challenge-previous {
   display: flex;
   min-height: 2.5rem;
   padding: 0.45rem 0.7rem;
@@ -1053,9 +1129,21 @@
   align-items: center;
   font-size: var(--fs-m);
   color: var(--atlas-text);
-  background: rgb(255 255 255 / 6%);
-  border: 1px solid rgb(255 255 255 / 9%);
-  border-radius: 99px;
+  cursor: pointer;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.knowledge-challenge-previous:hover:not(:disabled),
+.knowledge-challenge-previous:focus-visible {
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-accent);
+}
+
+.knowledge-challenge-previous:disabled {
+  cursor: default;
+  opacity: 0.42;
 }
 
 .knowledge-challenge-header > div {
@@ -1076,11 +1164,27 @@
   font-weight: 600;
 }
 
+.knowledge-challenge-workbench {
+  display: grid;
+  width: min(92rem, 100%);
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) clamp(8.75rem, 17vw, 12rem);
+  gap: var(--layout-gap);
+  margin-inline: auto;
+}
+
 .knowledge-question-card {
-  width: min(64rem, 100%);
-  padding: 0 0.35rem;
-  background: transparent;
-  border: 0;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(0.75rem, 1.8vw, 1.4rem);
+  align-content: center;
+  overflow-y: auto;
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
 }
 
 .knowledge-question-card > p {
@@ -1092,41 +1196,42 @@
 }
 
 .knowledge-question-card > h1 {
-  margin: 0.35rem 0 0.9rem;
-  font-size: clamp(1.5rem, 3vw, 2.45rem);
+  margin: 0.3rem 0 clamp(0.55rem, 1.3vw, 0.9rem);
+  font-size: clamp(1.3rem, 2.5vw, 2.2rem);
   font-weight: 500;
   text-align: center;
   letter-spacing: -0.035em;
 }
 
+.knowledge-question-flag-wrap {
+  display: flex;
+  margin-bottom: 0.65rem;
+  justify-content: center;
+}
+
 .knowledge-question-flag {
   display: flex;
-  width: min(10rem, 30%);
-  margin: 0 auto 0.8rem;
-  border-radius: 0.6rem;
+  width: min(8.5rem, 26%);
+  border-radius: var(--atlas-radius-control);
 }
 
 .knowledge-question-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.55rem;
 }
 
 .knowledge-question-option {
   position: relative;
   display: grid;
-  min-height: 6rem;
-  padding: 1rem;
+  min-height: clamp(4.25rem, 10dvh, 5.75rem);
+  padding: 0.75rem;
   place-items: center;
   text-align: center;
   cursor: pointer;
   color: var(--atlas-text);
-  background: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 7%),
-    rgb(255 255 255 / 3%)
-  );
-  border: 1px solid rgb(255 255 255 / 11%);
+  background: var(--atlas-panel-raised);
+  border: 1px solid var(--atlas-border);
   border-radius: var(--atlas-radius-control);
 }
 
@@ -1144,7 +1249,6 @@
 .knowledge-question-option:not(:disabled):focus-visible {
   border-color: var(--atlas-accent);
   background: rgb(121 200 212 / 11%);
-  transform: translateY(-2px);
 }
 
 .knowledge-question-option:disabled {
@@ -1186,16 +1290,216 @@
   background: var(--atlas-danger);
 }
 
+.knowledge-character-fill {
+  display: grid;
+  width: min(48rem, 100%);
+  gap: 0.65rem;
+  margin-inline: auto;
+}
+
+.knowledge-character-answer {
+  display: flex;
+  min-height: 3.4rem;
+  padding: 0.35rem;
+  gap: 0.35rem;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+  background: var(--atlas-canvas-deep);
+  border: 1px solid var(--atlas-border);
+  border-bottom: 2px solid var(--atlas-accent);
+  border-radius: var(--atlas-radius-control);
+}
+
+.knowledge-character-answer > :is(button, span:not(.is-placeholder)) {
+  display: grid;
+  width: 2.65rem;
+  height: 2.65rem;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--atlas-text);
+  background: var(--atlas-panel-raised);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.knowledge-character-answer > button {
+  cursor: pointer;
+}
+
+.knowledge-character-answer > button:hover,
+.knowledge-character-answer > button:focus-visible {
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-accent);
+}
+
+.knowledge-character-answer.is-correct {
+  border-bottom-color: var(--atlas-progress);
+}
+
+.knowledge-character-answer.is-wrong {
+  border-bottom-color: var(--atlas-danger);
+}
+
+.knowledge-character-answer .is-placeholder {
+  color: var(--atlas-text-muted);
+  font-size: var(--fs-m);
+}
+
+.knowledge-character-bank {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(2.75rem, 1fr));
+  gap: 0.45rem;
+}
+
+.knowledge-character-bank button {
+  min-height: 3rem;
+  color: var(--atlas-text);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--atlas-panel-raised);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-control);
+}
+
+.knowledge-character-bank button:hover:not(:disabled),
+.knowledge-character-bank button:focus-visible {
+  background: var(--atlas-accent-soft);
+  border-color: var(--atlas-accent);
+}
+
+.knowledge-character-bank button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.knowledge-character-actions {
+  display: flex;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
+.knowledge-character-actions button {
+  min-height: 2.6rem;
+  padding: 0.5rem 0.9rem;
+  font-size: var(--fs-m);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--atlas-radius-control);
+}
+
+.knowledge-character-actions .is-undo {
+  color: var(--atlas-text);
+  background: transparent;
+  border: 1px solid var(--atlas-border);
+}
+
+.knowledge-character-actions .is-confirm {
+  color: var(--atlas-canvas-deep);
+  background: var(--atlas-accent);
+  border: 1px solid var(--atlas-accent);
+}
+
+.knowledge-character-actions button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.knowledge-challenge-status {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.8rem;
+  gap: 0.7rem;
+  align-content: start;
+  overflow-y: auto;
+  background: var(--atlas-panel);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-panel);
+}
+
+.knowledge-challenge-status h2 {
+  margin: 0;
+  font-size: var(--fs-b);
+  font-weight: 600;
+}
+
+.knowledge-challenge-status dl {
+  display: grid;
+  margin: 0;
+}
+
+.knowledge-challenge-status dl > div {
+  display: grid;
+  padding: 0.55rem 0;
+  gap: 0.15rem;
+  border-bottom: 1px solid var(--atlas-border-soft);
+}
+
+.knowledge-challenge-status dt {
+  color: var(--atlas-text-muted);
+  font-size: var(--fs-m);
+}
+
+.knowledge-challenge-status dd {
+  margin: 0;
+  color: var(--atlas-text);
+  font-size: var(--fs-b);
+  font-weight: 600;
+}
+
+.knowledge-challenge-status ol {
+  display: grid;
+  padding: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin: 0;
+  list-style: none;
+}
+
+.knowledge-challenge-status li {
+  display: grid;
+  min-width: 0;
+  height: 1.5rem;
+  place-items: center;
+  color: var(--atlas-text-muted);
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border-soft);
+  border-radius: 0.2rem;
+  font-size: 0.65rem;
+}
+
+.knowledge-challenge-status li.is-correct {
+  color: var(--atlas-canvas-deep);
+  background: var(--atlas-progress);
+  border-color: var(--atlas-progress);
+}
+
+.knowledge-challenge-status li.is-wrong {
+  color: var(--atlas-text);
+  background: var(--atlas-danger);
+  border-color: var(--atlas-danger);
+}
+
+.knowledge-challenge-status li.is-viewing {
+  box-shadow: inset 0 0 0 1px var(--atlas-focus);
+}
+
 .knowledge-question-feedback {
   display: flex;
+  width: min(92rem, 100%);
   min-height: 3.75rem;
   gap: 1rem;
   align-items: center;
   justify-content: space-between;
-  margin-top: 0.75rem;
+  margin-inline: auto;
   padding: 0.65rem 0.8rem;
-  background: rgb(255 255 255 / 4%);
-  border: 1px solid rgb(255 255 255 / 7%);
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-left: 3px solid var(--atlas-accent);
   border-radius: var(--atlas-radius-control);
 }
 

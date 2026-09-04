@@ -1,6 +1,27 @@
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
+async function answerCurrentQuestion(page: Page) {
+  await expect(page.locator('.knowledge-question-card')).toBeVisible()
+  await expect(page.locator('.knowledge-question-feedback button')).toHaveCount(
+    0,
+  )
+  const choice = page.locator('.knowledge-question-options button').first()
+  if ((await choice.count()) > 0) {
+    await choice.click()
+    return
+  }
+
+  await page.locator('.knowledge-character-bank button').first().click()
+  await page.getByRole('button', { name: '确认答案' }).click()
+}
+
+async function forceChoiceQuestionSequence(page: Page) {
+  await page.addInitScript(() => {
+    Math.random = () => 0.34
+  })
+}
+
 async function openCountrySearch(page: Page) {
   const trigger = page
     .getByRole('navigation', { name: 'My Geo 主导航' })
@@ -450,10 +471,11 @@ test('resets scroll and keeps the result card visible on phone landscape', async
   page,
 }) => {
   await page.setViewportSize({ width: 844, height: 390 })
+  await forceChoiceQuestionSequence(page)
   await page.goto('/questions/asia/easy')
 
   for (let index = 0; index < 10; index += 1) {
-    await page.locator('.knowledge-question-option').first().click()
+    await answerCurrentQuestion(page)
     if (index === 9) {
       await page
         .locator('.knowledge-challenge-shell')
@@ -834,13 +856,11 @@ test('uses the contained flag contract across learning and exploration surfaces'
       .first(),
   )
 
+  await page.addInitScript(() => {
+    Math.random = () => 0
+  })
   await page.goto('/questions/asia/easy')
   await expectFramedFlag(page.locator('.knowledge-question-flag'))
-  await page.locator('.knowledge-question-options button').first().click()
-  await page.getByRole('button', { name: '下一题' }).click()
-  await expectFramedFlag(
-    page.locator('.knowledge-question-options .country-flag-frame').first(),
-  )
 
   await page.goto('/explore?country=CH')
   await waitForSceneOrFallback(page)
@@ -1438,6 +1458,103 @@ test('deletes legacy regional progress and redirects legacy challenge routes', a
   await expect(page).toHaveURL(/\/questions$/)
 })
 
+test('clears version 3 question progress while preserving preferences', async ({
+  page,
+}) => {
+  await page.goto('/icons/my-geo-mark.svg')
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const deletion = indexedDB.deleteDatabase('my-geo')
+      deletion.onsuccess = () => resolve()
+      deletion.onerror = () =>
+        reject(new Error(deletion.error?.message ?? 'Database deletion failed'))
+    })
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('my-geo', 3)
+      request.onupgradeneeded = () => {
+        const database = request.result
+        database.createObjectStore('preferences', { keyPath: 'id' })
+        database.createObjectStore('questionProgress', {
+          keyPath: 'challengeId',
+        })
+      }
+      request.onsuccess = () => {
+        const database = request.result
+        const transaction = database.transaction(
+          ['preferences', 'questionProgress'],
+          'readwrite',
+        )
+        transaction.objectStore('preferences').put({
+          id: 'current',
+          autoRotate: false,
+          quality: 'low',
+          updatedAt: 1000,
+        })
+        transaction.objectStore('questionProgress').put({
+          challengeId: 'asia:easy',
+          bestScore: 90,
+          lastScore: 90,
+          attemptCount: 2,
+          passedAt: 1000,
+          updatedAt: 1000,
+        })
+        transaction.oncomplete = () => {
+          database.close()
+          resolve()
+        }
+        transaction.onerror = () =>
+          reject(new Error(transaction.error?.message ?? 'Legacy write failed'))
+      }
+      request.onerror = () =>
+        reject(
+          new Error(request.error?.message ?? 'Legacy database open failed'),
+        )
+    })
+  })
+
+  await page.goto('/questions')
+  await expect(page.getByLabel('知识问答范围')).toContainText('0已通过')
+  const stored = await page.evaluate(
+    () =>
+      new Promise<{ progressCount: number; autoRotate?: boolean }>(
+        (resolve, reject) => {
+          const request = indexedDB.open('my-geo')
+          request.onsuccess = () => {
+            const database = request.result
+            const transaction = database.transaction(
+              ['preferences', 'questionProgress'],
+              'readonly',
+            )
+            const progressRequest = transaction
+              .objectStore('questionProgress')
+              .count()
+            const preferencesRequest = transaction
+              .objectStore('preferences')
+              .get('current')
+            transaction.oncomplete = () => {
+              const preferences = preferencesRequest.result as
+                { autoRotate?: boolean } | undefined
+              resolve({
+                progressCount: progressRequest.result,
+                autoRotate: preferences?.autoRotate,
+              })
+              database.close()
+            }
+            transaction.onerror = () =>
+              reject(
+                new Error(
+                  transaction.error?.message ?? 'Migration read failed',
+                ),
+              )
+          }
+          request.onerror = () =>
+            reject(new Error(request.error?.message ?? 'Database open failed'))
+        },
+      ),
+  )
+  expect(stored).toEqual({ progressCount: 0, autoRotate: false })
+})
+
 test('enters continent questions from the knowledge hub and persists the result', async ({
   page,
 }) => {
@@ -1452,7 +1569,7 @@ test('enters continent questions from the knowledge hub and persists the result'
     page.getByRole('heading', { name: '知识问答', level: 1 }),
   ).toBeVisible()
   await expect(page.getByLabel('知识问答范围')).toContainText(
-    '195国家5大洲3难度',
+    '195国家全球+5范围3难度',
   )
 
   await page.getByRole('tab', { name: /困难.*冷门国家/ }).click()
@@ -1463,7 +1580,7 @@ test('enters continent questions from the knowledge hub and persists the result'
   await expect(page.getByText('亚洲 · 困难')).toBeVisible()
 
   for (let index = 0; index < 10; index += 1) {
-    await page.locator('.knowledge-question-options button').first().click()
+    await answerCurrentQuestion(page)
     await page
       .getByRole('button', {
         name: index === 9 ? '查看成绩' : '下一题',
@@ -1492,11 +1609,12 @@ test('enters continent questions from the knowledge hub and persists the result'
 test('keeps flag choices anonymous in separate iPadOS cards', async ({
   page,
 }) => {
+  await forceChoiceQuestionSequence(page)
   await page.goto('/questions/asia/easy')
 
-  await page.locator('.knowledge-question-option').first().click()
-  await page.getByRole('button', { name: '下一题' }).click()
-  await expect(page.getByText('选择正确的国旗')).toBeVisible()
+  await expect(
+    page.locator('.knowledge-question-card.is-country-to-flag'),
+  ).toBeVisible()
 
   const options = page.locator('.knowledge-question-option.is-flag-choice')
   await expect(options).toHaveCount(4)
@@ -1542,6 +1660,88 @@ test('keeps flag choices anonymous in separate iPadOS cards', async ({
   await expect(options.locator('strong')).toHaveCount(0)
 })
 
+test('uses a twelve-character fill bank and keeps drafts while reviewing', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Math.random = () => 0.99
+  })
+  await page.goto('/questions/world/easy')
+
+  await expect(
+    page.getByRole('complementary', { name: '本轮状态' }),
+  ).toBeVisible()
+  await expect(page.getByRole('link', { name: '退出挑战' })).toHaveCount(0)
+  const firstBank = page.getByLabel('候选中文字')
+  const firstCharacters = firstBank.getByRole('button')
+  await expect(firstCharacters).toHaveCount(12)
+  const confirm = page.getByRole('button', { name: '确认答案' })
+  await expect(confirm).toBeDisabled()
+  await expect(page.getByLabel('已组成的答案')).not.toContainText(/\d+\s*\//)
+
+  await firstCharacters.first().click()
+  await expect(confirm).toBeEnabled()
+  await confirm.click()
+  await expect(page.getByText(/回答正确|回答错误/)).toBeVisible()
+  await page.getByRole('button', { name: '下一题' }).click()
+
+  const secondBank = page.getByLabel('候选中文字')
+  const draftCharacter = await secondBank
+    .getByRole('button')
+    .first()
+    .innerText()
+  await secondBank.getByRole('button').first().click()
+  await page.getByRole('button', { name: '上一题' }).click()
+  await expect(page.getByText(/回答正确|回答错误/)).toBeVisible()
+  await page.getByRole('button', { name: '下一题' }).click()
+  await expect(page.getByLabel('已组成的答案')).toContainText(draftCharacter)
+})
+
+for (const viewport of [
+  { name: '1440 desktop', width: 1440, height: 900 },
+  { name: 'iPad landscape', width: 1194, height: 834 },
+  { name: 'phone landscape', width: 844, height: 390 },
+  { name: 'small phone landscape', width: 568, height: 320 },
+]) {
+  test(`keeps the scheme C fill workbench usable on ${viewport.name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    })
+    await page.addInitScript(() => {
+      Math.random = () => 0.99
+    })
+    await page.goto('/questions/world/easy')
+
+    await expect(
+      page.getByRole('complementary', { name: '本轮状态' }),
+    ).toBeVisible()
+    await expect(page.getByLabel('候选中文字').getByRole('button')).toHaveCount(
+      12,
+    )
+    await expect(page.getByRole('button', { name: '确认答案' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: '上一题' })).toBeDisabled()
+
+    const geometry = await page
+      .locator('.knowledge-challenge-workbench')
+      .evaluate((workbench) => {
+        const status = workbench.querySelector('.knowledge-challenge-status')!
+        const statusBox = status.getBoundingClientRect()
+        return {
+          documentWidth: document.documentElement.scrollWidth,
+          statusRight: statusBox.right,
+          viewportWidth: document.documentElement.clientWidth,
+        }
+      })
+    expect(geometry.documentWidth).toBeLessThanOrEqual(
+      geometry.viewportWidth + 1,
+    )
+    expect(geometry.statusRight).toBeLessThanOrEqual(geometry.viewportWidth + 1)
+  })
+}
+
 for (const viewport of [
   { name: '1440 desktop', width: 1440, height: 900 },
   { name: 'iPad landscape', width: 1194, height: 834 },
@@ -1553,6 +1753,9 @@ for (const viewport of [
     await page.setViewportSize({
       width: viewport.width,
       height: viewport.height,
+    })
+    await page.addInitScript(() => {
+      Math.random = () => 0
     })
     await page.goto('/questions/asia/easy')
 
@@ -1640,7 +1843,10 @@ for (const viewport of [
     await expect(knowledgeNavigation).toBeVisible()
     await expect(knowledgeNavigation).toHaveClass(/is-active/)
     const cards = page.locator('.knowledge-question-continent-card')
-    await expect(cards).toHaveCount(5)
+    await expect(cards).toHaveCount(6)
+    await expect(
+      page.getByTestId('knowledge-question-scope-world'),
+    ).toBeVisible()
     await expect(
       page.getByRole('tab', { name: /简单.*最常见国家/ }),
     ).toBeVisible()

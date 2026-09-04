@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
+  clearLegacyQuestionProgress,
   loadExperiencePreferences,
   loadQuestionProgress,
   mergeQuestionChallengeResult,
@@ -44,6 +45,22 @@ describe('knowledge progress', () => {
         attemptCount: -1,
       }).success,
     ).toBe(false)
+    expect(
+      questionChallengeProgressSchema.safeParse({
+        ...progress,
+        challengeId: 'world:normal',
+      }).success,
+    ).toBe(true)
+  })
+
+  it('clears only the legacy question progress table during version 4 migration', () => {
+    const clear = vi.fn()
+    const table = vi.fn(() => ({ clear }))
+
+    clearLegacyQuestionProgress({ table })
+
+    expect(table).toHaveBeenCalledWith('questionProgress')
+    expect(clear).toHaveBeenCalledOnce()
   })
 
   it('falls back to memory-only outcomes when IndexedDB is unavailable', async () => {

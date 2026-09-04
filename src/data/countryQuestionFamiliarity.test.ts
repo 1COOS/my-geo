@@ -4,6 +4,7 @@ import { countries } from './countries'
 import {
   countryQuestionFamiliarity,
   getQuestionPoolCountries,
+  getQuestionPoolCountryCount,
   questionDifficultySchema,
 } from './countryQuestionFamiliarity'
 
@@ -42,5 +43,14 @@ describe('country question familiarity', () => {
         (country) => country.code,
       ),
     ).toEqual(['AU', 'NZ', 'FJ', 'PG'])
+  })
+
+  it('combines every continent into difficulty-specific world pools', () => {
+    expect(getQuestionPoolCountryCount('world', 'easy')).toBe(50)
+    expect(getQuestionPoolCountryCount('world', 'normal')).toBe(68)
+    expect(getQuestionPoolCountryCount('world', 'hard')).toBe(77)
+    expect(
+      getQuestionPoolCountries('world', 'easy').map((country) => country.code),
+    ).toEqual(expect.arrayContaining(['CN', 'FR', 'EG', 'US', 'AU']))
   })
 })
