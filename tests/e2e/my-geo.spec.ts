@@ -3230,6 +3230,162 @@ test('toggles waterbody layers, searches a sea, and replaces its selected range'
   await expect(page.getByRole('button', { name: '画质：节能' })).toBeVisible()
 })
 
+for (const viewport of [
+  { name: 'desktop', width: 1440, height: 900 },
+  { name: 'phone landscape', width: 844, height: 390 },
+]) {
+  test(`keeps the dragged and zoomed globe view while switching direct selections on ${viewport.name}`, async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+
+    const { scene, fallback } = await waitForSceneOrFallback(page)
+    if (await fallback.isVisible()) return
+
+    await page.waitForTimeout(1_200)
+    const autoRotateButton = page.getByRole('button', { name: /自动旋转：/ })
+    if ((await autoRotateButton.getAttribute('aria-pressed')) === 'true') {
+      await autoRotateButton.click()
+    }
+    await expect(autoRotateButton).toHaveAttribute('aria-pressed', 'false')
+
+    const layerControl = await openLayerControl(page)
+    await layerControl.getByRole('button', { name: '海洋' }).click()
+    await layerControl.getByRole('button', { name: '水域' }).click()
+    const layerTrigger = layerControl.getByRole('button', {
+      name: /图层，已开启 \d+ 项/,
+    })
+    await layerTrigger.click()
+    await expect(layerTrigger).toHaveAttribute('aria-expanded', 'false')
+
+    const marker = page.getByTestId('world-mini-map-view-marker')
+    const initialMarkerTransform = await marker.getAttribute('transform')
+    const sceneBox = await scene.boundingBox()
+    expect(sceneBox).not.toBeNull()
+
+    await page.mouse.move(
+      sceneBox!.x + sceneBox!.width * 0.52,
+      sceneBox!.y + sceneBox!.height * 0.5,
+    )
+    await page.mouse.wheel(0, -180)
+    await page.mouse.down()
+    await page.mouse.move(
+      sceneBox!.x + sceneBox!.width * 0.6,
+      sceneBox!.y + sceneBox!.height * 0.55,
+      { steps: 8 },
+    )
+    await page.mouse.up()
+    await expect(scene).toHaveAttribute('data-controls-interacting', 'false')
+    await expect
+      .poll(() => marker.getAttribute('transform'))
+      .not.toBe(initialMarkerTransform)
+    await page.waitForTimeout(4_500)
+    await expect
+      .poll(() => page.locator('.waterbody-label:not([hidden])').count())
+      .toBeGreaterThanOrEqual(3)
+
+    const parseMarkerPosition = (transform: string | null) => {
+      const values = transform?.match(/translate\(([-\d.]+)\s+([-\d.]+)\)/)
+      if (!values) throw new Error(`Invalid mini-map marker: ${transform}`)
+      return { x: Number(values[1]), y: Number(values[2]) }
+    }
+    const parseLabelPosition = (transform: string) => {
+      const values = transform.match(
+        /translate3d\(([-\d.]+)px,\s*([-\d.]+)px,\s*0(?:px)?\)/,
+      )
+      if (!values) throw new Error(`Invalid globe label: ${transform}`)
+      return { x: Number(values[1]), y: Number(values[2]) }
+    }
+    const projectionTolerance = 2
+
+    const selectWithoutMovingView = async (excludedId?: string) => {
+      const targetId = await page
+        .locator('.waterbody-label:not([hidden])')
+        .evaluateAll((labels, excluded) => {
+          const target = labels.find(
+            (label) => label.getAttribute('data-waterbody-id') !== excluded,
+          )
+          return target?.getAttribute('data-waterbody-id') ?? null
+        }, excludedId)
+      expect(targetId).not.toBeNull()
+
+      const target = page.locator(
+        `.waterbody-label[data-waterbody-id="${targetId}"]`,
+      )
+      const targetName = (await target.textContent())?.trim()
+      const markerPosition = parseMarkerPosition(
+        await marker.getAttribute('transform'),
+      )
+      const witnessPositions = new Map(
+        (
+          await page.locator('.waterbody-label:not([hidden])').evaluateAll(
+            (labels, excluded) =>
+              labels
+                .filter((label) => {
+                  const id = label.getAttribute('data-waterbody-id')
+                  return id !== excluded.targetId && id !== excluded.previousId
+                })
+                .map((label) => ({
+                  id: label.getAttribute('data-waterbody-id')!,
+                  transform: (label as HTMLElement).style.transform,
+                })),
+            { targetId, previousId: excludedId },
+          )
+        ).map(({ id, transform }) => [id, parseLabelPosition(transform)]),
+      )
+      expect(witnessPositions.size).toBeGreaterThan(0)
+
+      await target.click()
+
+      await expect(target).toHaveClass(/is-selected/)
+      await expect(page.getByLabel(`${targetName}水域知识卡`)).toBeVisible()
+      await page.waitForTimeout(1_200)
+      const nextMarkerPosition = parseMarkerPosition(
+        await marker.getAttribute('transform'),
+      )
+      const nextWitnessPositions = await page
+        .locator('.waterbody-label:not([hidden])')
+        .evaluateAll((labels) =>
+          labels.map((label) => ({
+            id: label.getAttribute('data-waterbody-id')!,
+            transform: (label as HTMLElement).style.transform,
+          })),
+        )
+      const witnessDeltas = nextWitnessPositions.flatMap(
+        ({ id, transform }) => {
+          const before = witnessPositions.get(id)
+          if (!before) return []
+          const after = parseLabelPosition(transform)
+          return [
+            Math.max(
+              Math.abs(after.x - before.x),
+              Math.abs(after.y - before.y),
+            ),
+          ]
+        },
+      )
+      expect(witnessDeltas.length).toBeGreaterThan(0)
+      expect(Math.min(...witnessDeltas)).toBeLessThan(projectionTolerance)
+      expect(Math.abs(nextMarkerPosition.x - markerPosition.x)).toBeLessThan(
+        projectionTolerance,
+      )
+      expect(Math.abs(nextMarkerPosition.y - markerPosition.y)).toBeLessThan(
+        projectionTolerance,
+      )
+      return targetId!
+    }
+
+    const firstId = await selectWithoutMovingView()
+    const secondId = await selectWithoutMovingView(firstId)
+    expect(secondId).not.toBe(firstId)
+    await expect(
+      page.locator(`.waterbody-label[data-waterbody-id="${firstId}"]`),
+    ).not.toHaveClass(/is-selected/)
+  })
+}
+
 test('shows the lake layer and opens the Lake Baikal knowledge card', async ({
   page,
 }) => {

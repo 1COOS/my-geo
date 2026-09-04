@@ -462,7 +462,7 @@ export function ExplorePage() {
     },
     [],
   )
-  const openGeographyTopic = useCallback(
+  const selectGeographyTopic = useCallback(
     (
       topicId: GeographyTopicId,
       referenceLineId: ReferenceLineId | null = null,
@@ -483,6 +483,16 @@ export function ExplorePage() {
               : { kind: 'overview', focusTopicId: topicId },
         },
       })
+    },
+    [],
+  )
+  const openGeographyTopic = useCallback(
+    (
+      topicId: GeographyTopicId,
+      referenceLineId: ReferenceLineId | null = null,
+    ) => {
+      const referenceLine = getReferenceLine(referenceLineId)
+      selectGeographyTopic(topicId, referenceLineId)
       if (referenceLine) {
         requestCameraTarget(
           referenceLine.focusPosition,
@@ -490,7 +500,7 @@ export function ExplorePage() {
         )
       }
     },
-    [requestCameraTarget],
+    [requestCameraTarget, selectGeographyTopic],
   )
   const openGeographyOverview = useCallback(
     (focusTopicId: GeographyTopicId | null = null) => {
@@ -576,83 +586,113 @@ export function ExplorePage() {
     },
     [quality, requestCameraTarget],
   )
+  const selectCountry = useCallback((countryCode: string) => {
+    const country = getCountry(countryCode)
+    if (!country) return
+    setMiniMapExpanded(false)
+    dispatch({
+      type: 'select',
+      selection: { kind: 'country', countryCode },
+    })
+  }, [])
   const navigateToCountry = useCallback(
     (countryCode: string) => {
       const country = getCountry(countryCode)
       if (!country) return
-      setMiniMapExpanded(false)
-      dispatch({
-        type: 'select',
-        selection: { kind: 'country', countryCode },
-      })
+      selectCountry(countryCode)
       requestCameraTarget(country.center)
     },
-    [requestCameraTarget],
+    [requestCameraTarget, selectCountry],
   )
+  const selectWaterbody = useCallback((waterbodyId: string) => {
+    const waterbody = getWaterbody(waterbodyId)
+    if (!waterbody) return
+    setMiniMapExpanded(false)
+    dispatch({
+      type: 'select',
+      selection: { kind: 'waterbody', waterbodyId: waterbody.id },
+    })
+  }, [])
   const navigateToWaterbody = useCallback(
     (waterbodyId: string) => {
       const waterbody = getWaterbody(waterbodyId)
       if (!waterbody) return
-      setMiniMapExpanded(false)
-      dispatch({
-        type: 'select',
-        selection: { kind: 'waterbody', waterbodyId: waterbody.id },
-      })
+      selectWaterbody(waterbodyId)
       requestCameraTarget(waterbody.center, waterbody.cameraDistance)
     },
-    [requestCameraTarget],
+    [requestCameraTarget, selectWaterbody],
   )
+  const selectLinearFeature = useCallback((featureId: string) => {
+    const feature = getLinearGeoFeature(featureId)
+    if (!feature) return
+    setMiniMapExpanded(false)
+    dispatch({
+      type: 'select',
+      selection: { kind: 'linearFeature', featureId: feature.id },
+    })
+  }, [])
   const navigateToLinearFeature = useCallback(
     (featureId: string) => {
       const feature = getLinearGeoFeature(featureId)
       if (!feature) return
-      setMiniMapExpanded(false)
-      dispatch({
-        type: 'select',
-        selection: { kind: 'linearFeature', featureId: feature.id },
-      })
+      selectLinearFeature(featureId)
       requestCameraTarget(feature.cameraPosition, feature.cameraDistance)
     },
-    [requestCameraTarget],
+    [requestCameraTarget, selectLinearFeature],
   )
+  const selectMountainRange = useCallback((rangeId: string) => {
+    const range = getMountainRange(rangeId)
+    if (!range) return
+    setMiniMapExpanded(false)
+    dispatch({
+      type: 'select',
+      selection: { kind: 'mountainRange', rangeId: range.id },
+    })
+  }, [])
   const navigateToMountainRange = useCallback(
     (rangeId: string) => {
       const range = getMountainRange(rangeId)
       if (!range) return
-      setMiniMapExpanded(false)
-      dispatch({
-        type: 'select',
-        selection: { kind: 'mountainRange', rangeId: range.id },
-      })
+      selectMountainRange(rangeId)
       requestCameraTarget(range.cameraPosition, range.cameraDistance)
     },
-    [requestCameraTarget],
+    [requestCameraTarget, selectMountainRange],
   )
+  const selectDesert = useCallback((desertId: string) => {
+    const desert = getDesert(desertId)
+    if (!desert) return
+    setMiniMapExpanded(false)
+    dispatch({
+      type: 'select',
+      selection: { kind: 'desert', desertId: desert.id },
+    })
+  }, [])
   const navigateToDesert = useCallback(
     (desertId: string) => {
       const desert = getDesert(desertId)
       if (!desert) return
-      setMiniMapExpanded(false)
-      dispatch({
-        type: 'select',
-        selection: { kind: 'desert', desertId: desert.id },
-      })
+      selectDesert(desertId)
       requestCameraTarget(desert.center, desert.cameraDistance)
     },
-    [requestCameraTarget],
+    [requestCameraTarget, selectDesert],
   )
+  const selectLandmark = useCallback((landmarkId: string) => {
+    const landmark = getLandmark(landmarkId)
+    if (!landmark) return
+    setMiniMapExpanded(false)
+    dispatch({
+      type: 'select',
+      selection: { kind: 'landmark', landmarkId: landmark.id },
+    })
+  }, [])
   const navigateToLandmark = useCallback(
     (landmarkId: string) => {
       const landmark = getLandmark(landmarkId)
       if (!landmark) return
-      setMiniMapExpanded(false)
-      dispatch({
-        type: 'select',
-        selection: { kind: 'landmark', landmarkId: landmark.id },
-      })
+      selectLandmark(landmarkId)
       requestCameraTarget(landmark.position, LANDMARK_CAMERA_DISTANCE)
     },
-    [requestCameraTarget],
+    [requestCameraTarget, selectLandmark],
   )
   const requestedDeepLinks = useMemo(() => {
     const searchParams = new URLSearchParams(window.location.search)
@@ -941,19 +981,19 @@ export function ExplorePage() {
               hoveredLandmarkId,
             }}
             events={{
-              onSelectCountry: navigateToCountry,
+              onSelectCountry: selectCountry,
               onHoverCountry: hoverCountry,
-              onSelectWaterbody: navigateToWaterbody,
+              onSelectWaterbody: selectWaterbody,
               onHoverWaterbody: hoverWaterbody,
-              onSelectLinearFeature: navigateToLinearFeature,
+              onSelectLinearFeature: selectLinearFeature,
               onHoverLinearFeature: hoverLinearFeature,
-              onSelectMountainRange: navigateToMountainRange,
+              onSelectMountainRange: selectMountainRange,
               onHoverMountainRange: hoverMountainRange,
-              onSelectDesert: navigateToDesert,
+              onSelectDesert: selectDesert,
               onHoverDesert: hoverDesert,
-              onSelectLandmark: navigateToLandmark,
+              onSelectLandmark: selectLandmark,
               onHoverLandmark: hoverLandmark,
-              onSelectGeographyTopic: openGeographyTopic,
+              onSelectGeographyTopic: selectGeographyTopic,
               onSelectClimatePosition: (position) =>
                 selectClimateAtPosition(position, false),
               onViewCenterChange: handleViewCenterChange,

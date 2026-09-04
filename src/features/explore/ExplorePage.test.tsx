@@ -553,40 +553,102 @@ describe('ExplorePage', () => {
     expect(layerTrigger).toHaveFocus()
   })
 
-  it('creates a new camera request when the same country is selected twice', () => {
+  it('keeps the camera target unchanged when globe objects are selected directly', () => {
     render(
       <Tooltip.Provider>
         <ExplorePage />
       </Tooltip.Provider>,
     )
 
-    act(() => {
-      ;(
-        globePropsMock.mock.lastCall![0] as {
-          onSelectCountry: (countryCode: string) => void
-        }
-      ).onSelectCountry('CN')
-    })
-    const firstRequestId = (
+    const getProps = () =>
       globePropsMock.mock.lastCall![0] as {
-        cameraTarget: { requestId: number }
-      }
-    ).cameraTarget.requestId
-
-    act(() => {
-      ;(
-        globePropsMock.mock.lastCall![0] as {
-          onSelectCountry: (countryCode: string) => void
+        cameraTarget: {
+          requestId: number
+          position: GeoPosition
+          distance: number
         }
-      ).onSelectCountry('CN')
-    })
-    const secondRequestId = (
-      globePropsMock.mock.lastCall![0] as {
-        cameraTarget: { requestId: number }
+        selectedCountryCode: string | null
+        selectedWaterbodyId: string | null
+        selectedLinearFeatureId: string | null
+        selectedMountainRangeId: string | null
+        selectedDesertId: string | null
+        selectedLandmarkId: string | null
+        selectedReferenceLineId: string | null
       }
-    ).cameraTarget.requestId
+    const initialCameraTarget = structuredClone(getProps().cameraTarget)
+    const directSelections = [
+      {
+        event: 'onSelectCountry',
+        args: ['CN'],
+        expected: { selectedCountryCode: 'CN' },
+      },
+      {
+        event: 'onSelectWaterbody',
+        args: ['pacific-ocean'],
+        expected: { selectedWaterbodyId: 'pacific-ocean' },
+      },
+      {
+        event: 'onSelectLinearFeature',
+        args: ['yangtze-system'],
+        expected: { selectedLinearFeatureId: 'yangtze-system' },
+      },
+      {
+        event: 'onSelectMountainRange',
+        args: ['himalayas'],
+        expected: { selectedMountainRangeId: 'himalayas' },
+      },
+      {
+        event: 'onSelectDesert',
+        args: ['sahara'],
+        expected: { selectedDesertId: 'sahara' },
+      },
+      {
+        event: 'onSelectLandmark',
+        args: ['great-wall'],
+        expected: { selectedLandmarkId: 'great-wall' },
+      },
+      {
+        event: 'onSelectGeographyTopic',
+        args: ['earth-zones', 'tropic-of-cancer'],
+        expected: { selectedReferenceLineId: 'tropic-of-cancer' },
+      },
+    ] as const
 
-    expect(secondRequestId).toBeGreaterThan(firstRequestId)
+    for (const selection of directSelections) {
+      callGlobeEvent(selection.event, ...selection.args)
+      expect(getProps()).toMatchObject(selection.expected)
+      expect(getProps().cameraTarget).toEqual(initialCameraTarget)
+    }
+
+    callGlobeEvent('onSelectCountry', 'CN')
+    expect(getProps().cameraTarget).toEqual(initialCameraTarget)
+  })
+
+  it('still creates a camera request for the explicit reset action', async () => {
+    const user = userEvent.setup()
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+    const getCameraTarget = () =>
+      (
+        globePropsMock.mock.lastCall![0] as {
+          cameraTarget: {
+            requestId: number
+            position: GeoPosition
+            distance: number
+          }
+        }
+      ).cameraTarget
+    const initialRequestId = getCameraTarget().requestId
+
+    await user.click(screen.getByRole('button', { name: '重置视角' }))
+
+    expect(getCameraTarget()).toMatchObject({
+      requestId: initialRequestId + 1,
+      distance: 425,
+    })
   })
 
   it('shows only the fallback when WebGL is unavailable', () => {
@@ -1182,6 +1244,7 @@ describe('ExplorePage', () => {
         cameraTarget: { position: { latitude: number; longitude: number } }
       }
 
+    const initialCameraTarget = structuredClone(getProps().cameraTarget)
     callGlobeEvent('onSelectGeographyTopic', 'earth-zones', 'tropic-of-cancer')
 
     expect(screen.getByLabelText('地球经纬线知识卡')).toBeInTheDocument()
@@ -1193,10 +1256,8 @@ describe('ExplorePage', () => {
       showGeographyLearningLayer: true,
       selectedGeographyTopicId: 'earth-zones',
       selectedReferenceLineId: 'tropic-of-cancer',
-      cameraTarget: {
-        position: { latitude: 23.5, longitude: 105 },
-      },
     })
+    expect(getProps().cameraTarget).toEqual(initialCameraTarget)
 
     callGlobeEvent('onSelectCountry', 'CN')
     expect(screen.queryByLabelText('地球经纬线知识卡')).not.toBeInTheDocument()

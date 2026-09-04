@@ -210,7 +210,7 @@ export function GlobeDomOverlay({
             )}`}
             data-map-label-id={waterbody.id}
             data-waterbody-id={waterbody.id}
-            aria-label={`定位到${waterbody.name.zh}${waterbodyKindLabels[waterbody.kind]}`}
+            aria-label={`选择${waterbody.name.zh}${waterbodyKindLabels[waterbody.kind]}`}
             onPointerEnter={() => {
               if (!controlsInteractingRef.current) {
                 props.onHoverWaterbody(waterbody.id)
@@ -235,7 +235,7 @@ export function GlobeDomOverlay({
             }
             data-map-label-id={feature.id}
             data-linear-feature-id={feature.id}
-            aria-label={`定位到${feature.name.zh}${linearGeoFeatureKindLabels[feature.kind]}`}
+            aria-label={`选择${feature.name.zh}${linearGeoFeatureKindLabels[feature.kind]}`}
             onPointerEnter={() => {
               if (!controlsInteractingRef.current) {
                 props.onHoverLinearFeature(feature.id)
@@ -260,7 +260,7 @@ export function GlobeDomOverlay({
             }
             data-map-label-id={range.id}
             data-mountain-range-id={range.id}
-            aria-label={`定位到${range.name.zh}`}
+            aria-label={`选择${range.name.zh}`}
             onPointerEnter={() => {
               if (!controlsInteractingRef.current) {
                 props.onHoverMountainRange(range.id)
@@ -285,7 +285,7 @@ export function GlobeDomOverlay({
             }
             data-map-label-id={desert.id}
             data-desert-id={desert.id}
-            aria-label={`定位到${desert.name.zh}`}
+            aria-label={`选择${desert.name.zh}`}
             onPointerEnter={() => {
               if (!controlsInteractingRef.current) {
                 props.onHoverDesert(desert.id)
@@ -310,7 +310,7 @@ export function GlobeDomOverlay({
             }
             data-map-label-id={landmark.id}
             data-landmark-id={landmark.id}
-            aria-label={`定位到古迹${landmark.name.zh}`}
+            aria-label={`选择古迹${landmark.name.zh}`}
             onPointerEnter={() => {
               if (!controlsInteractingRef.current) {
                 props.onHoverLandmark(landmark.id)
