@@ -11,11 +11,13 @@ import {
   getInternationalAffiliationsForCountry,
   internationalAffiliations,
 } from '../../data/internationalOrganizations'
-import type {
-  InternationalAffiliation,
-  InternationalAffiliationCategory,
-} from '../../data/internationalOrganizationSchema'
+import type { InternationalAffiliation } from '../../data/internationalOrganizationSchema'
 import { CountryFlag } from '../../shared/components/CountryFlag'
+import {
+  getTerritoriesForCountry,
+  territoryTypeLabels,
+} from '../../data/territories'
+import { InternationalAffiliationDialog } from './InternationalAffiliationDialog'
 
 export type CountryKnowledgeChapterId =
   'people' | 'resources' | 'economy' | 'cities' | 'international-relations'
@@ -24,6 +26,7 @@ type CountryKnowledgeSectionsProps = {
   country: Country
   cities: City[]
   onSelectCountry: (countryCode: string) => void
+  onSelectTerritory?: (territoryId: string) => void
   openChapter?: CountryKnowledgeChapterId | null
   onOpenChapterChange?: (chapter: CountryKnowledgeChapterId | null) => void
 }
@@ -193,7 +196,7 @@ const cityRowStyle = {
   display: 'grid',
   width: '100%',
   minWidth: 0,
-  padding: '0.42rem 0.5rem',
+  padding: '0.28rem 0.42rem',
   boxSizing: 'border-box',
   gridTemplateColumns: 'minmax(0, auto) minmax(0, 1fr)',
   gap: '0.55rem',
@@ -214,7 +217,10 @@ const cityEnglishStyle = {
   whiteSpace: 'nowrap',
 } satisfies CSSProperties
 
-const neighbourFlagStyle = { width: '1.2rem' } satisfies CSSProperties
+const neighbourFlagStyle = {
+  width: '1.2rem',
+  marginRight: '0.2rem',
+} satisfies CSSProperties
 
 const affiliationListStyle = {
   display: 'grid',
@@ -223,33 +229,47 @@ const affiliationListStyle = {
 } satisfies CSSProperties
 
 const affiliationItemStyle = {
-  ...inlineActionStyle,
   display: 'grid',
   width: '100%',
-  gap: '0.08rem',
-  alignItems: 'start',
+  minHeight: '2rem',
+  padding: '0.28rem 0.42rem',
+  gridTemplateColumns: 'max-content minmax(0, 1fr)',
+  gap: '0.4rem',
+  alignItems: 'center',
+  color: 'var(--atlas-text-secondary)',
+  textAlign: 'left',
+  cursor: 'pointer',
+  background: 'var(--atlas-panel-muted)',
+  border: '1px solid var(--atlas-border-soft)',
+  borderRadius: 'var(--atlas-radius-control)',
+} satisfies CSSProperties
+
+const affiliationMonogramStyle = {
+  display: 'inline-flex',
+  minWidth: '2.25rem',
+  minHeight: '1.5rem',
+  padding: '0.1rem 0.2rem',
+  boxSizing: 'border-box',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: 'var(--atlas-text)',
+  fontSize: '0.62rem',
+  fontWeight: 800,
+  lineHeight: 1.1,
+  letterSpacing: '0.025em',
+  background: 'var(--atlas-accent-soft)',
+  border: '1px solid var(--atlas-accent)',
+  borderRadius: 'var(--atlas-radius-control)',
 } satisfies CSSProperties
 
 const affiliationNameStyle = {
-  color: 'var(--atlas-text)',
-  fontWeight: 600,
+  minWidth: 0,
+  overflowWrap: 'anywhere',
+  color: 'var(--atlas-text-secondary)',
+  fontSize: 'inherit',
+  fontWeight: 400,
+  lineHeight: 'inherit',
 } satisfies CSSProperties
-
-const affiliationDescriptionStyle = {
-  color: 'var(--atlas-text-muted)',
-  fontSize: 'var(--fs-s)',
-  lineHeight: 1.35,
-} satisfies CSSProperties
-
-const affiliationCategories: Array<{
-  category: InternationalAffiliationCategory
-  label: string
-}> = [
-  { category: 'global', label: '全球' },
-  { category: 'regional', label: '区域' },
-  { category: 'functional', label: '功能' },
-  { category: 'security', label: '安全' },
-]
 
 export function CountrySignatureLabels({
   signature,
@@ -276,11 +296,16 @@ export function CountryKnowledgeSections({
   country,
   cities,
   onSelectCountry,
+  onSelectTerritory,
   openChapter: controlledOpenChapter,
   onOpenChapterChange,
 }: CountryKnowledgeSectionsProps) {
   const [uncontrolledOpenChapter, setUncontrolledOpenChapter] =
     useState<CountryKnowledgeChapterId | null>(null)
+  const [selectedAffiliationId, setSelectedAffiliationId] = useState<
+    string | null
+  >(null)
+  const [affiliationDialogOpen, setAffiliationDialogOpen] = useState(false)
   const openChapter =
     controlledOpenChapter === undefined
       ? uncontrolledOpenChapter
@@ -291,6 +316,10 @@ export function CountryKnowledgeSections({
   const economyRows = getEconomyRows(profile.economy)
   const summaryCity = cities.find((city) => !city.isCapital) ?? cities[0]
   const affiliations = getInternationalAffiliationsForCountry(country.code)
+  const selectedAffiliation =
+    affiliations.find(
+      (affiliation) => affiliation.id === selectedAffiliationId,
+    ) ?? null
 
   const toggleChapter = (chapter: CountryKnowledgeChapterId) => {
     const nextChapter = openChapter === chapter ? null : chapter
@@ -348,64 +377,79 @@ export function CountryKnowledgeSections({
           country={country}
           affiliations={affiliations}
           onSelectCountry={onSelectCountry}
+          onSelectTerritory={onSelectTerritory}
+          selectedAffiliationId={
+            affiliationDialogOpen ? (selectedAffiliation?.id ?? null) : null
+          }
+          onSelectAffiliation={(affiliationId) => {
+            setSelectedAffiliationId(affiliationId)
+            setAffiliationDialogOpen(true)
+          }}
         />
       ),
     },
   ]
 
   return (
-    <div className="knowledge-country-sections">
-      {chapters.map((chapter) => {
-        const expanded = openChapter === chapter.id
-        const contentId = `${contentPrefix}-${chapter.id}`
-        return (
-          <section
-            key={chapter.id}
-            className={`knowledge-country-chapter is-${chapter.id}`}
-            style={chapterStyle}
-          >
-            <h3 style={chapterHeadingStyle}>
-              <button
-                type="button"
-                className="knowledge-country-chapter-trigger"
-                style={{
-                  ...chapterTriggerBaseStyle,
-                  background: 'transparent',
-                }}
-                aria-expanded={expanded}
-                aria-controls={contentId}
-                onClick={() => toggleChapter(chapter.id)}
-              >
-                <ChapterIcon chapter={chapter.id} />
-                <span
-                  className="knowledge-country-chapter-copy"
-                  style={chapterCopyStyle}
+    <>
+      <div className="knowledge-country-sections">
+        {chapters.map((chapter) => {
+          const expanded = openChapter === chapter.id
+          const contentId = `${contentPrefix}-${chapter.id}`
+          return (
+            <section
+              key={chapter.id}
+              className={`knowledge-country-chapter is-${chapter.id}`}
+              style={chapterStyle}
+            >
+              <h3 style={chapterHeadingStyle}>
+                <button
+                  type="button"
+                  className="knowledge-country-chapter-trigger"
+                  style={{
+                    ...chapterTriggerBaseStyle,
+                    background: 'transparent',
+                  }}
+                  aria-expanded={expanded}
+                  aria-controls={contentId}
+                  onClick={() => toggleChapter(chapter.id)}
                 >
-                  <strong style={chapterTitleStyle}>{chapter.title}</strong>
-                  <small style={chapterSummaryStyle}>{chapter.summary}</small>
-                </span>
-                <span
-                  className="knowledge-country-chapter-disclosure"
-                  style={chapterDisclosureStyle}
-                  aria-hidden="true"
+                  <ChapterIcon chapter={chapter.id} />
+                  <span
+                    className="knowledge-country-chapter-copy"
+                    style={chapterCopyStyle}
+                  >
+                    <strong style={chapterTitleStyle}>{chapter.title}</strong>
+                    <small style={chapterSummaryStyle}>{chapter.summary}</small>
+                  </span>
+                  <span
+                    className="knowledge-country-chapter-disclosure"
+                    style={chapterDisclosureStyle}
+                    aria-hidden="true"
+                  >
+                    {expanded ? '−' : '+'}
+                  </span>
+                </button>
+              </h3>
+              {expanded ? (
+                <div
+                  id={contentId}
+                  className="knowledge-country-chapter-content"
+                  style={chapterContentStyle}
                 >
-                  {expanded ? '−' : '+'}
-                </span>
-              </button>
-            </h3>
-            {expanded ? (
-              <div
-                id={contentId}
-                className="knowledge-country-chapter-content"
-                style={chapterContentStyle}
-              >
-                {chapter.content}
-              </div>
-            ) : null}
-          </section>
-        )
-      })}
-    </div>
+                  {chapter.content}
+                </div>
+              ) : null}
+            </section>
+          )
+        })}
+      </div>
+      <InternationalAffiliationDialog
+        affiliation={selectedAffiliation}
+        open={affiliationDialogOpen && selectedAffiliation !== null}
+        onOpenChange={setAffiliationDialogOpen}
+      />
+    </>
   )
 }
 
@@ -526,9 +570,18 @@ function InternationalRelationsChapter({
   country,
   affiliations,
   onSelectCountry,
-}: Pick<CountryKnowledgeSectionsProps, 'country' | 'onSelectCountry'> & {
+  onSelectTerritory,
+  selectedAffiliationId,
+  onSelectAffiliation,
+}: Pick<
+  CountryKnowledgeSectionsProps,
+  'country' | 'onSelectCountry' | 'onSelectTerritory'
+> & {
   affiliations: InternationalAffiliation[]
+  selectedAffiliationId: string | null
+  onSelectAffiliation: (affiliationId: string) => void
 }) {
+  const relatedTerritories = getTerritoriesForCountry(country.code)
   return (
     <>
       <InfoRow label="邻国">
@@ -573,17 +626,43 @@ function InternationalRelationsChapter({
           </div>
         </InfoRow>
       ) : null}
+      {relatedTerritories.length > 0 ? (
+        <InfoRow label="属地">
+          <div style={inlineActionsStyle}>
+            {relatedTerritories.map((territory) =>
+              onSelectTerritory ? (
+                <button
+                  type="button"
+                  key={territory.id}
+                  style={inlineActionStyle}
+                  aria-label={`探索地区${territory.name.zh}`}
+                  onClick={() => onSelectTerritory(territory.id)}
+                  title={territoryTypeLabels[territory.type]}
+                >
+                  {territory.name.zh}
+                </button>
+              ) : (
+                <a
+                  key={territory.id}
+                  style={inlineActionStyle}
+                  href={`/explore?territory=${territory.id}`}
+                  title={territoryTypeLabels[territory.type]}
+                >
+                  {territory.name.zh}
+                </a>
+              ),
+            )}
+          </div>
+        </InfoRow>
+      ) : null}
       {affiliations.length > 0 ? (
-        affiliationCategories.map(({ category, label }) => {
-          const categoryAffiliations = affiliations.filter(
-            (affiliation) => affiliation.category === category,
-          )
-          return categoryAffiliations.length > 0 ? (
-            <InfoRow key={category} label={label}>
-              <AffiliationList affiliations={categoryAffiliations} />
-            </InfoRow>
-          ) : null
-        })
+        <InfoRow label="组织">
+          <AffiliationList
+            affiliations={affiliations}
+            selectedAffiliationId={selectedAffiliationId}
+            onSelectAffiliation={onSelectAffiliation}
+          />
+        </InfoRow>
       ) : (
         <InfoRow label="组织">
           在当前收录的{internationalAffiliations.length}项中暂无正式成员身份
@@ -595,20 +674,31 @@ function InternationalRelationsChapter({
 
 function AffiliationList({
   affiliations,
+  selectedAffiliationId,
+  onSelectAffiliation,
 }: {
   affiliations: InternationalAffiliation[]
+  selectedAffiliationId: string | null
+  onSelectAffiliation: (affiliationId: string) => void
 }) {
   return (
     <div style={affiliationListStyle}>
       {affiliations.map((affiliation) => (
-        <span key={affiliation.id} style={affiliationItemStyle}>
-          <span style={affiliationNameStyle}>
-            {affiliation.name.zh}（{affiliation.abbreviation}）
+        <button
+          type="button"
+          key={affiliation.id}
+          className="knowledge-country-affiliation-trigger"
+          style={affiliationItemStyle}
+          aria-label={`查看${affiliation.name.zh}详情`}
+          aria-haspopup="dialog"
+          aria-expanded={selectedAffiliationId === affiliation.id}
+          onClick={() => onSelectAffiliation(affiliation.id)}
+        >
+          <span style={affiliationMonogramStyle} aria-hidden="true">
+            {affiliation.monogram}
           </span>
-          <small style={affiliationDescriptionStyle}>
-            {affiliation.description}
-          </small>
-        </span>
+          <span style={affiliationNameStyle}>{affiliation.name.zh}</span>
+        </button>
       ))}
     </div>
   )

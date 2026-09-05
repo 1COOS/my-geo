@@ -8,10 +8,12 @@ import type {
 import type { LinearGeoFeature } from '../../data/linearGeoFeatureSchema'
 import type { Landmark } from '../../data/landmarkSchema'
 import type { MountainRange } from '../../data/mountainRangeSchema'
+import type { Territory } from '../../data/territorySchema'
 import type { Waterbody } from '../../data/waterbodySchema'
 
 export type PlaceSearchResult =
   | { type: 'country'; country: Country }
+  | { type: 'territory'; territory: Territory }
   | { type: 'waterbody'; waterbody: Waterbody }
   | { type: 'linearFeature'; feature: LinearGeoFeature }
   | { type: 'mountainRange'; range: MountainRange }
@@ -65,6 +67,7 @@ export function searchPlaces(
     aliases: string[]
   },
   climateTypes: ClimateType[] = [],
+  territories: Territory[] = [],
 ): PlaceSearchResult[] {
   const normalizedQuery = normalizePlaceSearch(query)
   if (!normalizedQuery) {
@@ -90,6 +93,25 @@ export function searchPlaces(
         result: { type: 'country', country },
         score,
         name: country.name.zh,
+      })
+    }
+  }
+
+  for (const territory of territories) {
+    const score = matchScore(
+      [
+        territory.code,
+        territory.name.zh,
+        territory.name.en,
+        ...territory.aliases,
+      ],
+      normalizedQuery,
+    )
+    if (score < 10) {
+      scored.push({
+        result: { type: 'territory', territory },
+        score: score + 0.02,
+        name: territory.name.zh,
       })
     }
   }
@@ -291,6 +313,8 @@ export function getExplorePathForPlaceSearchResult(result: PlaceSearchResult) {
   const searchParams = new URLSearchParams()
   if (result.type === 'country') {
     searchParams.set('country', result.country.code)
+  } else if (result.type === 'territory') {
+    searchParams.set('territory', result.territory.id)
   } else if (result.type === 'waterbody') {
     searchParams.set('waterbody', result.waterbody.id)
   } else if (result.type === 'linearFeature') {

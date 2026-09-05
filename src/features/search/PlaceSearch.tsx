@@ -14,6 +14,7 @@ import {
 } from '../../data/linearGeoFeatures'
 import { mountainRanges } from '../../data/mountainRanges'
 import { waterbodies, waterbodyKindLabels } from '../../data/waterbodies'
+import { territories, territoryTypeLabels } from '../../data/territories'
 import { CountryFlag } from '../../shared/components/CountryFlag'
 import { searchPlaces, type PlaceSearchResult } from './placeSearchUtils'
 
@@ -27,6 +28,7 @@ type PlaceSearchProps = {
 
 function resultId(result: PlaceSearchResult) {
   if (result.type === 'country') return `country-${result.country.code}`
+  if (result.type === 'territory') return `territory-${result.territory.id}`
   if (result.type === 'linearFeature') return `linear-${result.feature.id}`
   if (result.type === 'mountainRange') return `mountain-${result.range.id}`
   if (result.type === 'desert') return `desert-${result.desert.id}`
@@ -67,6 +69,7 @@ export function PlaceSearch({
         geographyReferenceLines,
         climateLearningTopic,
         climateTypes,
+        territories,
       ),
     [query],
   )
@@ -81,21 +84,23 @@ export function PlaceSearch({
     setQuery(
       result.type === 'country'
         ? result.country.name.zh
-        : result.type === 'waterbody'
-          ? result.waterbody.name.zh
-          : result.type === 'linearFeature'
-            ? result.feature.name.zh
-            : result.type === 'mountainRange'
-              ? result.range.name.zh
-              : result.type === 'desert'
-                ? result.desert.name.zh
-                : result.type === 'landmark'
-                  ? result.landmark.name.zh
-                  : result.type === 'geographyTopic'
-                    ? (result.referenceLine?.name.zh ?? result.topic.name.zh)
-                    : result.type === 'climateType'
-                      ? result.climateType.name.zh
-                      : result.topic.name.zh,
+        : result.type === 'territory'
+          ? result.territory.name.zh
+          : result.type === 'waterbody'
+            ? result.waterbody.name.zh
+            : result.type === 'linearFeature'
+              ? result.feature.name.zh
+              : result.type === 'mountainRange'
+                ? result.range.name.zh
+                : result.type === 'desert'
+                  ? result.desert.name.zh
+                  : result.type === 'landmark'
+                    ? result.landmark.name.zh
+                    : result.type === 'geographyTopic'
+                      ? (result.referenceLine?.name.zh ?? result.topic.name.zh)
+                      : result.type === 'climateType'
+                        ? result.climateType.name.zh
+                        : result.topic.name.zh,
     )
     setOpen(false)
     setActiveIndex(0)
@@ -128,7 +133,7 @@ export function PlaceSearch({
           role="combobox"
           type="search"
           value={query}
-          placeholder="搜索国家、地点或地理知识"
+          placeholder="搜索国家、地区、地点或地理知识"
           autoComplete="off"
           aria-expanded={open}
           aria-controls={listboxId}
@@ -190,40 +195,44 @@ export function PlaceSearch({
               const name =
                 result.type === 'country'
                   ? result.country.name
-                  : result.type === 'waterbody'
-                    ? result.waterbody.name
-                    : result.type === 'linearFeature'
-                      ? result.feature.name
-                      : result.type === 'mountainRange'
-                        ? result.range.name
-                        : result.type === 'desert'
-                          ? result.desert.name
-                          : result.type === 'landmark'
-                            ? result.landmark.name
-                            : result.type === 'geographyTopic'
-                              ? (result.referenceLine?.name ??
-                                result.topic.name)
-                              : result.type === 'climateType'
-                                ? result.climateType.name
-                                : result.topic.name
+                  : result.type === 'territory'
+                    ? result.territory.name
+                    : result.type === 'waterbody'
+                      ? result.waterbody.name
+                      : result.type === 'linearFeature'
+                        ? result.feature.name
+                        : result.type === 'mountainRange'
+                          ? result.range.name
+                          : result.type === 'desert'
+                            ? result.desert.name
+                            : result.type === 'landmark'
+                              ? result.landmark.name
+                              : result.type === 'geographyTopic'
+                                ? (result.referenceLine?.name ??
+                                  result.topic.name)
+                                : result.type === 'climateType'
+                                  ? result.climateType.name
+                                  : result.topic.name
               const badge =
                 result.type === 'country'
                   ? result.country.code
-                  : result.type === 'waterbody'
-                    ? waterbodyKindLabels[result.waterbody.kind]
-                    : result.type === 'linearFeature'
-                      ? linearGeoFeatureKindLabels[result.feature.kind]
-                      : result.type === 'mountainRange'
-                        ? '山脉'
-                        : result.type === 'desert'
-                          ? '沙漠'
-                          : result.type === 'landmark'
-                            ? '古迹'
-                            : result.type === 'geographyTopic'
-                              ? result.referenceLine
-                                ? '参考线'
-                                : '地理知识'
-                              : '气候知识'
+                  : result.type === 'territory'
+                    ? '地区'
+                    : result.type === 'waterbody'
+                      ? waterbodyKindLabels[result.waterbody.kind]
+                      : result.type === 'linearFeature'
+                        ? linearGeoFeatureKindLabels[result.feature.kind]
+                        : result.type === 'mountainRange'
+                          ? '山脉'
+                          : result.type === 'desert'
+                            ? '沙漠'
+                            : result.type === 'landmark'
+                              ? '古迹'
+                              : result.type === 'geographyTopic'
+                                ? result.referenceLine
+                                  ? '参考线'
+                                  : '地理知识'
+                                : '气候知识'
               return (
                 <li
                   id={`${listboxId}-${id}`}
@@ -253,19 +262,21 @@ export function PlaceSearch({
                         {name.en}
                         {result.type === 'waterbody'
                           ? ` · ${result.waterbody.region}`
-                          : result.type === 'mountainRange'
-                            ? ` · 最高峰：${result.range.highestPeak.name.zh}`
-                            : result.type === 'desert'
-                              ? ` · ${result.desert.region}`
-                              : result.type === 'landmark'
-                                ? ` · ${landmarkCategoryLabels[result.landmark.category]} · ${result.landmark.location.zh}`
-                                : result.type === 'geographyTopic'
-                                  ? ` · ${result.topic.name.zh}`
-                                  : result.type === 'climateType'
-                                    ? ' · 世界气候类型'
-                                    : result.type === 'climateTopic'
-                                      ? ' · 13类气候总览'
-                                      : ''}
+                          : result.type === 'territory'
+                            ? ` · ${territoryTypeLabels[result.territory.type]}`
+                            : result.type === 'mountainRange'
+                              ? ` · 最高峰：${result.range.highestPeak.name.zh}`
+                              : result.type === 'desert'
+                                ? ` · ${result.desert.region}`
+                                : result.type === 'landmark'
+                                  ? ` · ${landmarkCategoryLabels[result.landmark.category]} · ${result.landmark.location.zh}`
+                                  : result.type === 'geographyTopic'
+                                    ? ` · ${result.topic.name.zh}`
+                                    : result.type === 'climateType'
+                                      ? ' · 世界气候类型'
+                                      : result.type === 'climateTopic'
+                                        ? ' · 13类气候总览'
+                                        : ''}
                       </small>
                     </span>
                     <code>{badge}</code>

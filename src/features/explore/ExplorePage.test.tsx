@@ -148,6 +148,27 @@ describe('ExplorePage', () => {
     )
   })
 
+  it('opens a territory deep link without selecting it as a country', async () => {
+    window.history.replaceState({}, '', '/explore?territory=greenland')
+    render(
+      <Tooltip.Provider>
+        <ExplorePage />
+      </Tooltip.Provider>,
+    )
+
+    expect(await screen.findByLabelText('格陵兰地区知识卡')).toBeVisible()
+    await waitFor(() =>
+      expect(globePropsMock.mock.lastCall?.[0]).toMatchObject({
+        selectedCountryCode: null,
+        selectedTerritoryId: 'greenland',
+        cameraTarget: {
+          position: { latitude: 72, longitude: -41 },
+          distance: 245,
+        },
+      }),
+    )
+  })
+
   it('keeps a valid geography topic but drops an invalid or mismatched line', async () => {
     window.history.replaceState(
       {},
@@ -482,11 +503,8 @@ describe('ExplorePage', () => {
         .getAllByRole('heading', { level: 2 })
         .map((heading) => heading.textContent),
     ).toEqual(['标注', '地球知识', '水域', '地貌与文化'])
-    expect(within(panel).getAllByRole('button')).toHaveLength(11)
-    expect(screen.getByRole('button', { name: '首都' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(within(panel).getAllByRole('button')).toHaveLength(10)
+    expect(screen.queryByRole('button', { name: '首都' })).toBeNull()
     expect(screen.getByRole('button', { name: '城市' })).toHaveAttribute(
       'aria-pressed',
       'false',
@@ -690,7 +708,7 @@ describe('ExplorePage', () => {
     expect(screen.getByLabelText('中国国家知识卡')).toBeInTheDocument()
   })
 
-  it('toggles capital and non-capital city layers independently', async () => {
+  it('uses one city layer without auto-activating it for country selection', async () => {
     const user = userEvent.setup()
     const { unmount } = render(
       <Tooltip.Provider>
@@ -700,25 +718,44 @@ describe('ExplorePage', () => {
 
     const getProps = () =>
       globePropsMock.mock.lastCall![0] as {
-        showCapitals: boolean
         showCities: boolean
+        selectedCountryCode: string | null
       }
 
-    expect(getProps()).toMatchObject({ showCapitals: false, showCities: false })
+    expect(getProps()).toMatchObject({
+      showCities: false,
+      selectedCountryCode: null,
+    })
+
+    callGlobeEvent('onSelectCountry', 'CN')
+    expect(getProps()).toMatchObject({
+      showCities: false,
+      selectedCountryCode: 'CN',
+    })
 
     await openLayerPanel(user)
-    await user.click(screen.getByRole('button', { name: '首都' }))
-    expect(getProps()).toMatchObject({ showCapitals: true, showCities: false })
-    expect(screen.getByRole('button', { name: '首都' })).toHaveAttribute(
+    await user.click(screen.getByRole('button', { name: '城市' }))
+    expect(getProps()).toMatchObject({
+      showCities: true,
+      selectedCountryCode: 'CN',
+    })
+    expect(screen.getByRole('button', { name: '城市' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
 
-    await user.click(screen.getByRole('button', { name: '城市' }))
-    expect(getProps()).toMatchObject({ showCapitals: true, showCities: true })
+    callGlobeEvent('onSelectCountry', 'US')
+    expect(getProps()).toMatchObject({
+      showCities: true,
+      selectedCountryCode: 'US',
+    })
 
-    await user.click(screen.getByRole('button', { name: '首都' }))
-    expect(getProps()).toMatchObject({ showCapitals: false, showCities: true })
+    callGlobeEvent('onSelectWaterbody', 'lake-baikal')
+    expect(getProps()).toMatchObject({
+      showCities: true,
+      selectedCountryCode: null,
+      selectedWaterbodyId: 'lake-baikal',
+    })
 
     unmount()
     render(
@@ -726,7 +763,10 @@ describe('ExplorePage', () => {
         <ExplorePage />
       </Tooltip.Provider>,
     )
-    expect(getProps()).toMatchObject({ showCapitals: false, showCities: false })
+    expect(getProps()).toMatchObject({
+      showCities: false,
+      selectedCountryCode: null,
+    })
   })
 
   it('toggles waterbody layers and opens a searched waterbody card', async () => {
@@ -1269,7 +1309,7 @@ describe('ExplorePage', () => {
     })
   })
 
-  it('does not reveal city layers when the committed globe view changes', () => {
+  it('does not reveal the city layer when the committed globe view changes', () => {
     render(
       <Tooltip.Provider>
         <ExplorePage />
@@ -1277,7 +1317,6 @@ describe('ExplorePage', () => {
     )
 
     const props = globePropsMock.mock.lastCall![0] as {
-      showCapitals: boolean
       showCities: boolean
       onViewCenterCommit: (view: {
         position: { latitude: number; longitude: number }
@@ -1290,7 +1329,6 @@ describe('ExplorePage', () => {
       distance: 240,
     })
     expect(globePropsMock.mock.lastCall![0]).toMatchObject({
-      showCapitals: false,
       showCities: false,
     })
   })

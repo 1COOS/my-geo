@@ -6,6 +6,7 @@ import { geographyReferenceLines } from '../data/geographyLearning'
 import { landmarks } from '../data/landmarks'
 import { linearGeoFeatures } from '../data/linearGeoFeatures'
 import { mountainRanges } from '../data/mountainRanges'
+import { getTerritory } from '../data/territories'
 import { waterbodies } from '../data/waterbodies'
 import type { ClimateTypeId } from '../data/climateLearningSchema'
 import type {
@@ -25,7 +26,6 @@ import type { MapLabel } from './globeLabelLayout'
 
 type GlobeLabelDataInput = {
   quality: 'balanced' | 'low'
-  showCapitals: boolean
   showCities: boolean
   showOceanLayer: boolean
   showLakeLayer: boolean
@@ -38,22 +38,28 @@ type GlobeLabelDataInput = {
   selectedClimateTypeId: ClimateTypeId | null
   selectedGeographyTopicId: GeographyTopicId | null
   selectedReferenceLineId: ReferenceLineId | null
+  selectedCountryCode: string | null
   selectedWaterbodyId: string | null
   hoveredWaterbodyId: string | null
   selectedLinearFeatureId: string | null
   hoveredLinearFeatureId: string | null
   selectedMountainRangeId: string | null
   hoveredMountainRangeId: string | null
+  selectedTerritoryId: string | null
 }
 
 export function useGlobeLabelData(input: GlobeLabelDataInput) {
+  const labelTerritories = useMemo(() => {
+    const territory = getTerritory(input.selectedTerritoryId)
+    return territory ? [territory] : []
+  }, [input.selectedTerritoryId])
   const labelCities = useMemo(
     () =>
       getVisibleLayerCities(cities, {
-        showCapitals: input.showCapitals,
         showCities: input.showCities,
+        selectedCountryCode: input.selectedCountryCode,
       }),
-    [input.showCapitals, input.showCities],
+    [input.selectedCountryCode, input.showCities],
   )
   const labelWaterbodies = useMemo(
     () =>
@@ -130,6 +136,13 @@ export function useGlobeLabelData(input: GlobeLabelDataInput) {
   )
   const labelItems = useMemo<MapLabel[]>(
     () => [
+      ...labelTerritories.map((territory) => ({
+        id: `territory-${territory.id}`,
+        type: 'territory' as const,
+        latitude: territory.center.latitude,
+        longitude: territory.center.longitude,
+        territory,
+      })),
       ...labelCities.map((city) => ({
         id: city.id,
         type: 'city' as const,
@@ -192,6 +205,7 @@ export function useGlobeLabelData(input: GlobeLabelDataInput) {
       labelLandmarks,
       labelLinearFeatures,
       labelMountainRanges,
+      labelTerritories,
       labelReferenceLines,
       labelWaterbodies,
     ],
@@ -202,6 +216,7 @@ export function useGlobeLabelData(input: GlobeLabelDataInput) {
     labelWaterbodies,
     labelLinearFeatures,
     labelMountainRanges,
+    labelTerritories,
     labelDeserts,
     labelLandmarks,
     labelReferenceLines,

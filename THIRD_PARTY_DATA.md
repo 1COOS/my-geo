@@ -68,6 +68,52 @@ The displayed climate layer is a teaching generalization, not a weather forecast
 
 Border codes outside the 195-country catalogue are not treated as sovereign countries. The local data contract classifies Hong Kong, Macao, Gibraltar, French Guiana, Western Sahara and Kosovo as non-interactive adjacent-region labels. This classification is a product presentation rule and does not replace a public-release map-compliance review.
 
+## International organizations and cooperation mechanisms
+
+My Geo maintains a reviewed catalogue of 18 selective international identities:
+formal organizations, cooperation mechanisms and the five permanent United
+Nations Security Council seats. Near-universal global bodies such as the United
+Nations, WTO, WHO, IMF and World Bank are intentionally excluded so that the
+country card highlights relationships that distinguish countries from one
+another. A global identity may not cover more than half of the 195-country
+catalogue; region-wide organizations are allowed because they still express a
+meaningful regional relationship.
+
+Membership and short repository-authored Chinese summaries are reviewed against
+the official sites of the represented organizations or participating
+governments. Only current, normally participating formal members are mapped to
+country cards. Observers, dialogue partners, candidate countries, associate
+members and suspended members are excluded. The G20's European Union and
+African Union seats, the African Union's Sahrawi Arab Democratic Republic seat,
+and CARICOM's Montserrat membership are preserved as non-country-card member
+entities so the displayed official totals remain complete.
+
+The application stores all summaries and membership mappings locally and makes
+no runtime request to an organization website. It does not copy or display
+official organization logos; compact letter monograms are repository-owned UI
+elements rather than official emblems or trademarks.
+
+## Reviewed overseas regions
+
+My Geo keeps the 195-country learning catalogue unchanged and maintains a
+separate, repository-owned catalogue for nine representative overseas regions:
+Greenland, the Faroe Islands, Gibraltar, Bermuda, Puerto Rico, Guam, French
+Guiana, French Polynesia and New Caledonia. They are searchable learning
+entities but are not included in country totals, country quizzes, rankings or
+learning progress.
+
+Administrative relationships, population and teaching summaries are reviewed
+against the official statistical services of Greenland, the Faroe Islands,
+Gibraltar, Bermuda, the United States Census Bureau, INSEE, ISPF and ISEE. The
+application stores short original Chinese summaries and does not query those
+services at runtime.
+
+Selected-only teaching geometry for Greenland, Puerto Rico, French Guiana and
+New Caledonia is derived from the pinned `world-atlas@2.0.2` source. Smaller or
+widely dispersed regions use repository-reviewed center markers. These
+overlays appear only after an explicit search or related-country selection and
+do not alter the underlying country boundary catalogue.
+
 ## Country boundaries
 
 - Source: `world-atlas@2.0.2`, derived from Natural Earth 4.1.0 Admin 0 data

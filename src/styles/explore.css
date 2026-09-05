@@ -230,6 +230,20 @@
   box-shadow: 0 0 0 0.16rem rgb(255 216 94 / 16%);
 }
 
+.territory-label {
+  color: #d6fff9;
+  background: rgb(8 69 73 / 92%);
+  border-color: #83ecdf;
+  box-shadow:
+    0 0 0 1px rgb(131 236 223 / 24%),
+    0 0 18px rgb(75 214 200 / 34%);
+}
+
+.territory-label > span {
+  background: #83ecdf;
+  box-shadow: 0 0 8px rgb(131 236 223 / 75%);
+}
+
 .waterbody-label {
   color: #ccfaff;
   background: rgb(4 35 53 / 84%);
@@ -429,10 +443,6 @@
   height: 0.5rem;
   background: #617d8c;
   border-radius: 50%;
-}
-
-.layer-toggle.is-capital[aria-pressed='true'] .layer-toggle-dot {
-  background: #ffd85e;
 }
 
 .layer-toggle.is-city[aria-pressed='true'] .layer-toggle-dot {
@@ -1093,7 +1103,6 @@
   border-color: transparent;
 }
 
-.layer-toggle[aria-pressed='true'].is-capital,
 .layer-toggle[aria-pressed='true'].is-city,
 .layer-toggle[aria-pressed='true'].is-ocean,
 .layer-toggle[aria-pressed='true'].is-waterway,
@@ -1111,7 +1120,6 @@
 }
 
 .layer-toggle-dot,
-.layer-toggle.is-capital[aria-pressed='true'] .layer-toggle-dot,
 .layer-toggle.is-city[aria-pressed='true'] .layer-toggle-dot,
 .layer-toggle.is-ocean[aria-pressed='true'] .layer-toggle-dot,
 .layer-toggle.is-waterway[aria-pressed='true'] .layer-toggle-dot,

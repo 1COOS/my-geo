@@ -14,4 +14,26 @@ describe('globe polygon render data', () => {
       ),
     )
   })
+
+  it('adds a selected territory overlay without changing the country set', () => {
+    const territoryBoundary = {
+      type: 'Feature',
+      properties: { territoryId: 'greenland' },
+      geometry: { type: 'Polygon', coordinates: [] },
+    }
+    const polygons = getGlobePolygonData(
+      countryBoundaries,
+      [],
+      [],
+      null,
+      territoryBoundary,
+    )
+
+    expect(polygons.at(-1)).toBe(territoryBoundary)
+    expect(polygons).toHaveLength(
+      countryBoundaries.features.length +
+        countryBoundaries.landmasses.length +
+        1,
+    )
+  })
 })

@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import countryBoundariesFixture from './generated/country-boundaries.json'
+import territoryBoundariesFixture from './generated/territory-boundaries.json'
 import {
   loadCountryBoundaries,
+  loadTerritoryBoundaries,
   prefetchGeometryAssets,
   resetGeometryResourceCachesForTests,
 } from './geometryResources'
@@ -67,5 +69,14 @@ describe('geometry resources', () => {
     )
 
     expect(fetcher).toHaveBeenCalledTimes(3)
+  })
+
+  it('loads the selected-only territory geometry catalogue independently', async () => {
+    const fetcher = vi.fn<typeof fetch>(() =>
+      Promise.resolve(jsonResponse(territoryBoundariesFixture)),
+    )
+
+    await expect(loadTerritoryBoundaries(fetcher)).resolves.toHaveLength(4)
+    expect(fetcher).toHaveBeenCalledTimes(1)
   })
 })

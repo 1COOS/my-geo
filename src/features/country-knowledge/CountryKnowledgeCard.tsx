@@ -22,6 +22,7 @@ export type CountryKnowledgeCardProps = {
   label: string
   identity: string
   onSelectCountry: (countryCode: string) => void
+  onSelectTerritory?: (territoryId: string) => void
   footerAction?: KnowledgeCardAction
 }
 
@@ -163,6 +164,7 @@ export function CountryKnowledgeCard({
   label,
   identity,
   onSelectCountry,
+  onSelectTerritory,
   footerAction,
 }: CountryKnowledgeCardProps) {
   const inRouterContext = useInRouterContext()
@@ -202,6 +204,7 @@ export function CountryKnowledgeCard({
         country={country}
         cities={cities}
         onSelectCountry={onSelectCountry}
+        onSelectTerritory={onSelectTerritory}
       />
     </KnowledgeCardShell>
   )
@@ -215,7 +218,11 @@ function CountryDetailView({
   country,
   cities,
   onSelectCountry,
-}: Pick<CountryKnowledgeCardProps, 'country' | 'cities' | 'onSelectCountry'>) {
+  onSelectTerritory,
+}: Pick<
+  CountryKnowledgeCardProps,
+  'country' | 'cities' | 'onSelectCountry' | 'onSelectTerritory'
+>) {
   const [openChapter, setOpenChapter] =
     useState<CountryKnowledgeChapterId | null>(null)
   const [flagDialogOpen, setFlagDialogOpen] = useState(false)
@@ -354,6 +361,7 @@ function CountryDetailView({
         country={country}
         cities={cities}
         onSelectCountry={onSelectCountry}
+        onSelectTerritory={onSelectTerritory}
         openChapter={openChapter}
         onOpenChapterChange={setOpenChapter}
       />

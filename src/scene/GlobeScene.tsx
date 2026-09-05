@@ -35,6 +35,7 @@ import type {
 import { getWaterbody } from '../data/waterbodies'
 import type { LinearGeoFeatureGeometry } from '../data/linearGeoFeatureSchema'
 import type { MountainRangeGeometry } from '../data/mountainRangeSchema'
+import type { TerritoryBoundary } from '../data/territorySchema'
 import type { WaterbodyGeometry } from '../data/waterbodySchema'
 import type { CameraTarget, GeoPosition, GlobeView } from '../shared/types/geo'
 import {
@@ -49,6 +50,7 @@ import {
   getLinearFeatureIdForLayer,
   getMapLabelPlacement,
   getOverviewCameraPosition,
+  getTerritoryMarker,
   getWaterbodyIdForLayer,
   getWaterbodyMarker,
   getWaterbodyPolygonState,
@@ -101,6 +103,7 @@ import { useGlobeRenderData } from './useGlobeRenderData'
 
 export type GlobeWorldProps = {
   countryBoundaries: CountryBoundaries | null
+  territoryBoundaries: TerritoryBoundary[] | null
   waterbodyGeometries: WaterbodyGeometry[] | null
   linearFeatureGeometries: LinearGeoFeatureGeometry[] | null
   mountainGeometries: MountainRangeGeometry[] | null
@@ -109,7 +112,6 @@ export type GlobeWorldProps = {
   cameraTarget: CameraTarget
   quality: 'balanced' | 'low'
   reducedMotion: boolean
-  showCapitals: boolean
   showCities: boolean
   showOceanLayer: boolean
   showLakeLayer: boolean
@@ -127,6 +129,7 @@ export type GlobeWorldProps = {
   selectedGeographyTopicId: GeographyTopicId | null
   selectedReferenceLineId: ReferenceLineId | null
   selectedCountryCode: string | null
+  selectedTerritoryId: string | null
   hoveredCountryCode: string | null
   selectedWaterbodyId: string | null
   hoveredWaterbodyId: string | null
@@ -163,6 +166,7 @@ export type GlobeSceneProps = {
   geometry: Pick<
     GlobeWorldProps,
     | 'countryBoundaries'
+    | 'territoryBoundaries'
     | 'waterbodyGeometries'
     | 'linearFeatureGeometries'
     | 'mountainGeometries'
@@ -174,7 +178,6 @@ export type GlobeSceneProps = {
   >
   layers: Pick<
     GlobeWorldProps,
-    | 'showCapitals'
     | 'showCities'
     | 'showOceanLayer'
     | 'showLakeLayer'
@@ -198,6 +201,7 @@ export type GlobeSceneProps = {
     | 'selectedGeographyTopicId'
     | 'selectedReferenceLineId'
     | 'selectedCountryCode'
+    | 'selectedTerritoryId'
     | 'selectedWaterbodyId'
     | 'selectedLinearFeatureId'
     | 'selectedMountainRangeId'
@@ -332,8 +336,15 @@ function getWaterbodyLayerForScene(value: object | undefined) {
   return getWaterbody(getWaterbodyIdForLayer('polygon', value))?.layer
 }
 
+function getTerritoryBoundaryId(value: object | undefined) {
+  return (
+    (value as TerritoryBoundary | undefined)?.properties?.territoryId ?? null
+  )
+}
+
 function World({
   countryBoundaries,
+  territoryBoundaries,
   waterbodyGeometries,
   linearFeatureGeometries,
   mountainGeometries,
@@ -343,6 +354,7 @@ function World({
   quality,
   reducedMotion,
   selectedCountryCode,
+  selectedTerritoryId,
   hoveredCountryCode,
   selectedWaterbodyId,
   hoveredWaterbodyId,
@@ -538,6 +550,7 @@ function World({
     polygonsData,
   } = useGlobeRenderData({
     countryBoundaries,
+    territoryBoundaries,
     waterbodyGeometries,
     linearFeatureGeometries,
     mountainGeometries,
@@ -545,6 +558,7 @@ function World({
     quality,
     labelItems,
     selectedClimatePosition,
+    selectedTerritoryId,
     selectedWaterbodyId,
     showDesertLayer,
     selectedLinearFeatureId,
@@ -968,6 +982,7 @@ function World({
       mountain: 0,
       desert: 0,
       landmark: 0,
+      territory: 0,
       geography: 0,
     }
     const ordinaryGroupLimit = Math.ceil(
@@ -1386,6 +1401,7 @@ function World({
         polygonsData={polygonsData}
         polygonGeoJsonGeometry="geometry"
         polygonCapColor={(value) => {
+          if (getTerritoryBoundaryId(value)) return '#4bd6c8b8'
           const waterbodyLayer = getWaterbodyLayerForScene(value)
           const waterbodyState = getWaterbodyPolygonState(
             value,
@@ -1416,6 +1432,7 @@ function World({
           return showClimateLayer ? '#17659324' : '#176593'
         }}
         polygonSideColor={(value) => {
+          if (getTerritoryBoundaryId(value)) return '#0b706a99'
           const waterbodyLayer = getWaterbodyLayerForScene(value)
           const waterbodyState = getWaterbodyPolygonState(
             value,
@@ -1444,6 +1461,7 @@ function World({
               : '#0a3552'
         }}
         polygonStrokeColor={(value) => {
+          if (getTerritoryBoundaryId(value)) return '#c9fff8'
           const waterbodyLayer = getWaterbodyLayerForScene(value)
           const waterbodyState = getWaterbodyPolygonState(
             value,
@@ -1474,6 +1492,9 @@ function World({
           return '#6cb4d4'
         }}
         polygonAltitude={(value) => {
+          if (getTerritoryBoundaryId(value)) {
+            return quality === 'balanced' ? 0.035 : 0.012
+          }
           const waterbodyLayer = getWaterbodyLayerForScene(value)
           const waterbodyState = getWaterbodyPolygonState(
             value,
@@ -1510,6 +1531,7 @@ function World({
         pointLng="lng"
         pointAltitude={0.018}
         pointRadius={(value) => {
+          if (getTerritoryMarker(value)) return 0.64
           if (getClimateMarker(value)) return 0.54
           const waterbodyMarker = getWaterbodyMarker(value)
           if (waterbodyMarker) {
@@ -1530,6 +1552,7 @@ function World({
           return marker.countryCode === selectedCountryCode ? 0.46 : 0.34
         }}
         pointColor={(value) => {
+          if (getTerritoryMarker(value)) return '#c9fff8'
           if (getClimateMarker(value)) return '#ffffff'
           const waterbodyMarker = getWaterbodyMarker(value)
           if (waterbodyMarker) {

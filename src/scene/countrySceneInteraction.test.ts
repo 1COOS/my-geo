@@ -87,35 +87,35 @@ describe('country scene interaction', () => {
     expect(getCityLabelBudget('low', false)).toBe(16)
   })
 
-  it('filters mutually exclusive capital and city layers without selection exceptions', () => {
+  it('shows capitals globally and expands cities for the selected country', () => {
     const beijing = cities.find((city) => city.id === 'cn-beijing')!
     const shanghai = cities.find((city) => city.id === 'cn-shanghai')!
     const sample = [beijing, shanghai]
 
     expect(
       getVisibleLayerCities(sample, {
-        showCapitals: false,
         showCities: false,
+        selectedCountryCode: 'CN',
       }),
     ).toEqual([])
     expect(
       getVisibleLayerCities(sample, {
-        showCapitals: true,
-        showCities: false,
+        showCities: true,
+        selectedCountryCode: null,
       }),
     ).toEqual([beijing])
     expect(
       getVisibleLayerCities(sample, {
-        showCapitals: false,
         showCities: true,
-      }),
-    ).toEqual([shanghai])
-    expect(
-      getVisibleLayerCities(sample, {
-        showCapitals: true,
-        showCities: true,
+        selectedCountryCode: 'CN',
       }),
     ).toEqual(sample)
+    expect(
+      getVisibleLayerCities(sample, {
+        showCities: true,
+        selectedCountryCode: 'US',
+      }),
+    ).toEqual([beijing])
   })
 
   it('filters ocean, lake, and waterway layers with selection exceptions', () => {
@@ -267,26 +267,29 @@ describe('country scene interaction', () => {
     ).toBe(river.id)
   })
 
-  it('exposes 197 capitals and 141 non-capital cities without overlap', () => {
-    const capitals = getVisibleLayerCities(cities, {
-      showCapitals: true,
+  it('exposes 197 capitals and only the selected country expansion', () => {
+    const hiddenCities = getVisibleLayerCities(cities, {
       showCities: false,
+      selectedCountryCode: 'CN',
     })
-    const nonCapitalCities = getVisibleLayerCities(cities, {
-      showCapitals: false,
+    const capitals = getVisibleLayerCities(cities, {
       showCities: true,
+      selectedCountryCode: null,
     })
-    const allCities = getVisibleLayerCities(cities, {
-      showCapitals: true,
+    const chinaCities = getVisibleLayerCities(cities, {
       showCities: true,
+      selectedCountryCode: 'CN',
     })
 
+    expect(hiddenCities).toEqual([])
     expect(capitals).toHaveLength(197)
     expect(capitals.every((city) => city.isCapital)).toBe(true)
-    expect(nonCapitalCities).toHaveLength(141)
-    expect(nonCapitalCities.every((city) => !city.isCapital)).toBe(true)
-    expect(allCities).toHaveLength(338)
-    expect(new Set(allCities.map((city) => city.id)).size).toBe(338)
+    expect(chinaCities).toHaveLength(201)
+    expect(
+      chinaCities.every((city) => city.isCapital || city.countryCode === 'CN'),
+    ).toBe(true)
+    expect(chinaCities.some((city) => city.id === 'cn-shanghai')).toBe(true)
+    expect(new Set(chinaCities.map((city) => city.id)).size).toBe(201)
   })
 
   it('places the globe center at 50 percent of the viewport height', () => {

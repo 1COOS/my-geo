@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { countriesByCode } from './countries'
 import {
   getInternationalAffiliationsForCountry,
   internationalAffiliations,
@@ -11,60 +12,114 @@ function affiliation(id: string) {
   return value!
 }
 
+function affiliationIds(countryCode: string) {
+  return getInternationalAffiliationsForCountry(countryCode).map(
+    (item) => item.id,
+  )
+}
+
 describe('international organization catalogue', () => {
-  it('contains the seven reviewed affiliations with current official totals', () => {
-    expect(internationalAffiliations).toHaveLength(7)
+  it('contains the 18 selected identities in display priority order', () => {
     expect(
       internationalAffiliations.map((item) => [
-        item.abbreviation,
+        item.monogram,
         item.officialMemberCount,
       ]),
     ).toEqual([
-      ['安理会常任理事国', 5],
-      ['欧盟', 27],
-      ['东盟', 11],
-      ['非盟', 55],
+      ['P5', 5],
+      ['G7', 7],
+      ['G20', 21],
+      ['BRICS', 10],
+      ['CW', 56],
+      ['EU', 27],
+      ['ASEAN', 11],
+      ['AU', 55],
+      ['LAS', 22],
+      ['GCC', 6],
+      ['MERCOSUR', 5],
+      ['CARICOM', 15],
+      ['NATO', 32],
+      ['SCO', 10],
+      ['QUAD', 4],
+      ['AUKUS', 3],
       ['OPEC', 12],
-      ['WTO', 166],
-      ['北约', 32],
+      ['OECD', 38],
     ])
   })
 
-  it('separates official totals from country-card coverage', () => {
-    expect(affiliation('african-union').memberCountryCodes).toHaveLength(54)
+  it('keeps global identities below half of the country catalogue', () => {
+    const globalLimit = Math.floor(countriesByCode.size / 2)
+    for (const item of internationalAffiliations.filter(
+      ({ category }) => category === 'global',
+    )) {
+      expect(item.memberCountryCodes.length).toBeLessThanOrEqual(globalLimit)
+    }
     expect(
-      affiliation('world-trade-organization').memberCountryCodes,
-    ).toHaveLength(162)
+      internationalAffiliations.some(
+        (item) => item.id === 'world-trade-organization',
+      ),
+    ).toBe(false)
   })
 
-  it('uses current formal membership at reviewed boundaries', () => {
-    expect(
-      getInternationalAffiliationsForCountry('TL').map((item) => item.id),
-    ).toEqual(
-      expect.arrayContaining([
-        'association-of-southeast-asian-nations',
-        'world-trade-organization',
-      ]),
-    )
-    expect(
-      getInternationalAffiliationsForCountry('AO').map((item) => item.id),
-    ).not.toContain('organization-of-the-petroleum-exporting-countries')
-    expect(
-      getInternationalAffiliationsForCountry('SE').map((item) => item.id),
-    ).toEqual(
-      expect.arrayContaining([
-        'european-union',
-        'world-trade-organization',
-        'north-atlantic-treaty-organization',
-      ]),
-    )
+  it('separates project country cards from other formal members', () => {
+    const g20 = affiliation('group-of-twenty')
+    expect(g20.memberCountryCodes).toHaveLength(19)
+    expect(g20.otherMembers.map((member) => member.name.zh)).toEqual([
+      '欧洲联盟',
+      '非洲联盟',
+    ])
+
+    const africanUnion = affiliation('african-union')
+    expect(africanUnion.memberCountryCodes).toHaveLength(54)
+    expect(africanUnion.otherMembers[0]?.name.zh).toBe('撒哈拉阿拉伯民主共和国')
+
+    const caricom = affiliation('caribbean-community')
+    expect(caricom.memberCountryCodes).toHaveLength(14)
+    expect(caricom.otherMembers[0]?.name.zh).toBe('蒙特塞拉特')
   })
 
-  it('does not treat observers or unrepresented relationships as membership', () => {
-    expect(
-      getInternationalAffiliationsForCountry('DZ').map((item) => item.id),
-    ).not.toContain('world-trade-organization')
-    expect(getInternationalAffiliationsForCountry('VA')).toEqual([])
-    expect(getInternationalAffiliationsForCountry('PS')).toEqual([])
+  it('maps representative countries to their direct formal identities', () => {
+    expect(affiliationIds('CN')).toEqual([
+      'un-security-council-permanent-member',
+      'group-of-twenty',
+      'brics',
+      'shanghai-cooperation-organisation',
+    ])
+    expect(affiliationIds('US')).toEqual([
+      'un-security-council-permanent-member',
+      'group-of-seven',
+      'group-of-twenty',
+      'north-atlantic-treaty-organization',
+      'quadrilateral-security-dialogue',
+      'aukus',
+      'organisation-for-economic-co-operation-and-development',
+    ])
+    expect(affiliationIds('IN')).toEqual([
+      'group-of-twenty',
+      'brics',
+      'commonwealth-of-nations',
+      'shanghai-cooperation-organisation',
+      'quadrilateral-security-dialogue',
+    ])
+    expect(affiliationIds('SA')).toEqual([
+      'group-of-twenty',
+      'league-of-arab-states',
+      'gulf-cooperation-council',
+      'organization-of-the-petroleum-exporting-countries',
+    ])
+  })
+
+  it('excludes disputed, partner, observer and suspended relationships', () => {
+    expect(affiliationIds('SA')).not.toContain('brics')
+    expect(affiliationIds('VE')).not.toContain('southern-common-market')
+    expect(affiliationIds('VE')).toContain(
+      'organization-of-the-petroleum-exporting-countries',
+    )
+    expect(affiliationIds('AO')).not.toContain(
+      'organization-of-the-petroleum-exporting-countries',
+    )
+    expect(affiliationIds('MN')).not.toContain(
+      'shanghai-cooperation-organisation',
+    )
   })
 })

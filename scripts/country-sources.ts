@@ -331,6 +331,36 @@ export const countrySources: CountrySource[] = [
       'https://main.un.org/securitycouncil/en/content/current-members',
     ],
     [
+      'g7-members',
+      'The G7 and its members',
+      'Council of the European Union',
+      'https://www.consilium.europa.eu/en/policies/g7-summit/',
+    ],
+    [
+      'g20-members',
+      'About the G20',
+      'Group of Twenty',
+      'https://g20.org/about-g20/',
+    ],
+    [
+      'brics-members',
+      'About the BRICS',
+      'BRICS Brazil 2025 Presidency',
+      'https://brics.br/en/about-the-brics',
+    ],
+    [
+      'saudi-brics-status',
+      'Saudi Arabia participates in the BRICS summit as an invited country',
+      'Saudi Press Agency',
+      'https://www.spa.gov.sa/en/N2586193',
+    ],
+    [
+      'commonwealth-member-countries',
+      'Commonwealth member countries',
+      'The Commonwealth',
+      'https://thecommonwealth.org/our-member-countries',
+    ],
+    [
       'eu-country-profiles',
       'EU country profiles',
       'European Union',
@@ -349,16 +379,34 @@ export const countrySources: CountrySource[] = [
       'https://au.int/en/member_states/countryprofiles2',
     ],
     [
+      'arab-league-member-states',
+      'League of Arab States member countries',
+      'League of Arab States',
+      'https://www.lasportal.org/en/aboutlas/Pages/CountryData.aspx',
+    ],
+    [
+      'gcc-member-states',
+      'GCC Member States',
+      'Gulf Cooperation Council',
+      'https://www.gcc-sg.org/en/AboutUs/MemberStates/Pages/default.aspx',
+    ],
+    [
+      'mercosur-member-states',
+      'MERCOSUR countries',
+      'Southern Common Market',
+      'https://www.mercosur.int/en/about-mercosur/mercosur-countries/',
+    ],
+    [
+      'caricom-member-states',
+      'CARICOM Member States and Associate Members',
+      'Caribbean Community',
+      'https://caricom.org/member-states-and-associate-members/',
+    ],
+    [
       'opec-member-countries',
       'OPEC Member Countries',
       'Organization of the Petroleum Exporting Countries',
       'https://www.opec.org/opec-web/en/about-us/25.html',
-    ],
-    [
-      'wto-members-and-observers',
-      'WTO Members and Observers',
-      'World Trade Organization',
-      'https://www.wto.org/english/thewto_e/whatis_e/tif_e/org6_e.htm',
     ],
     [
       'nato-member-countries',
@@ -366,13 +414,38 @@ export const countrySources: CountrySource[] = [
       'North Atlantic Treaty Organization',
       'https://www.nato.int/en/about-us/organization/nato-member-countries',
     ],
+    [
+      'sco-member-states',
+      'Shanghai Cooperation Organisation member states',
+      'Shanghai Cooperation Organisation',
+      'https://eng.sectsco.org/',
+    ],
+    [
+      'quad-partners',
+      'The Quad',
+      'Australian Department of Foreign Affairs and Trade',
+      'https://www.dfat.gov.au/international-relations/regional-architecture/quad',
+    ],
+    [
+      'aukus-partners',
+      'AUKUS',
+      'Government of the United Kingdom',
+      'https://www.gov.uk/government/collections/aukus',
+    ],
+    [
+      'oecd-member-countries',
+      'OECD members and partners',
+      'Organisation for Economic Co-operation and Development',
+      'https://www.oecd.org/en/about/members-partners.html',
+    ],
   ].map(([id, name, publisher, url]) => ({
     id,
     name,
     publisher,
-    accessedAt: '2026-09-01',
+    accessedAt: '2026-09-05',
     url,
-    license: 'Official reference material; membership data transcribed',
+    license:
+      'Official reference material; membership and short repository-authored summaries transcribed',
   })),
   ...[
     [

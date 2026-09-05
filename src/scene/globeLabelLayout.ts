@@ -7,10 +7,18 @@ import type {
 import type { Landmark } from '../data/landmarkSchema'
 import type { LinearGeoFeature } from '../data/linearGeoFeatureSchema'
 import type { MountainRange } from '../data/mountainRangeSchema'
+import type { Territory } from '../data/territorySchema'
 import type { Waterbody } from '../data/waterbodySchema'
 import { getLandmarkLabelPriority } from './landmarkSceneInteraction'
 
 export type MapLabel =
+  | {
+      id: string
+      type: 'territory'
+      latitude: number
+      longitude: number
+      territory: Territory
+    }
   | {
       id: string
       type: 'city'
@@ -86,9 +94,11 @@ export type LabelGroup =
   | 'mountain'
   | 'desert'
   | 'landmark'
+  | 'territory'
   | 'geography'
 
 export function getLabelGroup(item: MapLabel): LabelGroup {
+  if (item.type === 'territory') return 'territory'
   if (item.type === 'city') return item.city.isCapital ? 'capital' : 'city'
   if (item.type === 'waterbody') return item.waterbody.layer
   if (item.type === 'linearFeature') return item.feature.kind
@@ -100,6 +110,7 @@ export function getLabelGroup(item: MapLabel): LabelGroup {
 }
 
 export function getMapLabelName(item: MapLabel) {
+  if (item.type === 'territory') return item.territory.name.zh
   if (item.type === 'city') return item.city.name.zh
   if (item.type === 'waterbody') return item.waterbody.name.zh
   if (item.type === 'linearFeature') return item.feature.name.zh
@@ -206,5 +217,6 @@ export function getLabelPriority(
     return 2.7 + item.range.labelPriority / 100
   }
   if (item.type === 'desert') return 2.8 + item.desert.labelPriority / 100
+  if (item.type === 'territory') return 0
   return (item.city.isCapital ? 3 : 10) + item.city.order / 10
 }

@@ -307,57 +307,153 @@
     "id": "un-security-council-members",
     "name": "Current Members of the United Nations Security Council",
     "publisher": "United Nations Security Council",
-    "accessedAt": "2026-09-01",
+    "accessedAt": "2026-09-05",
     "url": "https://main.un.org/securitycouncil/en/content/current-members",
-    "license": "Official reference material; membership data transcribed"
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "g7-members",
+    "name": "The G7 and its members",
+    "publisher": "Council of the European Union",
+    "accessedAt": "2026-09-05",
+    "url": "https://www.consilium.europa.eu/en/policies/g7-summit/",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "g20-members",
+    "name": "About the G20",
+    "publisher": "Group of Twenty",
+    "accessedAt": "2026-09-05",
+    "url": "https://g20.org/about-g20/",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "brics-members",
+    "name": "About the BRICS",
+    "publisher": "BRICS Brazil 2025 Presidency",
+    "accessedAt": "2026-09-05",
+    "url": "https://brics.br/en/about-the-brics",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "saudi-brics-status",
+    "name": "Saudi Arabia participates in the BRICS summit as an invited country",
+    "publisher": "Saudi Press Agency",
+    "accessedAt": "2026-09-05",
+    "url": "https://www.spa.gov.sa/en/N2586193",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "commonwealth-member-countries",
+    "name": "Commonwealth member countries",
+    "publisher": "The Commonwealth",
+    "accessedAt": "2026-09-05",
+    "url": "https://thecommonwealth.org/our-member-countries",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
   },
   {
     "id": "eu-country-profiles",
     "name": "EU country profiles",
     "publisher": "European Union",
-    "accessedAt": "2026-09-01",
+    "accessedAt": "2026-09-05",
     "url": "https://european-union.europa.eu/principles-countries-history/country-profiles_en",
-    "license": "Official reference material; membership data transcribed"
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
   },
   {
     "id": "asean-member-states",
     "name": "ASEAN Member States",
     "publisher": "Association of Southeast Asian Nations",
-    "accessedAt": "2026-09-01",
+    "accessedAt": "2026-09-05",
     "url": "https://asean.org/member-states/",
-    "license": "Official reference material; membership data transcribed"
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
   },
   {
     "id": "african-union-member-states",
     "name": "African Union Member States",
     "publisher": "African Union",
-    "accessedAt": "2026-09-01",
+    "accessedAt": "2026-09-05",
     "url": "https://au.int/en/member_states/countryprofiles2",
-    "license": "Official reference material; membership data transcribed"
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "arab-league-member-states",
+    "name": "League of Arab States member countries",
+    "publisher": "League of Arab States",
+    "accessedAt": "2026-09-05",
+    "url": "https://www.lasportal.org/en/aboutlas/Pages/CountryData.aspx",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "gcc-member-states",
+    "name": "GCC Member States",
+    "publisher": "Gulf Cooperation Council",
+    "accessedAt": "2026-09-05",
+    "url": "https://www.gcc-sg.org/en/AboutUs/MemberStates/Pages/default.aspx",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "mercosur-member-states",
+    "name": "MERCOSUR countries",
+    "publisher": "Southern Common Market",
+    "accessedAt": "2026-09-05",
+    "url": "https://www.mercosur.int/en/about-mercosur/mercosur-countries/",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "caricom-member-states",
+    "name": "CARICOM Member States and Associate Members",
+    "publisher": "Caribbean Community",
+    "accessedAt": "2026-09-05",
+    "url": "https://caricom.org/member-states-and-associate-members/",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
   },
   {
     "id": "opec-member-countries",
     "name": "OPEC Member Countries",
     "publisher": "Organization of the Petroleum Exporting Countries",
-    "accessedAt": "2026-09-01",
+    "accessedAt": "2026-09-05",
     "url": "https://www.opec.org/opec-web/en/about-us/25.html",
-    "license": "Official reference material; membership data transcribed"
-  },
-  {
-    "id": "wto-members-and-observers",
-    "name": "WTO Members and Observers",
-    "publisher": "World Trade Organization",
-    "accessedAt": "2026-09-01",
-    "url": "https://www.wto.org/english/thewto_e/whatis_e/tif_e/org6_e.htm",
-    "license": "Official reference material; membership data transcribed"
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
   },
   {
     "id": "nato-member-countries",
     "name": "NATO member countries",
     "publisher": "North Atlantic Treaty Organization",
-    "accessedAt": "2026-09-01",
+    "accessedAt": "2026-09-05",
     "url": "https://www.nato.int/en/about-us/organization/nato-member-countries",
-    "license": "Official reference material; membership data transcribed"
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "sco-member-states",
+    "name": "Shanghai Cooperation Organisation member states",
+    "publisher": "Shanghai Cooperation Organisation",
+    "accessedAt": "2026-09-05",
+    "url": "https://eng.sectsco.org/",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "quad-partners",
+    "name": "The Quad",
+    "publisher": "Australian Department of Foreign Affairs and Trade",
+    "accessedAt": "2026-09-05",
+    "url": "https://www.dfat.gov.au/international-relations/regional-architecture/quad",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "aukus-partners",
+    "name": "AUKUS",
+    "publisher": "Government of the United Kingdom",
+    "accessedAt": "2026-09-05",
+    "url": "https://www.gov.uk/government/collections/aukus",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
+  },
+  {
+    "id": "oecd-member-countries",
+    "name": "OECD members and partners",
+    "publisher": "Organisation for Economic Co-operation and Development",
+    "accessedAt": "2026-09-05",
+    "url": "https://www.oecd.org/en/about/members-partners.html",
+    "license": "Official reference material; membership and short repository-authored summaries transcribed"
   },
   {
     "id": "britannica-australia",

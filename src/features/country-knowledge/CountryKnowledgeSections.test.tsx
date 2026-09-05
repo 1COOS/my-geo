@@ -120,7 +120,7 @@ describe('CountryKnowledgeSections', () => {
     expect(labels()).toEqual(['城市'])
 
     await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
-    expect(labels()).toEqual(['邻国', '地区', '全球', '功能'])
+    expect(labels()).toEqual(['邻国', '地区', '组织'])
     expect(screen.queryByText('区位', { exact: true })).toBeNull()
   })
 
@@ -154,7 +154,7 @@ describe('CountryKnowledgeSections', () => {
       '上海 · 5座城市',
     )
     expect(screen.getByRole('button', { name: /国际关系/ })).toHaveTextContent(
-      '邻国14个 · 2项身份',
+      '邻国14个 · 4项身份',
     )
 
     const russia = country('RU')
@@ -243,6 +243,9 @@ describe('CountryKnowledgeSections', () => {
     expect(cityRows[0]?.children[0]).toHaveTextContent('北京')
     expect(cityRows[0]?.children[1]).toHaveTextContent('Beijing')
     expect(cityRows[0]?.children[1]).toHaveAttribute('title', 'Beijing')
+    expect((cityRows[0] as HTMLElement | undefined)?.style.padding).toBe(
+      '0.28rem 0.42rem',
+    )
     expect(screen.queryByRole('button', { name: /探索城市/ })).toBeNull()
     expect(screen.queryByRole('button', { name: '探索邻国俄罗斯' })).toBeNull()
 
@@ -265,7 +268,7 @@ describe('CountryKnowledgeSections', () => {
     expect(screen.getByText('中国香港')).toBeVisible()
   })
 
-  it('groups only the selected country affiliations and shows a precise empty state', async () => {
+  it('lists bilingual organizations, opens details, and shows a precise empty state', async () => {
     const { rerender } = render(
       <CountryKnowledgeSections
         key="CN"
@@ -276,11 +279,70 @@ describe('CountryKnowledgeSections', () => {
     )
 
     await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
-    expect(screen.getByText(/联合国安理会常任理事国/)).toBeVisible()
-    expect(screen.getByText(/世界贸易组织/)).toBeVisible()
+    const relationsTrigger = screen.getByRole('button', { name: /国际关系/ })
+    const p5Trigger = screen.getByRole('button', {
+      name: '查看联合国安理会常任理事国详情',
+    })
+    expect(p5Trigger).toBeVisible()
+    expect(
+      screen.queryByText(
+        'Permanent Members of the United Nations Security Council',
+      ),
+    ).toBeNull()
+    expect(screen.getByText('二十国集团')).toBeVisible()
+    expect(screen.getByText('金砖国家')).toBeVisible()
+    expect(screen.getByText('上海合作组织')).toBeVisible()
+    expect(screen.queryByText(/世界贸易组织/)).toBeNull()
     expect(screen.queryByText(/欧洲联盟/)).toBeNull()
-    expect(screen.getByText('全球', { exact: true })).toBeVisible()
-    expect(screen.getByText('功能', { exact: true })).toBeVisible()
+    expect(screen.queryByText('全球', { exact: true })).toBeNull()
+    expect(screen.queryByText('功能', { exact: true })).toBeNull()
+    expect(screen.queryByText('安全', { exact: true })).toBeNull()
+    expect(screen.getByText('组织', { exact: true })).toBeVisible()
+    expect(screen.queryByText(/共同承担维护国际和平与安全/)).toBeNull()
+    const p5Monogram = p5Trigger.querySelector<HTMLElement>(
+      ':scope > span:first-child',
+    )
+    const p5Name = p5Trigger.querySelector<HTMLElement>(
+      ':scope > span:last-child',
+    )
+    expect(p5Trigger.style.minHeight).toBe('2rem')
+    expect(p5Monogram?.style.minHeight).toBe('1.5rem')
+    expect(p5Monogram?.style.padding).toBe('0.1rem 0.2rem')
+    expect(p5Name?.style.color).toBe('var(--atlas-text-secondary)')
+    expect(p5Name?.style.fontWeight).toBe('400')
+    expect(
+      screen
+        .getByRole('button', { name: '探索邻国俄罗斯' })
+        .querySelector<HTMLElement>('.country-flag-frame')?.style.marginRight,
+    ).toBe('0.2rem')
+
+    await userEvent.click(p5Trigger)
+    const dialog = screen.getByRole('dialog', {
+      name: '联合国安理会常任理事国',
+    })
+    expect(dialog).toBeVisible()
+    expect(
+      screen.getByText(
+        'Permanent Members of the United Nations Security Council',
+      ),
+    ).toBeVisible()
+    expect(screen.getByRole('heading', { name: '基本信息' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: '组织介绍' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: '主要作用' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: '成员国' })).toBeVisible()
+    expect(
+      dialog.querySelectorAll('.international-affiliation-member-grid li'),
+    ).toHaveLength(5)
+    expect(
+      dialog.querySelector('.international-affiliation-member-grid button'),
+    ).toBeNull()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: '关闭联合国安理会常任理事国详情',
+      }),
+    )
+    expect(p5Trigger).toHaveFocus()
+    expect(relationsTrigger).toHaveAttribute('aria-expanded', 'true')
 
     rerender(
       <CountryKnowledgeSections
@@ -291,7 +353,7 @@ describe('CountryKnowledgeSections', () => {
       />,
     )
     await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
-    expect(screen.getByText('在当前收录的7项中暂无正式成员身份')).toBeVisible()
+    expect(screen.getByText('在当前收录的18项中暂无正式成员身份')).toBeVisible()
     expect(screen.getByText('组织', { exact: true })).toBeVisible()
   })
 

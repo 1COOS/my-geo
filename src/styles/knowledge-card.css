@@ -234,25 +234,25 @@
   background: var(--atlas-accent-soft);
 }
 
-.country-flag-dialog {
+.knowledge-detail-dialog {
   width: min(42rem, calc(100vw - var(--app-edge-left) - var(--app-edge-right)));
   max-height: calc(100dvh - var(--app-edge-top) - var(--app-edge-bottom));
 }
 
-.country-flag-dialog::backdrop {
+.knowledge-detail-dialog::backdrop {
   background: rgb(1 7 13 / 78%);
 }
 
-.country-flag-dialog-close {
+.knowledge-detail-dialog-close {
   line-height: 1;
 }
 
-.country-flag-dialog-close:hover,
-.country-flag-dialog-close:focus-visible {
+.knowledge-detail-dialog-close:hover,
+.knowledge-detail-dialog-close:focus-visible {
   background: var(--atlas-accent-soft);
 }
 
-.country-flag-dialog-body {
+.knowledge-detail-dialog-body {
   max-height: calc(100dvh - var(--app-edge-top) - var(--app-edge-bottom));
   padding: 1rem;
 }
@@ -263,42 +263,56 @@
   gap: 1rem;
 }
 
-.country-flag-dialog-sections {
+.knowledge-detail-dialog-sections {
   display: grid;
   gap: 0.8rem;
   margin-top: 1rem;
 }
 
-.country-flag-dialog-section {
+.knowledge-detail-dialog-section {
   padding-top: 0.8rem;
   border-top: 1px solid var(--atlas-border-soft);
 }
 
+.knowledge-country-affiliation-trigger:hover,
+.knowledge-country-affiliation-trigger:focus-visible,
+.knowledge-country-affiliation-trigger[aria-expanded='true'] {
+  background: var(--atlas-accent-soft) !important;
+  border-color: var(--atlas-accent) !important;
+}
+
+.international-affiliation-dialog-header {
+  padding-right: 3.4rem;
+  grid-template-columns: minmax(6.5rem, 9rem) minmax(0, 1fr);
+  gap: 1rem;
+}
+
 @media (orientation: landscape) and (max-height: 440px) {
-  .country-flag-dialog {
+  .knowledge-detail-dialog {
     width: calc(100vw - var(--app-edge-left) - var(--app-edge-right));
     height: calc(100dvh - var(--app-edge-top) - var(--app-edge-bottom));
     max-height: none;
   }
 
-  .country-flag-dialog-body {
+  .knowledge-detail-dialog-body {
     height: 100%;
     max-height: none;
     padding: 0.65rem;
   }
 
-  .country-flag-dialog-header {
+  .country-flag-dialog-header,
+  .international-affiliation-dialog-header {
     padding-right: 3.15rem;
     grid-template-columns: 7rem minmax(0, 1fr);
     gap: 0.75rem;
   }
 
-  .country-flag-dialog-sections {
+  .knowledge-detail-dialog-sections {
     gap: 0.55rem;
     margin-top: 0.65rem;
   }
 
-  .country-flag-dialog-section {
+  .knowledge-detail-dialog-section {
     padding-top: 0.55rem;
   }
 }

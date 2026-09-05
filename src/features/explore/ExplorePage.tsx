@@ -37,12 +37,14 @@ import {
   loadDesertGeometries,
   loadLinearFeatureGeometries,
   loadMountainGeometries,
+  loadTerritoryBoundaries,
   loadWaterbodyGeometries,
   prefetchGeometryAssets,
 } from '../../data/geometryResources'
 import { getLinearGeoFeature } from '../../data/linearGeoFeatures'
 import { getMountainRange } from '../../data/mountainRanges'
 import { getWaterbody } from '../../data/waterbodies'
+import { getTerritory } from '../../data/territories'
 import { ControlButton } from '../../shared/components/ControlButton'
 import { WebGLFallback } from '../../shared/components/WebGLFallback'
 import { supportsWebGL } from '../../shared/lib/webgl'
@@ -58,6 +60,7 @@ import { sceneOverlayRoles } from '../../shared/types/sceneOverlay'
 import { OVERVIEW_CAMERA_DISTANCE } from '../../scene/countrySceneInteraction'
 import { LANDMARK_CAMERA_DISTANCE } from '../../scene/landmarkSceneInteraction'
 import { CountryDetailPanel } from './CountryDetailPanel'
+import { TerritoryDetailPanel } from './TerritoryDetailPanel'
 import { ClimateLearningPanel } from './ClimateLearningPanel'
 import { DesertDetailPanel } from './DesertDetailPanel'
 import { parseExploreDeepLinkPosition } from './exploreDeepLinks'
@@ -71,6 +74,7 @@ import { WaterbodyDetailPanel } from './WaterbodyDetailPanel'
 import {
   exploreReducer,
   getSelectedCountryCode,
+  getSelectedTerritoryId,
   initialExploreState,
   type ExploreHover,
 } from './exploreState'
@@ -140,7 +144,6 @@ export function ExplorePage() {
   } = useExperienceStore()
 
   const {
-    capitals: showCapitals,
     cities: showCities,
     ocean: showOceanLayer,
     lake: showLakeLayer,
@@ -155,6 +158,8 @@ export function ExplorePage() {
   const selection = exploreState.selection
   const hover = exploreState.hover
   const selectedCountryCode = getSelectedCountryCode(selection)
+  const selectedTerritoryId = getSelectedTerritoryId(selection)
+  const selectedTerritory = getTerritory(selectedTerritoryId)
   const selectedWaterbodyId =
     selection?.kind === 'waterbody' ? selection.waterbodyId : null
   const selectedLinearFeatureId =
@@ -188,6 +193,10 @@ export function ExplorePage() {
   const hoveredDesertId = hover?.kind === 'desert' ? hover.desertId : null
   const hoveredLandmarkId = hover?.kind === 'landmark' ? hover.landmarkId : null
   const countryBoundaryResource = useGeometryResource(loadCountryBoundaries)
+  const territoryBoundaryResource = useGeometryResource(
+    loadTerritoryBoundaries,
+    selectedTerritory?.displayMode === 'polygon',
+  )
   const waterbodyGeometryResource = useGeometryResource(
     loadWaterbodyGeometries,
     showOceanLayer ||
@@ -283,9 +292,6 @@ export function ExplorePage() {
     }
   }, [climateDisplayKey, quality, selectedClimateTypeId, showClimateLayer])
   const visibleCountryCities = getCitiesForCountry(selectedCountryCode)
-  const toggleCapitalLayer = useCallback(() => {
-    dispatch({ type: 'toggleLayer', layer: 'capitals' })
-  }, [])
   const toggleCityLayer = useCallback(() => {
     dispatch({ type: 'toggleLayer', layer: 'cities' })
   }, [])
@@ -337,13 +343,6 @@ export function ExplorePage() {
       id: 'labels',
       label: '标注',
       items: [
-        {
-          id: 'capitals',
-          label: '首都',
-          className: 'is-capital',
-          pressed: showCapitals,
-          onToggle: toggleCapitalLayer,
-        },
         {
           id: 'cities',
           label: '城市',
@@ -604,6 +603,24 @@ export function ExplorePage() {
     },
     [requestCameraTarget, selectCountry],
   )
+  const selectTerritory = useCallback((territoryId: string) => {
+    const territory = getTerritory(territoryId)
+    if (!territory) return
+    setMiniMapExpanded(false)
+    dispatch({
+      type: 'select',
+      selection: { kind: 'territory', territoryId: territory.id },
+    })
+  }, [])
+  const navigateToTerritory = useCallback(
+    (territoryId: string) => {
+      const territory = getTerritory(territoryId)
+      if (!territory) return
+      selectTerritory(territory.id)
+      requestCameraTarget(territory.center, territory.cameraDistance)
+    },
+    [requestCameraTarget, selectTerritory],
+  )
   const selectWaterbody = useCallback((waterbodyId: string) => {
     const waterbody = getWaterbody(waterbodyId)
     if (!waterbody) return
@@ -698,6 +715,7 @@ export function ExplorePage() {
     const searchParams = new URLSearchParams(window.location.search)
     return {
       countryCode: searchParams.get('country')?.toUpperCase(),
+      territoryId: searchParams.get('territory'),
       geography: resolveGeographyExploreSelection(
         searchParams.get('geography'),
         searchParams.get('line'),
@@ -724,6 +742,14 @@ export function ExplorePage() {
       if (country) {
         handledDeepLinkRef.current = `country:${country.code}`
         navigateToCountry(country.code)
+        focusPosition()
+        return
+      }
+
+      const territory = getTerritory(requestedDeepLinks.territoryId)
+      if (territory) {
+        handledDeepLinkRef.current = `territory:${territory.id}`
+        navigateToTerritory(territory.id)
         focusPosition()
         return
       }
@@ -811,6 +837,7 @@ export function ExplorePage() {
     navigateToLinearFeature,
     navigateToLandmark,
     navigateToMountainRange,
+    navigateToTerritory,
     navigateToWaterbody,
     navigateToClimateType,
     openClimateOverview,
@@ -880,6 +907,11 @@ export function ExplorePage() {
       retry: countryBoundaryResource.retry,
     },
     {
+      label: '地区几何',
+      status: territoryBoundaryResource.status,
+      retry: territoryBoundaryResource.retry,
+    },
+    {
       label: '水域几何',
       status: waterbodyGeometryResource.status,
       retry: waterbodyGeometryResource.retry,
@@ -905,6 +937,7 @@ export function ExplorePage() {
     autoRotate &&
     !reducedMotion &&
     selectedCountryCode === null &&
+    selectedTerritoryId === null &&
     hoveredCountryCode === null &&
     hoveredWaterbodyId === null &&
     selectedWaterbodyId === null &&
@@ -932,6 +965,7 @@ export function ExplorePage() {
           <GlobeScene
             geometry={{
               countryBoundaries: countryBoundaryResource.data,
+              territoryBoundaries: territoryBoundaryResource.data,
               waterbodyGeometries: waterbodyGeometryResource.data,
               linearFeatureGeometries: linearGeometryResource.data,
               mountainGeometries: mountainGeometryResource.data,
@@ -944,7 +978,6 @@ export function ExplorePage() {
               reducedMotion,
             }}
             layers={{
-              showCapitals,
               showCities,
               showOceanLayer,
               showLakeLayer,
@@ -966,6 +999,7 @@ export function ExplorePage() {
               selectedGeographyTopicId,
               selectedReferenceLineId,
               selectedCountryCode,
+              selectedTerritoryId,
               selectedWaterbodyId,
               selectedLinearFeatureId,
               selectedMountainRangeId,
@@ -1089,6 +1123,14 @@ export function ExplorePage() {
           key={selectedCountry.code}
           country={selectedCountry}
           cities={visibleCountryCities}
+          onSelectCountry={navigateToCountry}
+          onSelectTerritory={navigateToTerritory}
+        />
+      ) : null}
+      {selectedTerritory ? (
+        <TerritoryDetailPanel
+          key={selectedTerritory.id}
+          territory={selectedTerritory}
           onSelectCountry={navigateToCountry}
         />
       ) : null}

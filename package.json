@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "bundle:check": "bun scripts/check-build-budgets.ts",
     "preview": "vite preview",
-    "data:generate": "bun scripts/generate-country-data.ts",
+    "data:generate": "bun scripts/generate-country-data.ts && bun scripts/generate-territory-data.ts",
     "data:clean:profiles": "bun scripts/clean-country-profile-content.ts && bun scripts/sync-country-profile-content.ts",
     "data:extract:resources": "bun scripts/extract-country-resource-source.ts",
     "data:extract:flags": "bun scripts/extract-country-flag-source.ts",

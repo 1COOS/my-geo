@@ -88,8 +88,25 @@ export type ClimateMarker = {
   name: string
 }
 
+export type TerritoryMarker = {
+  markerType: 'territory'
+  territoryId: string
+  lat: number
+  lng: number
+  name: string
+}
+
 export type GlobePointMarker =
-  CityMarker | WaterbodyMarker | LandmarkMarker | ClimateMarker
+  | CityMarker
+  | WaterbodyMarker
+  | LandmarkMarker
+  | ClimateMarker
+  | TerritoryMarker
+
+export function getTerritoryMarker(value: unknown) {
+  const marker = value as TerritoryMarker | undefined
+  return marker?.markerType === 'territory' ? marker : null
+}
 
 export function getClimateMarker(value: unknown) {
   const marker = value as ClimateMarker | undefined
@@ -97,16 +114,18 @@ export function getClimateMarker(value: unknown) {
 }
 
 export type CityLayerVisibility = {
-  showCapitals: boolean
   showCities: boolean
+  selectedCountryCode: string | null
 }
 
 export function getVisibleLayerCities(
   cities: readonly City[],
   visibility: CityLayerVisibility,
 ) {
-  return cities.filter((city) =>
-    city.isCapital ? visibility.showCapitals : visibility.showCities,
+  if (!visibility.showCities) return []
+  return cities.filter(
+    (city) =>
+      city.isCapital || city.countryCode === visibility.selectedCountryCode,
   )
 }
 

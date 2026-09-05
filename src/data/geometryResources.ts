@@ -2,6 +2,7 @@ import countryBoundariesUrl from './generated/country-boundaries.json?minified-u
 import desertGeometriesUrl from './generated/desert-geometries.json?minified-url'
 import mountainGeometriesUrl from './generated/mountain-geometries.json?minified-url'
 import riverGeometriesUrl from './generated/river-geometries.json?minified-url'
+import territoryBoundariesUrl from './generated/territory-boundaries.json?minified-url'
 import waterbodyGeometriesUrl from './generated/waterbody-geometries.json?minified-url'
 import {
   countryBoundariesSchema,
@@ -20,6 +21,10 @@ import {
   mountainRangeGeometryCatalogSchema,
   type MountainRangeGeometry,
 } from './mountainRangeSchema'
+import {
+  territoryBoundaryCatalogSchema,
+  type TerritoryBoundary,
+} from './territorySchema'
 import { getEmbeddedWaterbodyGeometries } from './waterbodies'
 import {
   waterbodyGeometryCatalogSchema,
@@ -27,12 +32,18 @@ import {
 } from './waterbodySchema'
 
 export type GeometryResourceKind =
-  'country' | 'waterbody' | 'linearFeature' | 'mountain' | 'desert'
+  | 'country'
+  | 'territory'
+  | 'waterbody'
+  | 'linearFeature'
+  | 'mountain'
+  | 'desert'
 
 type Fetcher = typeof fetch
 
 const geometryUrls: Record<GeometryResourceKind, string> = {
   country: countryBoundariesUrl,
+  territory: territoryBoundariesUrl,
   waterbody: waterbodyGeometriesUrl,
   linearFeature: riverGeometriesUrl,
   mountain: mountainGeometriesUrl,
@@ -67,6 +78,12 @@ const countryLoader = createCachedLoader(async (fetcher) =>
   countryBoundariesSchema.parse(await fetchJson(countryBoundariesUrl, fetcher)),
 )
 
+const territoryLoader = createCachedLoader(async (fetcher) =>
+  territoryBoundaryCatalogSchema.parse(
+    await fetchJson(territoryBoundariesUrl, fetcher),
+  ),
+)
+
 const waterbodyLoader = createCachedLoader(async (fetcher) =>
   waterbodyGeometryCatalogSchema.parse([
     ...((await fetchJson(waterbodyGeometriesUrl, fetcher)) as unknown[]),
@@ -97,6 +114,10 @@ export function loadCountryBoundaries(fetcher?: Fetcher) {
   return countryLoader.load(fetcher)
 }
 
+export function loadTerritoryBoundaries(fetcher?: Fetcher) {
+  return territoryLoader.load(fetcher)
+}
+
 export function loadWaterbodyGeometries(fetcher?: Fetcher) {
   return waterbodyLoader.load(fetcher)
 }
@@ -114,9 +135,13 @@ export function loadDesertGeometries(fetcher?: Fetcher) {
 }
 
 export async function prefetchGeometryAssets(
-  kinds: readonly GeometryResourceKind[] = Object.keys(
-    geometryUrls,
-  ) as GeometryResourceKind[],
+  kinds: readonly GeometryResourceKind[] = [
+    'country',
+    'waterbody',
+    'linearFeature',
+    'mountain',
+    'desert',
+  ],
   fetcher: Fetcher = fetch,
 ) {
   await Promise.allSettled(
@@ -130,6 +155,7 @@ export async function prefetchGeometryAssets(
 
 export type LoadedGeometryResources = {
   countryBoundaries: CountryBoundaries | null
+  territoryBoundaries: TerritoryBoundary[] | null
   waterbodyGeometries: WaterbodyGeometry[] | null
   linearFeatureGeometries: LinearGeoFeatureGeometry[] | null
   mountainGeometries: MountainRangeGeometry[] | null
@@ -138,6 +164,7 @@ export type LoadedGeometryResources = {
 
 export function resetGeometryResourceCachesForTests() {
   countryLoader.reset()
+  territoryLoader.reset()
   waterbodyLoader.reset()
   linearFeatureLoader.reset()
   mountainLoader.reset()

@@ -70,13 +70,33 @@ describe('PlaceSearch', () => {
     render(<PlaceSearch onSelect={onSelect} />)
 
     const search = screen.getByRole('combobox', { name: '搜索地点' })
-    expect(search).toHaveAttribute('placeholder', '搜索国家、地点或地理知识')
+    expect(search).toHaveAttribute(
+      'placeholder',
+      '搜索国家、地区、地点或地理知识',
+    )
     await user.type(search, 'Everest')
     expect(screen.getByText(/最高峰：珠穆朗玛峰/)).toBeInTheDocument()
     await user.keyboard('{Enter}')
     expect(onSelect.mock.calls[0]?.[0]).toMatchObject({
       type: 'mountainRange',
       range: { id: 'himalayas' },
+    })
+  })
+
+  it('labels and selects an overseas territory separately from countries', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn<(result: PlaceSearchResult) => void>()
+
+    render(<PlaceSearch onSelect={onSelect} />)
+
+    const search = screen.getByRole('combobox', { name: '搜索地点' })
+    await user.type(search, '格陵兰')
+    expect(screen.getByText('地区')).toBeInTheDocument()
+    expect(screen.getByText(/自治领地/)).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    expect(onSelect.mock.calls[0]?.[0]).toMatchObject({
+      type: 'territory',
+      territory: { id: 'greenland' },
     })
   })
 

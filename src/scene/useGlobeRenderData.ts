@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 
 import type { CountryBoundaries } from '../data/countrySchema'
+import { getTerritory } from '../data/territories'
 import { deserts } from '../data/deserts'
 import { getWaterbody } from '../data/waterbodies'
 import {
@@ -12,6 +13,7 @@ import {
   getVisibleLinearFeatures,
   type CityMarker,
   type GlobePointMarker,
+  type TerritoryMarker,
   type WaterbodyMarker,
 } from './countrySceneInteraction'
 import {
@@ -35,12 +37,14 @@ import {
 type UseGlobeRenderDataInput = Pick<
   GlobeWorldProps,
   | 'countryBoundaries'
+  | 'territoryBoundaries'
   | 'waterbodyGeometries'
   | 'linearFeatureGeometries'
   | 'mountainGeometries'
   | 'desertGeometries'
   | 'quality'
   | 'selectedClimatePosition'
+  | 'selectedTerritoryId'
   | 'selectedWaterbodyId'
   | 'showDesertLayer'
   | 'selectedLinearFeatureId'
@@ -58,6 +62,7 @@ export function getGlobePolygonData(
   visibleDesertFeatures: readonly object[],
   visibleLakeSurfaceFeatures: readonly object[],
   selectedSurfaceFeature: object | null,
+  selectedTerritoryBoundary: object | null = null,
 ) {
   return [
     ...(countryBoundaries?.landmasses ?? []),
@@ -65,11 +70,13 @@ export function getGlobePolygonData(
     ...visibleDesertFeatures,
     ...visibleLakeSurfaceFeatures,
     ...(selectedSurfaceFeature ? [selectedSurfaceFeature] : []),
+    ...(selectedTerritoryBoundary ? [selectedTerritoryBoundary] : []),
   ]
 }
 
 export function useGlobeRenderData({
   countryBoundaries,
+  territoryBoundaries,
   waterbodyGeometries,
   linearFeatureGeometries,
   mountainGeometries,
@@ -77,6 +84,7 @@ export function useGlobeRenderData({
   quality,
   labelItems,
   selectedClimatePosition,
+  selectedTerritoryId,
   selectedWaterbodyId,
   showDesertLayer,
   selectedLinearFeatureId,
@@ -90,6 +98,16 @@ export function useGlobeRenderData({
 }: UseGlobeRenderDataInput) {
   const pointMarkers = useMemo<GlobePointMarker[]>(() => {
     const markers: GlobePointMarker[] = []
+    const selectedTerritory = getTerritory(selectedTerritoryId)
+    if (selectedTerritory?.displayMode === 'marker') {
+      markers.push({
+        markerType: 'territory',
+        territoryId: selectedTerritory.id,
+        lat: selectedTerritory.center.latitude,
+        lng: selectedTerritory.center.longitude,
+        name: selectedTerritory.name.zh,
+      } satisfies TerritoryMarker)
+    }
     for (const item of labelItems) {
       if (item.type === 'city') {
         markers.push({
@@ -130,7 +148,7 @@ export function useGlobeRenderData({
       })
     }
     return markers
-  }, [labelItems, selectedClimatePosition])
+  }, [labelItems, selectedClimatePosition, selectedTerritoryId])
   const waterbodyGeometryById = useMemo(
     () => new Map((waterbodyGeometries ?? []).map((item) => [item.id, item])),
     [waterbodyGeometries],
@@ -363,21 +381,29 @@ export function useGlobeRenderData({
     ],
     [geographyPaths, linearPaths, mountainPaths, selectedTrenchPath],
   )
-  const polygonsData = useMemo(
-    () =>
-      getGlobePolygonData(
-        countryBoundaries,
-        visibleDesertFeatures,
-        visibleLakeSurfaceFeatures,
-        selectedSurfaceFeature,
-      ),
-    [
+  const polygonsData = useMemo(() => {
+    const selectedTerritory = getTerritory(selectedTerritoryId)
+    const selectedTerritoryBoundary =
+      selectedTerritory?.displayMode === 'polygon'
+        ? (territoryBoundaries?.find(
+            (item) => item.properties.territoryId === selectedTerritory.id,
+          ) ?? null)
+        : null
+    return getGlobePolygonData(
       countryBoundaries,
-      selectedSurfaceFeature,
       visibleDesertFeatures,
       visibleLakeSurfaceFeatures,
-    ],
-  )
+      selectedSurfaceFeature,
+      selectedTerritoryBoundary,
+    )
+  }, [
+    countryBoundaries,
+    territoryBoundaries,
+    selectedTerritoryId,
+    selectedSurfaceFeature,
+    visibleDesertFeatures,
+    visibleLakeSurfaceFeatures,
+  ])
 
   return {
     pointMarkers,

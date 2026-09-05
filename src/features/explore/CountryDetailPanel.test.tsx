@@ -6,7 +6,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { getCitiesForCountry, getCountry } from '../../data/countries'
 import { CountryDetailPanel } from './CountryDetailPanel'
 
-function renderCountry(code: string, onSelectCountry = vi.fn()) {
+function renderCountry(
+  code: string,
+  onSelectCountry = vi.fn(),
+  onSelectTerritory = vi.fn(),
+) {
   const country = getCountry(code)
   expect(country).toBeDefined()
   render(
@@ -15,6 +19,7 @@ function renderCountry(code: string, onSelectCountry = vi.fn()) {
         country={country!}
         cities={getCitiesForCountry(code)}
         onSelectCountry={onSelectCountry}
+        onSelectTerritory={onSelectTerritory}
       />
     </MemoryRouter>,
   )
@@ -37,6 +42,18 @@ function renderCountryData(
 }
 
 describe('CountryDetailPanel', () => {
+  it('opens reviewed overseas territories from the administering country', async () => {
+    const onSelectTerritory = vi.fn()
+    renderCountry('FR', vi.fn(), onSelectTerritory)
+
+    await userEvent.click(screen.getByRole('button', { name: /国际关系/ }))
+    await userEvent.click(
+      screen.getByRole('button', { name: '探索地区法属圭亚那' }),
+    )
+    expect(onSelectTerritory).toHaveBeenCalledWith('french-guiana')
+    expect(screen.getByText('新喀里多尼亚')).toBeVisible()
+  })
+
   it('opens the flag dialog without changing the active chapter', async () => {
     renderCountry('CN')
 

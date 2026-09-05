@@ -34,6 +34,7 @@ export function GlobeDomOverlay({
     labelWaterbodies,
     labelLinearFeatures,
     labelMountainRanges,
+    labelTerritories,
     labelDeserts,
     labelLandmarks,
     labelReferenceLines,
@@ -181,6 +182,19 @@ export function GlobeDomOverlay({
         className="globe-city-labels"
         aria-label="城市、水域、山脉、沙漠、古迹与经纬网地理标签"
       >
+        {labelTerritories.map((territory) => (
+          <span
+            key={territory.id}
+            hidden
+            className="city-label territory-label is-selected"
+            data-map-label-id={`territory-${territory.id}`}
+            data-territory-id={territory.id}
+            aria-hidden="true"
+          >
+            <span aria-hidden="true" />
+            {territory.name.zh} · {territory.name.en}
+          </span>
+        ))}
         {labelCities.map((city) => (
           <span
             key={city.id}

@@ -255,7 +255,7 @@ async function expectLayerPanelGrouped(page: Page) {
     '水域',
     '地貌与文化',
   ])
-  await expect(panel.getByRole('button')).toHaveCount(11)
+  await expect(panel.getByRole('button')).toHaveCount(10)
 }
 
 async function readMapHighlightStyle(page: Page, selector: string) {
@@ -294,7 +294,6 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
     ).toHaveCount(1)
     await expect(page.locator('[data-country-code="AQ"]')).toHaveCount(0)
     const layerControl = await openLayerControl(page)
-    const capitals = layerControl.getByRole('button', { name: '首都' })
     const cities = layerControl.getByRole('button', { name: '城市' })
     const rivers = layerControl.getByRole('button', {
       name: '河流图层：世界重要河流与人工运河',
@@ -303,7 +302,9 @@ test('loads the responsive My Geo exploration shell', async ({ page }) => {
       name: '山脉图层：世界著名山脉与最高峰',
     })
     await expect(layerControl).toBeVisible()
-    await expect(capitals).toHaveAttribute('aria-pressed', 'false')
+    await expect(
+      layerControl.getByRole('button', { name: '首都' }),
+    ).toHaveCount(0)
     await expect(cities).toHaveAttribute('aria-pressed', 'false')
     await expect(rivers).toHaveAttribute('aria-pressed', 'false')
     await expect(
@@ -997,6 +998,72 @@ test('opens a responsive flag dialog without resizing the country card', async (
     palestineCard.getByRole('button', { name: '查看巴勒斯坦国旗含义' }),
   ).toHaveCount(0)
   await expect(palestineCard.getByAltText('巴勒斯坦国旗')).toBeVisible()
+})
+
+test('opens a responsive organization dialog with static member countries', async ({
+  page,
+}) => {
+  for (const viewport of [
+    { width: 568, height: 320 },
+    { width: 844, height: 390 },
+    { width: 956, height: 440 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/explore?country=AU')
+    await waitForSceneOrFallback(page)
+
+    const card = page.getByLabel('澳大利亚国家知识卡')
+    await card.getByRole('button', { name: /国际关系/ }).click()
+    const commonwealthTrigger = card.getByRole('button', {
+      name: '查看英联邦详情',
+    })
+    await expect(commonwealthTrigger).toBeVisible()
+    await expect(card.getByText('Commonwealth of Nations')).toHaveCount(0)
+    expect(
+      await commonwealthTrigger.evaluate((element) =>
+        Math.max(0, element.scrollWidth - element.clientWidth),
+      ),
+    ).toBeLessThanOrEqual(1)
+
+    await commonwealthTrigger.click()
+    const dialog = page.getByRole('dialog', { name: '英联邦' })
+    await expect(dialog).toBeVisible()
+    await expect(
+      dialog.locator('.international-affiliation-member-grid li'),
+    ).toHaveCount(56)
+    await expect(
+      dialog.locator('.international-affiliation-member-grid button'),
+    ).toHaveCount(0)
+    const [dialogBox, closeBox, horizontalOverflow] = await Promise.all([
+      dialog.boundingBox(),
+      dialog.getByRole('button', { name: '关闭英联邦详情' }).boundingBox(),
+      dialog
+        .locator('.international-affiliation-dialog-body')
+        .evaluate((element) =>
+          Math.max(0, element.scrollWidth - element.clientWidth),
+        ),
+    ])
+    expect(dialogBox).not.toBeNull()
+    expect(closeBox).not.toBeNull()
+    expect(dialogBox!.x).toBeGreaterThanOrEqual(0)
+    expect(dialogBox!.y).toBeGreaterThanOrEqual(0)
+    expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(
+      viewport.width + 1,
+    )
+    expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(
+      viewport.height + 1,
+    )
+    expect(closeBox!.width).toBeGreaterThanOrEqual(44)
+    expect(closeBox!.height).toBeGreaterThanOrEqual(44)
+    expect(horizontalOverflow).toBeLessThanOrEqual(1)
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(commonwealthTrigger).toBeFocused()
+    await expect(
+      card.getByRole('button', { name: /国际关系/ }),
+    ).toHaveAttribute('aria-expanded', 'true')
+  }
 })
 
 for (const viewport of [
@@ -3308,7 +3375,9 @@ test('keeps the 2D map synchronized with country and globe navigation', async ({
   )
 })
 
-test('toggles adaptive capital and static city labels', async ({ page }) => {
+test('shows global capitals and expands the selected country in the city layer', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/')
 
@@ -3316,29 +3385,38 @@ test('toggles adaptive capital and static city labels', async ({ page }) => {
   if (await fallback.isVisible()) return
 
   const layerControl = await openLayerControl(page)
-  const capitalToggle = layerControl.getByRole('button', { name: '首都' })
   const cityToggle = layerControl.getByRole('button', { name: '城市' })
   const labels = page.locator('.city-label:not([hidden])')
-  await expect(labels).toHaveCount(0)
-  await capitalToggle.click()
-  await expect(capitalToggle).toHaveAttribute('aria-pressed', 'true')
-  await expect.poll(() => labels.count()).toBeGreaterThan(0)
-  expect(await labels.count()).toBeLessThanOrEqual(30)
-
-  await capitalToggle.click()
+  const cityLabels = page.locator('.city-label[data-city-id]')
   await expect(labels).toHaveCount(0)
   await cityToggle.click()
   await expect(cityToggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(cityLabels).toHaveCount(197)
+  await expect(page.locator('[data-city-id="cn-shanghai"]')).toHaveCount(0)
   await expect.poll(() => labels.count()).toBeGreaterThan(0)
+  expect(await labels.count()).toBeLessThanOrEqual(30)
   expect(
     await page.locator('.city-label.is-capital:not([hidden])').count(),
-  ).toBe(0)
-  await expect(
-    page.locator('.city-label.is-city:not([hidden])').first(),
-  ).toHaveAttribute('aria-hidden', 'true')
+  ).toBeGreaterThan(0)
+
+  const map = page.getByTestId('world-mini-map')
+  await map.locator('[data-country-code="CN"]').first().click({ force: true })
+  await expect(page.getByLabel('中国国家知识卡')).toBeVisible()
+  await expect(cityLabels).toHaveCount(201)
+  await expect(page.locator('[data-city-id="cn-shanghai"]')).toHaveAttribute(
+    'aria-hidden',
+    'true',
+  )
   await expect(page.locator('button.city-label.is-city')).toHaveCount(0)
 
-  await cityToggle.click()
+  await map.locator('[data-country-code="US"]').first().click({ force: true })
+  await expect(page.getByLabel('美国国家知识卡')).toBeVisible()
+  await expect(page.locator('[data-city-id="cn-shanghai"]')).toHaveCount(0)
+  await expect(page.locator('[data-city-id="us-new-york"]')).toHaveCount(1)
+  await expect(cityLabels).toHaveCount(201)
+
+  const reopenedLayerControl = await openLayerControl(page)
+  await reopenedLayerControl.getByRole('button', { name: '城市' }).click()
   await expect(labels).toHaveCount(0)
 
   const search = await openCountrySearch(page)
@@ -4386,7 +4464,7 @@ test('keeps the selected canal enhancement visible in low quality mode', async (
   await expectSelectedLinearFeatureRoute(page, 'suez-canal', '苏伊士运河')
 })
 
-test('keeps capital labels synchronized during automatic rotation', async ({
+test('keeps city-layer capital labels synchronized during automatic rotation', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -4396,7 +4474,7 @@ test('keeps capital labels synchronized during automatic rotation', async ({
   if (await fallback.isVisible()) return
 
   await openLayerControl(page)
-  await page.getByRole('button', { name: '首都' }).click()
+  await page.getByRole('button', { name: '城市' }).click()
   const marker = page.getByTestId('world-mini-map-view-marker')
   const labelLayer = page.locator('.globe-city-labels')
   await expect
@@ -4540,7 +4618,7 @@ test('keeps the layer panel inside an iPad landscape safe area', async ({
     '水域',
     '地貌与文化',
   ])
-  await expect(panel.getByRole('button')).toHaveCount(11)
+  await expect(panel.getByRole('button')).toHaveCount(10)
   const minimumTargetHeight = await panel
     .getByRole('button')
     .evaluateAll((buttons) =>
@@ -4550,11 +4628,10 @@ test('keeps the layer panel inside an iPad landscape safe area', async ({
     )
   expect(minimumTargetHeight).toBeGreaterThanOrEqual(44)
 
-  await layerControl.getByRole('button', { name: '首都' }).click()
   await layerControl.getByRole('button', { name: '城市' }).click()
-  await expect(
-    layerControl.getByRole('button', { name: '首都' }),
-  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(layerControl.getByRole('button', { name: '首都' })).toHaveCount(
+    0,
+  )
   await expect(
     layerControl.getByRole('button', { name: '城市' }),
   ).toHaveAttribute('aria-pressed', 'true')
@@ -4691,8 +4768,53 @@ test('searches China and opens the featured knowledge card', async ({
   await card.getByRole('button', { name: /国际关系/ }).click()
   await expect(card.getByText('中国香港')).toBeVisible()
   await expect(card.getByText('中国澳门')).toBeVisible()
-  await expect(card.getByText(/联合国安理会常任理事国/)).toBeVisible()
-  await expect(card.getByText(/世界贸易组织/)).toBeVisible()
+  await expect(card.getByText('组织', { exact: true })).toBeVisible()
+  await expect(card.getByText('联合国安理会常任理事国')).toBeVisible()
+  await expect(
+    card.getByText('Permanent Members of the United Nations Security Council'),
+  ).toHaveCount(0)
+  await expect(card.getByText('二十国集团')).toBeVisible()
+  await expect(card.getByText('金砖国家')).toBeVisible()
+  await expect(card.getByText('上海合作组织')).toBeVisible()
+  await expect(card.getByText(/世界贸易组织/)).toHaveCount(0)
+  await expect(card.getByText('全球', { exact: true })).toHaveCount(0)
+  await expect(card.getByText('功能', { exact: true })).toHaveCount(0)
+  const p5Trigger = card.getByRole('button', {
+    name: '查看联合国安理会常任理事国详情',
+  })
+  await p5Trigger.click()
+  const organizationDialog = page.getByRole('dialog', {
+    name: '联合国安理会常任理事国',
+  })
+  await expect(organizationDialog).toBeVisible()
+  await expect(
+    organizationDialog.getByText(
+      'Permanent Members of the United Nations Security Council',
+    ),
+  ).toBeVisible()
+  await expect(
+    organizationDialog.getByRole('heading', { name: '基本信息' }),
+  ).toBeVisible()
+  await expect(
+    organizationDialog.getByRole('heading', { name: '组织介绍' }),
+  ).toBeVisible()
+  await expect(
+    organizationDialog.getByRole('heading', { name: '主要作用' }),
+  ).toBeVisible()
+  await expect(
+    organizationDialog.locator('.international-affiliation-member-grid li'),
+  ).toHaveCount(5)
+  await expect(
+    organizationDialog.locator('.international-affiliation-member-grid button'),
+  ).toHaveCount(0)
+  await organizationDialog
+    .getByRole('button', { name: '关闭联合国安理会常任理事国详情' })
+    .click()
+  await expect(p5Trigger).toBeFocused()
+  await expect(card.getByRole('button', { name: /国际关系/ })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  )
   await expect(card.getByText(/大熊猫主要生活/)).toHaveCount(0)
 })
 

@@ -6,7 +6,6 @@ import type { GeographyExploreSelection } from '../../data/geographyLearning'
 import { getWaterbody } from '../../data/waterbodies'
 
 export type LayerVisibility = {
-  capitals: boolean
   cities: boolean
   ocean: boolean
   lake: boolean
@@ -21,6 +20,7 @@ export type LayerVisibility = {
 
 export type ExploreSelection =
   | { kind: 'country'; countryCode: string }
+  | { kind: 'territory'; territoryId: string }
   | { kind: 'waterbody'; waterbodyId: string }
   | { kind: 'linearFeature'; featureId: string }
   | { kind: 'mountainRange'; rangeId: string }
@@ -57,7 +57,6 @@ export type ExploreAction =
   | { type: 'showClimateOverview' }
 
 export const initialLayerVisibility: LayerVisibility = {
-  capitals: false,
   cities: false,
   ocean: false,
   lake: false,
@@ -191,6 +190,10 @@ export function exploreReducer(
 
 export function getSelectedCountryCode(selection: ExploreSelection) {
   return selection?.kind === 'country' ? selection.countryCode : null
+}
+
+export function getSelectedTerritoryId(selection: ExploreSelection) {
+  return selection?.kind === 'territory' ? selection.territoryId : null
 }
 
 export function getSelectedEntityId<

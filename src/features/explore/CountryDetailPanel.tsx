@@ -7,12 +7,14 @@ type CountryDetailPanelProps = {
   country: Country
   cities: City[]
   onSelectCountry: (countryCode: string) => void
+  onSelectTerritory?: (territoryId: string) => void
 }
 
 export function CountryDetailPanel({
   country,
   cities,
   onSelectCountry,
+  onSelectTerritory,
 }: CountryDetailPanelProps) {
   const region = knowledgeRegionByCountryCode.get(country.code)
 
@@ -23,6 +25,7 @@ export function CountryDetailPanel({
       label={`${country.name.zh}国家知识卡`}
       identity={`${country.code}:country`}
       onSelectCountry={onSelectCountry}
+      onSelectTerritory={onSelectTerritory}
       footerAction={
         region
           ? {

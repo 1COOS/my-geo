@@ -49,6 +49,9 @@ import {
   waterbodyGeometryDefinitions,
 } from './waterbody-geometry-content'
 import { waterbodies } from '../src/data/waterbodies'
+import { territories, territorySources } from '../src/data/territories'
+import territoryBoundariesJson from '../src/data/generated/territory-boundaries.json'
+import { territoryBoundaryCatalogSchema } from '../src/data/territorySchema'
 import { priorityCityCounts } from './city-content'
 import {
   adjacentRegionNames,
@@ -75,6 +78,49 @@ async function readJson(filePath: string): Promise<unknown> {
 const countries = countryCatalogSchema.parse(
   await readJson(path.join(projectRoot, 'src/data/generated/countries.json')),
 )
+const territoryBoundaries = territoryBoundaryCatalogSchema.parse(
+  territoryBoundariesJson,
+)
+
+const territorySourceIds = new Set(territorySources.map((source) => source.id))
+const territoryIds = new Set(territories.map((territory) => territory.id))
+const territoryCodes = new Set(territories.map((territory) => territory.code))
+if (
+  territories.length !== 9 ||
+  territoryIds.size !== 9 ||
+  territoryCodes.size !== 9
+) {
+  throw new Error('Expected 9 unique reviewed territory entries')
+}
+for (const territory of territories) {
+  if (
+    !countries.some(
+      (country) => country.code === territory.administeringCountryCode,
+    )
+  ) {
+    throw new Error(`Unknown administering country on ${territory.id}`)
+  }
+  const sourceIds = [
+    ...territory.sourceIds,
+    ...territory.geography.sourceIds,
+    ...territory.people.sourceIds,
+    ...territory.economy.sourceIds,
+  ]
+  if (sourceIds.some((sourceId) => !territorySourceIds.has(sourceId))) {
+    throw new Error(`Unknown territory source on ${territory.id}`)
+  }
+}
+const polygonTerritoryIds = new Set(
+  territories
+    .filter((territory) => territory.displayMode === 'polygon')
+    .map((territory) => territory.id),
+)
+const boundaryTerritoryIds = new Set(
+  territoryBoundaries.map((boundary) => boundary.properties.territoryId),
+)
+if (!isDeepStrictEqual(polygonTerritoryIds, boundaryTerritoryIds)) {
+  throw new Error('Territory display modes do not match generated boundaries')
+}
 const boundaries = countryBoundariesSchema.parse(
   await readJson(
     path.join(projectRoot, 'src/data/generated/country-boundaries.json'),
@@ -874,5 +920,5 @@ for (const country of countries) {
 }
 
 console.log(
-  `Validated ${countries.length} complete country cards and question difficulty assignments, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${landmarks.length} landmarks, ${climateTypes.length} climate types, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} sources, ${boundaries.features.length} country boundaries, ${boundaries.landmasses.length} non-country landmass, and all local assets.`,
+  `Validated ${countries.length} complete country cards and question difficulty assignments, ${territories.length} overseas-region cards, ${cities.length} capital and reviewed city entries, ${waterbodies.length} waterbodies, ${linearGeoFeatures.length} rivers and canals, ${mountainRanges.length} mountain ranges, ${deserts.length} deserts, ${landmarks.length} landmarks, ${climateTypes.length} climate types, ${priorityCityTotal} entries across 50 priority countries, ${featuredCodes.length} featured entries, ${sources.length} country sources, ${territorySources.length} territory sources, ${boundaries.features.length} country boundaries, ${territoryBoundaries.length} selected-only territory boundaries, ${boundaries.landmasses.length} non-country landmass, and all local assets.`,
 )
