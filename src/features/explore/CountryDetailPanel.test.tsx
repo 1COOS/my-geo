@@ -37,7 +37,7 @@ function renderCountryData(
 }
 
 describe('CountryDetailPanel', () => {
-  it('reveals complete Factbook sections and keeps disclosures single-open', async () => {
+  it('opens the flag dialog without changing the active chapter', async () => {
     renderCountry('CN')
 
     const flagTrigger = screen.getByRole('button', {
@@ -46,29 +46,57 @@ describe('CountryDetailPanel', () => {
     const peopleTrigger = screen.getByRole('button', { name: /语言民族/ })
 
     expect(flagTrigger).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('heading', { name: '国旗含义' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: '中国国旗' })).toBeNull()
+
+    await userEvent.click(peopleTrigger)
+    expect(peopleTrigger).toHaveAttribute('aria-expanded', 'true')
 
     await userEvent.click(flagTrigger)
 
     expect(flagTrigger).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('heading', { name: '国旗含义' })).toBeVisible()
+    expect(screen.getByRole('dialog', { name: '中国国旗' })).toBeVisible()
     expect(screen.getByRole('heading', { name: '外观' })).toBeVisible()
     expect(screen.getByRole('heading', { name: '含义' })).toBeVisible()
     expect(screen.queryByRole('heading', { name: '历史' })).toBeNull()
+    expect(peopleTrigger).toHaveAttribute('aria-expanded', 'true')
     expect(
       screen.getByText(/四个社会阶级.*城市小资产阶级.*民族资产阶级/),
     ).toBeVisible()
 
-    await userEvent.click(peopleTrigger)
+    await userEvent.click(
+      screen.getByRole('button', { name: '关闭中国国旗含义' }),
+    )
 
     expect(flagTrigger).toHaveAttribute('aria-expanded', 'false')
     expect(peopleTrigger).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.queryByRole('heading', { name: '国旗含义' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: '中国国旗' })).toBeNull()
+    expect(flagTrigger).toHaveFocus()
+  })
 
-    await userEvent.click(flagTrigger)
+  it('uses an icon-only flag cue and supports keyboard activation', async () => {
+    const user = userEvent.setup()
+    renderCountry('CN')
 
-    expect(flagTrigger).toHaveAttribute('aria-expanded', 'true')
-    expect(peopleTrigger).toHaveAttribute('aria-expanded', 'false')
+    const flagTrigger = screen.getByRole('button', {
+      name: '查看中国国旗含义',
+    })
+    const cue = flagTrigger.querySelector('.country-flag-meaning-cue')
+
+    expect(cue).not.toBeNull()
+    expect(cue).toHaveAttribute('aria-hidden', 'true')
+    expect(cue).toHaveTextContent('')
+    expect(cue!.querySelector('svg')).not.toBeNull()
+    expect(flagTrigger).not.toHaveAttribute('title')
+
+    flagTrigger.focus()
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('dialog', { name: '中国国旗' })).toBeVisible()
+
+    await user.keyboard('{Escape}')
+    expect(flagTrigger).toHaveFocus()
+
+    await user.keyboard(' ')
+    expect(screen.getByRole('dialog', { name: '中国国旗' })).toBeVisible()
   })
 
   it('shows only available description and history sections', async () => {
@@ -93,7 +121,7 @@ describe('CountryDetailPanel', () => {
 
     expect(
       Array.from(
-        document.querySelectorAll('.country-flag-detail-section > h4'),
+        document.querySelectorAll('.country-flag-dialog-section > h3'),
       ).map((heading) => heading.textContent),
     ).toEqual(['外观', '含义', '历史'])
     expect(screen.getByText(/27 颗白色五角星/)).toBeVisible()
@@ -107,6 +135,7 @@ describe('CountryDetailPanel', () => {
       screen.queryByRole('button', { name: '查看巴勒斯坦国旗含义' }),
     ).toBeNull()
     expect(screen.getByAltText('巴勒斯坦国旗')).toBeVisible()
+    expect(document.querySelector('.country-flag-meaning-cue')).toBeNull()
   })
 
   it('resets the flag disclosure when the selected country changes', async () => {
@@ -125,7 +154,7 @@ describe('CountryDetailPanel', () => {
     await userEvent.click(
       screen.getByRole('button', { name: '查看中国国旗含义' }),
     )
-    expect(screen.getByRole('heading', { name: '国旗含义' })).toBeVisible()
+    expect(screen.getByRole('dialog', { name: '中国国旗' })).toBeVisible()
 
     rerender(
       <MemoryRouter>
@@ -140,20 +169,20 @@ describe('CountryDetailPanel', () => {
     expect(
       screen.getByRole('button', { name: '查看日本国旗含义' }),
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('heading', { name: '国旗含义' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: '日本国旗' })).toBeNull()
   })
 
   it('renders the continuous featured-country knowledge structure', async () => {
     renderCountry('CN')
 
     expect(screen.getByRole('heading', { name: '中国' })).toBeInTheDocument()
-    expect(screen.getByAltText('中国国旗')).toHaveAttribute(
-      'src',
-      '/flags/cn.svg',
-    )
-    const flag = screen.getByAltText('中国国旗')
+    const flag = screen
+      .getByRole('button', { name: '查看中国国旗含义' })
+      .querySelector('img')
+    expect(flag).not.toBeNull()
+    expect(flag).toHaveAttribute('src', '/flags/cn.svg')
     expect(flag).toHaveClass('country-flag-image')
-    expect(flag.parentElement).toHaveClass(
+    expect(flag?.parentElement).toHaveClass(
       'country-flag-frame',
       'knowledge-country-detail-flag',
     )

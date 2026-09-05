@@ -895,7 +895,7 @@ test('uses the contained flag contract across learning and exploration surfaces'
   )
 })
 
-test('reveals flag meaning inline without covering the country detail card', async ({
+test('opens a responsive flag dialog without resizing the country card', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
@@ -903,62 +903,93 @@ test('reveals flag meaning inline without covering the country detail card', asy
 
   const card = page.getByLabel('中国国家学习详情')
   const flagTrigger = card.getByRole('button', { name: '查看中国国旗含义' })
+  const flagFrame = flagTrigger.locator('.knowledge-country-detail-flag')
+  const flagCue = flagTrigger.locator('.country-flag-meaning-cue')
+  await waitForKnowledgeCardSettled(card)
+  const [cardBoxBefore, flagFrameBox, flagCueBox, flagCueIconBox] =
+    await Promise.all([
+      card.boundingBox(),
+      flagFrame.boundingBox(),
+      flagCue.boundingBox(),
+      flagCue.locator('svg').boundingBox(),
+    ])
+  expect(cardBoxBefore).not.toBeNull()
+  expect(flagFrameBox).not.toBeNull()
+  expect(flagCueBox).not.toBeNull()
+  expect(flagCueIconBox).not.toBeNull()
+  expect(flagCueBox!.x).toBeCloseTo(flagFrameBox!.x, 0)
+  expect(flagCueIconBox!.width).toBeGreaterThanOrEqual(17)
+  expect(flagCueIconBox!.height).toBeGreaterThanOrEqual(17)
   await expect(flagTrigger).toHaveAttribute('aria-expanded', 'false')
   await flagTrigger.click()
 
   await expect(flagTrigger).toHaveAttribute('aria-expanded', 'true')
-  await expect(card.getByRole('heading', { name: '国旗含义' })).toBeVisible()
-  await expect(card.getByRole('heading', { name: '外观' })).toBeVisible()
+  let dialog = page.getByRole('dialog', { name: '中国国旗' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByAltText('中国国旗')).toBeVisible()
+  await expect(dialog.getByRole('heading', { name: '外观' })).toBeVisible()
   await expect(
-    card.getByRole('heading', { name: '含义', exact: true }),
+    dialog.getByRole('heading', { name: '含义', exact: true }),
   ).toBeVisible()
-  await expect(card.getByRole('heading', { name: '历史' })).toHaveCount(0)
+  await expect(dialog.getByRole('heading', { name: '历史' })).toHaveCount(0)
   await expect(
-    card.getByText(/四个社会阶级.*城市小资产阶级.*民族资产阶级/),
+    dialog.getByText(/四个社会阶级.*城市小资产阶级.*民族资产阶级/),
   ).toBeVisible()
+  await expect(
+    dialog.getByRole('button', { name: '关闭中国国旗含义' }),
+  ).toBeFocused()
+  const cardBoxDuring = await card.boundingBox()
+  expect(cardBoxDuring).not.toBeNull()
+  expect(cardBoxDuring!.width).toBeCloseTo(cardBoxBefore!.width, 0)
+  expect(cardBoxDuring!.height).toBeCloseTo(cardBoxBefore!.height, 0)
 
-  const peopleTrigger = card.getByRole('button', { name: /语言民族/ })
-  await peopleTrigger.click()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
   await expect(flagTrigger).toHaveAttribute('aria-expanded', 'false')
-  await expect(peopleTrigger).toHaveAttribute('aria-expanded', 'true')
-  await expect(card.getByRole('heading', { name: '国旗含义' })).toHaveCount(0)
+  await expect(flagTrigger).toBeFocused()
 
   await page.setViewportSize({ width: 844, height: 390 })
   await flagTrigger.click()
-  const panel = card.locator('.country-flag-meaning-panel')
-  await expect(panel).toBeVisible()
-  const [triggerBox, panelBox, cardBox, horizontalOverflow] = await Promise.all(
-    [
+  dialog = page.getByRole('dialog', { name: '中国国旗' })
+  await expect(dialog).toBeVisible()
+  const [triggerBox, dialogBox, closeBox, horizontalOverflow] =
+    await Promise.all([
       flagTrigger.boundingBox(),
-      panel.boundingBox(),
-      card.boundingBox(),
-      card
-        .locator('.knowledge-card-content')
+      dialog.boundingBox(),
+      dialog.getByRole('button', { name: '关闭中国国旗含义' }).boundingBox(),
+      dialog
+        .locator('.country-flag-dialog-body')
         .evaluate((element) =>
           Math.max(0, element.scrollWidth - element.clientWidth),
         ),
-    ],
-  )
+    ])
   expect(triggerBox).not.toBeNull()
-  expect(panelBox).not.toBeNull()
-  expect(cardBox).not.toBeNull()
+  expect(dialogBox).not.toBeNull()
+  expect(closeBox).not.toBeNull()
   expect(triggerBox!.width).toBeGreaterThanOrEqual(44)
   expect(triggerBox!.height).toBeGreaterThanOrEqual(44)
-  expect(panelBox!.x).toBeGreaterThanOrEqual(cardBox!.x)
-  expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(
-    cardBox!.x + cardBox!.width + 1,
-  )
+  expect(closeBox!.width).toBeGreaterThanOrEqual(44)
+  expect(closeBox!.height).toBeGreaterThanOrEqual(44)
+  expect(dialogBox!.x).toBeGreaterThanOrEqual(0)
+  expect(dialogBox!.y).toBeGreaterThanOrEqual(0)
+  expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(845)
+  expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(391)
   expect(horizontalOverflow).toBeLessThanOrEqual(1)
+  await page.mouse.click(1, 1)
+  await expect(dialog).toBeHidden()
+  await expect(flagTrigger).toBeFocused()
 
   await page.goto('/knowledge/countries/east-asia?country=JP')
   const japanCard = page.getByLabel('日本国家学习详情')
   await japanCard.getByRole('button', { name: '查看日本国旗含义' }).click()
-  await expect(japanCard.getByRole('heading', { name: '外观' })).toBeVisible()
+  const japanDialog = page.getByRole('dialog', { name: '日本国旗' })
+  await expect(japanDialog.getByRole('heading', { name: '外观' })).toBeVisible()
   await expect(
-    japanCard.getByRole('heading', { name: '含义', exact: true }),
+    japanDialog.getByRole('heading', { name: '含义', exact: true }),
   ).toHaveCount(0)
-  await expect(japanCard.getByRole('heading', { name: '历史' })).toBeVisible()
-  await expect(japanCard.getByText(/至少从 1184 年起/)).toBeVisible()
+  await expect(japanDialog.getByRole('heading', { name: '历史' })).toBeVisible()
+  await expect(japanDialog.getByText(/至少从 1184 年起/)).toBeVisible()
+  await page.keyboard.press('Escape')
 
   await page.goto('/knowledge/countries/west-asia?country=PS')
   const palestineCard = page.getByLabel('巴勒斯坦国家学习详情')
@@ -998,6 +1029,7 @@ for (const viewport of [
       })
     }
     await page.setViewportSize(viewport)
+    const safeArea = viewport.safeArea ?? 0
     await page.goto('/knowledge/countries/east-asia')
     if ('safeArea' in viewport) {
       await page.evaluate((safeArea) => {
@@ -1156,29 +1188,55 @@ for (const viewport of [
     expect(flagMeaningTriggerBox!.width).toBeGreaterThanOrEqual(44)
     expect(flagMeaningTriggerBox!.height).toBeGreaterThanOrEqual(44)
     await flagMeaningTrigger.click()
-    const flagMeaningPanel = knowledgeCard.locator(
-      '.country-flag-meaning-panel',
-    )
-    await expect(flagMeaningPanel).toBeVisible()
+    const flagDialog = page.getByRole('dialog', { name: '中国国旗' })
+    await expect(flagDialog).toBeVisible()
     await expect(
-      knowledgeCard.getByRole('heading', { name: '外观' }),
+      flagDialog.getByRole('heading', { name: '外观' }),
     ).toBeVisible()
     await expect(
-      knowledgeCard.getByRole('heading', { name: '含义', exact: true }),
+      flagDialog.getByRole('heading', { name: '含义', exact: true }),
     ).toBeVisible()
-    const [flagMeaningBox, expandedHorizontalOverflow] = await Promise.all([
-      flagMeaningPanel.boundingBox(),
-      knowledgeCard
-        .locator('.knowledge-card-content')
+    const [
+      flagDialogBox,
+      flagDialogCloseBox,
+      cardBoxWhileOpen,
+      dialogOverflow,
+    ] = await Promise.all([
+      flagDialog.boundingBox(),
+      flagDialog
+        .getByRole('button', { name: '关闭中国国旗含义' })
+        .boundingBox(),
+      knowledgeCard.boundingBox(),
+      flagDialog
+        .locator('.country-flag-dialog-body')
         .evaluate((element) =>
           Math.max(0, element.scrollWidth - element.clientWidth),
         ),
     ])
-    expect(flagMeaningBox).not.toBeNull()
-    expect(flagMeaningBox!.x).toBeGreaterThanOrEqual(knowledgeBox!.x)
-    expect(flagMeaningBox!.x + flagMeaningBox!.width).toBeLessThanOrEqual(
-      knowledgeBox!.x + knowledgeBox!.width + 1,
+    expect(flagDialogBox).not.toBeNull()
+    expect(flagDialogCloseBox).not.toBeNull()
+    expect(cardBoxWhileOpen).not.toBeNull()
+    expect(flagDialogBox!.x).toBeGreaterThanOrEqual(Math.max(0, safeArea - 1))
+    expect(flagDialogBox!.x + flagDialogBox!.width).toBeLessThanOrEqual(
+      viewport.width - safeArea + 1,
     )
+    expect(flagDialogBox!.y).toBeGreaterThanOrEqual(0)
+    expect(flagDialogBox!.y + flagDialogBox!.height).toBeLessThanOrEqual(
+      viewport.height + 1,
+    )
+    expect(flagDialogCloseBox!.width).toBeGreaterThanOrEqual(44)
+    expect(flagDialogCloseBox!.height).toBeGreaterThanOrEqual(44)
+    expect(cardBoxWhileOpen!.width).toBeCloseTo(knowledgeBox!.width, 0)
+    expect(cardBoxWhileOpen!.height).toBeCloseTo(knowledgeBox!.height, 0)
+    expect(dialogOverflow).toBeLessThanOrEqual(1)
+    await flagDialog.getByRole('button', { name: '关闭中国国旗含义' }).click()
+    await expect(flagDialog).toBeHidden()
+    await expect(flagMeaningTrigger).toBeFocused()
+    const expandedHorizontalOverflow = await knowledgeCard
+      .locator('.knowledge-card-content')
+      .evaluate((element) =>
+        Math.max(0, element.scrollWidth - element.clientWidth),
+      )
     expect(expandedHorizontalOverflow).toBeLessThanOrEqual(1)
     const peopleTrigger = knowledgeCard.getByRole('button', {
       name: /语言民族/,
@@ -1260,7 +1318,7 @@ for (const viewport of [
 
     await peopleTrigger.click()
     await expect(flagMeaningTrigger).toHaveAttribute('aria-expanded', 'false')
-    await expect(flagMeaningPanel).toHaveCount(0)
+    await expect(flagDialog).toBeHidden()
     await expect(chapterSummary).toBeVisible()
     await expect(chapterSummary).toHaveText('中文 · 汉族')
     const expandedDisclosureBox = await chapterDisclosure.boundingBox()
@@ -4606,11 +4664,13 @@ test('searches China and opens the featured knowledge card', async ({
     '/flags/cn.svg',
   )
   await card.getByRole('button', { name: '查看中国国旗含义' }).click()
-  await expect(card.getByRole('heading', { name: '国旗含义' })).toBeVisible()
-  await expect(card.getByRole('heading', { name: '外观' })).toBeVisible()
+  const flagDialog = page.getByRole('dialog', { name: '中国国旗' })
+  await expect(flagDialog).toBeVisible()
+  await expect(flagDialog.getByRole('heading', { name: '外观' })).toBeVisible()
   await expect(
-    card.getByRole('heading', { name: '含义', exact: true }),
+    flagDialog.getByRole('heading', { name: '含义', exact: true }),
   ).toBeVisible()
+  await flagDialog.getByRole('button', { name: '关闭中国国旗含义' }).click()
   await expect(card.getByText('大熊猫', { exact: true })).toBeVisible()
   await expect(card.getByText('珠穆朗玛峰', { exact: true })).toBeVisible()
   await expect(card.getByText('长城', { exact: true })).toBeVisible()

@@ -196,7 +196,7 @@
   padding: 0;
   flex: none;
   flex-direction: column;
-  gap: 0.18rem;
+  gap: 0.3rem;
   align-items: stretch;
   justify-content: center;
   color: var(--atlas-text-secondary);
@@ -207,75 +207,100 @@
 }
 
 .country-flag-meaning-cue {
-  display: flex;
-  width: 100%;
-  min-height: 1rem;
-  padding: 0 0.28rem;
-  box-sizing: border-box;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  width: 1.55rem;
+  height: 1.3rem;
+  align-self: flex-start;
+  place-items: center;
   color: var(--atlas-text-secondary);
-  font-size: 0.625rem;
-  font-weight: 600;
-  line-height: 1;
   background: var(--atlas-panel-muted);
   border-radius: var(--atlas-radius-control);
+}
+
+.country-flag-meaning-cue svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .country-flag-meaning-trigger:hover .country-flag-meaning-cue,
 .country-flag-meaning-trigger:focus-visible .country-flag-meaning-cue,
 .country-flag-meaning-trigger[aria-expanded='true'] .country-flag-meaning-cue {
-  color: var(--atlas-text);
+  color: var(--atlas-accent);
   background: var(--atlas-accent-soft);
 }
 
-.country-flag-meaning-panel {
-  padding: 0.65rem;
-  margin-top: 0.65rem;
-  color: var(--atlas-text-secondary);
-  background: var(--atlas-panel-muted);
-  border: 1px solid var(--atlas-border);
-  border-radius: var(--atlas-radius-compact);
+.country-flag-dialog {
+  width: min(42rem, calc(100vw - var(--app-edge-left) - var(--app-edge-right)));
+  max-height: calc(100dvh - var(--app-edge-top) - var(--app-edge-bottom));
 }
 
-.country-flag-meaning-heading {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  justify-content: space-between;
+.country-flag-dialog::backdrop {
+  background: rgb(1 7 13 / 78%);
 }
 
-.country-flag-meaning-heading h3 {
-  margin: 0;
-  color: var(--atlas-text);
-  font-size: var(--fs-m);
-  font-weight: 700;
+.country-flag-dialog-close {
+  line-height: 1;
 }
 
-.country-flag-detail-sections {
+.country-flag-dialog-close:hover,
+.country-flag-dialog-close:focus-visible {
+  background: var(--atlas-accent-soft);
+}
+
+.country-flag-dialog-body {
+  max-height: calc(100dvh - var(--app-edge-top) - var(--app-edge-bottom));
+  padding: 1rem;
+}
+
+.country-flag-dialog-header {
+  padding-right: 3.4rem;
+  grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.country-flag-dialog-sections {
   display: grid;
-  gap: 0.55rem;
-  margin: 0.55rem 0 0;
+  gap: 0.8rem;
+  margin-top: 1rem;
 }
 
-.country-flag-detail-section + .country-flag-detail-section {
-  padding-top: 0.55rem;
+.country-flag-dialog-section {
+  padding-top: 0.8rem;
   border-top: 1px solid var(--atlas-border-soft);
 }
 
-.country-flag-detail-section h4 {
-  margin: 0;
-  color: var(--atlas-accent);
-  font-size: var(--fs-s);
-  font-weight: 700;
-}
+@media (orientation: landscape) and (max-height: 440px) {
+  .country-flag-dialog {
+    width: calc(100vw - var(--app-edge-left) - var(--app-edge-right));
+    height: calc(100dvh - var(--app-edge-top) - var(--app-edge-bottom));
+    max-height: none;
+  }
 
-.country-flag-detail-section p {
-  margin: 0.2rem 0 0;
-  overflow-wrap: anywhere;
-  color: var(--atlas-text-secondary);
-  font-size: var(--fs-s);
-  line-height: 1.5;
+  .country-flag-dialog-body {
+    height: 100%;
+    max-height: none;
+    padding: 0.65rem;
+  }
+
+  .country-flag-dialog-header {
+    padding-right: 3.15rem;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .country-flag-dialog-sections {
+    gap: 0.55rem;
+    margin-top: 0.65rem;
+  }
+
+  .country-flag-dialog-section {
+    padding-top: 0.55rem;
+  }
 }
 
 .country-knowledge-card .knowledge-country-detail-heading > div > span {
