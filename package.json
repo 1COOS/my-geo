@@ -12,6 +12,7 @@
     "data:generate": "bun scripts/generate-country-data.ts",
     "data:clean:profiles": "bun scripts/clean-country-profile-content.ts && bun scripts/sync-country-profile-content.ts",
     "data:extract:resources": "bun scripts/extract-country-resource-source.ts",
+    "data:extract:flags": "bun scripts/extract-country-flag-source.ts",
     "data:generate:climate": "bun scripts/generate-climate-layer.ts",
     "data:validate": "bun scripts/validate-country-data.ts",
     "lint": "eslint . --max-warnings=0",

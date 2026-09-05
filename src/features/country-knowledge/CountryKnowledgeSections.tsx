@@ -17,17 +17,19 @@ import type {
 } from '../../data/internationalOrganizationSchema'
 import { CountryFlag } from '../../shared/components/CountryFlag'
 
-type ChapterId =
+export type CountryKnowledgeChapterId =
   'people' | 'resources' | 'economy' | 'cities' | 'international-relations'
 
 type CountryKnowledgeSectionsProps = {
   country: Country
   cities: City[]
   onSelectCountry: (countryCode: string) => void
+  openChapter?: CountryKnowledgeChapterId | null
+  onOpenChapterChange?: (chapter: CountryKnowledgeChapterId | null) => void
 }
 
 type Chapter = {
-  id: ChapterId
+  id: CountryKnowledgeChapterId
   title: string
   summary: string
   content: ReactNode
@@ -274,14 +276,29 @@ export function CountryKnowledgeSections({
   country,
   cities,
   onSelectCountry,
+  openChapter: controlledOpenChapter,
+  onOpenChapterChange,
 }: CountryKnowledgeSectionsProps) {
-  const [openChapter, setOpenChapter] = useState<ChapterId | null>(null)
+  const [uncontrolledOpenChapter, setUncontrolledOpenChapter] =
+    useState<CountryKnowledgeChapterId | null>(null)
+  const openChapter =
+    controlledOpenChapter === undefined
+      ? uncontrolledOpenChapter
+      : controlledOpenChapter
   const contentPrefix = useId()
   const profile = country.profile
   const resourceRows = getResourceRows(profile.resources)
   const economyRows = getEconomyRows(profile.economy)
   const summaryCity = cities.find((city) => !city.isCapital) ?? cities[0]
   const affiliations = getInternationalAffiliationsForCountry(country.code)
+
+  const toggleChapter = (chapter: CountryKnowledgeChapterId) => {
+    const nextChapter = openChapter === chapter ? null : chapter
+    if (controlledOpenChapter === undefined) {
+      setUncontrolledOpenChapter(nextChapter)
+    }
+    onOpenChapterChange?.(nextChapter)
+  }
 
   const chapters: Chapter[] = [
     {
@@ -357,11 +374,7 @@ export function CountryKnowledgeSections({
                 }}
                 aria-expanded={expanded}
                 aria-controls={contentId}
-                onClick={() =>
-                  setOpenChapter((current) =>
-                    current === chapter.id ? null : chapter.id,
-                  )
-                }
+                onClick={() => toggleChapter(chapter.id)}
               >
                 <ChapterIcon chapter={chapter.id} />
                 <span
@@ -396,7 +409,7 @@ export function CountryKnowledgeSections({
   )
 }
 
-function ChapterIcon({ chapter }: { chapter: ChapterId }) {
+function ChapterIcon({ chapter }: { chapter: CountryKnowledgeChapterId }) {
   return (
     <svg
       className="knowledge-country-chapter-icon"

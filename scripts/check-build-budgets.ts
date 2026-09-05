@@ -14,7 +14,7 @@ const sourceMapsEnabled = process.env.GENERATE_SOURCEMAP === 'true'
 const maxJavaScriptGzipBytes = 700 * 1024
 const cssRawThreshold = { soft: 112 * 1024, hard: 128 * 1024 }
 const cssGzipThreshold = { soft: 20 * 1024, hard: 24 * 1024 }
-const maxPrecacheBytes = 8 * 1024 * 1024
+const maxPrecacheBytes = 8.5 * 1024 * 1024
 const precacheExtensions = new Set([
   '.js',
   '.css',

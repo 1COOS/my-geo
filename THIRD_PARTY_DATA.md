@@ -132,4 +132,14 @@ construction references. My Geo pins the exact source revision, copies only the
 195 catalogue flags during `bun run data:generate`, and validates that shipped
 SVGs contain a valid `viewBox` without scripts or external image references.
 
+Flag descriptions, meanings, and history notes use CIA _The World Factbook_
+country profiles from the pinned `factbook/factbook.json` commit documented
+above. `scripts/country-flag-source.json` preserves each complete raw
+`Government.Flag.text`, its source path, parsed English sections, and SHA-256;
+`scripts/country-flag-content.json` stores complete repository-authored Chinese
+translations of every available section. The pinned source supplies 194
+descriptions, 171 meaning sections, and 56 history sections; its Palestine
+profile has no Flag content. Missing sections remain absent rather than being
+inferred or supplemented. No flag content or translation is fetched at runtime.
+
 Flag designs may also be subject to jurisdiction-specific laws and usage rules beyond the source-code license.

@@ -1,8 +1,8 @@
-import type { CSSProperties } from 'react'
+import { useId, useState, type CSSProperties } from 'react'
 import { Link, useInRouterContext } from 'react-router-dom'
 
 import type { City } from '../../data/citySchema'
-import type { Country } from '../../data/countrySchema'
+import type { Country, CountryFlagDetails } from '../../data/countrySchema'
 import { CountryFlag } from '../../shared/components/CountryFlag'
 import {
   KnowledgeCardShell,
@@ -12,6 +12,7 @@ import {
 import {
   CountryKnowledgeSections,
   CountrySignatureLabels,
+  type CountryKnowledgeChapterId,
 } from './CountryKnowledgeSections'
 
 export type CountryKnowledgeCardProps = {
@@ -186,6 +187,7 @@ export function CountryKnowledgeCard({
       cornerAction={cornerAction}
     >
       <CountryDetailView
+        key={country.code}
         country={country}
         cities={cities}
         onSelectCountry={onSelectCountry}
@@ -203,18 +205,47 @@ function CountryDetailView({
   cities,
   onSelectCountry,
 }: Pick<CountryKnowledgeCardProps, 'country' | 'cities' | 'onSelectCountry'>) {
+  const [openDisclosure, setOpenDisclosure] = useState<
+    'flag' | CountryKnowledgeChapterId | null
+  >(null)
+  const flagContentId = useId()
+  const flagHeadingId = `${flagContentId}-heading`
+  const flagExpanded = openDisclosure === 'flag'
+
   return (
     <>
       <div
         className="knowledge-country-detail-heading knowledge-country-summary-heading"
         style={summaryHeadingStyle}
       >
-        <CountryFlag
-          className="knowledge-country-detail-flag"
-          src={country.flagAsset}
-          alt={`${country.name.zh}国旗`}
-          style={summaryFlagStyle}
-        />
+        {country.flagDetails ? (
+          <button
+            type="button"
+            className="country-flag-meaning-trigger"
+            aria-label={`查看${country.name.zh}国旗含义`}
+            aria-expanded={flagExpanded}
+            aria-controls={flagContentId}
+            onClick={() => setOpenDisclosure(flagExpanded ? null : 'flag')}
+          >
+            <CountryFlag
+              className="knowledge-country-detail-flag"
+              src={country.flagAsset}
+              alt={`${country.name.zh}国旗`}
+              style={summaryFlagStyle}
+            />
+            <span className="country-flag-meaning-cue" aria-hidden="true">
+              <span>含义</span>
+              <span>{flagExpanded ? '−' : '+'}</span>
+            </span>
+          </button>
+        ) : (
+          <CountryFlag
+            className="knowledge-country-detail-flag"
+            src={country.flagAsset}
+            alt={`${country.name.zh}国旗`}
+            style={summaryFlagStyle}
+          />
+        )}
         <div
           className="knowledge-country-summary-copy"
           style={summaryCopyStyle}
@@ -239,6 +270,14 @@ function CountryDetailView({
           </small>
         </div>
       </div>
+
+      {flagExpanded && country.flagDetails ? (
+        <FlagDetailsPanel
+          id={flagContentId}
+          headingId={flagHeadingId}
+          details={country.flagDetails}
+        />
+      ) : null}
 
       <dl
         className="knowledge-country-facts knowledge-country-summary-facts"
@@ -307,11 +346,51 @@ function CountryDetailView({
       <CountrySignatureLabels signature={country.profile.signature} />
 
       <CountryKnowledgeSections
-        key={country.code}
         country={country}
         cities={cities}
         onSelectCountry={onSelectCountry}
+        openChapter={openDisclosure === 'flag' ? null : openDisclosure}
+        onOpenChapterChange={setOpenDisclosure}
       />
     </>
+  )
+}
+
+function FlagDetailsPanel({
+  id,
+  headingId,
+  details,
+}: {
+  id: string
+  headingId: string
+  details: CountryFlagDetails
+}) {
+  const sections = [
+    { id: 'description', label: '外观', content: details.description },
+    { id: 'meaning', label: '含义', content: details.meaning },
+    { id: 'history', label: '历史', content: details.history },
+  ].filter(
+    (section): section is { id: string; label: string; content: string } =>
+      Boolean(section.content),
+  )
+
+  return (
+    <section
+      id={id}
+      className="country-flag-meaning-panel"
+      aria-labelledby={headingId}
+    >
+      <div className="country-flag-meaning-heading">
+        <h3 id={headingId}>国旗含义</h3>
+      </div>
+      <div className="country-flag-detail-sections">
+        {sections.map((section) => (
+          <section key={section.id} className="country-flag-detail-section">
+            <h4>{section.label}</h4>
+            <p>{section.content}</p>
+          </section>
+        ))}
+      </div>
+    </section>
   )
 }

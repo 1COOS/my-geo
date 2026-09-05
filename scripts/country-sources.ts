@@ -312,7 +312,7 @@ export const countrySources: CountrySource[] = [
     accessedAt: '2026-08-31',
     url: 'https://github.com/factbook/factbook.json/tree/c8cfe21cd019d7748a6b0d57a75d6a77f5ec6ac6',
     license:
-      'U.S. Government public-domain source data; repository-authored Chinese summaries',
+      'U.S. Government public-domain source data; repository-authored complete Chinese translations',
   },
   {
     id: 'vatican-population',

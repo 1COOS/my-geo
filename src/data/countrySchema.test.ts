@@ -44,6 +44,16 @@ describe('generated country catalogue', () => {
       expect(country.languages.length).toBeGreaterThan(0)
       expect(country.currencies.length).toBeGreaterThan(0)
       expect(country.flagAsset).toMatch(/^\/flags\/[a-z]{2}\.svg$/)
+      if (country.flagDetails) {
+        expect(country.flagDetails.sourceIds).toEqual(['cia-world-factbook'])
+        for (const value of [
+          country.flagDetails.description,
+          country.flagDetails.meaning,
+          country.flagDetails.history,
+        ]) {
+          if (value) expect(value).toMatch(/\p{Script=Han}/u)
+        }
+      }
 
       for (const capital of country.capitals) {
         expect(capital.name.zh).toBeTruthy()
@@ -61,6 +71,37 @@ describe('generated country catalogue', () => {
         expect(currency.name.zh).not.toBe(currency.code)
       }
     }
+  })
+
+  it('ships complete translated Factbook flag sections', () => {
+    expect(
+      countries.filter((country) => country.flagDetails?.description),
+    ).toHaveLength(194)
+    expect(
+      countries.filter((country) => country.flagDetails?.meaning),
+    ).toHaveLength(171)
+    expect(
+      countries.filter((country) => country.flagDetails?.history),
+    ).toHaveLength(56)
+
+    const china = countries.find((country) => country.code === 'CN')!
+    expect(china.flagDetails?.meaning).toContain('四个社会阶级')
+    expect(china.flagDetails?.meaning).toContain('城市小资产阶级')
+
+    const brazil = countries.find((country) => country.code === 'BR')!
+    expect(brazil.flagDetails?.meaning).toContain('27 颗')
+    expect(brazil.flagDetails?.history).toContain('巴西帝国旧国旗')
+
+    const antigua = countries.find((country) => country.code === 'AG')!
+    expect(antigua.flagDetails?.meaning).toContain('阳光、大海和沙滩')
+
+    const japan = countries.find((country) => country.code === 'JP')!
+    expect(japan.flagDetails?.description).toContain('红色大圆盘')
+    expect(japan.flagDetails?.meaning).toBeNull()
+    expect(japan.flagDetails?.history).toContain('1854')
+
+    const palestine = countries.find((country) => country.code === 'PS')!
+    expect(palestine.flagDetails).toBeNull()
   })
 
   it('contains the fixed 12 featured countries with three sourced highlights', () => {

@@ -178,13 +178,104 @@
   align-items: center;
 }
 
+.country-knowledge-card .knowledge-country-detail-heading > .country-flag-frame,
 .country-knowledge-card
   .knowledge-country-detail-heading
-  > .country-flag-frame {
+  .country-flag-meaning-trigger
+  .country-flag-frame {
   width: 5.2rem;
   flex: none;
   border-radius: 0.2rem;
   box-shadow: none;
+}
+
+.country-flag-meaning-trigger {
+  display: flex;
+  min-width: 3.8rem;
+  min-height: 3.25rem;
+  padding: 0;
+  flex: none;
+  flex-direction: column;
+  gap: 0.18rem;
+  align-items: stretch;
+  justify-content: center;
+  color: var(--atlas-text-secondary);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--atlas-radius-control);
+}
+
+.country-flag-meaning-cue {
+  display: flex;
+  width: 100%;
+  min-height: 1rem;
+  padding: 0 0.28rem;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--atlas-text-secondary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1;
+  background: var(--atlas-panel-muted);
+  border-radius: var(--atlas-radius-control);
+}
+
+.country-flag-meaning-trigger:hover .country-flag-meaning-cue,
+.country-flag-meaning-trigger:focus-visible .country-flag-meaning-cue,
+.country-flag-meaning-trigger[aria-expanded='true'] .country-flag-meaning-cue {
+  color: var(--atlas-text);
+  background: var(--atlas-accent-soft);
+}
+
+.country-flag-meaning-panel {
+  padding: 0.65rem;
+  margin-top: 0.65rem;
+  color: var(--atlas-text-secondary);
+  background: var(--atlas-panel-muted);
+  border: 1px solid var(--atlas-border);
+  border-radius: var(--atlas-radius-compact);
+}
+
+.country-flag-meaning-heading {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.country-flag-meaning-heading h3 {
+  margin: 0;
+  color: var(--atlas-text);
+  font-size: var(--fs-m);
+  font-weight: 700;
+}
+
+.country-flag-detail-sections {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.55rem 0 0;
+}
+
+.country-flag-detail-section + .country-flag-detail-section {
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--atlas-border-soft);
+}
+
+.country-flag-detail-section h4 {
+  margin: 0;
+  color: var(--atlas-accent);
+  font-size: var(--fs-s);
+  font-weight: 700;
+}
+
+.country-flag-detail-section p {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+  color: var(--atlas-text-secondary);
+  font-size: var(--fs-s);
+  line-height: 1.5;
 }
 
 .country-knowledge-card .knowledge-country-detail-heading > div > span {

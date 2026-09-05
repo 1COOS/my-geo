@@ -24,6 +24,7 @@ import { countrySources } from './country-sources'
 import {
   countryBoundariesSchema,
   countryCatalogSchema,
+  countryFlagDetailsSchema,
   countrySourceRegistrySchema,
   type Country,
 } from '../src/data/countrySchema'
@@ -160,6 +161,15 @@ const citySource = await readJson<CitySource[]>(
 const countryProfileContent = await readJson<
   Record<string, Country['profile']>
 >(path.join(projectRoot, 'scripts/country-profile-content.json'))
+type CountryFlagTranslation = {
+  sourceSha256: string
+  description: string | null
+  meaning: string | null
+  history: string | null
+}
+const countryFlagContent = await readJson<
+  Record<string, CountryFlagTranslation>
+>(path.join(projectRoot, 'scripts/country-flag-content.json'))
 
 const topology = await readJson<
   Topology<{ countries: GeometryCollection<Record<string, unknown>> }>
@@ -272,6 +282,21 @@ const countries: Country[] = sourceCountries.map((country) => {
   if (!profile) {
     throw new Error(`Missing country profile for ${country.cca2}`)
   }
+  const flagTranslation = countryFlagContent[country.cca2]
+  if (!flagTranslation) {
+    throw new Error(`Missing flag translation for ${country.cca2}`)
+  }
+  const flagDetails =
+    flagTranslation.description ||
+    flagTranslation.meaning ||
+    flagTranslation.history
+      ? countryFlagDetailsSchema.parse({
+          description: flagTranslation.description,
+          meaning: flagTranslation.meaning,
+          history: flagTranslation.history,
+          sourceIds: ['cia-world-factbook'],
+        })
+      : null
 
   const borderCountryCodes = country.borders.flatMap((borderCode) => {
     const countryCode = sovereignCountryCodesByAlpha3.get(borderCode)
@@ -364,6 +389,7 @@ const countries: Country[] = sourceCountries.map((country) => {
     borderCountryCodes,
     adjacentRegions,
     flagAsset: `/flags/${country.cca2.toLowerCase()}.svg`,
+    flagDetails,
     hasGeometry: availableGeometryCodes.has(country.ccn3.padStart(3, '0')),
     profile,
   }

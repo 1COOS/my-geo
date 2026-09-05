@@ -895,6 +895,79 @@ test('uses the contained flag contract across learning and exploration surfaces'
   )
 })
 
+test('reveals flag meaning inline without covering the country detail card', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/knowledge/countries/east-asia?country=CN')
+
+  const card = page.getByLabel('中国国家学习详情')
+  const flagTrigger = card.getByRole('button', { name: '查看中国国旗含义' })
+  await expect(flagTrigger).toHaveAttribute('aria-expanded', 'false')
+  await flagTrigger.click()
+
+  await expect(flagTrigger).toHaveAttribute('aria-expanded', 'true')
+  await expect(card.getByRole('heading', { name: '国旗含义' })).toBeVisible()
+  await expect(card.getByRole('heading', { name: '外观' })).toBeVisible()
+  await expect(
+    card.getByRole('heading', { name: '含义', exact: true }),
+  ).toBeVisible()
+  await expect(card.getByRole('heading', { name: '历史' })).toHaveCount(0)
+  await expect(
+    card.getByText(/四个社会阶级.*城市小资产阶级.*民族资产阶级/),
+  ).toBeVisible()
+
+  const peopleTrigger = card.getByRole('button', { name: /语言民族/ })
+  await peopleTrigger.click()
+  await expect(flagTrigger).toHaveAttribute('aria-expanded', 'false')
+  await expect(peopleTrigger).toHaveAttribute('aria-expanded', 'true')
+  await expect(card.getByRole('heading', { name: '国旗含义' })).toHaveCount(0)
+
+  await page.setViewportSize({ width: 844, height: 390 })
+  await flagTrigger.click()
+  const panel = card.locator('.country-flag-meaning-panel')
+  await expect(panel).toBeVisible()
+  const [triggerBox, panelBox, cardBox, horizontalOverflow] = await Promise.all(
+    [
+      flagTrigger.boundingBox(),
+      panel.boundingBox(),
+      card.boundingBox(),
+      card
+        .locator('.knowledge-card-content')
+        .evaluate((element) =>
+          Math.max(0, element.scrollWidth - element.clientWidth),
+        ),
+    ],
+  )
+  expect(triggerBox).not.toBeNull()
+  expect(panelBox).not.toBeNull()
+  expect(cardBox).not.toBeNull()
+  expect(triggerBox!.width).toBeGreaterThanOrEqual(44)
+  expect(triggerBox!.height).toBeGreaterThanOrEqual(44)
+  expect(panelBox!.x).toBeGreaterThanOrEqual(cardBox!.x)
+  expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(
+    cardBox!.x + cardBox!.width + 1,
+  )
+  expect(horizontalOverflow).toBeLessThanOrEqual(1)
+
+  await page.goto('/knowledge/countries/east-asia?country=JP')
+  const japanCard = page.getByLabel('日本国家学习详情')
+  await japanCard.getByRole('button', { name: '查看日本国旗含义' }).click()
+  await expect(japanCard.getByRole('heading', { name: '外观' })).toBeVisible()
+  await expect(
+    japanCard.getByRole('heading', { name: '含义', exact: true }),
+  ).toHaveCount(0)
+  await expect(japanCard.getByRole('heading', { name: '历史' })).toBeVisible()
+  await expect(japanCard.getByText(/至少从 1184 年起/)).toBeVisible()
+
+  await page.goto('/knowledge/countries/west-asia?country=PS')
+  const palestineCard = page.getByLabel('巴勒斯坦国家学习详情')
+  await expect(
+    palestineCard.getByRole('button', { name: '查看巴勒斯坦国旗含义' }),
+  ).toHaveCount(0)
+  await expect(palestineCard.getByAltText('巴勒斯坦国旗')).toBeVisible()
+})
+
 for (const viewport of [
   { name: '1440 desktop', width: 1440, height: 900, touch: false },
   { name: 'iPad landscape', width: 1194, height: 834, touch: true },
@@ -1075,6 +1148,38 @@ for (const viewport of [
     await expect(
       knowledgeCard.getByRole('button', { name: /语言民族/ }),
     ).toHaveAttribute('aria-expanded', 'false')
+    const flagMeaningTrigger = knowledgeCard.getByRole('button', {
+      name: '查看中国国旗含义',
+    })
+    const flagMeaningTriggerBox = await flagMeaningTrigger.boundingBox()
+    expect(flagMeaningTriggerBox).not.toBeNull()
+    expect(flagMeaningTriggerBox!.width).toBeGreaterThanOrEqual(44)
+    expect(flagMeaningTriggerBox!.height).toBeGreaterThanOrEqual(44)
+    await flagMeaningTrigger.click()
+    const flagMeaningPanel = knowledgeCard.locator(
+      '.country-flag-meaning-panel',
+    )
+    await expect(flagMeaningPanel).toBeVisible()
+    await expect(
+      knowledgeCard.getByRole('heading', { name: '外观' }),
+    ).toBeVisible()
+    await expect(
+      knowledgeCard.getByRole('heading', { name: '含义', exact: true }),
+    ).toBeVisible()
+    const [flagMeaningBox, expandedHorizontalOverflow] = await Promise.all([
+      flagMeaningPanel.boundingBox(),
+      knowledgeCard
+        .locator('.knowledge-card-content')
+        .evaluate((element) =>
+          Math.max(0, element.scrollWidth - element.clientWidth),
+        ),
+    ])
+    expect(flagMeaningBox).not.toBeNull()
+    expect(flagMeaningBox!.x).toBeGreaterThanOrEqual(knowledgeBox!.x)
+    expect(flagMeaningBox!.x + flagMeaningBox!.width).toBeLessThanOrEqual(
+      knowledgeBox!.x + knowledgeBox!.width + 1,
+    )
+    expect(expandedHorizontalOverflow).toBeLessThanOrEqual(1)
     const peopleTrigger = knowledgeCard.getByRole('button', {
       name: /语言民族/,
     })
@@ -1154,6 +1259,8 @@ for (const viewport of [
     expect(Math.abs(leftInset - rightInset)).toBeLessThanOrEqual(1)
 
     await peopleTrigger.click()
+    await expect(flagMeaningTrigger).toHaveAttribute('aria-expanded', 'false')
+    await expect(flagMeaningPanel).toHaveCount(0)
     await expect(chapterSummary).toBeVisible()
     await expect(chapterSummary).toHaveText('中文 · 汉族')
     const expandedDisclosureBox = await chapterDisclosure.boundingBox()
@@ -4498,6 +4605,12 @@ test('searches China and opens the featured knowledge card', async ({
     'src',
     '/flags/cn.svg',
   )
+  await card.getByRole('button', { name: '查看中国国旗含义' }).click()
+  await expect(card.getByRole('heading', { name: '国旗含义' })).toBeVisible()
+  await expect(card.getByRole('heading', { name: '外观' })).toBeVisible()
+  await expect(
+    card.getByRole('heading', { name: '含义', exact: true }),
+  ).toBeVisible()
   await expect(card.getByText('大熊猫', { exact: true })).toBeVisible()
   await expect(card.getByText('珠穆朗玛峰', { exact: true })).toBeVisible()
   await expect(card.getByText('长城', { exact: true })).toBeVisible()

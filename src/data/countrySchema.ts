@@ -48,6 +48,20 @@ export const countryHighlightSchema = z.object({
   sourceIds: z.array(z.string().min(1)).min(1),
 })
 
+export const countryFlagDetailsSchema = z
+  .object({
+    description: z.string().min(1).nullable(),
+    meaning: z.string().min(1).nullable(),
+    history: z.string().min(1).nullable(),
+    sourceIds: z.tuple([z.literal('cia-world-factbook')]),
+  })
+  .refine(
+    (value) => Boolean(value.description || value.meaning || value.history),
+    {
+      message: 'Flag details require at least one Factbook section',
+    },
+  )
+
 const sourcedCountryProfileSectionSchema = z.object({
   summary: z.string().min(1).optional(),
   keywords: z.array(z.string().min(1)).max(3),
@@ -132,6 +146,7 @@ const countryBaseSchema = z.object({
   borderCountryCodes: z.array(countryCodeSchema),
   adjacentRegions: z.array(adjacentRegionSchema),
   flagAsset: z.string().regex(/^\/flags\/[a-z]{2}\.svg$/),
+  flagDetails: countryFlagDetailsSchema.nullable(),
   hasGeometry: z.boolean(),
   profile: countryProfileSchema,
 })
@@ -247,6 +262,7 @@ export const countryBoundariesSchema = z.object({
 
 export type Country = z.infer<typeof countrySchema>
 export type CountryProfile = z.infer<typeof countryProfileSchema>
+export type CountryFlagDetails = z.infer<typeof countryFlagDetailsSchema>
 export type CountryDemographicItem = z.infer<
   typeof countryDemographicItemSchema
 >

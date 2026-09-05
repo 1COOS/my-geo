@@ -11,6 +11,7 @@ import { climateLayerManifest } from '../src/data/climateRaster'
 import {
   countryBoundariesSchema,
   countryCatalogSchema,
+  countryFlagDetailsSchema,
   countryProfileSchema,
   countrySourceRegistrySchema,
 } from '../src/data/countrySchema'
@@ -113,8 +114,29 @@ const sourceProfiles = Object.fromEntries(
     countryProfileSchema.parse(profile),
   ]),
 )
+type FlagSectionName = 'description' | 'meaning' | 'history'
+type FlagSourceEntry = {
+  raw: string
+  rawSha256: string
+  sourcePath: string
+  description: string | null
+  meaning: string | null
+  history: string | null
+}
+type FlagTranslation = {
+  sourceSha256: string
+  description: string | null
+  meaning: string | null
+  history: string | null
+}
+const flagTranslations = (await readJson(
+  path.join(projectRoot, 'scripts/country-flag-content.json'),
+)) as Record<string, FlagTranslation>
 const generatedProfiles = Object.fromEntries(
   countries.map((country) => [country.code, country.profile]),
+)
+const generatedFlagDetails = Object.fromEntries(
+  countries.map((country) => [country.code, country.flagDetails]),
 )
 const resourceSources = resourceSourceJson.countries as Record<
   string,
@@ -126,6 +148,101 @@ assertCountryProfileContentQuality(sourceProfiles, 'source profile')
 assertCountryProfileContentQuality(generatedProfiles, 'generated profile')
 if (JSON.stringify(sourceProfiles) !== JSON.stringify(generatedProfiles)) {
   throw new Error('Generated country profiles do not match reviewed source')
+}
+const flagSource = (await readJson(
+  path.join(projectRoot, 'scripts/country-flag-source.json'),
+)) as {
+  sourceId: string
+  version: string
+  countries: Record<string, FlagSourceEntry>
+}
+if (
+  flagSource.sourceId !== resourceSourceJson.sourceId ||
+  flagSource.version !== resourceSourceJson.version
+) {
+  throw new Error('Flag source version does not match the pinned Factbook data')
+}
+const flagSourceCodes = Object.keys(flagSource.countries).sort()
+const flagTranslationCodes = Object.keys(flagTranslations).sort()
+if (
+  !isDeepStrictEqual(flagSourceCodes, countryCatalogCodes) ||
+  !isDeepStrictEqual(flagTranslationCodes, countryCatalogCodes)
+) {
+  throw new Error(
+    `Flag catalog mismatch: sources=${flagSourceCodes.length}, translations=${flagTranslationCodes.length}, countries=${countryCatalogCodes.length}`,
+  )
+}
+const flagSectionNames = [
+  'description',
+  'meaning',
+  'history',
+] as const satisfies readonly FlagSectionName[]
+const flagSectionCounts = Object.fromEntries(
+  flagSectionNames.map((section) => [section, 0]),
+) as Record<FlagSectionName, number>
+const expectedFlagDetails = Object.fromEntries(
+  countryCatalogCodes.map((countryCode) => {
+    const source = flagSource.countries[countryCode]
+    const translation = flagTranslations[countryCode]
+    if (!source || !translation) {
+      throw new Error(`Missing flag source or translation for ${countryCode}`)
+    }
+    const expectedHash = createHash('sha256').update(source.raw).digest('hex')
+    if (
+      source.rawSha256 !== expectedHash ||
+      translation.sourceSha256 !== expectedHash
+    ) {
+      throw new Error(`Stale flag translation source on ${countryCode}`)
+    }
+    for (const section of flagSectionNames) {
+      const sourceValue = source[section]
+      const translatedValue = translation[section]
+      if (Boolean(sourceValue) !== Boolean(translatedValue)) {
+        throw new Error(`Flag section mismatch on ${countryCode}.${section}`)
+      }
+      if (sourceValue) flagSectionCounts[section] += 1
+      if (sourceValue && /<[^>]+>|&(?:nbsp|quot|amp);/i.test(sourceValue)) {
+        throw new Error(
+          `Unclean parsed flag source on ${countryCode}.${section}`,
+        )
+      }
+      if (
+        translatedValue &&
+        (/<[^>]+>|&(?:nbsp|quot|amp);/i.test(translatedValue) ||
+          !/\p{Script=Han}/u.test(translatedValue))
+      ) {
+        throw new Error(`Invalid flag translation on ${countryCode}.${section}`)
+      }
+    }
+    const hasContent = flagSectionNames.some((section) => translation[section])
+    return [
+      countryCode,
+      hasContent
+        ? countryFlagDetailsSchema.parse({
+            description: translation.description,
+            meaning: translation.meaning,
+            history: translation.history,
+            sourceIds: ['cia-world-factbook'],
+          })
+        : null,
+    ]
+  }),
+)
+if (
+  !isDeepStrictEqual(flagSectionCounts, {
+    description: 194,
+    meaning: 171,
+    history: 56,
+  })
+) {
+  throw new Error(
+    `Unexpected Factbook flag coverage: ${JSON.stringify(flagSectionCounts)}`,
+  )
+}
+if (!isDeepStrictEqual(expectedFlagDetails, generatedFlagDetails)) {
+  throw new Error(
+    'Generated country flag details do not match complete translations',
+  )
 }
 if (!isDeepStrictEqual(resourceSourceCodes, countryCatalogCodes)) {
   throw new Error(
@@ -675,6 +792,13 @@ for (const country of countries) {
     throw new Error(
       `Unknown population source ${country.populationSourceId} on ${country.code}`,
     )
+  }
+  for (const sourceId of country.flagDetails?.sourceIds ?? []) {
+    if (!sourceIds.has(sourceId)) {
+      throw new Error(
+        `Unknown flag details source ${sourceId} on ${country.code}`,
+      )
+    }
   }
   for (const capital of country.capitals) {
     if (
